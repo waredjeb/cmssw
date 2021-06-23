@@ -13,9 +13,6 @@
 
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
-
-#include "DataFormats/HGCalReco/interface/Trackster.h"
-
 #include "RecoHGCal/TICL/interface/TrackstersLinkingPluginFactory.h"
 #include "TrackstersLinkingbyPCA.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
@@ -37,8 +34,8 @@ public:
 private:
   std::string detector_;
   std::unique_ptr<TrackstersLinkingAlgoBaseT> myAlgo_;
-  const edm::EDGetTokenT<std::vector<SimCluster>> clusters_token_;
   const edm::EDGetTokenT<std::vector<Trackster>> tracksters_token_;
+  const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
 };
 DEFINE_FWK_MODULE(LinkedTrackstersProducer);
 
@@ -63,8 +60,8 @@ void LinkedTrackstersProducer::globalEndJob(TrackstersCache* cache) {
 
 LinkedTrackstersProducer::LinkedTrackstersProducer(const edm::ParameterSet& ps, const TrackstersCache* cache)
     : detector_(ps.getParameter<std::string>("detector")),
-      clusters_token_(consumes<std::vector<SimCluster>>(ps.getParameter<edm::InputTag>("simCluster"))),
-      tracksters_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("tracksters"))) {
+      tracksters_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("tracksters"))),
+      tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))) {
   auto plugin = ps.getParameter<std::string>("trackstersLinkingBy");
   auto pluginPSet = ps.getParameter<edm::ParameterSet>("pluginTrackstersLinkingBy" + plugin);
   myAlgo_ =
@@ -77,7 +74,7 @@ void LinkedTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& 
   // hgcalMultiClusters
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
-  desc.add<edm::InputTag>("simCluster", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlSimTracksters"));
   desc.add<std::string>("trackstersLinkingBy", "PCA");
   desc.add<std::string>("eid_graph_path", "RecoHGCal/TICL/data/tf_models/energy_id_v0.pb");
@@ -91,6 +88,13 @@ void LinkedTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& 
 
 void LinkedTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   auto result = std::make_unique<std::vector<float>>();
-  const auto& layerClusters = evt.get(clusters_token_);
   const auto& tracksters = evt.get(tracksters_token_);
+  const auto& tracks = evt.get(tracks_token_);
+
+  std::cout << "Linked Trackster Producer" << std::endl;
+  const typename TrackstersLinkingAlgoBaseT::Inputs input(evt, es, tracksters, tracks);
+
+  myAlgo_->trackstersInfo(input);
+
+  evt.put(std::move(result));
 }

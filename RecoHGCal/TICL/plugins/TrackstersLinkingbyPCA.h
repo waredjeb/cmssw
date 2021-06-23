@@ -11,6 +11,7 @@ namespace ticl {
     TrackstersLinkingbyPCA(const edm::ParameterSet& conf, const CacheBase* cache);
     ~TrackstersLinkingbyPCA() override;
 
+    void trackstersInfo(const typename TrackstersLinkingAlgoBaseT::Inputs& input);
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {}
   };
 }  // namespace ticl
