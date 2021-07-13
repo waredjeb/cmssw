@@ -15,7 +15,10 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
 
         #'file:/afs/cern.ch/work/w/wredjeb/public/TracksterLinking/CMSSW_12_0_X_2021-06-20-2300/src/37888.0_SinglePiPt25Eta1p7_2p7+2026D84+SinglePiPt25Eta1p7_2p7_GenSimHLBeamSpot+DigiTrigger+RecoGlobal+HARVESTGlobal/step3_pi0_300.root'
-        'file:/afs/cern.ch/work/w/wredjeb/public/TracksterLinking/CMSSW_12_0_X_2021-06-29-2300/src/37888.0_SinglePiPt25Eta1p7_2p7+2026D84+SinglePiPt25Eta1p7_2p7_GenSimHLBeamSpot+DigiTrigger+RecoGlobal+HARVESTGlobal/step3_pi0_300.root'
+        'file:/afs/cern.ch/work/w/wredjeb/public/TracksterLinking/CMSSW_12_0_X_2021-07-07-2300/src/37888.0_SinglePiPt25Eta1p7_2p7+2026D84+SinglePiPt25Eta1p7_2p7_GenSimHLBeamSpot+DigiTrigger+RecoGlobal+HARVESTGlobal/step3_pi0_300_sibling.root'
+        # 'file:/afs/cern.ch/work/w/wredjeb/public/TracksterLinking/CMSSW_12_0_X_2021-07-07-2300/src/37888.0_SinglePiPt25Eta1p7_2p7+2026D84+SinglePiPt25Eta1p7_2p7_GenSimHLBeamSpot+DigiTrigger+RecoGlobal+HARVESTGlobal/step3_pi0_300.root'
+        # 'file:/afs/cern.ch/work/w/wredjeb/public/TracksterLinking/CMSSW_12_0_X_2021-07-07-2300/src/37888.0_SinglePiPt25Eta1p7_2p7+2026D84+SinglePiPt25Eta1p7_2p7_GenSimHLBeamSpot+DigiTrigger+RecoGlobal+HARVESTGlobal/step3_pi0_300_minTrkLayer5.root'
+#        'file:/afs/cern.ch/work/w/wredjeb/public/TracksterLinking/CMSSW_12_0_X_2021-06-29-2300/src/37888.0_SinglePiPt25Eta1p7_2p7+2026D84+SinglePiPt25Eta1p7_2p7_GenSimHLBeamSpot+DigiTrigger+RecoGlobal+HARVESTGlobal/step3_pi0_300.root'
     )
 )
 
@@ -51,7 +54,7 @@ setattr(process.MessageLogger.files, label, messageLogger[main_key])
 process.p = cms.Path(process.tracksterLinkingDebugger+process.caloParticleDebugger)
 
 process.TFileService = cms.Service("TFileService",
-      fileName = cms.string("output_pi0_gen_cos0.root"),
+      fileName = cms.string("output_pi0_gen_cos0p0_EnergySum_Siblings.root"),
       closeFileFast = cms.untracked.bool(True)
   )
 

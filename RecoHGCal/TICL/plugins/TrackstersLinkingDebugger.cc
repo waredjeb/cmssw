@@ -88,6 +88,8 @@ private:
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
   const edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
   const edm::EDGetTokenT<std::vector<SimCluster>> clusters_token_;
+  const edm::EDGetTokenT<std::vector<float>> mask_token_;
+  const edm::EDGetTokenT<std::vector<float>> mask_token_trackster_;
 
   const double min_angle_;
   const bool do2D;
@@ -113,6 +115,15 @@ private:
   std::vector<double>* gen_pt = new std::vector<double>;
   std::vector<double>* gen_E = new std::vector<double>;
   std::vector<bool>* fullMatch = new std::vector<bool>;
+  std::vector<int>* isAloneEM = new std::vector<int>;
+  std::vector<double>* totLCsEnergy = new std::vector<double>;
+  std::vector<double>* totTracksterEnergy = new std::vector<double>;
+  
+
+  std::vector<double>* missLayerX = new std::vector<double>;
+  std::vector<double>* missLayerY = new std::vector<double>;
+  std::vector<double>* missLayerZ = new std::vector<double>;
+  std::vector<double>* missLayerE = new std::vector<double>;
 
 
   double total_cp = 0.;
@@ -126,6 +137,9 @@ private:
   double zero = 0;
   double tot_real_alone = 0.;
   double tot_cand_found = 0.;
+
+  double tot_LC_used = 0.;
+  double tot_LC = 0.;
 };
 
 TrackstersLinkingDebugger::TrackstersLinkingDebugger(const edm::ParameterSet& ps)
@@ -138,6 +152,8 @@ TrackstersLinkingDebugger::TrackstersLinkingDebugger(const edm::ParameterSet& ps
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
       caloparticles_token_(consumes<std::vector<CaloParticle>>(ps.getParameter<edm::InputTag>("caloparticles"))),
       clusters_token_(consumes<std::vector<SimCluster>>(ps.getParameter<edm::InputTag>("simCluster"))),
+      // mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("lcMask"))),
+      mask_token_trackster_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("lcMask_trackster"))),
       min_angle_(ps.getParameter<double>("min_angle")),
       do2D(ps.getParameter<bool>("do2Ddot")) {}
 
@@ -148,6 +164,8 @@ void TrackstersLinkingDebugger::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalLayerClusters"));
   desc.add<edm::InputTag>("genP", edm::InputTag("genParticles"));
+  desc.add<edm::InputTag>("lcMask", edm::InputTag("filteredLayerClustersHAD:HAD"));
+  desc.add<edm::InputTag>("lcMask_trackster", edm::InputTag("ticlTrackstersHAD"));
   // desc.add<edm::InputTag>("hitMap", edm::InputTag("hgcalRecHitMapProducer"));
   desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("simCluster", edm::InputTag("mix", "MergedCaloTruth"));
@@ -173,6 +191,16 @@ void TrackstersLinkingDebugger::beginJob() {
   tree_->Branch("fullMatch", &fullMatch);
   tree_->Branch("gen_pt", &gen_pt);
   tree_->Branch("gen_E", &gen_E);
+  tree_->Branch("isAloneEM", &isAloneEM);
+
+  tree_->Branch("missLayerX", &missLayerX);
+  tree_->Branch("missLayerY", &missLayerY);
+  tree_->Branch("missLayerZ", &missLayerZ);
+  tree_->Branch("missLayerE", &missLayerE);
+
+  tree_->Branch("totLCsEnergy", &totLCsEnergy);
+  tree_->Branch("totTracksterEnergy", &totTracksterEnergy);
+  
   // tree_->Branch("simTrackstersEnergy", &simTrackstersEnergy);
   // tree_->Branch("simTrackstersRawEnergy", &simTrackstersRawEnergy);
 }
@@ -187,6 +215,14 @@ void TrackstersLinkingDebugger::clear() {
   gen_pt->clear();
   gen_E->clear();
   fullMatch->clear();
+
+  missLayerX->clear();
+  missLayerY->clear();
+  missLayerZ->clear();
+  missLayerE->clear();
+  isAloneEM->clear();
+  totLCsEnergy->clear();
+  totTracksterEnergy->clear();
   // simTrackstersRawEnergy->clear();
   // genEnergySim->clear();
 }
@@ -370,13 +406,17 @@ void TrackstersLinkingDebugger::analyze(const edm::Event& evt, const edm::EventS
   std::vector<Candidate> candidates;
   edm::Handle<std::vector<CaloParticle>> caloparticles_handle = evt.getHandle(caloparticles_token_);
   edm::Handle<std::vector<SimCluster>> simclusters_handle = evt.getHandle(clusters_token_);
+  // const auto& lcMask = evt.get(mask_token_);
+  const auto& lcMask_trackster = evt.get(mask_token_trackster_);
 
   const auto& genParticles = evt.get(gensToken_);
   double pos = 0.;
   double neg = 0.;
   
   // double neg_zero = 0;
+  auto totEnergyTrackster = 0.;
   for (auto tt : tracksters) {
+    totEnergyTrackster += tt.raw_energy();
     if (tt.raw_energy() > 0) {
       if (tt.barycenter().z() < 0) {
         neg += 1;
@@ -385,12 +425,20 @@ void TrackstersLinkingDebugger::analyze(const edm::Event& evt, const edm::EventS
       }
     }
   }
+  totTracksterEnergy->push_back(totEnergyTrackster);
+
   if(neg == 1){
     tot_real_alone += 1;
   }
   if(pos == 1){
     tot_real_alone += 1;
   }
+
+  auto totEnergyLCs = 0.;
+  for(auto lc : layerClusters){
+    totEnergyLCs += lc.energy();
+  }
+  totLCsEnergy->push_back(totEnergyLCs);
 
   for (int t_id1 = 0; t_id1 != trackstersAvailable - 1; t_id1++) {  // loop over trackster
     Candidate cand;
@@ -532,6 +580,27 @@ bool tmpZero = true;
               gen_pt->push_back(genp.pt());
               gen_E->push_back(genp.energy());
               fullMatch->push_back(true);
+              if(candidate.linkedTrackster.size() == 1){
+                auto candidateIteration = candidate.linkedTrackster[0].ticlIteration();
+                if(candidateIteration ==  Trackster::IterationIndex::TRKEM){
+                    isAloneEM->push_back(1);
+                  }
+                else if(candidateIteration == Trackster::IterationIndex::EM ){
+                  isAloneEM->push_back(2);
+                }
+                else if(candidateIteration == Trackster::IterationIndex::TRKHAD ){
+                  isAloneEM->push_back(3);
+                }
+                else if(candidateIteration == Trackster::IterationIndex::HAD ){
+                  isAloneEM->push_back(5);
+                }                
+                else{
+                  isAloneEM->push_back(5);
+                }
+              }
+              else{
+                isAloneEM->push_back(0);
+              }
             }
             else{
               cp_pt->push_back(0);
@@ -543,6 +612,7 @@ bool tmpZero = true;
               gen_pt->push_back(0);
               gen_E->push_back(0);
               fullMatch->push_back(false);
+              isAloneEM->push_back(0);
 
             }
           }
@@ -551,6 +621,26 @@ bool tmpZero = true;
     }
   }
 
+  // printf("SIZE MASK %d SIZE MASK TRK %d", (int)lcMask.size() , (int)lcMask_trackster.size());
+  // for(int i = 0; i != (int)lcMask.size(); i++){
+  //   printf("MASK %f MASKTRK %f \n", lcMask[i], lcMask_trackster[i]);
+  // }
+  auto howManyLCUsed = 0.;
+  for(int i = 0; i != (int)lcMask_trackster.size(); i++){
+    
+    if(lcMask_trackster[i] == 1){
+      auto lc = layerClusters[i];
+      missLayerX->push_back(lc.position().X());
+      missLayerY->push_back(lc.position().Y());
+      missLayerZ->push_back(lc.position().Z());
+      missLayerE->push_back(lc.energy());
+      howManyLCUsed += 1;
+    }
+  }
+  tot_LC_used += howManyLCUsed;
+  tot_LC += layerClusters.size();
+  std::cout << "RATIO USED " << howManyLCUsed/layerClusters.size() << std::endl;
+  
 //Check candidates manually
   // for(auto c : candidates){
   //   printf("Candidates ");
@@ -576,5 +666,8 @@ void TrackstersLinkingDebugger::endJob() {
   printf("Real Double %f \n", real_double);
   printf("Real Alone %f \n", tot_real_alone + zero);
   printf("Tot Cand %f \n", tot_cand_found);
+
+
+  printf("RATIO USED LC %f \n", tot_LC_used/tot_LC);
 }
 DEFINE_FWK_MODULE(TrackstersLinkingDebugger);
