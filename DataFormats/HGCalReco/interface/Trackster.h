@@ -20,7 +20,7 @@ namespace ticl {
   public:
     typedef math::XYZVector Vector;
 
-    enum IterationIndex { TRKEM = 0, EM, TRKHAD, HAD, MIP };
+    enum IterationIndex { TRKEM = 0, EM, TRKHAD, HAD, MIP, Linking };
 
     // types considered by the particle identification
     enum class ParticleType {
