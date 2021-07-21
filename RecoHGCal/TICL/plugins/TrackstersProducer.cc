@@ -112,6 +112,8 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps, const Tracks
     iterIndex_ = ticl::Trackster::HAD;
   else if (itername_ == "MIP")
     iterIndex_ = ticl::Trackster::MIP;
+  else if (itername_ == "Linking")
+    iterIndex_ = ticl::Trackster::Linking;
 
   produces<std::vector<Trackster>>();
   produces<std::vector<float>>();  // Mask to be applied at the next iteration
