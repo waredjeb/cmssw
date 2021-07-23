@@ -19,7 +19,7 @@ TICL_RECO = cms.PSet(
        'keep *_ticlTrackstersHFNoseHAD_*_*',
        'keep *_ticlTrackstersHFNoseMerge_*_*',] +
       ['keep *_pfTICL_*_*'] +
-      ['keep *_filteredLayerClustersTrkEM_*_*', 'keep *_filteredLayerClustersTrk_*_*','keep *_filteredLayerClustersLinking_*_*']
+      ['keep *_filteredLayerClustersTrkEM_*_*', 'keep *_filteredLayerClustersEM_*_*', 'keep *_filteredLayerClustersTrk_*_*','keep *_filteredLayerClustersLinking_*_*', 'keep *_filteredLayerClustersHAD_*_*']
       )
     )
 TICL_RECO.outputCommands.extend(TICL_AOD.outputCommands)
