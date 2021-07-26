@@ -7,6 +7,7 @@ from RecoHGCal.TICL.TrkEMStep_cff import *
 from RecoHGCal.TICL.TrkStep_cff import *
 from RecoHGCal.TICL.EMStep_cff import *
 from RecoHGCal.TICL.HADStep_cff import *
+from RecoHGCal.TICL.LinkingStep_cff import *
 
 from RecoHGCal.TICL.ticlLayerTileProducer_cfi import ticlLayerTileProducer
 from RecoHGCal.TICL.pfTICLProducer_cfi import pfTICLProducer as _pfTICLProducer
@@ -22,10 +23,11 @@ pfTICL = _pfTICLProducer.clone()
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(
-    ticlTrkEMStepTask
+    ticlLinkingStepTask
+    ,ticlTrkEMStepTask
     ,ticlEMStepTask
     ,ticlTrkStepTask
-    ,ticlHADStepTask
+    ,ticlHADStepTask    
 )
 
 from Configuration.ProcessModifiers.clue3D_cff import clue3D
@@ -47,8 +49,9 @@ ticlLayerTileHFNose = ticlLayerTileProducer.clone(
 ticlLayerTileHFNoseTask = cms.Task(ticlLayerTileHFNose)
 
 iterHFNoseTICLTask = cms.Task(ticlLayerTileHFNoseTask
+    ,ticlHFNoseLinkingStepTask
     ,ticlHFNoseTrkEMStepTask
     ,ticlHFNoseEMStepTask
     ,ticlHFNoseHADStepTask
-    ,ticlHFNoseMIPStepTask
+    ,ticlHFNoseMIPStepTask    
 )
