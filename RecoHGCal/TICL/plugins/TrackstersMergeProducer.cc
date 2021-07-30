@@ -200,11 +200,17 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
   edm::Handle<std::vector<Trackster>> tracksterstrkem_h;
   evt.getByToken(tracksterstrkem_token_, tracksterstrkem_h);
-  const auto &trackstersTRKEM = *tracksterstrkem_h;
+
+  std::vector<Trackster> trackstersTRKEM;
+  if(tracksterstrkem_h.isValid())
+    trackstersTRKEM = *tracksterstrkem_h;
 
   edm::Handle<std::vector<Trackster>> tracksterstrk_h;
   evt.getByToken(tracksterstrk_token_, tracksterstrk_h);
-  const auto &trackstersTRK = *tracksterstrk_h;
+
+  std::vector<Trackster> trackstersTRK;
+  if(tracksterstrk_h.isValid())
+    trackstersTRK = *tracksterstrk_h;
 
   edm::Handle<std::vector<Trackster>> trackstershad_h;
   evt.getByToken(trackstershad_token_, trackstershad_h);
@@ -212,7 +218,10 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
   edm::Handle<std::vector<TICLSeedingRegion>> seedingTrk_h;
   evt.getByToken(seedingTrk_token_, seedingTrk_h);
-  const auto &seedingTrk = *seedingTrk_h;
+  
+  std::vector<TICLSeedingRegion> seedingTrk;
+  if(seedingTrk_h.isValid())
+    seedingTrk = *seedingTrk_h;
   usedSeeds.resize(tracks.size(), false);
 
   fillTile(tracksterTile, trackstersTRKEM, TracksterIterIndex::TRKEM);

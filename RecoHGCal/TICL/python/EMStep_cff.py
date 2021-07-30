@@ -11,7 +11,6 @@ filteredLayerClustersEM = _filteredLayerClustersProducer.clone(
     min_cluster_size = 3, # inclusive
     max_layerId = 30, # inclusive
     algo_number = 8,
-    LayerClustersInputMask = 'ticlTrackstersTrkEM',
     iteration_label = "EM"
 )
 
@@ -19,7 +18,6 @@ filteredLayerClustersEM = _filteredLayerClustersProducer.clone(
 
 ticlTrackstersEM = _trackstersProducer.clone(
     filtered_mask = "filteredLayerClustersEM:EM",
-    original_mask = 'ticlTrackstersTrkEM',
     seeding_regions = "ticlSeedingGlobal",
     pluginPatternRecognitionByCA = dict(
         filter_on_categories = [0, 1],
