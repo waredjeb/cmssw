@@ -12,23 +12,23 @@ filteredLayerClustersHAD = _filteredLayerClustersProducer.clone(
     min_cluster_size = 3, # inclusive
     algo_number = 8,
     iteration_label = "HAD",
-    LayerClustersInputMask = "ticlTrackstersTrk"
+    LayerClustersInputMask = "ticlTrackstersEM"
 )
 
 # CA - PATTERN RECOGNITION
 
 ticlTrackstersHAD = _trackstersProducer.clone(
     filtered_mask = "filteredLayerClustersHAD:HAD",
-    original_mask = 'ticlTrackstersTrk',
+    original_mask = 'ticlTrackstersEM',
     seeding_regions = "ticlSeedingGlobal",
     # For the moment we mask everything w/o requirements since we are last
 #    filter_on_categories = [5], # filter neutral hadrons
 #    pid_threshold = 0.7,
     pluginPatternRecognitionByCA = dict(
-       skip_layers = 1,
-       min_layers_per_trackster = 12,
+       skip_layers = 3,
+       min_layers_per_trackster = 10,
        min_cos_theta = 0.866,    # ~30 degrees
-       min_cos_pointing = 0.819, # ~35 degrees
+       min_cos_pointing =0.798, # ~37 degrees
        max_delta_time = -1
     ),
     itername = "HAD"
