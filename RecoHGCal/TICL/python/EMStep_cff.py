@@ -9,7 +9,6 @@ from RecoHGCal.TICL.filteredLayerClustersProducer_cfi import filteredLayerCluste
 filteredLayerClustersEM = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSizeAndLayerRange",
     min_cluster_size = 3, # inclusive
-    max_layerId = 30, # inclusive
     algo_number = 8,
     iteration_label = "EM"
 )
