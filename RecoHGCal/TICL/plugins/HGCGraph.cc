@@ -162,7 +162,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                         deltaZ = layerClusters[outerClusterId].z() - layerClusters[innerClusterId].z();
                       }
                       if (areOverlappingOnSiblingLayers(
-                              innerClusterId, outerClusterId, layerClusters, 2.e-4f * deltaZ)) {
+                              innerClusterId, outerClusterId, layerClusters, 6.e-4f * deltaZ)) {
                         allDoublets_.emplace_back(
                             innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, true);
                       } else {
