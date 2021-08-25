@@ -36,6 +36,11 @@ public:
                          const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
                          float maxDeltaTime);
 
+  bool areOverlappingOnSiblingLayers(int innerIdx,
+                                     int outerIdx,
+                                     const std::vector<reco::CaloCluster> &layerClusters,
+                                     float maxRSquared);
+
   std::vector<HGCDoublet> &getAllDoublets() { return allDoublets_; }
   void findNtuplets(std::vector<HGCDoublet::HGCntuplet> &foundNtuplets,
                     std::vector<int> &seedIndices,
