@@ -25,9 +25,9 @@ ticlTrackstersHAD = _trackstersProducer.clone(
 #    filter_on_categories = [5], # filter neutral hadrons
 #    pid_threshold = 0.7,
     pluginPatternRecognitionByCA = dict(
-       skip_layers = 1,
-       min_layers_per_trackster = 12,
-       min_cos_theta = 0.906,    # ~25 degrees
+       skip_layers = 3,
+       min_layers_per_trackster = 10,
+       min_cos_theta = 0.866,    # ~25 degrees
        min_cos_pointing = 0.819, # ~35 degrees
        max_delta_time = -1
     ),
