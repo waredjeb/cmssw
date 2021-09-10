@@ -15,6 +15,18 @@
 #include "RecoHGCal/TICL/interface/GlobalCache.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
+#include "TrackingTools/GeomPropagators/interface/Propagator.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "Geometry/HGCalCommonData/interface/HGCalDDDConstants.h"
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "Geometry/CommonDetUnit/interface/GeomDet.h"
+#include "CommonTools/Utils/interface/StringCutObjectSelector.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
+#include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 
 #include "TrackstersPCA.h"
 
@@ -25,7 +37,9 @@ public:
   explicit TrackstersMergeProducer(const edm::ParameterSet &ps, const CacheBase *cache);
   ~TrackstersMergeProducer() override{};
   void produce(edm::Event &, const edm::EventSetup &) override;
+  void buildFirstLayers();
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
+
 
   // static methods for handling the global cache
   static std::unique_ptr<TrackstersCache> initializeGlobalCache(const edm::ParameterSet &);
@@ -76,6 +90,16 @@ private:
   const int eidNClusters_;
 
   tensorflow::Session *eidSession_;
+  const HGCalDDDConstants* hgcons_;
+  const StringCutObjectSelector<reco::Track> cutTk_;
+  const std::string detector_;
+  edm::ESHandle<Propagator> propagator_;
+  const std::string propName_;
+  edm::ESHandle<MagneticField> bfield_;
+  std::unique_ptr<GeomDet> firstDisk_[2];
+  edm::ESGetToken<HGCalDDDConstants, IdealGeometryRecord> hdc_token_;
+  edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bfield_token_;
+  edm::ESGetToken<Propagator, TrackingComponentsRecord> propagator_token_;
   hgcal::RecHitTools rhtools_;
 
   static constexpr int eidNFeatures_ = 3;
@@ -116,7 +140,13 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps, co
       eidMinClusterEnergy_(ps.getParameter<double>("eid_min_cluster_energy")),
       eidNLayers_(ps.getParameter<int>("eid_n_layers")),
       eidNClusters_(ps.getParameter<int>("eid_n_clusters")),
-      eidSession_(nullptr) {
+      eidSession_(nullptr),
+      cutTk_(ps.getParameter<std::string>("cutTk")),
+      detector_(ps.getParameter<std::string>("detector")),
+      propName_(ps.getParameter<std::string>("propagator")),
+      bfield_token_(esConsumes<MagneticField, IdealMagneticFieldRecord, edm::Transition::BeginRun>()),
+      propagator_token_(esConsumes<Propagator, TrackingComponentsRecord, edm::Transition::BeginRun>(
+          edm::ESInputTag("", propName_))) {
   // mount the tensorflow graph onto the session when set
   const TrackstersCache *trackstersCache = dynamic_cast<const TrackstersCache *>(cache);
   if (trackstersCache == nullptr || trackstersCache->eidGraphDef == nullptr) {
@@ -124,9 +154,26 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps, co
         << "TrackstersMergeProducer received an empty graph definition from the global cache";
   }
   eidSession_ = tensorflow::createSession(trackstersCache->eidGraphDef);
-
   produces<std::vector<Trackster>>();
   produces<std::vector<TICLCandidate>>();
+  std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
+
+  hdc_token_ = esConsumes<HGCalDDDConstants, IdealGeometryRecord, edm::Transition::BeginRun>(
+      edm::ESInputTag("", detectorName_));
+}
+
+void TrackstersMergeProducer::buildFirstLayers() {
+  float zVal = hgcons_->waferZ(1, true);
+  std::pair<double, double> rMinMax = hgcons_->rangeR(zVal, true);
+
+  for (int iSide = 0; iSide < 2; ++iSide) {
+    float zSide = (iSide == 0) ? (-1. * zVal) : zVal;
+    firstDisk_[iSide] =
+        std::make_unique<GeomDet>(Disk::build(Disk::PositionType(0, 0, zSide),
+                                              Disk::RotationType(),
+                                              SimpleDiskBounds(rMinMax.first, rMinMax.second, zSide - 0.5, zSide + 0.5))
+                                      .get());
+  }
 }
 
 void TrackstersMergeProducer::fillTile(TICLTracksterTiles &tracksterTile,
@@ -179,6 +226,11 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   std::vector<int> indexInMergedCollTRK;
   std::vector<int> indexInMergedCollHAD;
   std::vector<bool> usedSeeds;
+  
+  edm::ESHandle<HGCalDDDConstants> hdc = es.getHandle(hdc_token_);
+  
+  hgcons_ = hdc.product();
+  buildFirstLayers();
 
   // associating seed to the index of the trackster in the merged collection and the iteration that found it
   std::map<int, std::vector<std::pair<int, TracksterIterIndex>>> seedToTracksterAssociator;
@@ -792,6 +844,11 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<double>("eid_min_cluster_energy", 1.);
   desc.add<int>("eid_n_layers", 50);
   desc.add<int>("eid_n_clusters", 10);
+  desc.add<std::string>("cutTk",
+                        "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
+                        "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");
+  desc.add<std::string>("propagator", "PropagatorWithMaterial");
+  desc.add<std::string>("detector", "HGCAL");
   descriptions.add("trackstersMergeProducer", desc);
 }
 
