@@ -54,4 +54,11 @@
   <class name="std::vector<TICLCandidate>" />
   <class name="edm::Wrapper<TICLCandidate>" />
   <class name="edm::Wrapper<std::vector<TICLCandidate> >" />
+
+  <class name="ticl::SuperTrackster" ClassVersion="3">
+   <version ClassVersion="3" checksum="3229166518"/>
+  </class>
+  <class name="std::vector<ticl::SuperTrackster>" />
+  <class name="edm::Wrapper<ticl::SuperTrackster>" />
+  <class name="edm::Wrapper<std::vector<ticl::SuperTrackster> >" />
 </lcgdict>
