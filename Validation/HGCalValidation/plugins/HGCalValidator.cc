@@ -411,6 +411,7 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
   // fill Trackster histograms
   // ##############################################
   for (unsigned int wml = 0; wml < label_tstTokens.size(); wml++) {
+if (wml < label_tstTokens.size() -2) continue;
     if (doTrackstersPlots_) {
       edm::Handle<ticl::TracksterCollection> tracksterHandle;
       event.getByToken(label_tstTokens[wml], tracksterHandle);
@@ -423,6 +424,7 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
                                                 simTracksters,
                                                 simTrackstersFromCPs,
                                                 cpToSc_SimTrackstersMap,
+                                                simClusters,
                                                 caloParticleHandle.id(),
                                                 caloParticles,
                                                 cPIndices,
@@ -431,7 +433,7 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
                                                 totallayers_to_monitor_);
 
       //General Info on Tracksters
-      LogTrace("HGCalValidator") << "\n# of Tracksters with " << label_tst[wml].process() << ":"
+      std::cout << "\n# of Tracksters from " << label_tst[wml].process() << ":"
                                  << label_tst[wml].label() << ":" << label_tst[wml].instance() << ": "
                                  << tracksters.size() << "\n"
                                  << std::endl;
