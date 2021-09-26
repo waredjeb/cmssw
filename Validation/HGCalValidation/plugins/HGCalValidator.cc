@@ -411,7 +411,7 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
   // fill Trackster histograms
   // ##############################################
   for (unsigned int wml = 0; wml < label_tstTokens.size(); wml++) {
-if (wml < label_tstTokens.size() -2) continue;
+//if (wml < label_tstTokens.size() -2) continue;
     if (doTrackstersPlots_) {
       edm::Handle<ticl::TracksterCollection> tracksterHandle;
       event.getByToken(label_tstTokens[wml], tracksterHandle);
@@ -433,7 +433,7 @@ if (wml < label_tstTokens.size() -2) continue;
                                                 totallayers_to_monitor_);
 
       //General Info on Tracksters
-      std::cout << "\n# of Tracksters from " << label_tst[wml].process() << ":"
+      LogTrace("HGCalValidator") << "\n# of Tracksters from " << label_tst[wml].process() << ":"
                                  << label_tst[wml].label() << ":" << label_tst[wml].instance() << ": "
                                  << tracksters.size() << "\n"
                                  << std::endl;
