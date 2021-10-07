@@ -1512,7 +1512,7 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
                                                           unsigned int layers,
                                                           const hgcal::RecoToSimCollection& cpsInLayerClusterMap,
                                                           const hgcal::SimToRecoCollection& cPOnLayerMap) const {
-  auto nLayerClusters = clusters.size();
+  const auto nLayerClusters = clusters.size();
 
   std::unordered_map<DetId, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>> detIdToCaloParticleId_Map;
   std::unordered_map<DetId, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>> detIdToLayerClusterId_Map;
@@ -1629,8 +1629,9 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
     if (cpsIt == cpsInLayerClusterMap.end())
       continue;
 
+    const auto lc_en = clusters[lcId].energy();
     const auto& cps = cpsIt->val;
-    if (clusters[lcId].energy() == 0. && !cps.empty()) {
+    if (lc_en == 0. && !cps.empty()) {
       for (const auto& cpPair : cps) {
         histograms.h_score_layercl2caloparticle_perlayer.at(lcLayerId)->Fill(cpPair.second);
       }
@@ -1650,9 +1651,9 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
           cPOnLayerMap[cpPair.first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2caloparticle_perlayer.at(lcLayerId)->Fill(
-          cp_linked->second.first / clusters[lcId].energy(), clusters[lcId].energy());
+          cp_linked->second.first / lc_en, lc_en);
       histograms.h_energy_vs_score_layercl2caloparticle_perlayer.at(lcLayerId)->Fill(
-          cpPair.second, cp_linked->second.first / clusters[lcId].energy());
+          cpPair.second, cp_linked->second.first / lc_en);
     }
     const auto assoc =
         std::count_if(std::begin(cps), std::end(cps), [](const auto& obj) { return obj.second < ScoreCutLCtoCP_; });
@@ -1675,9 +1676,9 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
           cPOnLayerMap[best->first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2caloparticle_vs_eta_perlayer.at(lcLayerId)->Fill(
-          clusters[lcId].eta(), best_cp_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].eta(), best_cp_linked->second.first / lc_en);
       histograms.h_sharedenergy_layercl2caloparticle_vs_phi_perlayer.at(lcLayerId)->Fill(
-          clusters[lcId].phi(), best_cp_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].phi(), best_cp_linked->second.first / lc_en);
     }
   }  // End of loop over LayerClusters
 
@@ -1779,12 +1780,11 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
     unsigned int layers,
     const hgcal::RecoToSimCollectionWithSimClusters& scsInLayerClusterMap,
     const hgcal::SimToRecoCollectionWithSimClusters& lcsInSimClusterMap) const {
-  auto nLayerClusters = clusters.size();
 
   // Here we do fill the plots to compute the different metrics linked to
   // reco-level, namely fake-rate and merge-rate. In this loop we should *not*
   // restrict only to the selected SimClusters.
-  for (unsigned int lcId = 0; lcId < nLayerClusters; ++lcId) {
+  for (unsigned int lcId = 0; lcId < clusters.size(); ++lcId) {
     if (mask[lcId] != 0.) {
       LogDebug("HGCalValidator") << "Skipping layer cluster " << lcId << " not belonging to mask" << std::endl;
       continue;
@@ -1803,10 +1803,11 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
     if (scsIt == scsInLayerClusterMap.end())
       continue;
 
+    const auto lc_en = clusters[lcId].energy();
     const auto& scs = scsIt->val;
     // If a reconstructed LayerCluster has energy 0 but is linked to at least a
     // SimCluster, then his score should be 1 as set in the associator
-    if (clusters[lcId].energy() == 0. && !scs.empty()) {
+    if (lc_en == 0. && !scs.empty()) {
       for (const auto& scPair : scs) {
         histograms.h_score_layercl2simcluster_perlayer[count].at(lcLayerId)->Fill(scPair.second);
       }
@@ -1828,9 +1829,9 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
           lcsInSimClusterMap[scPair.first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2simcluster_perlayer[count].at(lcLayerId)->Fill(
-          sc_linked->second.first / clusters[lcId].energy(), clusters[lcId].energy());
+          sc_linked->second.first / lc_en, lc_en);
       histograms.h_energy_vs_score_layercl2simcluster_perlayer[count].at(lcLayerId)->Fill(
-          scPair.second, sc_linked->second.first / clusters[lcId].energy());
+          scPair.second, sc_linked->second.first / lc_en);
     }
     //Here he counts how many of the linked SimClusters of the layer cluster under study have a score above a certain value.
     const auto assoc =
@@ -1855,9 +1856,9 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
           lcsInSimClusterMap[best->first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2simcluster_vs_eta_perlayer[count].at(lcLayerId)->Fill(
-          clusters[lcId].eta(), best_sc_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].eta(), best_sc_linked->second.first / lc_en);
       histograms.h_sharedenergy_layercl2simcluster_vs_phi_perlayer[count].at(lcLayerId)->Fill(
-          clusters[lcId].phi(), best_sc_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].phi(), best_sc_linked->second.first / lc_en);
     }
   }  // End of loop over LayerClusters
 
@@ -2201,14 +2202,15 @@ void HGVHistoProducerAlgo::fill_generic_cluster_histos(const Histograms& histogr
     if (histograms.h_distancebetseedandmaxcell_perthickperlayer.count(seedstr)) {
       histograms.h_distancebetseedandmaxcell_perthickperlayer.at(seedstr)->Fill(distancebetseedandmax);
     }
+    const auto lc_en = clusters[lcId].energy();
     if (histograms.h_distancebetseedandmaxcellvsclusterenergy_perthickperlayer.count(seedstr)) {
       histograms.h_distancebetseedandmaxcellvsclusterenergy_perthickperlayer.at(seedstr)->Fill(distancebetseedandmax,
-                                                                                               clusters[lcId].energy());
+                                                                                               lc_en);
     }
 
     //Energy clustered per layer
-    tecpl[layerid] = tecpl[layerid] + clusters[lcId].energy();
-    ldbar[layerid] = ldbar[layerid] + clusters[lcId].energy() * cummatbudg[(double)lay];
+    tecpl[layerid] = tecpl[layerid] + lc_en;
+    ldbar[layerid] = ldbar[layerid] + lc_en * cummatbudg[(double)lay];
 
   }  //end of loop through clusters of the event
 
@@ -2359,11 +2361,11 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
       totHits += lc_haf.size();
       const auto& found = std::find_if(std::begin(lc_haf), std::end(lc_haf), [&hitid](const std::pair<DetId, float>& v) {
 return v.first == hitid; });
-      if (found != lc_haf.end()) // this protection should be useless
+      if (found != lc_haf.end()) // not all hits may be clusterized
         lcId = idx;
     });
-    //std::cout << "\ntotHits: " << totHits << std::endl ;
-    if (int(lcId) < 0) std::cout << "\nHit " << hitid.rawId() << " not found" << std::endl ;
+    //std::cout << "\ntotHits from LCs: " << totHits << std::endl ;
+    //if (int(lcId) < 0) std::cout << "\nHit " << hitid.rawId() << " not found" << std::endl ;
 
     return lcId;
   };
@@ -2728,6 +2730,7 @@ std::cout << "iSTS: " << stspair.clusterId << ", fraction: " << stspair.fraction
 
     for (const auto& haf : tst_hitsAndFractions) {
       const auto rh_detid = haf.first;
+      const auto lcId = getLCId(tracksters[tstId].vertices(), layerClusters, rh_detid);
       const auto rhFraction = haf.second;
       bool hitWithNoSTS = false;
 
@@ -2741,10 +2744,6 @@ std::cout << "iSTS: " << stspair.clusterId << ", fraction: " << stspair.fraction
         float cpFraction = 0.f;
         if (!hitWithNoSTS) {
           const auto& cpId = getCPId(simTS[stsPair.first], stsPair.first, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
-          const auto lcId = getLCId(tracksters[tstId].vertices(), layerClusters, rh_detid);
-
-          //std::cout << "\nfor sts " << stsPair.first << ", size: " << detIdSimTSId_Map[rh_detid].size() << std::endl ;
-          //for (const auto& iSC : detIdSimTSId_Map[rh_detid]) {
           for (unsigned int iSC=0; iSC < detIdSimTSId_Map[rh_detid].size(); iSC++) {
             if (simTS[stsPair.first].seedID() != cPHandle_id) { // SimTrackster from SimCluster
               const auto& simCluster = *(cP[cpId].simClusters()[iSC]);
@@ -2758,12 +2757,10 @@ std::cout << "iSTS: " << stspair.clusterId << ", fraction: " << stspair.fraction
                                        detIdSimTSId_Map[rh_detid][iSC][iLC].end(),
                                        HGVHistoProducerAlgo::detIdInfoInCluster{stsPair.first, 0.f}); // only the first element is used for the matching (overloaded operator==)
               if (findSTSIt != detIdSimTSId_Map[rh_detid][iSC][iLC].end()) {
-                if (i==1) std::cout << "Hit " << rh_detid.rawId() << " found from iSC " << iSC << ", STS " << stsPair.first << std::endl ;
-                //cpFraction = findSTSIt->fraction;
-                //cpFraction += findSTSIt->fraction;
+                //if (i==1) std::cout << "Hit " << rh_detid.rawId() << " found from iSC " << iSC << ", STS " << stsPair.first << ", iLC " << iLC << std::endl ;
                 cpFraction = lcFraction[iSC][iLC];
               }
-              //else if (i==1) if (lcId == iLC) std::cout << "Hit " << rh_detid.rawId() << " not found from iSC " << iSC << ", STS " << stsPair.first << std::endl ;
+              else if (i==1) if (iLC == lcId) LogDebug("HGCalValidator") << "Hit " << rh_detid.rawId() << " from Trackster " << tstId << " (LayerCluster " << lcId << ") not found from SimTrackster " << stsPair.first << " (SimCluster " << simTS[stsPair.first].seedIndex() << ")" << std::endl ;
             }
             if (i==0) break; // for Linking we ignore the SimCluster granularity
           }
@@ -2828,7 +2825,7 @@ std::cout << "iSTS: " << stspair.clusterId << ", fraction: " << stspair.fraction
   }
 
   // Here we do fill the plots to compute the different metrics linked to
-  // gen-level, namely efficiency an duplicate. In this loop we should restrict
+  // gen-level, namely efficiency, purity and duplicate. In this loop we should restrict
   // only to the selected caloParaticles.
   for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
     const auto& cpId = getCPId(simTS[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
@@ -2852,9 +2849,8 @@ std::cout << "iSTS: " << stspair.clusterId << ", fraction: " << stspair.fraction
       //Below gives the CP energy related to Trackster per layer.
       CPenergy += sCOnLayer[cpId][iSC][layerId].energy;
 
-      if (i == 0  &&  iSC > 0) { // For Linking validation we ignore SimCLuster multiplicity
+      if (i == 0  &&  iSC > 0) // For Linking validation we ignore SimCLuster multiplicity
         continue;
-      }
 
       std::vector<std::pair<DetId, float>> haf;
       if (i==0) haf = cPOnLayer[cpId][layerId];
@@ -3122,17 +3118,13 @@ void HGVHistoProducerAlgo::fill_trackster_histos(const Histograms& histograms,
   const auto nTracksters = tracksters.size();
   //loop through Tracksters of the event
   for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
-    auto nLayerClusters = tracksters[tstId].vertices().size();
-
-    if (nLayerClusters == 0)
+    if (tracksters[tstId].vertices().size() == 0)
       continue;
 
-    if (tracksters[tstId].barycenter().z() < 0.) {
+    if (tracksters[tstId].barycenter().z() < 0.)
       totNTstZm++;
-    }
-    if (tracksters[tstId].barycenter().z() > 0.) {
+    if (tracksters[tstId].barycenter().z() > 0.)
       totNTstZp++;
-    }
 
     //Total number of layer clusters in Trackster
     int tnLcInTst = 0;
@@ -3166,12 +3158,10 @@ void HGVHistoProducerAlgo::fill_trackster_histos(const Histograms& histograms,
       tnLcInTstperlay[layerid]++;
       tnLcInTst++;
 
-      if (recHitTools_->zside(firstHitDetId) > 0.) {
+      if (recHitTools_->zside(firstHitDetId) > 0.)
         tracksterInZplus = true;
-      }
-      if (recHitTools_->zside(firstHitDetId) < 0.) {
+      if (recHitTools_->zside(firstHitDetId) < 0.)
         tracksterInZminus = true;
-      }
 
     }  // end of loop through layerClusters
 
