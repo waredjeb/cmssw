@@ -1095,23 +1095,27 @@ void HGVHistoProducerAlgo::bookTracksterHistos(DQMStore::IBooker& ibook, Histogr
       ibook.book1D("trackster_layersnum", "Number of layers of the Trackster", 2 * layers, 0., (float)2 * layers));
 }
 
-void HGVHistoProducerAlgo::bookTracksterCPLinkingHistos(DQMStore::IBooker& ibook, Histograms& histograms) {
-  histograms.h_score_trackster2caloparticle.push_back(ibook.book1D(
-      "Score_trackster2caloparticle", "Score of Trackster per CaloParticle", nintScore_, minScore_, maxScore_));
-  histograms.h_score_caloparticle2trackster.push_back(ibook.book1D(
-      "Score_caloparticle2trackster", "Score of CaloParticle per Trackster", nintScore_, minScore_, maxScore_));
-  histograms.h_energy_vs_score_trackster2caloparticle.push_back(
-      ibook.book2D("Energy_vs_Score_trackster2caloparticle",
-                   "Energy vs Score of Trackster per CaloParticle",
+void HGVHistoProducerAlgo::bookTracksterSTSHistos(DQMStore::IBooker& ibook, Histograms& histograms, const int i) {
+  const string ref[] = {"caloparticle", "simtrackster"};
+  const string refT[] = {"CaloParticle", "SimTrackster"};
+  const string val[] = {"_Link", "_PR"};
+
+  histograms.h_score_trackster2caloparticle[i].push_back(
+      ibook.book1D("Score_trackster2" + ref[i], "Score of Trackster per " + refT[i], nintScore_, minScore_, maxScore_));
+  histograms.h_score_caloparticle2trackster[i].push_back(ibook.book1D(
+      "Score_" + ref[i] + "2trackster", "Score of " + refT[i] + " per Trackster", nintScore_, minScore_, maxScore_));
+  histograms.h_energy_vs_score_trackster2caloparticle[i].push_back(
+      ibook.book2D("Energy_vs_Score_trackster2" + ref[i],
+                   "Energy vs Score of Trackster per " + refT[i],
                    nintScore_,
                    minScore_,
                    maxScore_,
                    nintSharedEneFrac_,
                    minTSTSharedEneFrac_,
                    maxTSTSharedEneFrac_));
-  histograms.h_energy_vs_score_caloparticle2trackster.push_back(
-      ibook.book2D("Energy_vs_Score_caloparticle2trackster",
-                   "Energy vs Score of CaloParticle per Trackster",
+  histograms.h_energy_vs_score_caloparticle2trackster[i].push_back(
+      ibook.book2D("Energy_vs_Score_" + ref[i] + "2trackster",
+                   "Energy vs Score of " + refT[i] + " per Trackster",
                    nintScore_,
                    minScore_,
                    maxScore_,
@@ -1120,86 +1124,87 @@ void HGVHistoProducerAlgo::bookTracksterCPLinkingHistos(DQMStore::IBooker& ibook
                    maxTSTSharedEneFrac_));
 
   //back to all Tracksters
-  histograms.h_num_trackster_eta.push_back(
-      ibook.book1D("Num_Trackster_Eta", "Num Trackster Eta per Trackster ", nintEta_, minEta_, maxEta_));
-  histograms.h_numMerge_trackster_eta.push_back(
-      ibook.book1D("NumMerge_Trackster_Eta", "Num Merge Trackster Eta per Trackster ", nintEta_, minEta_, maxEta_));
-  histograms.h_denom_trackster_eta.push_back(
-      ibook.book1D("Denom_Trackster_Eta", "Denom Trackster Eta per Trackster", nintEta_, minEta_, maxEta_));
-  histograms.h_num_trackster_phi.push_back(
-      ibook.book1D("Num_Trackster_Phi", "Num Trackster Phi per Trackster ", nintPhi_, minPhi_, maxPhi_));
-  histograms.h_numMerge_trackster_phi.push_back(
-      ibook.book1D("NumMerge_Trackster_Phi", "Num Merge Trackster Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
-  histograms.h_denom_trackster_phi.push_back(
-      ibook.book1D("Denom_Trackster_Phi", "Denom Trackster Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_num_trackster_eta[i].push_back(
+      ibook.book1D("Num_Trackster_Eta" + val[i], "Num Trackster Eta per Trackster ", nintEta_, minEta_, maxEta_));
+  histograms.h_numMerge_trackster_eta[i].push_back(ibook.book1D(
+      "NumMerge_Trackster_Eta" + val[i], "Num Merge Trackster Eta per Trackster ", nintEta_, minEta_, maxEta_));
+  histograms.h_denom_trackster_eta[i].push_back(
+      ibook.book1D("Denom_Trackster_Eta" + val[i], "Denom Trackster Eta per Trackster", nintEta_, minEta_, maxEta_));
+  histograms.h_num_trackster_phi[i].push_back(
+      ibook.book1D("Num_Trackster_Phi" + val[i], "Num Trackster Phi per Trackster ", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_numMerge_trackster_phi[i].push_back(ibook.book1D(
+      "NumMerge_Trackster_Phi" + val[i], "Num Merge Trackster Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_denom_trackster_phi[i].push_back(
+      ibook.book1D("Denom_Trackster_Phi" + val[i], "Denom Trackster Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
 
-  histograms.h_sharedenergy_trackster2caloparticle.push_back(
-      ibook.book1D("SharedEnergy_trackster2caloparticle",
-                   "Shared Energy of Trackster per Calo Particle in each layer",
+  histograms.h_sharedenergy_trackster2caloparticle[i].push_back(
+      ibook.book1D("SharedEnergy_trackster2" + ref[i],
+                   "Shared Energy of Trackster per " + refT[i] + " in each layer",
                    nintSharedEneFrac_,
                    minTSTSharedEneFrac_,
                    maxTSTSharedEneFrac_));
-  histograms.h_sharedenergy_trackster2caloparticle_vs_eta.push_back(
-      ibook.bookProfile("SharedEnergy_trackster2caloparticle_vs_eta",
-                        "Shared Energy of Trackster vs #eta per best Calo Particle in each layer",
+  histograms.h_sharedenergy_trackster2caloparticle_vs_eta[i].push_back(
+      ibook.bookProfile("SharedEnergy_trackster2" + ref[i] + "_vs_eta",
+                        "Shared Energy of Trackster vs #eta per best " + refT[i] + " in each layer",
                         nintEta_,
                         minEta_,
                         maxEta_,
                         minTSTSharedEneFrac_,
                         maxTSTSharedEneFrac_));
-  histograms.h_sharedenergy_trackster2caloparticle_vs_phi.push_back(
-      ibook.bookProfile("SharedEnergy_trackster2caloparticle_vs_phi",
-                        "Shared Energy of Trackster vs #phi per best Calo Particle in each layer",
+  histograms.h_sharedenergy_trackster2caloparticle_vs_phi[i].push_back(
+      ibook.bookProfile("SharedEnergy_trackster2" + ref[i] + "_vs_phi",
+                        "Shared Energy of Trackster vs #phi per best " + refT[i] + " in each layer",
                         nintPhi_,
                         minPhi_,
                         maxPhi_,
                         minTSTSharedEneFrac_,
                         maxTSTSharedEneFrac_));
 
-  histograms.h_sharedenergy_caloparticle2trackster.push_back(ibook.book1D("SharedEnergy_caloparticle2trackster",
-                                                                          "Shared Energy of CaloParticle per Trackster",
-                                                                          nintSharedEneFrac_,
-                                                                          minTSTSharedEneFrac_,
-                                                                          maxTSTSharedEneFrac_));
-  histograms.h_sharedenergy_caloparticle2trackster_assoc.push_back(
-      ibook.book1D("SharedEnergy_caloparticle2trackster_assoc",
-                   "Shared Energy of Associated CaloParticle per Trackster",
+  histograms.h_sharedenergy_caloparticle2trackster[i].push_back(
+      ibook.book1D("SharedEnergy_" + ref[i] + "2trackster",
+                   "Shared Energy of " + refT[i] + " per Trackster",
                    nintSharedEneFrac_,
                    minTSTSharedEneFrac_,
                    maxTSTSharedEneFrac_));
-  histograms.h_sharedenergy_caloparticle2trackster_vs_eta.push_back(
-      ibook.bookProfile("SharedEnergy_caloparticle2trackster_vs_eta",
-                        "Shared Energy of CaloParticle vs #eta per best Trackster",
+  histograms.h_sharedenergy_caloparticle2trackster_assoc[i].push_back(
+      ibook.book1D("SharedEnergy_" + ref[i] + "2trackster_assoc",
+                   "Shared Energy of Associated " + refT[i] + " per Trackster",
+                   nintSharedEneFrac_,
+                   minTSTSharedEneFrac_,
+                   maxTSTSharedEneFrac_));
+  histograms.h_sharedenergy_caloparticle2trackster_vs_eta[i].push_back(
+      ibook.bookProfile("SharedEnergy_" + ref[i] + "2trackster_vs_eta",
+                        "Shared Energy of " + refT[i] + " vs #eta per best Trackster",
                         nintEta_,
                         minEta_,
                         maxEta_,
                         minTSTSharedEneFrac_,
                         maxTSTSharedEneFrac_));
-  histograms.h_sharedenergy_caloparticle2trackster_vs_phi.push_back(
-      ibook.bookProfile("SharedEnergy_caloparticle2trackster_vs_phi",
-                        "Shared Energy of CaloParticle vs #phi per best Trackster",
+  histograms.h_sharedenergy_caloparticle2trackster_vs_phi[i].push_back(
+      ibook.bookProfile("SharedEnergy_" + ref[i] + "2trackster_vs_phi",
+                        "Shared Energy of " + refT[i] + " vs #phi per best Trackster",
                         nintPhi_,
                         minPhi_,
                         maxPhi_,
                         minTSTSharedEneFrac_,
                         maxTSTSharedEneFrac_));
 
-  histograms.h_numEff_caloparticle_eta.push_back(ibook.book1D(
-      "NumEff_CaloParticle_Eta", "Num Efficiency CaloParticle Eta per Trackster", nintEta_, minEta_, maxEta_));
-  histograms.h_num_caloparticle_eta.push_back(
-      ibook.book1D("Num_CaloParticle_Eta", "Num Purity CaloParticle Eta per Trackster", nintEta_, minEta_, maxEta_));
-  histograms.h_numDup_trackster_eta.push_back(
-      ibook.book1D("NumDup_Trackster_Eta", "Num Duplicate Trackster vs Eta", nintEta_, minEta_, maxEta_));
-  histograms.h_denom_caloparticle_eta.push_back(
-      ibook.book1D("Denom_CaloParticle_Eta", "Denom CaloParticle Eta per Trackster", nintEta_, minEta_, maxEta_));
-  histograms.h_numEff_caloparticle_phi.push_back(ibook.book1D(
-      "NumEff_CaloParticle_Phi", "Num Efficiency CaloParticle Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
-  histograms.h_num_caloparticle_phi.push_back(
-      ibook.book1D("Num_CaloParticle_Phi", "Num Purity CaloParticle Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
-  histograms.h_numDup_trackster_phi.push_back(
-      ibook.book1D("NumDup_Trackster_Phi", "Num Duplicate Trackster vs Phi", nintPhi_, minPhi_, maxPhi_));
-  histograms.h_denom_caloparticle_phi.push_back(
-      ibook.book1D("Denom_CaloParticle_Phi", "Denom CaloParticle Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_numEff_caloparticle_eta[i].push_back(ibook.book1D(
+      "NumEff_" + refT[i] + "_Eta", "Num Efficiency " + refT[i] + " Eta per Trackster", nintEta_, minEta_, maxEta_));
+  histograms.h_num_caloparticle_eta[i].push_back(ibook.book1D(
+      "Num_" + refT[i] + "_Eta", "Num Purity " + refT[i] + " Eta per Trackster", nintEta_, minEta_, maxEta_));
+  histograms.h_numDup_trackster_eta[i].push_back(
+      ibook.book1D("NumDup_Trackster_Eta" + val[i], "Num Duplicate Trackster vs Eta", nintEta_, minEta_, maxEta_));
+  histograms.h_denom_caloparticle_eta[i].push_back(
+      ibook.book1D("Denom_" + refT[i] + "_Eta", "Denom " + refT[i] + " Eta per Trackster", nintEta_, minEta_, maxEta_));
+  histograms.h_numEff_caloparticle_phi[i].push_back(ibook.book1D(
+      "NumEff_" + refT[i] + "_Phi", "Num Efficiency " + refT[i] + " Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_num_caloparticle_phi[i].push_back(ibook.book1D(
+      "Num_" + refT[i] + "_Phi", "Num Purity " + refT[i] + " Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_numDup_trackster_phi[i].push_back(
+      ibook.book1D("NumDup_Trackster_Phi" + val[i], "Num Duplicate Trackster vs Phi", nintPhi_, minPhi_, maxPhi_));
+  histograms.h_denom_caloparticle_phi[i].push_back(
+      ibook.book1D("Denom_" + refT[i] + "_Phi", "Denom " + refT[i] + " Phi per Trackster", nintPhi_, minPhi_, maxPhi_));
 }
 
 void HGVHistoProducerAlgo::fill_info_histos(const Histograms& histograms, unsigned int layers) const {
@@ -1507,7 +1512,7 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
                                                           unsigned int layers,
                                                           const hgcal::RecoToSimCollection& cpsInLayerClusterMap,
                                                           const hgcal::SimToRecoCollection& cPOnLayerMap) const {
-  auto nLayerClusters = clusters.size();
+  const auto nLayerClusters = clusters.size();
 
   std::unordered_map<DetId, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>> detIdToCaloParticleId_Map;
   std::unordered_map<DetId, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>> detIdToLayerClusterId_Map;
@@ -1523,15 +1528,14 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
         DetId hitid = (it_haf.first);
         std::unordered_map<DetId, const HGCRecHit*>::const_iterator itcheck = hitMap.find(hitid);
         if (itcheck != hitMap.end()) {
-          auto hit_find_it = detIdToCaloParticleId_Map.find(hitid);
-          if (hit_find_it == detIdToCaloParticleId_Map.end()) {
+          if (detIdToCaloParticleId_Map.find(hitid) == detIdToCaloParticleId_Map.end()) {
             detIdToCaloParticleId_Map[hitid] = std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>();
             detIdToCaloParticleId_Map[hitid].emplace_back(
                 HGVHistoProducerAlgo::detIdInfoInCluster{cpId, it_haf.second});
           } else {
             auto findHitIt = std::find(detIdToCaloParticleId_Map[hitid].begin(),
                                        detIdToCaloParticleId_Map[hitid].end(),
-                                       HGVHistoProducerAlgo::detIdInfoInCluster{cpId, it_haf.second});
+                                       HGVHistoProducerAlgo::detIdInfoInCluster{cpId, 0.f}); // only the first element is used for the matching (overloaded operator==)
             if (findHitIt != detIdToCaloParticleId_Map[hitid].end()) {
               findHitIt->fraction += it_haf.second;
             } else {
@@ -1571,8 +1575,7 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
       std::unordered_map<DetId, const HGCRecHit*>::const_iterator itcheck = hitMap.find(rh_detid);
       const HGCRecHit* hit = itcheck->second;
 
-      auto hit_find_in_LC = detIdToLayerClusterId_Map.find(rh_detid);
-      if (hit_find_in_LC == detIdToLayerClusterId_Map.end()) {
+      if (detIdToLayerClusterId_Map.find(rh_detid) == detIdToLayerClusterId_Map.end()) {
         detIdToLayerClusterId_Map[rh_detid] = std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>();
       }
       detIdToLayerClusterId_Map[rh_detid].emplace_back(HGVHistoProducerAlgo::detIdInfoInCluster{lcId, rhFraction});
@@ -1626,8 +1629,9 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
     if (cpsIt == cpsInLayerClusterMap.end())
       continue;
 
+    const auto lc_en = clusters[lcId].energy();
     const auto& cps = cpsIt->val;
-    if (clusters[lcId].energy() == 0. && !cps.empty()) {
+    if (lc_en == 0. && !cps.empty()) {
       for (const auto& cpPair : cps) {
         histograms.h_score_layercl2caloparticle_perlayer.at(lcLayerId)->Fill(cpPair.second);
       }
@@ -1647,9 +1651,9 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
           cPOnLayerMap[cpPair.first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2caloparticle_perlayer.at(lcLayerId)->Fill(
-          cp_linked->second.first / clusters[lcId].energy(), clusters[lcId].energy());
+          cp_linked->second.first / lc_en, lc_en);
       histograms.h_energy_vs_score_layercl2caloparticle_perlayer.at(lcLayerId)->Fill(
-          cpPair.second, cp_linked->second.first / clusters[lcId].energy());
+          cpPair.second, cp_linked->second.first / lc_en);
     }
     const auto assoc =
         std::count_if(std::begin(cps), std::end(cps), [](const auto& obj) { return obj.second < ScoreCutLCtoCP_; });
@@ -1672,9 +1676,9 @@ void HGVHistoProducerAlgo::layerClusters_to_CaloParticles(const Histograms& hist
           cPOnLayerMap[best->first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2caloparticle_vs_eta_perlayer.at(lcLayerId)->Fill(
-          clusters[lcId].eta(), best_cp_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].eta(), best_cp_linked->second.first / lc_en);
       histograms.h_sharedenergy_layercl2caloparticle_vs_phi_perlayer.at(lcLayerId)->Fill(
-          clusters[lcId].phi(), best_cp_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].phi(), best_cp_linked->second.first / lc_en);
     }
   }  // End of loop over LayerClusters
 
@@ -1776,12 +1780,11 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
     unsigned int layers,
     const hgcal::RecoToSimCollectionWithSimClusters& scsInLayerClusterMap,
     const hgcal::SimToRecoCollectionWithSimClusters& lcsInSimClusterMap) const {
-  auto nLayerClusters = clusters.size();
 
   // Here we do fill the plots to compute the different metrics linked to
   // reco-level, namely fake-rate and merge-rate. In this loop we should *not*
   // restrict only to the selected SimClusters.
-  for (unsigned int lcId = 0; lcId < nLayerClusters; ++lcId) {
+  for (unsigned int lcId = 0; lcId < clusters.size(); ++lcId) {
     if (mask[lcId] != 0.) {
       LogDebug("HGCalValidator") << "Skipping layer cluster " << lcId << " not belonging to mask" << std::endl;
       continue;
@@ -1800,10 +1803,11 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
     if (scsIt == scsInLayerClusterMap.end())
       continue;
 
+    const auto lc_en = clusters[lcId].energy();
     const auto& scs = scsIt->val;
     // If a reconstructed LayerCluster has energy 0 but is linked to at least a
     // SimCluster, then his score should be 1 as set in the associator
-    if (clusters[lcId].energy() == 0. && !scs.empty()) {
+    if (lc_en == 0. && !scs.empty()) {
       for (const auto& scPair : scs) {
         histograms.h_score_layercl2simcluster_perlayer[count].at(lcLayerId)->Fill(scPair.second);
       }
@@ -1825,9 +1829,9 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
           lcsInSimClusterMap[scPair.first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2simcluster_perlayer[count].at(lcLayerId)->Fill(
-          sc_linked->second.first / clusters[lcId].energy(), clusters[lcId].energy());
+          sc_linked->second.first / lc_en, lc_en);
       histograms.h_energy_vs_score_layercl2simcluster_perlayer[count].at(lcLayerId)->Fill(
-          scPair.second, sc_linked->second.first / clusters[lcId].energy());
+          scPair.second, sc_linked->second.first / lc_en);
     }
     //Here he counts how many of the linked SimClusters of the layer cluster under study have a score above a certain value.
     const auto assoc =
@@ -1852,9 +1856,9 @@ void HGVHistoProducerAlgo::layerClusters_to_SimClusters(
           lcsInSimClusterMap[best->first].end())  // This should never happen by construction of the association maps
         continue;
       histograms.h_sharedenergy_layercl2simcluster_vs_eta_perlayer[count].at(lcLayerId)->Fill(
-          clusters[lcId].eta(), best_sc_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].eta(), best_sc_linked->second.first / lc_en);
       histograms.h_sharedenergy_layercl2simcluster_vs_phi_perlayer[count].at(lcLayerId)->Fill(
-          clusters[lcId].phi(), best_sc_linked->second.first / clusters[lcId].energy());
+          clusters[lcId].phi(), best_sc_linked->second.first / lc_en);
     }
   }  // End of loop over LayerClusters
 
@@ -2198,14 +2202,15 @@ void HGVHistoProducerAlgo::fill_generic_cluster_histos(const Histograms& histogr
     if (histograms.h_distancebetseedandmaxcell_perthickperlayer.count(seedstr)) {
       histograms.h_distancebetseedandmaxcell_perthickperlayer.at(seedstr)->Fill(distancebetseedandmax);
     }
+    const auto lc_en = clusters[lcId].energy();
     if (histograms.h_distancebetseedandmaxcellvsclusterenergy_perthickperlayer.count(seedstr)) {
       histograms.h_distancebetseedandmaxcellvsclusterenergy_perthickperlayer.at(seedstr)->Fill(distancebetseedandmax,
-                                                                                               clusters[lcId].energy());
+                                                                                               lc_en);
     }
 
     //Energy clustered per layer
-    tecpl[layerid] = tecpl[layerid] + clusters[lcId].energy();
-    ldbar[layerid] = ldbar[layerid] + clusters[lcId].energy() * cummatbudg[(double)lay];
+    tecpl[layerid] = tecpl[layerid] + lc_en;
+    ldbar[layerid] = ldbar[layerid] + lc_en * cummatbudg[(double)lay];
 
   }  //end of loop through clusters of the event
 
@@ -2275,107 +2280,175 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
                                                        int count,
                                                        const ticl::TracksterCollection& tracksters,
                                                        const reco::CaloClusterCollection& layerClusters,
-                                                       const ticl::TracksterCollection& simTSFromCP,
+                                                       const ticl::TracksterCollection& simTS,
+                                                       const int i,
+                                                       const ticl::TracksterCollection& simTS_fromCP,
+                                                       const std::map<unsigned int, std::vector<unsigned int>>& cpToSc_SimTrackstersMap,
+                                                       std::vector<SimCluster> const& sC,
+                                                       const edm::ProductID& cPHandle_id,
                                                        std::vector<CaloParticle> const& cP,
                                                        std::vector<size_t> const& cPIndices,
                                                        std::vector<size_t> const& cPSelectedIndices,
                                                        std::unordered_map<DetId, const HGCRecHit*> const& hitMap,
                                                        unsigned int layers) const {
-  auto nTracksters = tracksters.size();
-  auto nSimTracksters = simTSFromCP.size();
-  //Consider CaloParticles coming from the hard scatterer, excluding the PU contribution.
-  auto nCaloParticles = cPIndices.size();
+  const auto nTracksters = tracksters.size();
+  const auto nSimTracksters = simTS.size();
+  // Consider CaloParticles coming from the hard scatterer, excluding the PU contribution.
+  const auto nCaloParticles = cPIndices.size();
 
-  std::unordered_map<DetId, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>> detIdSimTSId_Map;
+  std::unordered_map<DetId, std::vector<std::unordered_map<unsigned int, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>>>> detIdSimTSId_Map;
   std::unordered_map<DetId, std::vector<HGVHistoProducerAlgo::detIdInfoInTrackster>> detIdToTracksterId_Map;
   std::vector<int> tracksters_fakemerge(nTracksters, 0);
   std::vector<int> tracksters_duplicate(nTracksters, 0);
 
-  // this contains the ids of the SimTracksters contributing with at least one hit to the Trackster and the reconstruction error
+  // This vector contains the ids of the SimTracksters contributing with at least one hit to the Trackster and the reconstruction error
   //stsInTrackster[trackster][STSids]
   //Connects a Trackster with all related SimTracksters.
   std::vector<std::vector<std::pair<unsigned int, float>>> stsInTrackster;
   stsInTrackster.resize(nTracksters);
 
-  //cPOnLayer[caloparticle][layer]
-  //This defines a "calo particle on layer" concept. It is only filled in case
-  //that calo particle has a reconstructed hit related via detid. So, a cPOnLayer[i][j] connects a
-  //specific calo particle i in layer j with:
-  //1. the sum of all rechits energy times fraction of the relevant simhit in layer j related to that calo particle i.
-  //2. the hits and fractions of that calo particle i in layer j.
+  //sCOnLayer[caloParticle][simCluster][layer]
+  //This defines a "CaloParticle/SimCluster on layer" concept. It is only filled in case
+  //that CaloParticle has a SimCluster with a reconstructed hit related via detid. So, a sCOnLayer[iCP][iSC][j] connects a
+  //specific SimCLuster iSC of a given CaloParticle iCP in layer j with:
+  //1. the sum of all rechits energy times fraction of the relevant simhit in layer j related to that SimCluster i.
+  //2. the hits and fractions of that SimCluster i in layer j.
   //3. the layer clusters with matched rechit id.
-  std::unordered_map<int, std::vector<caloParticleOnLayer>> cPOnLayer;
-  for (unsigned int i = 0; i < nCaloParticles; ++i) {
-    auto cpIndex = cPIndices[i];
+  std::unordered_map<int, std::vector<std::vector<std::pair<DetId, float>>>> cPOnLayer;
+  std::unordered_map<int, std::vector<std::vector<caloParticleOnLayer>>> sCOnLayer;
+  for (unsigned int iCP = 0; iCP < nCaloParticles; ++iCP) {
+    auto cpIndex = cPIndices[iCP];
     cPOnLayer[cpIndex].resize(layers * 2);
-    for (unsigned int j = 0; j < layers * 2; ++j) {
-      cPOnLayer[cpIndex][j].caloParticleId = cpIndex;
-      cPOnLayer[cpIndex][j].energy = 0.f;
-      cPOnLayer[cpIndex][j].hits_and_fractions.clear();
+    const auto nSC_inCP = cP[cpIndex].simClusters().size();
+    sCOnLayer[cpIndex].resize(nSC_inCP);
+    for (unsigned int iSC=0; iSC<nSC_inCP; iSC++) {
+      sCOnLayer[cpIndex][iSC].resize(layers * 2);
+      for (unsigned int j = 0; j < layers * 2; ++j) {
+        cPOnLayer[cpIndex][j].clear();
+        sCOnLayer[cpIndex][iSC][j].caloParticleId = cpIndex;
+        sCOnLayer[cpIndex][iSC][j].energy = 0.f;
+        sCOnLayer[cpIndex][iSC][j].hits_and_fractions.clear();
+      }
     }
   }
 
+  auto getCPId = [](const ticl::Trackster& simTS, const unsigned int iSTS, const edm::ProductID& cPHandle_id, const std::map<unsigned int, std::vector<unsigned int>>& cpToSc_SimTrackstersMap, const ticl::TracksterCollection& simTS_fromCP){
+    unsigned int cpId = -1;
+
+    const auto productID = simTS.seedID();
+    if (productID == cPHandle_id) {
+      cpId = simTS.seedIndex();
+    } else { // SimTrackster from SimCluster
+      const auto findSimTSFromCP = std::find_if(
+          std::begin(cpToSc_SimTrackstersMap),
+          std::end(cpToSc_SimTrackstersMap),
+          [&](const std::pair<unsigned int, std::vector<unsigned int>>& cpToScs) {
+            return std::find(std::begin(cpToScs.second), std::end(cpToScs.second), iSTS) != std::end(cpToScs.second);
+          });
+      if (findSimTSFromCP != std::end(cpToSc_SimTrackstersMap)) {
+        cpId = simTS_fromCP[findSimTSFromCP->first].seedIndex();
+      }
+    }
+
+    return cpId;
+  };
+
+  auto getLCId = [](const std::vector<unsigned int>& tst_vertices, const reco::CaloClusterCollection& layerClusters, const DetId& hitid) {
+    unsigned int lcId = -1;
+    std::for_each(std::begin(tst_vertices), std::end(tst_vertices), [&](unsigned int idx) {
+      const auto& lc_haf = layerClusters[idx].hitsAndFractions();
+      const auto& found = std::find_if(std::begin(lc_haf), std::end(lc_haf), [&hitid](const std::pair<DetId, float>& v) {
+return v.first == hitid; });
+      if (found != lc_haf.end()) // not all hits may be clusterized
+        lcId = idx;
+    });
+    return lcId;
+  };
+
   for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
-    const auto& cpId = simTSFromCP[iSTS].seedIndex();
+    const auto cpId = getCPId(simTS[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
     if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
       continue;
 
-    //take sim clusters
+    // take SimClusters
     const SimClusterRefVector& simClusterRefVector = cP[cpId].simClusters();
-    //loop through sim clusters
-    for (const auto& it_sc : simClusterRefVector) {
-      const SimCluster& simCluster = (*(it_sc));
-      const auto& hits_and_fractions = simCluster.hits_and_fractions();
+    // loop through SimClusters
+    for (unsigned int iSC=0; iSC < simClusterRefVector.size(); iSC++) {
+      if (simTS[iSTS].seedID() != cPHandle_id) { // SimTrackster from SimCluster
+        const auto& simCluster = *(simClusterRefVector[iSC]);
+        if (simTS[iSTS].seedIndex() != (&simCluster - &sC[0]))
+          continue;     
+      }
+      auto iSC_val = iSC;
+      if (i==0) iSC_val = 0; // for Linking we ignore the SimCluster granularity
+
+      const auto& hits_and_fractions = simClusterRefVector[iSC]->hits_and_fractions();
       for (const auto& it_haf : hits_and_fractions) {
-        DetId hitid = (it_haf.first);
+        const auto hitid = (it_haf.first);
         //V9:maps the layers in -z: 0->51 and in +z: 52->103
         //V10:maps the layers in -z: 0->49 and in +z: 50->99
-        int cpLayerId = recHitTools_->getLayerWithOffset(hitid) + layers * ((recHitTools_->zside(hitid) + 1) >> 1) - 1;
-        std::unordered_map<DetId, const HGCRecHit*>::const_iterator itcheck = hitMap.find(hitid);
+        const int cpLayerId = recHitTools_->getLayerWithOffset(hitid) + layers * ((recHitTools_->zside(hitid) + 1) >> 1) - 1;
+        const std::unordered_map<DetId, const HGCRecHit*>::const_iterator itcheck = hitMap.find(hitid);
         //Checks whether the current hit belonging to sim cluster has a reconstructed hit.
         if (itcheck != hitMap.end()) {
           const HGCRecHit* hit = itcheck->second;
+
           //Since the current hit from sim cluster has a reconstructed hit with the same detid,
-          //make a map that will connect a detid with:
-          //1. the CaloParticles that have a SimCluster with sim hits in that cell via caloparticle id.
-          //2. the sum of all simhits fractions that contributes to that detid.
-          //So, keep in mind that in case of multiple CaloParticles contributing in the same cell
-          //the fraction is the sum over all calo particles. So, something like:
-          //detid: (caloparticle 1, sum of hits fractions in that detid over all cp) , (caloparticle 2, sum of hits fractions in that detid over all cp), (caloparticle 3, sum of hits fractions in that detid over all cp) ...
-          auto hit_find_it = detIdSimTSId_Map.find(hitid);
-          if (hit_find_it == detIdSimTSId_Map.end()) {
-            detIdSimTSId_Map[hitid] = std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>();
-            detIdSimTSId_Map[hitid].emplace_back(HGVHistoProducerAlgo::detIdInfoInCluster{iSTS, it_haf.second});
-          } else {
-            auto findHitIt = std::find(detIdSimTSId_Map[hitid].begin(),
-                                       detIdSimTSId_Map[hitid].end(),
-                                       HGVHistoProducerAlgo::detIdInfoInCluster{iSTS, it_haf.second});
-            if (findHitIt != detIdSimTSId_Map[hitid].end()) {
-              findHitIt->fraction += it_haf.second;
-            } else {
-              detIdSimTSId_Map[hitid].emplace_back(HGVHistoProducerAlgo::detIdInfoInCluster{iSTS, it_haf.second});
-            }
-          }
-          //Since the current hit from sim cluster has a reconstructed hit with the same detid,
-          //fill the cPOnLayer[caloparticle][layer] object with energy (sum of all rechits energy times fraction
+          //fill the sCOnLayer[CaloParticle][SimCluster][layer] object with energy (sum of all rechits energy times fraction
           //of the relevant simhit) and keep the hit (detid and fraction) that contributed.
-          cPOnLayer[cpId][cpLayerId].energy += it_haf.second * hit->energy();
+          sCOnLayer[cpId][iSC][cpLayerId].energy += it_haf.second * hit->energy();
+
           // We need to compress the hits and fractions in order to have a
           // reasonable score between CP and LC. Imagine, for example, that a
           // CP has detID X used by 2 SimClusters with different fractions. If
           // a single LC uses X with fraction 1 and is compared to the 2
           // contributions separately, it will be assigned a score != 0, which
           // is wrong.
-          auto& haf = cPOnLayer[cpId][cpLayerId].hits_and_fractions;
+          auto& haf = cPOnLayer[cpId][cpLayerId];
           auto found = std::find_if(
               std::begin(haf), std::end(haf), [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
-          if (found != haf.end()) {
+          if (found != haf.end())
             found->second += it_haf.second;
+          else
+            haf.emplace_back(hitid, it_haf.second);
+          // Same for sCOnLayer
+          auto& haf_sc = sCOnLayer[cpId][iSC][cpLayerId].hits_and_fractions;
+          auto found_sc = std::find_if(
+              std::begin(haf_sc), std::end(haf_sc), [&hitid](const std::pair<DetId, float>& v) { return v.first == hitid; });
+          if (found_sc != haf_sc.end())
+            found_sc->second += it_haf.second;
+          else
+            haf_sc.emplace_back(hitid, it_haf.second);
+
+          //Since the current hit from SimCluster has a reconstructed hit with the same detid,
+          //make a map that will connect a detid with:
+          //1. the CaloParticles that have a SimCluster with sim hits in that cell via caloparticle id.
+          //2. the sum of all simhits fractions that contributes to that detid.
+          //So, keep in mind that in case of multiple CaloParticles contributing in the same cell
+          //the fraction is the sum over all calo particles. So, something like:
+          //detid: (caloparticle 1, sum of hits fractions in that detid over all cp) , (caloparticle 2, sum of hits fractions in that detid over all cp), (caloparticle 3, sum of hits fractions in that detid over all cp) ...
+          const auto lcId = getLCId(simTS[iSTS].vertices(), layerClusters, hitid);
+          if (int(lcId) < 0) continue;
+          if (detIdSimTSId_Map.find(hitid) == detIdSimTSId_Map.end()) {
+            detIdSimTSId_Map[hitid] = std::vector<std::unordered_map<unsigned int, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>>>(simClusterRefVector.size());
+            for (auto& hitid_sc : detIdSimTSId_Map[hitid])
+              hitid_sc = std::unordered_map<unsigned int, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>>();
+            detIdSimTSId_Map[hitid][iSC_val][lcId].emplace_back(HGVHistoProducerAlgo::detIdInfoInCluster{iSTS, it_haf.second});
           } else {
-            cPOnLayer[cpId][cpLayerId].hits_and_fractions.emplace_back(hitid, it_haf.second);
+            if (iSC_val > detIdSimTSId_Map[hitid].size() - 1) { // may happen if a CP has more SCs than a previous CP and they share an hitid
+              detIdSimTSId_Map[hitid].resize(simClusterRefVector.size());
+              detIdSimTSId_Map[hitid][iSC_val] = std::unordered_map<unsigned int, std::vector<HGVHistoProducerAlgo::detIdInfoInCluster>>();
+            }
+            auto findSTSIt = std::find(detIdSimTSId_Map[hitid][iSC_val][lcId].begin(),
+                                       detIdSimTSId_Map[hitid][iSC_val][lcId].end(),
+                                       HGVHistoProducerAlgo::detIdInfoInCluster{iSTS, 0.f}); // only the first element is used for the matching (overloaded operator==)
+            if (findSTSIt != detIdSimTSId_Map[hitid][iSC_val][lcId].end())
+              findSTSIt->fraction += it_haf.second;
+            else
+              detIdSimTSId_Map[hitid][iSC_val][lcId].emplace_back(HGVHistoProducerAlgo::detIdInfoInCluster{iSTS, it_haf.second});
           }
         }
-      }  // end of loop through simhits
+      }  // end of loop through SimHits
     }    // end of loop through SimClusters
   }      // end of loop through SimTracksters
 
@@ -2391,7 +2464,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
     return hits_and_fractions_norm;
   };
 
-  //Loop through Tracksters
+  // Loop through Tracksters
   for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
     if (tracksters[tstId].vertices().empty())
       continue;
@@ -2455,15 +2528,14 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
       //So, something like:
       //detid: (layer cluster 1, hit fraction) , (layer cluster 2, hit fraction), (layer cluster 3, hit fraction) ...
       //here comparing with the calo particle map above the
-      auto hit_find_in_LC = detIdToTracksterId_Map.find(rh_detid);
-      if (hit_find_in_LC == detIdToTracksterId_Map.end()) {
+      if (detIdToTracksterId_Map.find(rh_detid) == detIdToTracksterId_Map.end()) {
         detIdToTracksterId_Map[rh_detid] = std::vector<HGVHistoProducerAlgo::detIdInfoInTrackster>();
       }
       detIdToTracksterId_Map[rh_detid].emplace_back(
           HGVHistoProducerAlgo::detIdInfoInTrackster{tstId, tstId, rhFraction});
 
       //Check whether the rechit of the trackster under study has a sim hit in the same cell.
-      auto hit_find_in_STS = detIdSimTSId_Map.find(rh_detid);
+      const auto hit_find_in_STS = detIdSimTSId_Map.find(rh_detid);
 
       // if the fraction is zero or the hit does not belong to any calo
       // particle, set the caloparticleId for the hit to -1 this will
@@ -2480,18 +2552,23 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
       } else {
         auto maxCPEnergyInTS = 0.f;
         auto maxCPId = -1;
-        for (const auto& h : hit_find_in_STS->second) {
-          auto shared_fraction = std::min(rhFraction, h.fraction);
+        for (unsigned int iSC=0; iSC < hit_find_in_STS->second.size(); iSC++) {
+        for (const auto& [lcId, simTS_idFrac] : hit_find_in_STS->second[iSC])
+        for (const auto& h : simTS_idFrac) {
+          const auto shared_fraction = std::min(rhFraction, h.fraction);
           //We are in the case where there are calo particles with simhits connected via detid with the rechit under study
           //So, from all layers clusters, find the rechits that are connected with a calo particle and save/calculate the
           //energy of that calo particle as the sum over all rechits of the rechits energy weighted
           //by the caloparticle's fraction related to that rechit.
-          const auto cpId = simTSFromCP[h.clusterId].seedIndex();
+          const auto cpId = getCPId(simTS[h.clusterId], h.clusterId, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
+          if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
+            continue;
+
           CPEnergyInTS[cpId] += shared_fraction * hit->energy();
-          //Here cPOnLayer[caloparticle][layer] describe above is set.
+          //Here sCOnLayer[CaloParticle][SimCluster][layer] describe above is set.
           //Here for Tracksters with matched rechit the CP fraction times hit energy is added and saved .
-          cPOnLayer[cpId][lcLayerId].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hit->energy();
-          cPOnLayer[cpId][lcLayerId].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
+          sCOnLayer[cpId][iSC][lcLayerId].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hit->energy();
+          sCOnLayer[cpId][iSC][lcLayerId].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
           //stsInTrackster[trackster][STSids]
           //Connects a Trackster with all related SimTracksters.
           stsInTrackster[tstId].emplace_back(h.clusterId, FLT_MAX);
@@ -2503,6 +2580,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
             maxCPId = cpId;
           }
         }
+        } // end loop over SimClusters
         //Keep in mind here maxCPId could be zero. So, below ask for negative not including zero to count noise.
         hitsToCaloParticleId[hitId] = maxCPId;
       }
@@ -2538,9 +2616,11 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
     //The energy of the CaloParticle that found to have the maximum energy shared with the Trackster under study.
     float totalCPEnergyFromLayerCP = 0.f;
     if (maxCPId_byEnergy >= 0) {
-      //Loop through all layers
-      for (unsigned int j = 0; j < layers * 2; ++j) {
-        totalCPEnergyFromLayerCP = totalCPEnergyFromLayerCP + cPOnLayer[maxCPId_byEnergy][j].energy;
+      for (const auto& iSC : sCOnLayer[maxCPId_byEnergy]) {
+        //Loop through all layers
+        for (unsigned int j = 0; j < layers * 2; ++j) {
+          totalCPEnergyFromLayerCP += iSC[j].energy;
+        }
       }
       energyFractionOfCPinTS = maxEnergySharedTSandCP / totalCPEnergyFromLayerCP;
       if (tracksters[tstId].raw_energy() > 0.f) {
@@ -2572,7 +2652,14 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
 
   }  //end of loop through Tracksters
 
-  //Loop through Tracksters
+  std::unordered_map<unsigned int, std::unordered_map<unsigned int, float>> lcFraction;
+    for (const auto& [key, hitid] : detIdSimTSId_Map)
+      for (unsigned int iSC=0; iSC < hitid.size(); iSC++)
+        for (const auto& [lcId, simTS_idFrac] : hitid[iSC])
+          for (const auto& pair : simTS_idFrac)
+            lcFraction[iSC][lcId] += pair.fraction * hitMap.at(key)->energy() / layerClusters[lcId].energy();
+
+  // Loop through Tracksters
   for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
     if (tracksters[tstId].vertices().empty())
       continue;
@@ -2580,7 +2667,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
     // find the unique CaloParticles id contributing to the Tracksters
     //stsInTrackster[trackster][STSids]
     std::sort(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
-    auto last = std::unique(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
+    const auto last = std::unique(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
     stsInTrackster[tstId].erase(last, stsInTrackster[tstId].end());
 
     if (tracksters[tstId].raw_energy() == 0. && !stsInTrackster[tstId].empty()) {
@@ -2590,7 +2677,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
         stsPair.second = 1.;
         LogDebug("HGCalValidator") << "Trackster Id: \t" << tstId << "\t SimTrackster id: \t" << stsPair.first
                                    << "\t score \t" << stsPair.second << std::endl;
-        histograms.h_score_trackster2caloparticle[count]->Fill(stsPair.second);
+        histograms.h_score_trackster2caloparticle[i][count]->Fill(stsPair.second);
       }
       continue;
     }
@@ -2605,13 +2692,12 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
     }
     invTracksterEnergyWeight = 1.f / invTracksterEnergyWeight;
 
-    for (unsigned int i = 0; i < tst_hitsAndFractions.size(); ++i) {
-      const auto rh_detid = tst_hitsAndFractions[i].first;
-      const auto rhFraction = tst_hitsAndFractions[i].second;
+    for (const auto& haf : tst_hitsAndFractions) {
+      const auto rh_detid = haf.first;
+      const auto rhFraction = haf.second;
       bool hitWithNoSTS = false;
 
-      auto hit_find_in_STS = detIdSimTSId_Map.find(rh_detid);
-      if (hit_find_in_STS == detIdSimTSId_Map.end())
+      if (detIdSimTSId_Map.find(rh_detid) == detIdSimTSId_Map.end())
         hitWithNoSTS = true;
       auto itcheck = hitMap.find(rh_detid);
       const HGCRecHit* hit = itcheck->second;
@@ -2620,11 +2706,21 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
       for (auto& stsPair : stsInTrackster[tstId]) {
         float cpFraction = 0.f;
         if (!hitWithNoSTS) {
-          auto findHitIt = std::find(detIdSimTSId_Map[rh_detid].begin(),
-                                     detIdSimTSId_Map[rh_detid].end(),
-                                     HGVHistoProducerAlgo::detIdInfoInCluster{stsPair.first, 0.f});
-          if (findHitIt != detIdSimTSId_Map[rh_detid].end()) {
-            cpFraction = findHitIt->fraction;
+          const auto& cpId = getCPId(simTS[stsPair.first], stsPair.first, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
+          for (unsigned int iSC=0; iSC < detIdSimTSId_Map[rh_detid].size(); iSC++) {
+            if (simTS[stsPair.first].seedID() != cPHandle_id) { // SimTrackster from SimCluster
+              const auto& simCluster = *(cP[cpId].simClusters()[iSC]);
+              if (simTS[stsPair.first].seedIndex() != (&simCluster - &sC[0]))
+                continue;
+            }
+
+            for (const auto& [lcId, simTS_idFrac] : detIdSimTSId_Map[rh_detid][iSC]) {
+              const auto findSTSIt = std::find(simTS_idFrac.begin(), simTS_idFrac.end(),
+                                       HGVHistoProducerAlgo::detIdInfoInCluster{stsPair.first, 0.f}); // only the first element is used for the matching (overloaded operator==)
+              if (findSTSIt != simTS_idFrac.end())
+                cpFraction = lcFraction[iSC][lcId];
+            }
+            if (i==0) break; // for Linking we ignore the SimCluster granularity
           }
         }
         if (stsPair.second == FLT_MAX) {
@@ -2633,7 +2729,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
         stsPair.second +=
             (rhFraction - cpFraction) * (rhFraction - cpFraction) * hitEnergyWeight * invTracksterEnergyWeight;
       }
-    }  //end of loop through rechits of trackster
+    }  //end of loop through trackster rechits
 
     //In case of a Trackster with some energy but none related CaloParticles print some info.
     if (stsInTrackster[tstId].empty())
@@ -2641,67 +2737,83 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
                                  << "\t score \t-1"
                                  << "\n";
 
+    tracksters_fakemerge[tstId] = std::count_if(std::begin(stsInTrackster[tstId]),
+                                        std::end(stsInTrackster[tstId]),
+                                        [](const auto& obj) { return obj.second < ScoreCutTStoCPFakeMerge_; });
+
     const auto score = std::min_element(std::begin(stsInTrackster[tstId]),
                                         std::end(stsInTrackster[tstId]),
                                         [](const auto& obj1, const auto& obj2) { return obj1.second < obj2.second; });
-    for (auto& stsPair : stsInTrackster[tstId]) {
-      const auto& cpId = simTSFromCP[stsPair.first].seedIndex();
-      LogDebug("HGCalValidator") << "Trackster Id: \t" << tstId << "\t CP id: \t" << cpId << "\t score \t"
+    for (const auto& stsPair : stsInTrackster[tstId]) {
+      const auto& cpId = getCPId(simTS[stsPair.first], stsPair.first, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
+      if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
+        continue;
+
+      LogDebug("HGCalValidator") << "Trackster Id: \t" << tstId << "\t SimTrackster id: \t" << stsPair.first << "\t score \t"
                                  << stsPair.second << std::endl;
       float sharedeneCPallLayers = 0.;
-      for (unsigned int j = 0; j < layers * 2; ++j) {
-        auto const& cp_linked = cPOnLayer[cpId][j].layerClusterIdToEnergyAndScore[tstId];
-        sharedeneCPallLayers += cp_linked.first;
+      for (auto& iSC : sCOnLayer[cpId]) {
+        for (unsigned int j = 0; j < layers * 2; ++j) {
+          const auto& cp_linked = iSC[j].layerClusterIdToEnergyAndScore[tstId];
+          sharedeneCPallLayers += cp_linked.first;
+        }
       }
       LogDebug("HGCalValidator") << "sharedeneCPallLayers " << sharedeneCPallLayers << std::endl;
       if (stsPair.first == score->first) {
-        histograms.h_score_trackster2caloparticle[count]->Fill(score->second);
-        histograms.h_sharedenergy_trackster2caloparticle[count]->Fill(sharedeneCPallLayers /
-                                                                      tracksters[tstId].raw_energy());
-        histograms.h_energy_vs_score_trackster2caloparticle[count]->Fill(
+        histograms.h_score_trackster2caloparticle[i][count]->Fill(score->second);
+        histograms.h_sharedenergy_trackster2caloparticle[i][count]->Fill(sharedeneCPallLayers /
+                                                                         tracksters[tstId].raw_energy());
+        histograms.h_energy_vs_score_trackster2caloparticle[i][count]->Fill(
             score->second, sharedeneCPallLayers / tracksters[tstId].raw_energy());
       }
     }
-    auto assocFakeMerge = std::count_if(std::begin(stsInTrackster[tstId]),
-                                        std::end(stsInTrackster[tstId]),
-                                        [](const auto& obj) { return obj.second < ScoreCutTStoCPFakeMerge_; });
-    tracksters_fakemerge[tstId] = assocFakeMerge;
   }  //end of loop through Tracksters
 
-  std::unordered_map<int, std::vector<float>> score3d;
-  std::unordered_map<int, std::vector<float>> tstSharedEnergy;
-  std::unordered_map<int, std::vector<float>> tstSharedEnergyFrac;
+  std::unordered_map<unsigned int, std::vector<float>> score3d;
+  std::unordered_map<unsigned int, std::vector<float>> tstSharedEnergy;
 
-  for (unsigned int i = 0; i < nCaloParticles; ++i) {
-    auto cpIndex = cPIndices[i];
+  for (unsigned int iCP = 0; iCP < nCaloParticles; ++iCP) {
+    auto cpIndex = cPIndices[iCP];
     score3d[cpIndex].resize(nTracksters);
     tstSharedEnergy[cpIndex].resize(nTracksters);
-    tstSharedEnergyFrac[cpIndex].resize(nTracksters);
     for (unsigned int j = 0; j < nTracksters; ++j) {
       score3d[cpIndex][j] = FLT_MAX;
       tstSharedEnergy[cpIndex][j] = 0.f;
-      tstSharedEnergyFrac[cpIndex][j] = 0.f;
     }
   }
 
   // Here we do fill the plots to compute the different metrics linked to
-  // gen-level, namely efficiency an duplicate. In this loop we should restrict
+  // gen-level, namely efficiency, purity and duplicate. In this loop we should restrict
   // only to the selected caloParaticles.
   for (unsigned int iSTS = 0; iSTS < nSimTracksters; ++iSTS) {
-    const auto& cpId = simTSFromCP[iSTS].seedIndex();
-    if (std::find(cPSelectedIndices.begin(), cPSelectedIndices.end(), cpId) == cPSelectedIndices.end())
-      continue;
+    const auto& cpId = getCPId(simTS[iSTS], iSTS, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
+    if (i == 0)
+      if (std::find(cPSelectedIndices.begin(), cPSelectedIndices.end(), cpId) == cPSelectedIndices.end())
+        continue;
 
     //We need to keep the Tracksters ids that are related to
     //CaloParticle under study for the final filling of the score.
     std::vector<unsigned int> cpId_tstId_related;
-    cpId_tstId_related.clear();
 
     float CPenergy = 0.f;
+    for (unsigned int iSC=0; iSC < sCOnLayer[cpId].size(); iSC++) {
+      if (simTS[iSTS].seedID() != cPHandle_id) { // SimTrackster from SimCluster
+        const auto& simCluster = *(cP[cpId].simClusters()[iSC]);
+        if (simTS[iSTS].seedIndex() != (&simCluster - &sC[0]))
+          continue;
+      }
+
     for (unsigned int layerId = 0; layerId < layers * 2; ++layerId) {
-      unsigned int CPNumberOfHits = cPOnLayer[cpId][layerId].hits_and_fractions.size();
       //Below gives the CP energy related to Trackster per layer.
-      CPenergy += cPOnLayer[cpId][layerId].energy;
+      CPenergy += sCOnLayer[cpId][iSC][layerId].energy;
+
+      if (i == 0  &&  iSC > 0) // For Linking validation we ignore SimCLuster multiplicity
+        continue;
+
+      std::vector<std::pair<DetId, float>> haf;
+      if (i==0) haf = cPOnLayer[cpId][layerId];
+      else haf = sCOnLayer[cpId][iSC][layerId].hits_and_fractions;
+      const unsigned int CPNumberOfHits = haf.size();
       if (CPNumberOfHits == 0)
         continue;
       int tstWithMaxEnergyInCP = -1;
@@ -2709,7 +2821,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
       float maxEnergyTSperlayerinCP = 0.f;
       float CPEnergyFractionInTSperlayer = 0.f;
       //Remember and not confused by name. layerClusterIdToEnergyAndScore contains the Trackster id.
-      for (const auto& tst : cPOnLayer[cpId][layerId].layerClusterIdToEnergyAndScore) {
+      for (const auto& tst : sCOnLayer[cpId][iSC][layerId].layerClusterIdToEnergyAndScore) {
         if (tst.second.first > maxEnergyTSperlayerinCP) {
           maxEnergyTSperlayerinCP = tst.second.first;
           tstWithMaxEnergyInCP = tst.first;
@@ -2724,14 +2836,14 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
                                  << "maxEnergyTSinCP\t" << std::setw(20) << "CPEnergyFractionInTS"
                                  << "\n";
       LogDebug("HGCalValidator") << std::setw(8) << layerId << "\t" << std::setw(12) << cpId << "\t" << std::setw(15)
-                                 << simTSFromCP[iSTS].raw_energy() << "\t" << std::setw(15) << CPenergy << "\t"
+                                 << simTS[iSTS].raw_energy() << "\t" << std::setw(15) << CPenergy << "\t"
                                  << std::setw(14) << CPNumberOfHits << "\t" << std::setw(18) << tstWithMaxEnergyInCP
                                  << "\t" << std::setw(15) << maxEnergyTSperlayerinCP << "\t" << std::setw(20)
                                  << CPEnergyFractionInTSperlayer << "\n";
 
-      for (unsigned int i = 0; i < CPNumberOfHits; ++i) {
-        auto& cp_hitDetId = cPOnLayer[cpId][layerId].hits_and_fractions[i].first;
-        auto& cpFraction = cPOnLayer[cpId][layerId].hits_and_fractions[i].second;
+      for (unsigned int iHit = 0; iHit < CPNumberOfHits; ++iHit) {
+        const auto& cp_hitDetId = haf[iHit].first;
+        const auto& cpFraction = haf[iHit].second;
 
         bool hitWithNoTS = false;
         if (cpFraction == 0.f)
@@ -2742,8 +2854,8 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
         auto itcheck = hitMap.find(cp_hitDetId);
         const HGCRecHit* hit = itcheck->second;
         float hitEnergyWeight = hit->energy() * hit->energy();
-        for (auto& lcPair : cPOnLayer[cpId][layerId].layerClusterIdToEnergyAndScore) {
-          unsigned int tracksterId = lcPair.first;
+        for (auto& tsPair : sCOnLayer[cpId][iSC][layerId].layerClusterIdToEnergyAndScore) {
+          const unsigned int tracksterId = tsPair.first;
           if (std::find(std::begin(cpId_tstId_related), std::end(cpId_tstId_related), tracksterId) ==
               std::end(cpId_tstId_related)) {
             cpId_tstId_related.push_back(tracksterId);
@@ -2751,7 +2863,7 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
           float tstFraction = 0.f;
 
           if (!hitWithNoTS) {
-            auto findHitIt = std::find(detIdToTracksterId_Map[cp_hitDetId].begin(),
+            const auto findHitIt = std::find(detIdToTracksterId_Map[cp_hitDetId].begin(),
                                        detIdToTracksterId_Map[cp_hitDetId].end(),
                                        HGVHistoProducerAlgo::detIdInfoInTrackster{tracksterId, 0, 0.f});
             if (findHitIt != detIdToTracksterId_Map[cp_hitDetId].end())
@@ -2759,10 +2871,10 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
           }
           //Observe here that we do not divide as before by the layer cluster energy weight. We should sum first
           //over all layers and divide with the total CP energy over all layers.
-          if (lcPair.second.second == FLT_MAX) {
-            lcPair.second.second = 0.f;
+          if (tsPair.second.second == FLT_MAX) {
+            tsPair.second.second = 0.f;
           }
-          lcPair.second.second += (tstFraction - cpFraction) * (tstFraction - cpFraction) * hitEnergyWeight;
+          tsPair.second.second += (tstFraction - cpFraction) * (tstFraction - cpFraction) * hitEnergyWeight;
           LogDebug("HGCalValidator") << "TracksterId:\t" << tracksterId << "\t"
                                      << "cpId:\t" << cpId << "\t"
                                      << "Layer: " << layerId << '\t' << "tstfraction,cpfraction:\t" << tstFraction
@@ -2771,70 +2883,67 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
                                      << "added delta:\t"
                                      << (tstFraction - cpFraction) * (tstFraction - cpFraction) * hitEnergyWeight
                                      << "\t"
-                                     << "currect score numerator:\t" << lcPair.second.second << "\t"
-                                     << "shared Energy:\t" << lcPair.second.first << '\n';
+                                     << "currect score numerator:\t" << tsPair.second.second << "\t"
+                                     << "shared Energy:\t" << tsPair.second.first << std::endl;
         }
       }  //end of loop through sim hits of current calo particle
 
-      if (cPOnLayer[cpId][layerId].layerClusterIdToEnergyAndScore.empty())
-        LogDebug("HGCalValidator") << "CP Id: \t" << cpId << "\t TS id:\t-1 "
+      if (sCOnLayer[cpId][iSC][layerId].layerClusterIdToEnergyAndScore.empty())
+        LogDebug("HGCalValidator") << "SC Id: \t" << cpId << "\t TS id:\t-1 "
                                    << "\t layer \t " << layerId << " Sub score in \t -1"
                                    << "\n";
 
-      for (const auto& lcPair : cPOnLayer[cpId][layerId].layerClusterIdToEnergyAndScore) {
-        //3d score here without the denominator at this point
-        if (score3d[cpId][lcPair.first] == FLT_MAX) {
-          score3d[cpId][lcPair.first] = 0.f;
+      for (const auto& tsPair : sCOnLayer[cpId][iSC][layerId].layerClusterIdToEnergyAndScore) {
+        // 3d score here without the denominator at this point
+        if (score3d[cpId][tsPair.first] == FLT_MAX) {
+          score3d[cpId][tsPair.first] = 0.f;
         }
-        score3d[cpId][lcPair.first] += lcPair.second.second;
-        tstSharedEnergy[cpId][lcPair.first] += lcPair.second.first;
+        score3d[cpId][tsPair.first] += tsPair.second.second;
+        tstSharedEnergy[cpId][tsPair.first] += tsPair.second.first;
       }
     }  //end of loop through layers
+    } // end loop through SimClusters of CaloParticle cpId
 
     // Compute the correct normalization
-    // We need to loop on the cPOnLayer data structure since this is the
+    // We need to loop on the sCOnLayer data structure since this is the
     // only one that has the compressed information for multiple usage
     // of the same DetId by different SimClusters by a single CaloParticle.
     float invCPEnergyWeight = 0.f;
-    for (const auto& layer : cPOnLayer[cpId]) {
-      for (const auto& haf : layer.hits_and_fractions) {
-        invCPEnergyWeight +=
-            (haf.second * hitMap.at(haf.first)->energy()) * (haf.second * hitMap.at(haf.first)->energy());
-      }
+      for (const auto& layer : cPOnLayer[cpId]) {
+        for (const auto& haf : layer)
+          invCPEnergyWeight +=
+              (haf.second * hitMap.at(haf.first)->energy()) * (haf.second * hitMap.at(haf.first)->energy());
     }
     invCPEnergyWeight = 1.f / invCPEnergyWeight;
 
     //Loop through related Tracksters here
-    //Will switch to vector for access because it is faster
-    std::vector<int> cpId_tstId_related_vec(cpId_tstId_related.begin(), cpId_tstId_related.end());
     // In case the threshold to associate a CaloParticle to a Trackster is
     // below 50%, there could be cases in which the CP is linked to more than
     // one tracksters, leading to efficiencies >1. This boolean is used to
     // avoid "over counting".
     bool cp_considered_efficient = false;
-    for (unsigned int i = 0; i < cpId_tstId_related_vec.size(); ++i) {
-      auto tstId = cpId_tstId_related_vec[i];
-      //Now time for the denominator
+    for (const auto tstId : cpId_tstId_related) {
+      // Now time for the denominator
       score3d[cpId][tstId] = score3d[cpId][tstId] * invCPEnergyWeight;
-      tstSharedEnergyFrac[cpId][tstId] = (tstSharedEnergy[cpId][tstId] / CPenergy);
+      const auto tstSharedEnergyFrac = tstSharedEnergy[cpId][tstId] / CPenergy;
 
-      LogDebug("HGCalValidator") << "CP Id: \t" << cpId << "\t TS id: \t" << tstId << "\t score \t"  //
-                                 << score3d[cpId][tstId] << "\t"
-                                 << "invCPEnergyWeight \t" << invCPEnergyWeight << "\t"
-                                 << "Trackste energy: \t" << tracksters[tstId].raw_energy() << "\t"
-                                 << "shared energy:\t" << tstSharedEnergy[cpId][tstId] << "\t"
-                                 << "shared energy fraction:\t" << tstSharedEnergyFrac[cpId][tstId] << "\n";
+      LogDebug("HGCalValidator") << "\nCP Id: \t" << cpId << "\t TS id: \t" << tstId << "\t score \t"  //
+                                 << score3d[cpId][tstId]
+                                 << "\tinvCPEnergyWeight \t" << invCPEnergyWeight
+                                 << "\tTrackste energy: \t" << tracksters[tstId].raw_energy()
+                                 << "\tshared energy:\t" << tstSharedEnergy[cpId][tstId]
+                                 << "\tshared energy fraction:\t" << tstSharedEnergyFrac << std::endl ;
 
-      histograms.h_score_caloparticle2trackster[count]->Fill(score3d[cpId][tstId]);
+      histograms.h_score_caloparticle2trackster[i][count]->Fill(score3d[cpId][tstId]);
 
-      histograms.h_sharedenergy_caloparticle2trackster[count]->Fill(tstSharedEnergyFrac[cpId][tstId]);
-      histograms.h_energy_vs_score_caloparticle2trackster[count]->Fill(score3d[cpId][tstId],
-                                                                       tstSharedEnergyFrac[cpId][tstId]);
+      histograms.h_sharedenergy_caloparticle2trackster[i][count]->Fill(tstSharedEnergyFrac);
+      histograms.h_energy_vs_score_caloparticle2trackster[i][count]->Fill(score3d[cpId][tstId],
+                                                                          tstSharedEnergyFrac);
       // Fill the numerator for the efficiency calculation. The efficiency is computed by considering the energy shared between a Trackster and a _corresponding_ caloParticle. The threshold is configurable via python.
-      if (!cp_considered_efficient && tstSharedEnergyFrac[cpId][tstId] >= minTSTSharedEneFracEfficiency_) {
+      if (!cp_considered_efficient  &&  (tstSharedEnergyFrac >= minTSTSharedEneFracEfficiency_)) {
         cp_considered_efficient = true;
-        histograms.h_numEff_caloparticle_eta[count]->Fill(simTSFromCP[iSTS].barycenter().eta());
-        histograms.h_numEff_caloparticle_phi[count]->Fill(simTSFromCP[iSTS].barycenter().phi());
+        histograms.h_numEff_caloparticle_eta[i][count]->Fill(simTS[iSTS].barycenter().eta());
+        histograms.h_numEff_caloparticle_phi[i][count]->Fill(simTS[iSTS].barycenter().phi());
       }
     }  //end of loop through Tracksters
 
@@ -2843,20 +2952,21 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
     auto assocDup = std::count_if(std::begin(score3d[cpId]), std::end(score3d[cpId]), is_assoc);
 
     if (assocDup > 0) {
-      histograms.h_num_caloparticle_eta[count]->Fill(simTSFromCP[iSTS].barycenter().eta());
-      histograms.h_num_caloparticle_phi[count]->Fill(simTSFromCP[iSTS].barycenter().phi());
+      histograms.h_num_caloparticle_eta[i][count]->Fill(simTS[iSTS].barycenter().eta());
+      histograms.h_num_caloparticle_phi[i][count]->Fill(simTS[iSTS].barycenter().phi());
       auto best = std::min_element(std::begin(score3d[cpId]), std::end(score3d[cpId]));
       auto bestTstId = std::distance(std::begin(score3d[cpId]), best);
+      const auto tstSharedEnergyFrac = tstSharedEnergy[cpId][bestTstId] / CPenergy ;
 
-      histograms.h_sharedenergy_caloparticle2trackster_vs_eta[count]->Fill(
-          simTSFromCP[iSTS].barycenter().eta(), tracksters[bestTstId].raw_energy() / CPenergy);
-      histograms.h_sharedenergy_caloparticle2trackster_vs_phi[count]->Fill(
-          simTSFromCP[iSTS].barycenter().phi(), tracksters[bestTstId].raw_energy() / CPenergy);
-      LogDebug("HGCalValidator") << count << " " << simTSFromCP[iSTS].barycenter().eta() << " "
-                                 << simTSFromCP[iSTS].barycenter().phi() << " " << tracksters[bestTstId].raw_energy()
-                                 << " " << CPenergy << " " << (tracksters[bestTstId].raw_energy() / CPenergy) << " "
-                                 << tstSharedEnergyFrac[cpId][bestTstId] << '\n';
-      histograms.h_sharedenergy_caloparticle2trackster_assoc[count]->Fill(tstSharedEnergyFrac[cpId][bestTstId]);
+      histograms.h_sharedenergy_caloparticle2trackster_vs_eta[i][count]->Fill(
+          simTS[iSTS].barycenter().eta(), tracksters[bestTstId].raw_energy() / CPenergy);
+      histograms.h_sharedenergy_caloparticle2trackster_vs_phi[i][count]->Fill(
+          simTS[iSTS].barycenter().phi(), tracksters[bestTstId].raw_energy() / CPenergy);
+      LogDebug("HGCalValidator") << count << " " << simTS[iSTS].barycenter().eta() << " "
+                                 << simTS[iSTS].barycenter().phi() << " " << tracksters[bestTstId].raw_energy() << " "
+                                 << CPenergy << " " << (tracksters[bestTstId].raw_energy() / CPenergy) << " "
+                                 << tstSharedEnergyFrac << '\n';
+      histograms.h_sharedenergy_caloparticle2trackster_assoc[i][count]->Fill(tstSharedEnergyFrac);
 
       if (assocDup >= 2) {
         auto match = std::find_if(std::begin(score3d[cpId]), std::end(score3d[cpId]), is_assoc);
@@ -2866,10 +2976,10 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
         }
       }
     }
-    histograms.h_denom_caloparticle_eta[count]->Fill(simTSFromCP[iSTS].barycenter().eta());
-    histograms.h_denom_caloparticle_phi[count]->Fill(simTSFromCP[iSTS].barycenter().phi());
+    histograms.h_denom_caloparticle_eta[i][count]->Fill(simTS[iSTS].barycenter().eta());
+    histograms.h_denom_caloparticle_phi[i][count]->Fill(simTS[iSTS].barycenter().phi());
 
-  }  //end of loop through CaloParticles
+  }  //end of loop through SimTracksters
 
   // Here we do fill the plots to compute the different metrics linked to
   // reco-level, namely fake-rate an merge-rate. In this loop we should *not*
@@ -2877,47 +2987,56 @@ void HGVHistoProducerAlgo::tracksters_to_SimTracksters(const Histograms& histogr
   for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
     if (tracksters[tstId].vertices().empty())
       continue;
-    auto assocFakeMerge = tracksters_fakemerge[tstId];
-    auto assocDuplicate = tracksters_duplicate[tstId];
+    const auto tst_eta = tracksters[tstId].barycenter().eta();
+    const auto tst_phi = tracksters[tstId].barycenter().phi();
+
+    const auto assocFakeMerge = tracksters_fakemerge[tstId];
+    const auto assocDuplicate = tracksters_duplicate[tstId];
     if (assocDuplicate) {
-      histograms.h_numDup_trackster_eta[count]->Fill(tracksters[tstId].barycenter().eta());
-      histograms.h_numDup_trackster_phi[count]->Fill(tracksters[tstId].barycenter().phi());
+      histograms.h_numDup_trackster_eta[i][count]->Fill(tst_eta);
+      histograms.h_numDup_trackster_phi[i][count]->Fill(tst_phi);
     }
     if (assocFakeMerge > 0) {
-      histograms.h_num_trackster_eta[count]->Fill(tracksters[tstId].barycenter().eta());
-      histograms.h_num_trackster_phi[count]->Fill(tracksters[tstId].barycenter().phi());
+      histograms.h_num_trackster_eta[i][count]->Fill(tst_eta);
+      histograms.h_num_trackster_phi[i][count]->Fill(tst_phi);
       auto best = std::min_element(std::begin(stsInTrackster[tstId]),
                                    std::end(stsInTrackster[tstId]),
                                    [](const auto& obj1, const auto& obj2) { return obj1.second < obj2.second; });
 
       //This is the shared energy taking the best caloparticle in each layer
       float sharedeneCPallLayers = 0.;
-      //Loop through all layers
-      for (unsigned int j = 0; j < layers * 2; ++j) {
-        auto const& best_cp_linked =
-            cPOnLayer[simTSFromCP[best->first].seedIndex()][j].layerClusterIdToEnergyAndScore[tstId];
-        sharedeneCPallLayers += best_cp_linked.first;
-      }  //end of loop through layers
-      histograms.h_sharedenergy_trackster2caloparticle_vs_eta[count]->Fill(
+      const auto cpId = getCPId(simTS[best->first], best->first, cPHandle_id, cpToSc_SimTrackstersMap, simTS_fromCP);
+      for (auto& iSC : sCOnLayer[cpId]) {
+        for (unsigned int j = 0; j < layers * 2; ++j) {
+          const auto& best_cp_linked = iSC[j].layerClusterIdToEnergyAndScore[tstId];
+          sharedeneCPallLayers += best_cp_linked.first;
+        }
+      }
+      histograms.h_sharedenergy_trackster2caloparticle_vs_eta[i][count]->Fill(
           tracksters[tstId].barycenter().eta(), sharedeneCPallLayers / tracksters[tstId].raw_energy());
-      histograms.h_sharedenergy_trackster2caloparticle_vs_phi[count]->Fill(
+      histograms.h_sharedenergy_trackster2caloparticle_vs_phi[i][count]->Fill(
           tracksters[tstId].barycenter().phi(), sharedeneCPallLayers / tracksters[tstId].raw_energy());
 
       if (assocFakeMerge >= 2) {
-        histograms.h_numMerge_trackster_eta[count]->Fill(tracksters[tstId].barycenter().eta());
-        histograms.h_numMerge_trackster_phi[count]->Fill(tracksters[tstId].barycenter().phi());
+        histograms.h_numMerge_trackster_eta[i][count]->Fill(tst_eta);
+        histograms.h_numMerge_trackster_phi[i][count]->Fill(tst_phi);
       }
     }
-    histograms.h_denom_trackster_eta[count]->Fill(tracksters[tstId].barycenter().eta());
-    histograms.h_denom_trackster_phi[count]->Fill(tracksters[tstId].barycenter().phi());
-  }
+
+    histograms.h_denom_trackster_eta[i][count]->Fill(tst_eta);
+    histograms.h_denom_trackster_phi[i][count]->Fill(tst_phi);
+  } // end loop over nTracksters
 }
 
 void HGVHistoProducerAlgo::fill_trackster_histos(const Histograms& histograms,
                                                  int count,
                                                  const ticl::TracksterCollection& tracksters,
                                                  const reco::CaloClusterCollection& layerClusters,
-                                                 const ticl::TracksterCollection& simTSFromCP,
+                                                 const ticl::TracksterCollection& simTS,
+                                                 const ticl::TracksterCollection& simTS_fromCP,
+                                                 const std::map<unsigned int, std::vector<unsigned int>>& cpToSc_SimTrackstersMap,
+                                                 std::vector<SimCluster> const& sC,
+                                                 const edm::ProductID& cPHandle_id,
                                                  std::vector<CaloParticle> const& cP,
                                                  std::vector<size_t> const& cPIndices,
                                                  std::vector<size_t> const& cPSelectedIndices,
@@ -2949,20 +3068,16 @@ void HGVHistoProducerAlgo::fill_trackster_histos(const Histograms& histograms,
   //   totalLcInTsts = totalLcInTsts + tracksters[tstId].vertices().size();
   // }
 
-  auto nTracksters = tracksters.size();
+  const auto nTracksters = tracksters.size();
   //loop through Tracksters of the event
   for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
-    auto nLayerClusters = tracksters[tstId].vertices().size();
-
-    if (nLayerClusters == 0)
+    if (tracksters[tstId].vertices().size() == 0)
       continue;
 
-    if (tracksters[tstId].barycenter().z() < 0.) {
+    if (tracksters[tstId].barycenter().z() < 0.)
       totNTstZm++;
-    }
-    if (tracksters[tstId].barycenter().z() > 0.) {
+    if (tracksters[tstId].barycenter().z() > 0.)
       totNTstZp++;
-    }
 
     //Total number of layer clusters in Trackster
     int tnLcInTst = 0;
@@ -2996,12 +3111,10 @@ void HGVHistoProducerAlgo::fill_trackster_histos(const Histograms& histograms,
       tnLcInTstperlay[layerid]++;
       tnLcInTst++;
 
-      if (recHitTools_->zside(firstHitDetId) > 0.) {
+      if (recHitTools_->zside(firstHitDetId) > 0.)
         tracksterInZplus = true;
-      }
-      if (recHitTools_->zside(firstHitDetId) < 0.) {
+      if (recHitTools_->zside(firstHitDetId) < 0.)
         tracksterInZminus = true;
-      }
 
     }  // end of loop through layerClusters
 
@@ -3098,8 +3211,38 @@ void HGVHistoProducerAlgo::fill_trackster_histos(const Histograms& histograms,
   histograms.h_conttracksternum[count]->Fill(totNContTstZp + totNContTstZm);
   histograms.h_nonconttracksternum[count]->Fill(totNNotContTstZp + totNNotContTstZm);
 
-  tracksters_to_SimTracksters(
-      histograms, count, tracksters, layerClusters, simTSFromCP, cP, cPIndices, cPSelectedIndices, hitMap, layers);
+  // Linking
+  tracksters_to_SimTracksters(histograms,
+                              count,
+                              tracksters,
+                              layerClusters,
+                              simTS_fromCP,
+                              0,
+                              simTS_fromCP,
+                              cpToSc_SimTrackstersMap,
+                              sC,
+                              cPHandle_id,
+                              cP,
+                              cPIndices,
+                              cPSelectedIndices,
+                              hitMap,
+                              layers);
+  // Pattern recognition
+  tracksters_to_SimTracksters(histograms,
+                              count,
+                              tracksters,
+                              layerClusters,
+                              simTS,
+                              1,
+                              simTS_fromCP,
+                              cpToSc_SimTrackstersMap,
+                              sC,
+                              cPHandle_id,
+                              cP,
+                              cPIndices,
+                              cPSelectedIndices,
+                              hitMap,
+                              layers);
 }
 
 double HGVHistoProducerAlgo::distance2(const double x1,
