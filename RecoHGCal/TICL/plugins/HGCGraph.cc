@@ -23,7 +23,9 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                               float etaLimitIncreaseWindow,
                                               int skip_layers,
                                               int maxNumberOfLayers,
-                                              float maxDeltaTime) {
+                                              float maxDeltaTime,
+                                              hgcal::RecHitTools &rhtools,
+                                              const std::vector<double> &siblings_maxRSquared) {
   isOuterClusterOfDoublets_.clear();
   isOuterClusterOfDoublets_.resize(layerClusters.size());
   allDoublets_.clear();
@@ -31,6 +33,10 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
   bool checkDistanceRootDoubletVsSeed = root_doublet_max_distance_from_seed_squared < 9999;
   float origin_eta;
   float origin_phi;
+  bool isNose = false;
+  int lastLayerEE = rhtools.lastLayerEE(isNose);
+  int lastLayerFH = rhtools.lastLayerFH();
+  float maxRSquared;
   for (const auto &r : regions) {
     bool isGlobal = (r.index == -1);
     auto zSide = r.zSide;
@@ -88,6 +94,9 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
         auto const &outerLayerHisto = histo[currentOuterLayerId];
         auto const &innerLayerHisto = histo[currentInnerLayerId];
         float deltaZ = 0.f;
+        maxRSquared = (il <= lastLayerEE)   ? siblings_maxRSquared[0]
+                      : (il <= lastLayerFH) ? siblings_maxRSquared[1]
+                                            : siblings_maxRSquared[2];
         const int etaLimitIncreaseWindowBin = innerLayerHisto.etaBin(etaLimitIncreaseWindow);
         if (verbosity_ > Advanced) {
           LogDebug("HGCGraph") << "Limit of Eta for increase: " << etaLimitIncreaseWindow
@@ -161,8 +170,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                       if (deltaZ == 0) {
                         deltaZ = layerClusters[outerClusterId].z() - layerClusters[innerClusterId].z();
                       }
-                      if (areOverlappingOnSiblingLayers(
-                              innerClusterId, outerClusterId, layerClusters, 2.e-4f * deltaZ)) {
+                      if (areOverlappingOnSiblingLayers(innerClusterId, outerClusterId, layerClusters, maxRSquared)) {
                         allDoublets_.emplace_back(
                             innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, true);
                       } else {

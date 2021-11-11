@@ -48,7 +48,8 @@ PatternRecognitionbyCA<TILES>::PatternRecognitionbyCA(const edm::ParameterSet &c
       eidMinClusterEnergy_(conf.getParameter<double>("eid_min_cluster_energy")),
       eidNLayers_(conf.getParameter<int>("eid_n_layers")),
       eidNClusters_(conf.getParameter<int>("eid_n_clusters")),
-      eidSession_(nullptr) {
+      eidSession_(nullptr),
+      siblings_maxRSquared_(conf.getParameter<std::vector<double>>("siblings_maxRSquared")) {
   // mount the tensorflow graph onto the session when set
   const TrackstersCache *trackstersCache = dynamic_cast<const TrackstersCache *>(cache);
   if (trackstersCache == nullptr || trackstersCache->eidGraphDef == nullptr) {
@@ -103,7 +104,9 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     etaLimitIncreaseWindow_,
                                     skip_layers_,
                                     rhtools_.lastLayer(type),
-                                    max_delta_time_);
+                                    max_delta_time_,
+                                    rhtools_,
+                                    siblings_maxRSquared_);
 
   theGraph_->findNtuplets(foundNtuplets, seedIndices, min_clusters_per_ntuplet_, out_in_dfs_, max_out_in_hops_);
   //#ifdef FP_DEBUG
@@ -113,7 +116,6 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
   // container for holding tracksters before selection
   std::vector<Trackster> tmpTracksters;
   tmpTracksters.reserve(foundNtuplets.size());
-  // std::cout << __LINE__ << "found ntuplets: " << foundNtuplets.size() << std::endl;
 
   for (auto const &ntuplet : foundNtuplets) {
     tracksterId++;
@@ -174,7 +176,6 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
         j++;
       }
     }
-    // std::cout << "... numberOfLayersInTrackster " << numberOfLayersInTrackster << " number of LCs "<< effective_cluster_idx.size() <<  " showerMinLayerId " << showerMinLayerId << std::endl;
     if ((numberOfLayersInTrackster >= min_layers_per_trackster_) and (showerMinLayerId <= shower_start_max_layer_)) {
       // Put back indices, in the form of a Trackster, into the results vector
       Trackster tmp;
@@ -195,8 +196,6 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
       tmpTracksters.push_back(tmp);
     }
   }
-
-  std::cout << __LINE__ << "found tracksters: " << tmpTracksters.size() << std::endl;
   ticl::assignPCAtoTracksters(tmpTracksters,
                               input.layerClusters,
                               input.layerClustersTime,
@@ -227,7 +226,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
   }
 
   result.reserve(selectedTrackstersIds.size());
-  // std::cout << __LINE__ << "selected tracksters: " << selectedTrackstersIds.size() << "\n\n" << std::endl;
+
   for (unsigned i = 0; i < selectedTrackstersIds.size(); ++i) {
     const auto &t = tmpTracksters[selectedTrackstersIds[i]];
     for (auto const lcId : t.vertices()) {
@@ -505,6 +504,7 @@ void PatternRecognitionbyCA<TILES>::fillPSetDescription(edm::ParameterSetDescrip
   iDesc.add<double>("eid_min_cluster_energy", 1.);
   iDesc.add<int>("eid_n_layers", 50);
   iDesc.add<int>("eid_n_clusters", 10);
+  iDesc.add<std::vector<double>>("siblings_maxRSquared", {6e-4, 6e-4, 6e-4});
 }
 
 template class ticl::PatternRecognitionbyCA<TICLLayerTiles>;

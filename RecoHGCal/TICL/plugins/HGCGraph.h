@@ -29,7 +29,9 @@ public:
                               float etaLimitIncreaseWindow,
                               int skip_layers,
                               int maxNumberOfLayers,
-                              float maxDeltaTime);
+                              float maxDeltaTime,
+                              hgcal::RecHitTools &rhtools,
+                              const std::vector<double> &siblings_maxRSquared);
 
   bool areTimeCompatible(int innerIdx,
                          int outerIdx,
