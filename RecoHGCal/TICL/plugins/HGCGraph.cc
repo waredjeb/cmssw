@@ -25,7 +25,8 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                               int skip_layers,
                                               int maxNumberOfLayers,
                                               float maxDeltaTime,
-                                              hgcal::RecHitTools &rhtools,
+                                              int lastLayerEE,
+                                              int lastLayerFH,
                                               const std::vector<double> &siblings_maxRSquared) {
   isOuterClusterOfDoublets_.clear();
   isOuterClusterOfDoublets_.resize(layerClusters.size());
@@ -34,9 +35,6 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
   bool checkDistanceRootDoubletVsSeed = root_doublet_max_distance_from_seed_squared < 9999;
   float origin_eta;
   float origin_phi;
-  bool isNose = false;
-  int lastLayerEE = rhtools.lastLayerEE(isNose);
-  int lastLayerFH = rhtools.lastLayerFH();
   float maxRSquared;
   for (const auto &r : regions) {
     bool isGlobal = (r.index == -1);

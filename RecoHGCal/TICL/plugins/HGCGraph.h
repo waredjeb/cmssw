@@ -30,7 +30,8 @@ public:
                               int skip_layers,
                               int maxNumberOfLayers,
                               float maxDeltaTime,
-                              hgcal::RecHitTools &rhtools,
+                              int lastLayerEE,
+                              int lastLayerFH,
                               const std::vector<double> &siblings_maxRSquared);
 
   bool areTimeCompatible(int innerIdx,

@@ -105,7 +105,8 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     skip_layers_,
                                     rhtools_.lastLayer(isHFnose),
                                     max_delta_time_,
-                                    rhtools_,
+                                    rhtools_.lastLayerEE(isHFnose),
+                                    rhtools_.lastLayerFH(),
                                     siblings_maxRSquared_);
 
   theGraph_->findNtuplets(foundNtuplets, seedIndices, min_clusters_per_ntuplet_, out_in_dfs_, max_out_in_hops_);
