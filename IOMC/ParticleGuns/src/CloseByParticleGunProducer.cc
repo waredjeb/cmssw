@@ -25,8 +25,11 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   ParameterSet defpset;
   ParameterSet pgun_params = pset.getParameter<ParameterSet>("PGunParameters");
 
+  fControlledByEta = pgun_params.getParameter<bool>("ControlledByEta");
   fEnMax = pgun_params.getParameter<double>("EnMax");
   fEnMin = pgun_params.getParameter<double>("EnMin");
+  fEtaMax = pgun_params.getParameter<double>("MinEta");
+  fEtaMin = pgun_params.getParameter<double>("MaxEta");
   fRMax = pgun_params.getParameter<double>("RMax");
   fRMin = pgun_params.getParameter<double>("RMin");
   fZMax = pgun_params.getParameter<double>("ZMax");
@@ -69,8 +72,17 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
   }
 
   double phi = CLHEP::RandFlat::shoot(engine, fPhiMin, fPhiMax);
-  double fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
   double fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
+  double fR;
+  double fEta;
+
+  if (!fControlledByEta) {
+    fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
+  } else {
+    fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
+    fR = (fZ / sinh(fEta));
+  }
+
   double tmpPhi = phi;
   double tmpR = fR;
 
