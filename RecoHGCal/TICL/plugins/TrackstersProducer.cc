@@ -208,9 +208,8 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     }
   }
 
-  evt.put(std::move(tracksterSeeds));
-  evt.put(std::move(tracksterSeedsDoublets));
-
   evt.put(std::move(result));
+  evt.put(std::move(tracksterSeeds), "tracksterSeeds");
+  evt.put(std::move(tracksterSeedsDoublets), "tracksterSeedsDoublets");
   evt.put(std::move(output_mask));
 }
