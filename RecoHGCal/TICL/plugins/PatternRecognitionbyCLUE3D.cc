@@ -151,7 +151,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     return;
   std::vector<Trackster> &result = output.result;
   std::vector<int> &tracksterSeeds = output.tracksterSeeds;
-  std::vector<std::vector<int>>& tracksterSeedsDoublets = output.tracksterSeedsDoublets;
+  std::vector<std::vector<int>> &tracksterSeedsDoublets = output.tracksterSeedsDoublets;
   const int eventNumber = input.ev.eventAuxiliary().event();
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
     edm::LogVerbatim("PatternRecogntionbyCLUE3D") << "New Event";
@@ -259,9 +259,9 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
           tracksterSeeds.emplace_back(thisLayer.layerClusterOriginalIdx[lc]);
           std::vector<int> tmp_followers;
           tmp_followers.reserve(thisLayer.followers[lc].size());
-          for(auto [follower_lyrIdx, follower_soaIdx] : thisLayer.followers[lc])
-          {
-            tmp_followers.emplace_back((unsigned int)clusters_[follower_lyrIdx].layerClusterOriginalIdx[follower_soaIdx]);
+          for (auto [follower_lyrIdx, follower_soaIdx] : thisLayer.followers[lc]) {
+            tmp_followers.emplace_back(
+                (unsigned int)clusters_[follower_lyrIdx].layerClusterOriginalIdx[follower_soaIdx]);
           }
           tracksterSeedsDoublets.emplace_back(tmp_followers);
         }
@@ -278,12 +278,17 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     }
   }
 
-  result.erase(
-      std::remove_if(std::begin(result),
-                     std::end(result),
-                     [&](auto const &v) { return static_cast<int>(v.vertices().size()) < minNumLayerCluster_; }),
-      result.end());
+  for (size_t i = 0; i < result.size(); i++) {
+    if (static_cast<int>(result[i].vertices().size()) < minNumLayerCluster_) {
+      result.erase(result.begin() + i);
+      tracksterSeeds.erase(tracksterSeeds.begin() + i);
+      tracksterSeedsDoublets.erase(tracksterSeedsDoublets.begin() + i);
+    }
+  }
+
   result.shrink_to_fit();
+  tracksterSeeds.shrink_to_fit();
+  tracksterSeedsDoublets.shrink_to_fit();
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
