@@ -28,10 +28,10 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fEnMax = pgun_params.getParameter<double>("EnMax");
   fMaxEnSpread = pgun_params.getParameter<bool>("MaxEnSpread");
   if (fControlledByEta) {
-    fEtaMax = pgun_params.getParameter<double>("EtaMax");
-    fEtaMin = pgun_params.getParameter<double>("EtaMin");
+    fEtaMax = pgun_params.getParameter<double>("MaxEta");
+    fEtaMin = pgun_params.getParameter<double>("MinEta");
     if (fEtaMax <= fEtaMin)
-      LogError("CloseByParticleGunProducer") << " Please fix EtaMin and EtaMax values in the configuration";
+      LogError("CloseByParticleGunProducer") << " Please fix MinEta and MaxEta values in the configuration";
   } else {
     fRMax = pgun_params.getParameter<double>("RMax");
     fRMin = pgun_params.getParameter<double>("RMin");
@@ -41,8 +41,8 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fZMin = pgun_params.getParameter<double>("ZMin");
   fZMax = pgun_params.getParameter<double>("ZMax");
   fDelta = pgun_params.getParameter<double>("Delta");
-  fPhiMin = pgun_params.getParameter<double>("PhiMin");
-  fPhiMax = pgun_params.getParameter<double>("PhiMax");
+  fPhiMin = pgun_params.getParameter<double>("MinPhi");
+  fPhiMax = pgun_params.getParameter<double>("MaxPhi");
   fPointing = pgun_params.getParameter<bool>("Pointing");
   fOverlapping = pgun_params.getParameter<bool>("Overlapping");
   fRandomShoot = pgun_params.getParameter<bool>("RandomShoot");
