@@ -9,7 +9,7 @@ from RecoHGCal.TICL.filteredLayerClustersProducer_cfi import filteredLayerCluste
 filteredLayerClustersEM = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSizeAndLayerRange",
     min_cluster_size = 3, # inclusive
-    max_layerId = 30,
+    #max_layerId = 30,
     algo_number = 8,
     iteration_label = "EM"
 )
@@ -19,20 +19,9 @@ filteredLayerClustersEM = _filteredLayerClustersProducer.clone(
 ticlTrackstersEM = _trackstersProducer.clone(
     filtered_mask = "filteredLayerClustersEM:EM",
     seeding_regions = "ticlSeedingGlobal",
-    pluginPatternRecognitionByCA = dict(
-        filter_on_categories = [0, 1],
-        pid_threshold = 0.5,
-        energy_em_over_total_threshold = 0.9,
-        max_longitudinal_sigmaPCA = 10,
-        shower_start_max_layer = 5, #inclusive
-        max_out_in_hops = 1,
-        skip_layers = 2,
-        max_missing_layers_in_trackster = 2,
-        min_layers_per_trackster = 10,
-        min_cos_theta = 0.97,  # ~14 degrees
-        min_cos_pointing = 0.9, # ~25 degrees
-        max_delta_time = 3.,
-        algo_verbosity = 0
+    patternRecognitionBy = "CLUE3D",
+    pluginPatternRecognitionByCLUE3D = dict (
+        criticalEtaPhiDistance = 0.025
     ),
     itername = "EM"
 )
