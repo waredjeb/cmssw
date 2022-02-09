@@ -141,12 +141,14 @@ void PatternRecognitionbyCLUE3D<TILES>::dumpClusters(const std::vector<std::pair
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
-    std::vector<Trackster> &result,
+    typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
   // Protect from events with no seeding regions
   if (input.regions.empty())
     return;
-
+  std::vector<Trackster> &result = output.result;
+  std::vector<int> &tracksterSeeds = output.tracksterSeeds;
+  std::vector<std::vector<int>> &tracksterSeedsDoublets = output.tracksterSeedsDoublets;
   const int eventNumber = input.ev.eventAuxiliary().event();
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
     edm::LogVerbatim("PatternRecogntionbyCLUE3D") << "New Event";
@@ -183,7 +185,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     float sum_sqr_y = 0.;
     float ref_x = lc.x();
     float ref_y = lc.y();
-    float invClsize = 1. / lc.hitsAndFractions().size();
+    float invClsize = 1.f / lc.hitsAndFractions().size();
     for (auto const &hitsAndFractions : lc.hitsAndFractions()) {
       auto const &point = rhtools_.getPosition(hitsAndFractions.first);
       sum_x += point.x() - ref_x;
@@ -234,6 +236,8 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
 
   // Build Trackster
   result.resize(nTracksters);
+  tracksterSeeds.reserve(nTracksters);
+  tracksterSeedsDoublets.reserve(nTracksters);
 
   for (unsigned int layer = 0; layer < clusters_.size(); ++layer) {
     const auto &thisLayer = clusters_[layer];
@@ -248,6 +252,16 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
         if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
           edm::LogVerbatim("PatternRecogntionbyCLUE3D") << " adding lcIdx: " << thisLayer.layerClusterOriginalIdx[lc];
         }
+        if (thisLayer.isSeed[lc]) {
+          tracksterSeeds.emplace_back(thisLayer.layerClusterOriginalIdx[lc]);
+          std::vector<int> tmp_followers;
+          tmp_followers.reserve(thisLayer.followers[lc].size());
+          for (auto [follower_lyrIdx, follower_soaIdx] : thisLayer.followers[lc]) {
+            tmp_followers.emplace_back(
+                (unsigned int)clusters_[follower_lyrIdx].layerClusterOriginalIdx[follower_soaIdx]);
+          }
+          tracksterSeedsDoublets.emplace_back(tmp_followers);
+        }
         result[thisLayer.clusterIndex[lc]].vertices().push_back(thisLayer.layerClusterOriginalIdx[lc]);
         result[thisLayer.clusterIndex[lc]].vertex_multiplicity().push_back(1);
         // loop over followers
@@ -261,12 +275,17 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     }
   }
 
-  result.erase(
-      std::remove_if(std::begin(result),
-                     std::end(result),
-                     [&](auto const &v) { return static_cast<int>(v.vertices().size()) < minNumLayerCluster_; }),
-      result.end());
+  for (size_t i = 0; i < result.size(); i++) {
+    if (static_cast<int>(result[i].vertices().size()) < minNumLayerCluster_) {
+      result.erase(result.begin() + i);
+      tracksterSeeds.erase(tracksterSeeds.begin() + i);
+      tracksterSeedsDoublets.erase(tracksterSeedsDoublets.begin() + i);
+    }
+  }
+
   result.shrink_to_fit();
+  tracksterSeeds.shrink_to_fit();
+  tracksterSeedsDoublets.shrink_to_fit();
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
