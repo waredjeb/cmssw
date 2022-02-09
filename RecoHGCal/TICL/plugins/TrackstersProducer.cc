@@ -158,7 +158,6 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   auto tracksterSeeds = std::make_unique<std::vector<int>>();
   auto tracksterSeedsDoublets = std::make_unique<std::vector<std::vector<int>>>();
 
-
   auto output_mask = std::make_unique<std::vector<float>>();
 
   const std::vector<float>& original_layerclusters_mask = evt.get(original_layerclusters_mask_token_);
@@ -181,7 +180,8 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(
         evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_hfnose_tiles, seeding_regions);
 
-    typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Outputs output(*result, *tracksterSeeds, *tracksterSeedsDoublets);
+    typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Outputs output(
+        *result, *tracksterSeeds, *tracksterSeedsDoublets);
     myAlgoHFNose_->makeTracksters(inputHFNose, output, seedToTrackstersAssociation);
 
   } else {
@@ -189,7 +189,8 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
         evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_tiles, seeding_regions);
 
-    typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs output(*result, *tracksterSeeds, *tracksterSeedsDoublets);
+    typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs output(
+        *result, *tracksterSeeds, *tracksterSeedsDoublets);
     myAlgo_->makeTracksters(input, output, seedToTrackstersAssociation);
   }
   // Now update the global mask and put it into the event

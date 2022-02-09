@@ -52,7 +52,8 @@ namespace ticl {
       std::vector<int>& tracksterSeeds;
       std::vector<std::vector<int>>& tracksterSeedsDoublets;
 
-      Outputs(std::vector<Trackster>& r, std::vector<int>& s, std::vector<std::vector<int>>& sd) : result(r), tracksterSeeds(s), tracksterSeedsDoublets(sd) {}
+      Outputs(std::vector<Trackster>& r, std::vector<int>& s, std::vector<std::vector<int>>& sd)
+          : result(r), tracksterSeeds(s), tracksterSeedsDoublets(sd) {}
     };
 
     virtual void makeTracksters(const Inputs& input,
