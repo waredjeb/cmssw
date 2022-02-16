@@ -26,6 +26,8 @@ namespace ticl {
     struct ClustersOnLayer {
       std::vector<float> x;
       std::vector<float> y;
+      std::vector<float> z;
+      std::vector<float> r_over_absz;
       std::vector<float> radius;
       std::vector<float> eta;
       std::vector<float> phi;
@@ -34,7 +36,7 @@ namespace ticl {
       std::vector<float> energy;
       std::vector<float> rho;
 
-      std::vector<float> delta;
+      std::vector<std::pair<float, int>> delta;
       std::vector<std::pair<int, int>> nearestHigher;
       std::vector<int> clusterIndex;
       std::vector<unsigned int> layerClusterOriginalIdx;
@@ -44,6 +46,8 @@ namespace ticl {
       void clear() {
         x.clear();
         y.clear();
+        z.clear();
+        r_over_absz.clear();
         radius.clear();
         eta.clear();
         phi.clear();
@@ -61,6 +65,8 @@ namespace ticl {
       void shrink_to_fit() {
         x.shrink_to_fit();
         y.shrink_to_fit();
+        z.shrink_to_fit();
+        r_over_absz.shrink_to_fit();
         radius.shrink_to_fit();
         eta.shrink_to_fit();
         phi.shrink_to_fit();
@@ -82,8 +88,8 @@ namespace ticl {
         c.shrink_to_fit();
       }
     }
-    void calculateLocalDensity(const TILES&, const unsigned int layerId, const std::vector<std::pair<int, int>>&);
-    void calculateDistanceToHigher(const TILES&, const unsigned int layerId, const std::vector<std::pair<int, int>>&);
+    void calculateLocalDensity(const TILES&, const int layerId, const std::vector<std::pair<int, int>>&);
+    void calculateDistanceToHigher(const TILES&, const int layerId, const std::vector<std::pair<int, int>>&);
     int findAndAssignTracksters(const TILES&, const std::vector<std::pair<int, int>>&);
     void dumpClusters(const std::vector<std::pair<int, int>>& layerIdx2layerandSoa, const int) const;
     void dumpTracksters(const std::vector<std::pair<int, int>>& layerIdx2layerandSoa,
@@ -95,10 +101,15 @@ namespace ticl {
 
     edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
     const double criticalDensity_;
+    const double criticalSelfDensity_;
     const int densitySiblingLayers_;
     const double densityEtaPhiDistanceSqr_;
-    const double densityOnSameLayer_;
+    const double densityXYDistanceSqr_;
+    const bool densityOnSameLayer_;
+    const bool useAbsoluteProjectiveScale_;
     const double criticalEtaPhiDistance_;
+    const double criticalXYDistance_;
+    const int criticalZDistanceLyr_;
     const double outlierMultiplier_;
     const int minNumLayerCluster_;
     const std::vector<int> filter_on_categories_;
