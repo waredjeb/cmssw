@@ -11,7 +11,7 @@ from RecoHGCal.TICL.fineSimTrackstersProducer_cfi import fineSimTrackstersProduc
 filteredLayerClustersSimTracksters = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSize",
     algo_number = 8,
-    min_cluster_size = 0, # inclusive
+    min_cluster_size = 2, # inclusive
     iteration_label = "ticlSimTracksters"
 )
 
@@ -19,6 +19,15 @@ ticlSimTracksters = _simTrackstersProducer.clone(
 )
 
 ticlFineSimTracksters = _fineSimTrackstersProducer.clone(
+  detector = "HGCAL",
+  layer_clusters = "hgcalLayerClusters",
+  time_layerclusters = "hgcalLayerClusters:timeLayerCluster",
+  filtered_mask = "ticlSimTracksters",
+  patternRecognitionBy = "CLUE3D",
+    pluginPatternRecognitionByCLUE3D = dict (
+        criticalDensity = 2.,
+        criticalEtaPhiDistance = 0.025
+    )
 )
 
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2

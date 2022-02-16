@@ -1,7 +1,8 @@
-// Author: Felice Pantaleo, Wahid Redjeb - felice.pantaleo@cern.ch, wahid.redjeb@cern.ch
+// Author: Felice Pantaleo,Wahid Redjeb - felice.pantaleo@cern.ch,wahid.redjeb@cern.ch
 // Date: 02/2022
 
 // user include files
+#include <vector>
 
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -17,34 +18,24 @@
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 
 #include "DataFormats/HGCalReco/interface/Trackster.h"
-
-#include "DataFormats/Common/interface/ValueMap.h"
-#include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociator.h"
-#include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociator.h"
-
-#include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
-#include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
-#include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
-#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
 
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+
 #include "RecoHGCal/TICL/plugins/PatternRecognitionPluginFactory.h"
 #include "PatternRecognitionbyCA.h"
+#include "PatternRecognitionbyMultiClusters.h"
 
-#include "RecoHGCal/TICL/interface/commons.h"
-
-#include "TrackstersPCA.h"
-#include <vector>
-#include <map>
-#include <iterator>
-#include <algorithm>
+#include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 using namespace ticl;
 
 class FineSimTrackstersProducer : public edm::stream::EDProducer<edm::GlobalCache<TrackstersCache>> {
 public:
   explicit FineSimTrackstersProducer(const edm::ParameterSet&, const TrackstersCache*);
+  ~FineSimTrackstersProducer() override {}
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
   void produce(edm::Event&, const edm::EventSetup&) override;
@@ -55,25 +46,22 @@ public:
 
 private:
   std::string detector_;
-  const bool doNose_ = false;
-  const edm::EDGetTokenT<std::vector<Trackster>> simTracksters_token_;
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
-  const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
-  const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
-
-  const edm::EDGetTokenT<std::vector<SimCluster>> simclusters_token_;
-  const edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
-  const edm::EDGetTokenT<std::vector<TrackingParticle>> trkparticles_token_;
-  const edm::EDGetTokenT<std::vector<TICLSeedingRegion>> seeding_regions_token_;
-
-  const edm::EDGetTokenT<hgcal::SimToRecoCollectionWithSimClusters> associatorMapSimClusterToReco_token_;
-  const edm::EDGetTokenT<hgcal::SimToRecoCollection> associatorMapCaloParticleToReco_token_;
-  const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geom_token_;
+  bool doNose_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
+  const edm::EDGetTokenT<std::vector<Trackster>> simtrackster_token_;
+  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
+  const edm::EDGetTokenT<std::vector<float>> original_layerclusters_mask_token_;
+  const edm::EDGetTokenT<std::vector<TrackingParticle>> trkparticles_token_;
+  const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
+  edm::EDGetTokenT<TICLLayerTiles> layer_clusters_tiles_token_;
+  edm::EDGetTokenT<TICLLayerTilesHFNose> layer_clusters_tiles_hfnose_token_;
+  const edm::EDGetTokenT<std::vector<TICLSeedingRegion>> seeding_regions_token_;
+  const std::string itername_;
+  ticl::Trackster::IterationIndex iterIndex_ = ticl::Trackster::IterationIndex(0);
+  edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geom_token_;
   hgcal::RecHitTools rhtools_;
-
-  const double fractionCut_;
 };
 DEFINE_FWK_MODULE(FineSimTrackstersProducer);
 
@@ -99,21 +87,17 @@ void FineSimTrackstersProducer::globalEndJob(TrackstersCache* cache) {
 FineSimTrackstersProducer::FineSimTrackstersProducer(const edm::ParameterSet& ps, const TrackstersCache* cache)
     : detector_(ps.getParameter<std::string>("detector")),
       doNose_(detector_ == "HFNose"),
-      simTracksters_token_(consumes(ps.getParameter<edm::InputTag>("simTracksters"))),
-      clusters_token_(consumes(ps.getParameter<edm::InputTag>("layer_clusters"))),
-      clustersTime_token_(consumes(ps.getParameter<edm::InputTag>("time_layerclusters"))),
-      filtered_layerclusters_mask_token_(consumes(ps.getParameter<edm::InputTag>("filtered_mask"))), //consume the filtered one to run PR on SimTracksters' LCs
-      simclusters_token_(consumes(ps.getParameter<edm::InputTag>("simclusters"))),
-      caloparticles_token_(consumes(ps.getParameter<edm::InputTag>("caloparticles"))),
+      simtrackster_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("simTracksters"))),
+      clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
+      filtered_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("filtered_mask"))),
+      original_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("original_mask"))),
       trkparticles_token_(consumes(ps.getParameter<edm::InputTag>("trkparticles"))),
+      clustersTime_token_(
+          consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("time_layerclusters"))),
       seeding_regions_token_(
           consumes<std::vector<TICLSeedingRegion>>(ps.getParameter<edm::InputTag>("seeding_regions"))),
-      associatorMapSimClusterToReco_token_(
-          consumes(ps.getParameter<edm::InputTag>("layerClusterSimClusterAssociator"))),
-      associatorMapCaloParticleToReco_token_(
-          consumes(ps.getParameter<edm::InputTag>("layerClusterCaloParticleAssociator"))),
-      geom_token_(esConsumes()),
-      fractionCut_(ps.getParameter<double>("fractionCut")) {
+      itername_(ps.getParameter<std::string>("itername")),
+      geom_token_(esConsumes()) {
   auto plugin = ps.getParameter<std::string>("patternRecognitionBy");
   auto pluginPSet = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + plugin);
   if (doNose_) {
@@ -123,11 +107,22 @@ FineSimTrackstersProducer::FineSimTrackstersProducer(const edm::ParameterSet& ps
     myAlgo_ = PatternRecognitionFactory::get()->create(
         ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, cache, consumesCollector());
   }
-  produces<TracksterCollection>("fine");
-  produces<std::vector<float>>("fine");
-  produces<TracksterCollection>("fineFromCPs");
-  produces<std::vector<float>>("fineFromCPs");
-  produces<std::map<uint, std::vector<uint>>>("fine");
+
+  if (itername_ == "TrkEM")
+    iterIndex_ = ticl::Trackster::TRKEM;
+  else if (itername_ == "EM")
+    iterIndex_ = ticl::Trackster::EM;
+  else if (itername_ == "Trk")
+    iterIndex_ = ticl::Trackster::TRKHAD;
+  else if (itername_ == "HAD")
+    iterIndex_ = ticl::Trackster::HAD;
+  else if (itername_ == "MIP")
+    iterIndex_ = ticl::Trackster::MIP;
+
+  produces<std::vector<Trackster>>("fine");
+  produces<std::vector<int>>("tracksterSeeds");
+  produces<std::vector<std::vector<int>>>("tracksterSeedsDoublets");
+  produces<std::vector<float>>("fine");  // Mask to be applied at the next iteration
 }
 
 void FineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -136,19 +131,14 @@ void FineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<std::string>("detector", "HGCAL");
   desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalLayerClusters"));
-  desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("filtered_mask", edm::InputTag("ticlSimTracksters"));
-  desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
-  desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalLayerClusters", "timeLayerCluster"));
+  desc.add<edm::InputTag>("original_mask", edm::InputTag("hgcalLayerClusters", "InitialLayerClustersMask"));
   desc.add<edm::InputTag>("trkparticles", edm::InputTag("prunedTrackingParticles"));
   desc.add<edm::InputTag>("seeding_regions", edm::InputTag("ticlSeedingGlobal"));
-  desc.add<std::string>("patternRecognitionBy", "CA");
-  desc.add<edm::InputTag>("layerClusterSimClusterAssociator",
-                          edm::InputTag("layerClusterSimClusterAssociationProducer"));
-  desc.add<edm::InputTag>("layerClusterCaloParticleAssociator",
-                          edm::InputTag("layerClusterCaloParticleAssociationProducer"));
-  desc.add<double>("fractionCut", 0.);
+  desc.add<std::string>("patternRecognitionBy", "CLUE3D");
   desc.add<std::string>("eid_graph_path", "RecoHGCal/TICL/data/tf_models/energy_id_v0.pb");
+  desc.add<std::string>("itername", "unknown");
 
   // CA Plugin
   edm::ParameterSetDescription pluginDesc;
@@ -165,53 +155,37 @@ void FineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions&
   pluginDescFastJet.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "FastJet", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByFastJet", pluginDescFastJet);
 
-  descriptions.addWithDefaultLabel(desc);
+  descriptions.add("fineSimTrackstersProducer", desc);
 }
 
 void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
-  auto tiles = std::make_unique<TICLLayerTiles>();
-  auto tilesHFNose = std::make_unique<TICLLayerTilesHFNose>();
-  auto result = std::make_unique<TracksterCollection>();
-  auto output_mask = std::make_unique<std::vector<float>>();
-  auto result_fromCP = std::make_unique<TracksterCollection>();
-  auto output_mask_fromCP = std::make_unique<std::vector<float>>();
-  auto cpToSc_SimTrackstersMap = std::make_unique<std::map<uint, std::vector<uint>>>();
+  auto result = std::make_unique<std::vector<Trackster>>();
   auto tracksterSeeds = std::make_unique<std::vector<int>>();
   auto tracksterSeedsDoublets = std::make_unique<std::vector<std::vector<int>>>();
+  auto layer_clusters_tiles = std::make_unique<TICLLayerTiles>();
+  auto layer_clusters_hfnose_tiles = std::make_unique<TICLLayerTilesHFNose>();
 
-  const auto& simTracksters = evt.get(simTracksters_token_);
+  auto output_mask = std::make_unique<std::vector<float>>();
+  const std::vector<Trackster>& simTracksters = evt.get(simtrackster_token_);
+  const std::vector<float>& original_layerclusters_mask = evt.get(original_layerclusters_mask_token_);
   const auto& layerClusters = evt.get(clusters_token_);
-  const auto& layerClustersTimes = evt.get(clustersTime_token_);
   const auto& inputClusterMask = evt.get(filtered_layerclusters_mask_token_);
-  output_mask->resize(layerClusters.size(), 1.f);
-  output_mask_fromCP->resize(layerClusters.size(), 1.f);
-
-  const auto& simclusters = evt.get(simclusters_token_);
-  const auto& caloparticles = evt.get(caloparticles_token_);
+  const auto& layerClustersTimes = evt.get(clustersTime_token_);
+  const auto& seeding_regions = evt.get(seeding_regions_token_);
   const auto& trkparticles = evt.get(trkparticles_token_);
 
-  const auto& simClustersToRecoColl = evt.get(associatorMapSimClusterToReco_token_);
-  const auto& caloParticlesToRecoColl = evt.get(associatorMapCaloParticleToReco_token_);
-
+  std::vector<float> fine_input_cluster_mask;
+  std::vector<float> cluters_mask(layerClusters.size(), 0.);
+  fine_input_cluster_mask.reserve(layerClusters.size());
   const auto& geom = es.getData(geom_token_);
   rhtools_.setGeometry(geom);
-  const auto num_simclusters = simclusters.size();
-  // result->reserve(num_simclusters);  // Conservative size, will call shrink_to_fit later
-  const auto num_caloparticles = caloparticles.size();
-  // result_fromCP->reserve(num_caloparticles);
-
-  auto sim_tracksters_size = simTracksters.size();
-  std::vector<TICLSeedingRegion> seeding_regions;
-  for (size_t i = 0; i < sim_tracksters_size; i++) {
-    auto sim_t = simTracksters[i];
-    auto N_lcs = sim_t.vertices().size();
-    for (size_t i_lc = 0; i_lc < N_lcs; i_lc++) {
-      auto lc = layerClusters[sim_t.vertices(i_lc)];
-    }
-  }
+  double counter = 0.;
+  int lcId = 0;
 
   for (size_t i = 0; i < layerClusters.size(); i++) {
-    if (inputClusterMask[i] > 0) {
+    if (inputClusterMask[i] == 0) {
+      fine_input_cluster_mask.push_back(1);
+      counter += 1;
       auto lc = layerClusters[i];
       const auto firstHitDetId = lc.hitsAndFractions()[0].first;
       int layer = rhtools_.getLayerWithOffset(firstHitDetId) +
@@ -219,43 +193,53 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
       assert(layer >= 0);
 
       if (doNose_)
-        tilesHFNose->fill(layer, lc.eta(), lc.phi(), i);
+        layer_clusters_hfnose_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
       else
-        tiles->fill(layer, lc.eta(), lc.phi(), i);
+        layer_clusters_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
+      lcId++;
+    } else {
+      fine_input_cluster_mask.push_back(0);
     }
   }
 
   std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
   // if it's regional iteration and there are seeding regions
-  // nothing done here, no seeding regions, just global iterations!
   if (!seeding_regions.empty() and seeding_regions[0].index != -1) {
     auto numberOfSeedingRegions = seeding_regions.size();
     for (unsigned int i = 0; i < numberOfSeedingRegions; ++i) {
       seedToTrackstersAssociation.emplace(seeding_regions[i].index, 0);
     }
   }
-
   if (doNose_) {
-    // const auto& layer_clusters_hfnose_tiles = evt.get(layer_clusters_tiles_hfnose_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(
-        evt, es, layerClusters, inputClusterMask, layerClustersTimes, *(tilesHFNose.get()), seeding_regions);
+    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(evt,
+                                                                                         es,
+                                                                                         layerClusters,
+                                                                                         fine_input_cluster_mask,
+                                                                                         layerClustersTimes,
+                                                                                         *layer_clusters_hfnose_tiles,
+                                                                                         seeding_regions);
 
     typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Outputs output(
         *result, *tracksterSeeds, *tracksterSeedsDoublets);
     myAlgoHFNose_->makeTracksters(inputHFNose, output, seedToTrackstersAssociation);
 
   } else {
-    // const auto& layer_clusters_tiles = evt.get(layer_clusters_tiles_token_);
     const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
-        evt, es, layerClusters, inputClusterMask, layerClustersTimes, *(tiles.get()), seeding_regions);
+        evt, es, layerClusters, fine_input_cluster_mask, layerClustersTimes, *layer_clusters_tiles, seeding_regions);
+
     typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs output(
         *result, *tracksterSeeds, *tracksterSeedsDoublets);
     myAlgo_->makeTracksters(input, output, seedToTrackstersAssociation);
   }
+  // Now update the global mask and put it into the event
+  output_mask->reserve(original_layerclusters_mask.size());
+  // Copy over the previous state
+  std::copy(
+      std::begin(original_layerclusters_mask), std::end(original_layerclusters_mask), std::back_inserter(*output_mask));
 
   evt.put(std::move(result), "fine");
   evt.put(std::move(output_mask), "fine");
-  evt.put(std::move(result_fromCP), "fineFromCPs");
-  evt.put(std::move(output_mask_fromCP), "fineFromCPs");
-  evt.put(std::move(cpToSc_SimTrackstersMap), "fine");
+  // evt.put(std::move(result_fromCP), "fineFromCPs");
+  // evt.put(std::move(output_mask_fromCP), "fineFromCPs");
+  // evt.put(std::move(cpToSc_SimTrackstersMap), "fine");
 }
