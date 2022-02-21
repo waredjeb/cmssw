@@ -185,7 +185,7 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
   const auto& seeding_regions = evt.get(seeding_regions_token_);
   const auto& trkparticles = evt.get(trkparticles_token_);
 
-  std::vector<float> fine_input_cluster_mask(layerClusters.size(), 0);
+  std::vector<float> fine_input_cluster_mask(layerClusters.size(), 0.);
   std::vector<float> cluters_mask(layerClusters.size(), 0.);
   // fine_input_cluster_mask.reserve(layerClusters.size());
   const auto& geom = es.getData(geom_token_);
@@ -193,26 +193,24 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
   double counter = 0.;
   int lcId = 0;
 
-  for (size_t i = 0; i < inputClusterMask.size(); i++) {
-    if (inputClusterMask[i] == 0) {
-      fine_input_cluster_mask[i] = 1;
-      counter += 1;
-      auto lc = layerClusters[i];
-      const auto firstHitDetId = lc.hitsAndFractions()[0].first;
-      int layer = rhtools_.getLayerWithOffset(firstHitDetId) +
-                  rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
-      assert(layer >= 0);
+  for(size_t i_st = 0; i_st < simTracksters.size(); i_st++){
+      auto trk = simTracksters[i_st];
+      auto N = trk.vertices().size();
+      for( size_t i_lc = 0; i_lc < N; i_lc++){
+        fine_input_cluster_mask[trk.vertices(i_lc)] = 1;
+        auto lc = layerClusters[trk.vertices(i_lc)];
+        const auto firstHitDetId = lc.hitsAndFractions()[0].first;
+        int layer = rhtools_.getLayerWithOffset(firstHitDetId) +
+                    rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
+        assert(layer >= 0);
 
-      if (doNose_)
-        layer_clusters_hfnose_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
-      else
-        layer_clusters_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
-      lcId++;
-    } else {
-      fine_input_cluster_mask[i] = 0;
-    }
+        if (doNose_)
+          layer_clusters_hfnose_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
+        else
+          layer_clusters_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
+        lcId++;
+      }
   }
-
     // std::vector<float> fine_input_cluster_mask;
     auto tmp_result = std::make_unique<std::vector<Trackster>>();
     // fine_input_cluster_mask.resize(layerClusters.size(), 0);
@@ -222,6 +220,22 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
     std::cout << "Count av lcs " << count_av_lcs << std::endl;
     std::cout << "Count non av lcs " << count_nonav_lcs << std::endl;
 
+    // for(size_t j = 0; j < fine_input_cluster_mask.size(); j++){
+    //   if(fine_input_cluster_mask[j] == 1){
+    //     auto lc = layerClusters[j];
+    //     const auto firstHitDetId = lc.hitsAndFractions()[0].first;
+    //     int layer = rhtools_.getLayerWithOffset(firstHitDetId) +
+    //                 rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
+    //     assert(layer >= 0);
+
+    //     if (doNose_)
+    //       layer_clusters_hfnose_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
+    //     else
+    //       layer_clusters_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
+    //     lcId++;
+    //     // std::cout << "Index of My mask " << j << std::endl;
+    //   }
+    // }
     std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
     // if it's regional iteration and there are seeding regions
     if (!seeding_regions.empty() and seeding_regions[0].index != -1) {
