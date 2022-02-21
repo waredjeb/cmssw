@@ -275,17 +275,24 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     }
   }
 
+  std::vector<Trackster> filtered_result;
+  std::vector<int> filtered_tracksterSeeds;
+  std::vector<std::vector<int>> filtered_tracksterSeedsDoublets;
+
   for (size_t i = 0; i < result.size(); i++) {
-    if (static_cast<int>(result[i].vertices().size()) < minNumLayerCluster_) {
-      result.erase(result.begin() + i);
-      tracksterSeeds.erase(tracksterSeeds.begin() + i);
-      tracksterSeedsDoublets.erase(tracksterSeedsDoublets.begin() + i);
+    if (static_cast<int>(result[i].vertices().size()) >= minNumLayerCluster_) {
+      filtered_result.push_back(result[i]);
+      filtered_tracksterSeeds.push_back(tracksterSeeds[i]);
+      filtered_tracksterSeedsDoublets.push_back(tracksterSeedsDoublets[i]);
     }
   }
 
-  result.shrink_to_fit();
-  tracksterSeeds.shrink_to_fit();
-  tracksterSeedsDoublets.shrink_to_fit();
+  output.result = std::move(filtered_result);
+  output.tracksterSeeds = std::move(filtered_tracksterSeeds);
+  output.tracksterSeedsDoublets = std::move(filtered_tracksterSeedsDoublets);
+  filtered_result.shrink_to_fit();
+  filtered_tracksterSeeds.shrink_to_fit();
+  filtered_tracksterSeedsDoublets.shrink_to_fit();
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,

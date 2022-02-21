@@ -36,6 +36,7 @@ class FineSimTrackstersProducer : public edm::stream::EDProducer<edm::GlobalCach
 public:
   explicit FineSimTrackstersProducer(const edm::ParameterSet&, const TrackstersCache*);
   ~FineSimTrackstersProducer() override {}
+
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
   void produce(edm::Event&, const edm::EventSetup&) override;
@@ -43,6 +44,13 @@ public:
   // static methods for handling the global cache
   static std::unique_ptr<TrackstersCache> initializeGlobalCache(const edm::ParameterSet&);
   static void globalEndJob(TrackstersCache*);
+  void computeSingleTracksterMask(std::vector<float>& result_mask, const Trackster& tracksters, const std::vector<reco::CaloCluster>& lcs){
+    auto N = tracksters.vertices().size();
+    for(size_t i_lc = 0; i_lc < N; i_lc++){
+    result_mask[tracksters.vertices(i_lc)] = 1; // make the lcs available
+    // std::cout << "SimTrackster index " << tracksters.vertices(i_lc) << std::endl;
+    }
+}
 
 private:
   std::string detector_;
@@ -159,11 +167,14 @@ void FineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions&
 }
 
 void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
+  std::cout << " --- BEGIN FINE SIMTRACKSTER PRODUCER ----- " << std::endl;
   auto result = std::make_unique<std::vector<Trackster>>();
   auto tracksterSeeds = std::make_unique<std::vector<int>>();
   auto tracksterSeedsDoublets = std::make_unique<std::vector<std::vector<int>>>();
   auto layer_clusters_tiles = std::make_unique<TICLLayerTiles>();
   auto layer_clusters_hfnose_tiles = std::make_unique<TICLLayerTilesHFNose>();
+  // auto layer_clusters_tiles = std::make_unique<TICLLayerTiles>();
+  // auto layer_clusters_hfnose_tiles = std::make_unique<TICLLayerTilesHFNose>();
 
   auto output_mask = std::make_unique<std::vector<float>>();
   const std::vector<Trackster>& simTracksters = evt.get(simtrackster_token_);
@@ -174,17 +185,17 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
   const auto& seeding_regions = evt.get(seeding_regions_token_);
   const auto& trkparticles = evt.get(trkparticles_token_);
 
-  std::vector<float> fine_input_cluster_mask;
+  std::vector<float> fine_input_cluster_mask(layerClusters.size(), 0);
   std::vector<float> cluters_mask(layerClusters.size(), 0.);
-  fine_input_cluster_mask.reserve(layerClusters.size());
+  // fine_input_cluster_mask.reserve(layerClusters.size());
   const auto& geom = es.getData(geom_token_);
   rhtools_.setGeometry(geom);
   double counter = 0.;
   int lcId = 0;
 
-  for (size_t i = 0; i < layerClusters.size(); i++) {
+  for (size_t i = 0; i < inputClusterMask.size(); i++) {
     if (inputClusterMask[i] == 0) {
-      fine_input_cluster_mask.push_back(1);
+      fine_input_cluster_mask[i] = 1;
       counter += 1;
       auto lc = layerClusters[i];
       const auto firstHitDetId = lc.hitsAndFractions()[0].first;
@@ -198,48 +209,64 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
         layer_clusters_tiles->fill(layer, lc.eta(), lc.phi(), lcId);
       lcId++;
     } else {
-      fine_input_cluster_mask.push_back(0);
+      fine_input_cluster_mask[i] = 0;
     }
   }
 
-  std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
-  // if it's regional iteration and there are seeding regions
-  if (!seeding_regions.empty() and seeding_regions[0].index != -1) {
-    auto numberOfSeedingRegions = seeding_regions.size();
-    for (unsigned int i = 0; i < numberOfSeedingRegions; ++i) {
-      seedToTrackstersAssociation.emplace(seeding_regions[i].index, 0);
+    // std::vector<float> fine_input_cluster_mask;
+    auto tmp_result = std::make_unique<std::vector<Trackster>>();
+    // fine_input_cluster_mask.resize(layerClusters.size(), 0);
+    // computeSingleTracksterMask(fine_input_cluster_mask, simTracksters[i_st], layerClusters);
+    auto count_av_lcs = std::count_if(fine_input_cluster_mask.begin(), fine_input_cluster_mask.end(), [](int i ){return i == 1;});
+    auto count_nonav_lcs = std::count_if(fine_input_cluster_mask.begin(), fine_input_cluster_mask.end(), [](int i ){return i == 0;});
+    std::cout << "Count av lcs " << count_av_lcs << std::endl;
+    std::cout << "Count non av lcs " << count_nonav_lcs << std::endl;
+
+    std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
+    // if it's regional iteration and there are seeding regions
+    if (!seeding_regions.empty() and seeding_regions[0].index != -1) {
+      auto numberOfSeedingRegions = seeding_regions.size();
+      for (unsigned int i = 0; i < numberOfSeedingRegions; ++i) {
+        seedToTrackstersAssociation.emplace(seeding_regions[i].index, 0);
+      }
     }
+    if (doNose_) {
+      const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(evt,
+                                                                                          es,
+                                                                                          layerClusters,
+                                                                                          fine_input_cluster_mask,
+                                                                                          layerClustersTimes,
+                                                                                          *layer_clusters_hfnose_tiles,
+                                                                                          seeding_regions);
+
+      typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Outputs output(
+          *tmp_result, *tracksterSeeds, *tracksterSeedsDoublets);
+      myAlgoHFNose_->makeTracksters(inputHFNose, output, seedToTrackstersAssociation);
+
+    } else {
+      const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
+          evt, es, layerClusters, fine_input_cluster_mask, layerClustersTimes, *layer_clusters_tiles, seeding_regions);
+
+      typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs output(
+          *tmp_result, *tracksterSeeds, *tracksterSeedsDoublets);
+      myAlgo_->makeTracksters(input, output, seedToTrackstersAssociation);
+    }
+  for(auto& tr : *tmp_result){
+    std::cout << " RESULTS LCs size " << tr.vertices().size() << std::endl;
   }
-  if (doNose_) {
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(evt,
-                                                                                         es,
-                                                                                         layerClusters,
-                                                                                         fine_input_cluster_mask,
-                                                                                         layerClustersTimes,
-                                                                                         *layer_clusters_hfnose_tiles,
-                                                                                         seeding_regions);
-
-    typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Outputs output(
-        *result, *tracksterSeeds, *tracksterSeedsDoublets);
-    myAlgoHFNose_->makeTracksters(inputHFNose, output, seedToTrackstersAssociation);
-
-  } else {
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
-        evt, es, layerClusters, fine_input_cluster_mask, layerClustersTimes, *layer_clusters_tiles, seeding_regions);
-
-    typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs output(
-        *result, *tracksterSeeds, *tracksterSeedsDoublets);
-    myAlgo_->makeTracksters(input, output, seedToTrackstersAssociation);
-  }
+  result->insert(result->end(), tmp_result->begin(), tmp_result->end());
+  // }
   // Now update the global mask and put it into the event
   output_mask->reserve(original_layerclusters_mask.size());
   // Copy over the previous state
   std::copy(
       std::begin(original_layerclusters_mask), std::end(original_layerclusters_mask), std::back_inserter(*output_mask));
-
+  
+  std::cout << " SimTracksters Size " << simTracksters.size() <<  " FineSimTrackster Size " << result->size()  << std::endl;
   evt.put(std::move(result), "fine");
   evt.put(std::move(output_mask), "fine");
   // evt.put(std::move(result_fromCP), "fineFromCPs");
   // evt.put(std::move(output_mask_fromCP), "fineFromCPs");
   // evt.put(std::move(cpToSc_SimTrackstersMap), "fine");
+  std::cout << " --- END FINE SIMTRACKSTER PRODUCER ----- " << std::endl;
 }
