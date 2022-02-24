@@ -25,10 +25,11 @@ ticlFineSimTracksters = _fineSimTrackstersProducer.clone(
   filtered_mask = "ticlSimTracksters",
   patternRecognitionBy = "CLUE3D",
     pluginPatternRecognitionByCLUE3D = dict (
-        criticalDensity = 2.,
+        criticalDensity = 0.6,
         criticalEtaPhiDistance = 0.025,
         minNumLayerCluster = 2,
-        algo_verbosity = 0
+        algo_verbosity = 0,
+        outlierMultiplier = 10e9
     )
 )
 
