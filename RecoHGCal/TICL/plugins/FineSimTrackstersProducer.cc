@@ -137,22 +137,22 @@ FineSimTrackstersProducer::FineSimTrackstersProducer(const edm::ParameterSet& ps
       itername_(ps.getParameter<std::string>("itername")),
       geom_token_(esConsumes()) {
   auto plugin = ps.getParameter<std::string>("patternRecognitionBy");
-  auto pluginMIP = ps.getParameter<std::string>("patternRecognitionBy");
+  auto pluginMIP = ps.getParameter<std::string>("patternRecognitionMIPBy");
   auto pluginPSet = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + plugin);
-  auto pluginPSetMIP = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + pluginMIP);
+  auto pluginPSetMIP = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionMIPBy" + pluginMIP);
   if (doNose_) {
     myAlgoHFNose_ = PatternRecognitionHFNoseFactory::get()->create(
         ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, cache, consumesCollector());
     layer_clusters_tiles_hfnose_token_ =
         consumes<TICLLayerTilesHFNose>(ps.getParameter<edm::InputTag>("layer_clusters_hfnose_tiles"));
     myAlgoHFNoseMIP_ = PatternRecognitionHFNoseFactory::get()->create(
-        ps.getParameter<std::string>("patternRecognitionBy"), pluginPSetMIP, cache, consumesCollector());
+        ps.getParameter<std::string>("patternRecognitionMIPBy"), pluginPSetMIP, cache, consumesCollector());
   } else {
     myAlgo_ = PatternRecognitionFactory::get()->create(
         ps.getParameter<std::string>("patternRecognitionBy"), pluginPSet, cache, consumesCollector());
     layer_clusters_tiles_token_ = consumes<TICLLayerTiles>(ps.getParameter<edm::InputTag>("layer_clusters_tiles"));
     myAlgoMIP_ = PatternRecognitionFactory::get()->create(
-        ps.getParameter<std::string>("patternRecognitionBy"), pluginPSetMIP, cache, consumesCollector());
+        ps.getParameter<std::string>("patternRecognitionMIPBy"), pluginPSetMIP, cache, consumesCollector());
   }
 
   if (itername_ == "TrkEM")
@@ -168,6 +168,8 @@ FineSimTrackstersProducer::FineSimTrackstersProducer(const edm::ParameterSet& ps
 
   produces<std::vector<Trackster>>("fine");
   produces<std::vector<int>>("fine");
+  produces<std::vector<Trackster>>("fineMIP");
+  produces<std::vector<int>>("fineMIP");
   produces<std::map<uint, std::vector<uint>>>("fine");
   // produces<std::vector<std::vector<int>>>("tracksterSeedsDoublets");
   produces<std::vector<float>>("fine");  //  Mask to be applied at the next iteration
@@ -187,14 +189,18 @@ void FineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<edm::InputTag>("layer_clusters_tiles", edm::InputTag("ticlLayerTileProducer"));
   desc.add<edm::InputTag>("layer_clusters_hfnose_tiles", edm::InputTag("ticlLayerTileHFNose"));
   desc.add<std::string>("patternRecognitionBy", "CLUE3D");
+  desc.add<std::string>("patternRecognitionMIPBy", "CA");
   desc.add<std::string>("eid_graph_path", "RecoHGCal/TICL/data/tf_models/energy_id_v0.pb");
   desc.add<std::string>("itername", "unknown");
 
   // CA Plugin
   edm::ParameterSetDescription pluginDesc;
   pluginDesc.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CA", true));
-  desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCA", pluginDesc);
-  //
+  desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionMIPByCA", pluginDesc);
+  //CA Plugin for MIP
+  // edm::ParameterSetDescription pluginDescCA;
+  // pluginDescCA.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CA", true));
+  // desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCA", pluginDescCA);
   // CLUE3D Plugin
   edm::ParameterSetDescription pluginDescClue3D;
   pluginDescClue3D.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CLUE3D", true));
@@ -211,6 +217,8 @@ void FineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions&
 void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   std::cout << " BEGIN PRODUCER " << std::endl;
   auto result = std::make_unique<std::vector<Trackster>>();
+  auto resultMIP = std::make_unique<std::vector<Trackster>>();
+  auto tracksterSeedsMIP = std::make_unique<std::vector<int>>();
   auto tracksterSeeds = std::make_unique<std::vector<int>>();
   auto tracksterSeedsDoublets = std::make_unique<std::vector<std::vector<int>>>();
   auto layer_clusters_tiles = std::make_unique<TICLLayerTiles>();
@@ -260,6 +268,9 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
     }
     auto tmp_result = std::make_unique<std::vector<Trackster>>();
     auto tmp_tracksterSeeds = std::make_unique<std::vector<int>>();
+    auto tmp_resultMIP = std::make_unique<std::vector<Trackster>>();
+    auto tmp_tracksterSeedsMIP = std::make_unique<std::vector<int>>();
+    auto tmp_tracksterSeedsDoubletsMIP = std::make_unique<std::vector<std::vector<int>>>();
     auto tmp_tracksterSeedsDoublets = std::make_unique<std::vector<std::vector<int>>>();
     std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
     // if it's regional iteration and there are seeding regions
@@ -312,22 +323,55 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
         output_mask[v] = 0.;
       }
     }
-
-    for(size_t i = 0; i < simTracksters[i_st].vertices().size(); i++){
-      auto i_lc_st = simTracksters[i_st].vertices(i);
-      auto index_nearest_seed = -1;
-      if(output_mask[i_lc_st]  > 0.){
-        auto lc = layerClusters[i_lc_st];
-        index_nearest_seed = findNearestSeed(lc, *tmp_tracksterSeeds, layerClusters);
-        std::cout << "Index nearest seed " << index_nearest_seed << " Mask " << output_mask[i_lc_st] <<  std::endl;
-        if(index_nearest_seed >= 0){
-          (*tmp_result)[index_nearest_seed].vertices().push_back(i_lc_st);
-        }
-      }
+  auto tot_still_av = 0;
+  
+  for(auto& x : output_mask){
+    if(x > 0){
+      tot_still_av +=1;
     }
+  }
+  std::cout << " LCs still available " << tot_still_av << std::endl;
+  if (doNose_) {
+      const auto& layer_clusters_hfnose_tiles_mip = evt.get(layer_clusters_tiles_hfnose_token_);
+      const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNoseMIP(evt,
+                                                                                           es,
+                                                                                           layerClusters,
+                                                                                           output_mask,
+                                                                                           layerClustersTimes,
+                                                                                           layer_clusters_hfnose_tiles_mip,
+                                                                                           seeding_regions);
+
+      typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Outputs outputMIPNose(
+          *tmp_resultMIP, *tmp_tracksterSeedsMIP, *tmp_tracksterSeedsDoubletsMIP);
+      myAlgoHFNoseMIP_->makeTracksters(inputHFNoseMIP, outputMIPNose, seedToTrackstersAssociation);
+
+    } else {
+      const auto& layer_clusters_tiles_mip = evt.get(layer_clusters_tiles_token_);
+      const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs inputMIP(
+          evt, es, layerClusters, output_mask, layerClustersTimes, layer_clusters_tiles_mip, seeding_regions);
+
+      typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs outputMIP(
+          *tmp_resultMIP, *tmp_tracksterSeedsMIP, *tmp_tracksterSeedsDoubletsMIP);
+      myAlgoMIP_->makeTracksters(inputMIP, outputMIP, seedToTrackstersAssociation);
+    }
+
+    // for(size_t i = 0; i < simTracksters[i_st].vertices().size(); i++){
+    //   auto i_lc_st = simTracksters[i_st].vertices(i);
+    //   auto index_nearest_seed = -1;
+    //   if(output_mask[i_lc_st]  > 0.){
+    //     auto lc = layerClusters[i_lc_st];
+    //     index_nearest_seed = findNearestSeed(lc, *tmp_tracksterSeeds, layerClusters);
+    //     std::cout << "Index nearest seed " << index_nearest_seed << " Mask " << output_mask[i_lc_st] <<  std::endl;
+    //     if(index_nearest_seed >= 0){
+    //       (*tmp_result)[index_nearest_seed].vertices().push_back(i_lc_st);
+    //     }
+    //   }
+    // }
 
     // (*simTracksterToFineSimTracksters)[i_st] = fine_sim_trackster_index;
     result->insert(result->end(), tmp_result->begin(), tmp_result->end());
+    resultMIP->insert(resultMIP->end(), tmp_resultMIP->begin(), tmp_resultMIP->end());
+    tracksterSeedsMIP->insert(tracksterSeedsMIP->end(), tmp_tracksterSeedsMIP->begin(), tmp_tracksterSeedsMIP->end());
     tracksterSeeds->insert(tracksterSeeds->end(), tmp_tracksterSeeds->begin(), tmp_tracksterSeeds->end());
   }  // end simtracksters loop
 
@@ -341,6 +385,9 @@ void FineSimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& 
 
 
   evt.put(std::move(result), "fine");
+  evt.put(std::move(resultMIP), "fineMIP");
   evt.put(std::move(simTracksterToFineSimTracksters), "fine");
   evt.put(std::move(tracksterSeeds), "fine");
+  evt.put(std::move(tracksterSeedsMIP), "fineMIP");
+  std::cout << "END PRODUCER " << std::endl;
 }
