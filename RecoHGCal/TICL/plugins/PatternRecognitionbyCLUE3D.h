@@ -5,6 +5,7 @@
 #define __RecoHGCal_TICL_PRbyCLUE3D_H__
 #include <memory>  // unique_ptr
 #include "RecoHGCal/TICL/interface/PatternRecognitionAlgoBase.h"
+#include "DataFormats/DetId/interface/DetId.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 namespace ticl {
@@ -129,7 +130,9 @@ namespace ticl {
     const int minNumLayerCluster_;
     const std::vector<int> filter_on_categories_;
     const std::string eidInputName_;
+    const std::string eidInputNameER_;
     const std::string eidOutputNameEnergy_;
+    const std::string eidOutputNameEnergyER_;
     const std::string eidOutputNameId_;
     const float eidMinClusterEnergy_;
     const int eidNLayers_;
@@ -137,8 +140,10 @@ namespace ticl {
 
     hgcal::RecHitTools rhtools_;
     tensorflow::Session* eidSession_;
+    tensorflow::Session* eidSessionER_;
 
     static const int eidNFeatures_ = 3;
+    static const int eidNFeaturesER_ = 20;
   };
 
 }  // namespace ticl

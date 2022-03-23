@@ -9,6 +9,7 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include "PatternRecognitionbyCLUE3D.h"
+#include "RecoHGCal/TICL/interface/commons.h"
 
 #include "TrackstersPCA.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
@@ -38,7 +39,9 @@ PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::Paramet
       outlierMultiplier_(conf.getParameter<double>("outlierMultiplier")),
       minNumLayerCluster_(conf.getParameter<int>("minNumLayerCluster")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
+      eidInputNameER_(conf.getParameter<std::string>("eid_input_nameER")),
       eidOutputNameEnergy_(conf.getParameter<std::string>("eid_output_name_energy")),
+      eidOutputNameEnergyER_(conf.getParameter<std::string>("eid_output_name_energyER")),
       eidOutputNameId_(conf.getParameter<std::string>("eid_output_name_id")),
       eidMinClusterEnergy_(conf.getParameter<double>("eid_min_cluster_energy")),
       eidNLayers_(conf.getParameter<int>("eid_n_layers")),
@@ -869,7 +872,9 @@ void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDes
   iDesc.add<double>("outlierMultiplier", 2);
   iDesc.add<int>("minNumLayerCluster", 2)->setComment("Not Inclusive");
   iDesc.add<std::string>("eid_input_name", "input");
+  iDesc.add<std::string>("eid_input_nameER", "input");
   iDesc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
+  iDesc.add<std::string>("eid_output_name_energyER", "output/er_coefficients");
   iDesc.add<std::string>("eid_output_name_id", "output/id_probabilities");
   iDesc.add<double>("eid_min_cluster_energy", 1.);
   iDesc.add<int>("eid_n_layers", 50);
