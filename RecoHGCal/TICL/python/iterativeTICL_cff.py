@@ -3,6 +3,9 @@ import FWCore.ParameterSet.Config as cms
 from RecoHGCal.TICL.FastJetStep_cff import *
 from RecoHGCal.TICL.CLUE3DHighStep_cff import *
 from RecoHGCal.TICL.CLUE3DLowStep_cff import *
+from RecoHGCal.TICL.MIPStep_cff import *
+from RecoHGCal.TICL.TrkEMStep_cff import *
+from RecoHGCal.TICL.TrkStep_cff import *
 from RecoHGCal.TICL.EMStep_cff import *
 from RecoHGCal.TICL.HADStep_cff import *
 
@@ -34,6 +37,7 @@ ticl_v3.toModify(ticlIterationsTask, func=lambda x : x.add( ticlTrkEMStepTask
     ,ticlEMStepTask
     ,ticlTrkStepTask
     ,ticlHADStepTask) )
+
 ticlIterLabels = [_step.itername.value() for _iteration in ticlIterationsTask for _step in _iteration if (_step._TypedParameterizable__type == "TrackstersProducer")]
 
 ticlTracksterMergeTask = cms.Task(ticlTrackstersMerge)
@@ -62,6 +66,9 @@ ticlLayerTileHFNose = ticlLayerTileProducer.clone(
 ticlLayerTileHFNoseTask = cms.Task(ticlLayerTileHFNose)
 
 iterHFNoseTICLTask = cms.Task(ticlLayerTileHFNoseTask
+    ,ticlHFNoseTrkEMStepTask
     ,ticlHFNoseEMStepTask
+    ,ticlHFNoseTrkStepTask
     ,ticlHFNoseHADStepTask
+    ,ticlHFNoseMIPStepTask
 )
