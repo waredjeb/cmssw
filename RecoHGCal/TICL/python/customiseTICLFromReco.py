@@ -14,32 +14,13 @@ from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseHGCalOnl
 
 
 def customiseTICLFromReco(process):
-
 # TensorFlow ESSource
-    process.TFileService = cms.Service("TFileService",
-                                       # fileName = cms.string('/afs/cern.ch/work/w/wredjeb/public/EnergyRegression/TFInterface/Rebase/CMSSW_12_4_0_pre2/src/38693.0_CloseByParticleGun+2026D86+CloseByParticle_Photon_ERZRanges_GenSimHLBeamSpotHGCALCloseBy+DigiTrigger+RecoGlobal+HARVESTGlobal/ticlTracksterCLUE3DKaonsAllProb.root')
-					fileName = cms.string('/afs/cern.ch/work/w/wredjeb/public/EnergyRegression/TFInterface/Rebase/CMSSW_12_4_0_pre2/src/38694.203_CloseByPGun_CE_E_Front_300um+2026D86_ticl_v4+CE_E_Front_300um_GenSimHLBeamSpotHGCALCloseBy+DigiTrigger+RecoGlobal+HARVESTGlobal/ticlTrackstersCLUE3DElectronAllProb.root')
-                                    )
     process.TFESSource = cms.Task(process.trackdnn_source)
-
-    process.TICL = cms.Path(process.hgcalLayerClusters,
-                            process.TFESSource,
+# Reconstruction
+    process.TICL = cms.Path(process.TFESSource,
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
                             process.ticlTracksterMergeTask)
-
-    process.trackstersNtuplerCLUE3D = cms.EDAnalyzer('TracksterNtupler',
-        tracksters = cms.InputTag('ticlTrackstersCLUE3DHigh'),
-        caloParticles = cms.InputTag('mix', 'MergedCaloTruth'),
-        layerClusters=cms.InputTag('hgcalLayerClusters'),
-        outfilePath = cms.untracked.string('/afs/cern.ch/work/w/wredjeb/public/EnergyRegression/TFInterface/Rebase/CMSSW_12_4_0_pre2/src/38693.0_CloseByParticleGun+2026D86+CloseByParticle_Photon_ERZRanges_GenSimHLBeamSpotHGCALCloseBy+DigiTrigger+RecoGlobal+HARVESTGlobal/ticlTracksterCLUE3D_newRegression.root')
-    )
-
-
-    process.TFileService = cms.Service("TFileService",
-            fileName = cms.string("ticlTracksterCLUE3D_newRegressionFS.root")
-    )
-
 # Validation
     process.TICL_ValidationProducers = cms.Task(process.hgcalRecHitMapProducer,
                                                 process.lcAssocByEnergyScoreProducer,
@@ -52,15 +33,14 @@ def customiseTICLFromReco(process):
                                        process.TICL_Validator
                                       )
 # Path and EndPath definitions
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.trackstersNtuplerCLUE3D)
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
     process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition
     process.schedule = cms.Schedule(process.TICL,
-                                    # process.TICL_Validation,
+                                    process.TICL_Validation,
                                     process.FEVTDEBUGHLToutput_step,
-                                    # process.DQMoutput_step,
-                                    )
+                                    process.DQMoutput_step)
 #call to customisation function customiseHGCalOnlyEventContent imported from RecoHGCal.Configuration.RecoHGCal_EventContent_cff
     process = customiseHGCalOnlyEventContent(process)
 
