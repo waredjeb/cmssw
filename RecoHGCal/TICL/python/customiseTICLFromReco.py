@@ -17,7 +17,8 @@ def customiseTICLFromReco(process):
 # TensorFlow ESSource
     process.TFESSource = cms.Task(process.trackdnn_source)
 # Reconstruction
-    process.TICL = cms.Path(process.TFESSource,
+    process.TICL = cms.Path(process.hgcalLayerClusters,
+                            process.TFESSource,
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
                             process.ticlTracksterMergeTask)
