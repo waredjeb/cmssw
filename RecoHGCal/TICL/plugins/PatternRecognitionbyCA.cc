@@ -59,7 +59,6 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
   // Protect from events with no seeding regions
   if (input.regions.empty())
     return;
-
   std::vector<Trackster> &result = output.result;
   edm::EventSetup const &es = input.es;
   const CaloGeometry &geom = es.getData(caloGeomToken_);
