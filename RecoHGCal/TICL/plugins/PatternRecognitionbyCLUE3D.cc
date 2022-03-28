@@ -150,12 +150,13 @@ void PatternRecognitionbyCLUE3D<TILES>::dumpClusters(const TILES &tiles,
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
-    std::vector<Trackster> &result,
+    typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
   // Protect from events with no seeding regions
   if (input.regions.empty())
     return;
 
+  std::vector<Trackster> &result = output.result;
   const int eventNumber = input.ev.eventAuxiliary().event();
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
     edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "New Event";
