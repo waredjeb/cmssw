@@ -450,7 +450,7 @@ class UpgradeWorkflow_ticl_v4(UpgradeWorkflow):
         if 'HARVESTGlobal' in step:
             stepDict[stepName][k] = merge([self.step4, stepDict[step][k]])
     def condition(self, fragment, stepList, key, hasHarvest):
-        return (fragment=="TTbar_14TeV" or 'CloseByPGun_CE' in fragment or 'Eta1p7_2p7' in fragment) and '2026' in key
+        return (fragment=="TTbar_14TeV" or 'CloseByP' in fragment or 'Eta1p7_2p7' in fragment) and '2026' in key
 upgradeWFs['ticl_v4'] = UpgradeWorkflow_ticl_v4(
     steps = [
         'RecoGlobal',
