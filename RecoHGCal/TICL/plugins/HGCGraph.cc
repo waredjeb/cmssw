@@ -27,6 +27,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                               float maxDeltaTime,
                                               int lastLayerEE,
                                               int lastLayerFH,
+                                              bool doSiblings,
                                               const std::vector<double> &siblings_maxRSquared) {
   isOuterClusterOfDoublets_.clear();
   isOuterClusterOfDoublets_.resize(layerClusters.size());
@@ -164,16 +165,21 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                         LogDebug("HGCGraph") << "Rejecting doublets due to timing!" << std::endl;
                       continue;
                     }
-                    if (currentOuterLayerId - currentInnerLayerId == 1) {
-                      if (areOverlappingOnSiblingLayers(innerClusterId, outerClusterId, layerClusters, maxRSquared)) {
-                        allDoublets_.emplace_back(
-                            innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, true);
+                    if(doSiblings){
+                      if (currentOuterLayerId - currentInnerLayerId == 1) {
+                        if (areOverlappingOnSiblingLayers(innerClusterId, outerClusterId, layerClusters, maxRSquared)) {
+                          allDoublets_.emplace_back(
+                              innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, true);
+                        } else {
+                          continue;
+                        }
                       } else {
-                        continue;
+                        allDoublets_.emplace_back(
+                            innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, false);
                       }
-                    } else {
-                      allDoublets_.emplace_back(
-                          innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, false);
+                    }
+                    else{
+                        allDoublets_.emplace_back(innerClusterId, outerClusterId, doubletId, &layerClusters, r.index);
                     }
                     if (verbosity_ > Advanced) {
                       LogDebug("HGCGraph")
@@ -195,6 +201,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                                                               r.directionAtOrigin,
                                                                               minCosTheta,
                                                                               minCosPointing,
+                                                                              doSiblings,
                                                                               verbosity_ > Advanced);
                     if (isRootDoublet and checkDistanceRootDoubletVsSeed) {
                       if (reco::deltaR2(layerClusters[innerClusterId].eta(),

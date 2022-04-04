@@ -32,6 +32,7 @@ public:
                               float maxDeltaTime,
                               int lastLayerEE,
                               int lastLayerFH,
+                              bool doSiblings,
                               const std::vector<double> &siblings_maxRSquared);
 
   bool areTimeCompatible(int innerIdx,

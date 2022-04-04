@@ -55,6 +55,8 @@ namespace ticl {
     const double max_longitudinal_sigmaPCA_;
     const int min_clusters_per_ntuplet_;
     const float max_delta_time_;
+    const int eta_window_;
+    const int phi_window_;
     const std::string eidInputName_;
     const std::string eidOutputNameEnergy_;
     const std::string eidOutputNameId_;
@@ -64,6 +66,7 @@ namespace ticl {
 
     hgcal::RecHitTools rhtools_;
     tensorflow::Session* eidSession_;
+    bool doSiblings_;
     const std::vector<double> siblings_maxRSquared_;
 
     static const int eidNFeatures_ = 3;

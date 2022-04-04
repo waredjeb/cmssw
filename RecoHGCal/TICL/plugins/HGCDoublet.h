@@ -70,6 +70,7 @@ public:
                                 const GlobalVector &refDir,
                                 float minCosTheta,
                                 float minCosPointing = 1.,
+                                bool doSiblings = true,
                                 bool debug = false);
 
   int areAligned(double xi,

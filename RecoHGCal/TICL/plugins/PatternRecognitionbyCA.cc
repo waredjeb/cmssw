@@ -40,12 +40,15 @@ PatternRecognitionbyCA<TILES>::PatternRecognitionbyCA(const edm::ParameterSet &c
       max_longitudinal_sigmaPCA_(conf.getParameter<double>("max_longitudinal_sigmaPCA")),
       min_clusters_per_ntuplet_(min_layers_per_trackster_),
       max_delta_time_(conf.getParameter<double>("max_delta_time")),
+      eta_window_(conf.getParameter<int>("eta_window")),
+      phi_window_(conf.getParameter<int>("phi_window")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
       eidOutputNameEnergy_(conf.getParameter<std::string>("eid_output_name_energy")),
       eidOutputNameId_(conf.getParameter<std::string>("eid_output_name_id")),
       eidMinClusterEnergy_(conf.getParameter<double>("eid_min_cluster_energy")),
       eidNLayers_(conf.getParameter<int>("eid_n_layers")),
       eidNClusters_(conf.getParameter<int>("eid_n_clusters")),
+      doSiblings_(conf.getParameter<bool>("doSiblings")),
       siblings_maxRSquared_(conf.getParameter<std::vector<double>>("siblings_maxRSquared")){};
 
 template <typename TILES>
@@ -85,8 +88,8 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     input.layerClusters,
                                     input.mask,
                                     input.layerClustersTime,
-                                    1,
-                                    1,
+                                    eta_window_,
+                                    phi_window_,
                                     min_cos_theta_,
                                     min_cos_pointing_,
                                     root_doublet_max_distance_from_seed_squared_,
@@ -96,6 +99,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     max_delta_time_,
                                     rhtools_.lastLayerEE(isHFnose),
                                     rhtools_.lastLayerFH(),
+                                    doSiblings_,
                                     siblings_maxRSquared_);
 
   theGraph_->findNtuplets(foundNtuplets, seedIndices, min_clusters_per_ntuplet_, out_in_dfs_, max_out_in_hops_);
@@ -165,7 +169,9 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
         indexInVec++;
         j++;
       }
+      std::cout << "NUMBER OF MISSING LAYERS " << numberOfMissingLayers << std::endl;
     }
+    std::cout << " NUMBER OF LAYERS " << numberOfLayersInTrackster << std::endl;
     if ((numberOfLayersInTrackster >= min_layers_per_trackster_) and (showerMinLayerId <= shower_start_max_layer_)) {
       // Put back indices, in the form of a Trackster, into the results vector
       Trackster tmp;
@@ -503,12 +509,15 @@ void PatternRecognitionbyCA<TILES>::fillPSetDescription(edm::ParameterSetDescrip
       ->setComment("make default such that no filtering is applied");
   iDesc.add<double>("max_longitudinal_sigmaPCA", 9999);
   iDesc.add<double>("max_delta_time", 3.)->setComment("nsigma");
+  iDesc.add<int>("eta_window", 1.)->setComment("nTilesEta");
+  iDesc.add<int>("phi_window", 1.)->setComment("nTilesPhi");
   iDesc.add<std::string>("eid_input_name", "input");
   iDesc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
   iDesc.add<std::string>("eid_output_name_id", "output/id_probabilities");
   iDesc.add<double>("eid_min_cluster_energy", 1.);
   iDesc.add<int>("eid_n_layers", 50);
   iDesc.add<int>("eid_n_clusters", 10);
+  iDesc.add<bool>("doSiblings", true);
   iDesc.add<std::vector<double>>("siblings_maxRSquared", {6e-4, 6e-4, 6e-4});
 }
 

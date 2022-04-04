@@ -1,5 +1,6 @@
 # Reconstruction
 from RecoHGCal.TICL.iterativeTICL_cff import *
+from RecoHGCal.TICL.SimTracksters_cff import *
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClusters
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cfi import *
@@ -21,7 +22,8 @@ def customiseTICLFromReco(process):
                             process.TFESSource,
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
-                            process.ticlTracksterMergeTask)
+                            process.ticlTracksterMergeTask,
+                            process.ticlSimTrackstersTask)
 # Validation
     process.TICL_ValidationProducers = cms.Task(process.hgcalRecHitMapProducer,
                                                 process.lcAssocByEnergyScoreProducer,

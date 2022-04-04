@@ -125,6 +125,7 @@ namespace ticl {
     const double criticalEtaPhiDistance_;
     const double criticalXYDistance_;
     const int criticalZDistanceLyr_;
+    const int eta_phi_window_nearest_;
     const double outlierMultiplier_;
     const int minNumLayerCluster_;
     const std::vector<int> filter_on_categories_;
