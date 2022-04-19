@@ -101,6 +101,9 @@ private:
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> tracks_time_token_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> tracks_time_quality_token_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> tracks_time_err_token_;
   const edm::EDGetTokenT<std::vector<reco::Muon>> muons_token_;
   const std::string tfDnnLabel_;
   const edm::ESGetToken<TfGraphDefWrapper, TfGraphRecord> tfDnnToken_;
@@ -123,6 +126,7 @@ private:
   const double track_min_eta_;
   const double track_max_eta_;
   const int track_max_missing_outerhits_;
+  const double trackTimeQualThreshold_;
   const double cosangle_align_;
   const double e_over_h_threshold_;
   const double pt_neutral_threshold_;
@@ -166,6 +170,9 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
+      tracks_time_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTime"))),
+      tracks_time_quality_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTimeQual"))),
+      tracks_time_err_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTimeErr"))), 
       muons_token_(consumes<std::vector<reco::Muon>>(ps.getParameter<edm::InputTag>("muons"))),
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
       tfDnnToken_(esConsumes(edm::ESInputTag("", tfDnnLabel_))),
@@ -187,6 +194,7 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       track_min_eta_(ps.getParameter<double>("track_min_eta")),
       track_max_eta_(ps.getParameter<double>("track_max_eta")),
       track_max_missing_outerhits_(ps.getParameter<int>("track_max_missing_outerhits")),
+      trackTimeQualThreshold_(ps.getParameter<double>("timingQualityThreshold")),
       cosangle_align_(ps.getParameter<double>("cosangle_align")),
       e_over_h_threshold_(ps.getParameter<double>("e_over_h_threshold")),
       pt_neutral_threshold_(ps.getParameter<double>("pt_neutral_threshold")),
@@ -333,9 +341,22 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
     edm::Handle<std::vector<reco::Muon>> muons_h;
     evt.getByToken(muons_token_, muons_h);
+    const auto &muons = *muons_h;
+
+    edm::Handle<edm::ValueMap<float>> trackTime_h;
+    evt.getByToken(tracks_time_token_, trackTime_h);
+    const auto &trackTime = *trackTime_h;
+
+    edm::Handle<edm::ValueMap<float>> trackTimeErr_h;
+    evt.getByToken(tracks_time_err_token_, trackTimeErr_h);
+    const auto &trackTimeErr = *trackTimeErr_h;
+
+    edm::Handle<edm::ValueMap<float>> trackTimeQual_h;
+    evt.getByToken(tracks_time_quality_token_, trackTimeQual_h);
+    const auto &trackTimeQual = *trackTimeQual_h;
     // Linking
     auto resultTrackstersLinked = std::make_unique<std::vector<TICLCandidate>>();
-    linkingAlgo_->linkTracksters(track_h, muons_h, cutTk_, trackstersclue3d_h, *resultTrackstersLinked);
+    linkingAlgo_->linkTracksters(track_h, trackTime, trackTimeErr, trackTimeQual, trackTimeQualThreshold_, muons, cutTk_, trackstersclue3d_h, *resultTrackstersLinked);
 
     // Print debug info
     if (debug_) {
@@ -954,6 +975,9 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
+  desc.add<edm::InputTag>("tracksTime", edm::InputTag("tofPID:t0"));
+  desc.add<edm::InputTag>("tracksTimeQual", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"));
+  desc.add<edm::InputTag>("tracksTimeErr", edm::InputTag("tofPID:sigmat0"));
   desc.add<edm::InputTag>("muons", edm::InputTag("muons1stStep"));
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
@@ -971,6 +995,7 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<double>("track_min_eta", 1.48);
   desc.add<double>("track_max_eta", 3.);
   desc.add<int>("track_max_missing_outerhits", 5);
+  desc.add<double>("timingQualityThreshold", 0.5);
   desc.add<double>("cosangle_align", 0.9945);
   desc.add<double>("e_over_h_threshold", 1.);
   desc.add<double>("pt_neutral_threshold", 2.);

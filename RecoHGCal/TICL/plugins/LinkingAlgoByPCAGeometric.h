@@ -41,7 +41,11 @@ namespace ticl {
                     const edm::ESHandle<Propagator> propH) override;
 
     void linkTracksters(const edm::Handle<std::vector<reco::Track>>,
-                        const edm::Handle<std::vector<reco::Muon>>,
+                        const edm::ValueMap<float>&,
+                        const edm::ValueMap<float>&,
+                        const edm::ValueMap<float>&,
+                        const double,
+                        const std::vector<reco::Muon>&,
                         const StringCutObjectSelector<reco::Track>,
                         const edm::Handle<std::vector<Trackster>>,
                         std::vector<TICLCandidate> &) override;
