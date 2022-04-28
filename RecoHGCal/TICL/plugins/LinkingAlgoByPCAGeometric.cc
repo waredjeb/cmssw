@@ -144,6 +144,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   };
 
   // Propagate tracks
+  std::vector<unsigned> candidateTrackIds;
   for (unsigned i = 0; i < tracks.size(); ++i) {
     const auto tk = tracks[i];
     reco::TrackRef trackref = reco::TrackRef(tkH, i);
@@ -153,6 +154,9 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     if (!cutTk((tk)) or muId != -1) {
       continue;
     }
+    // record tracks that can used to make a ticlcandidate
+    candidateTrackIds.push_back(i);
+
     // don't consider tracks below 2 GeV for linking
     if (std::sqrt(tk.p() * tk.p() + mpion2) < 2.0)
       continue;
@@ -410,7 +414,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   std::vector<TICLCandidate> chargedCandidates;
   std::vector<TICLCandidate> chargedHadronsFromTk;
   int chargedMask[tracksters.size()] = {0};
-  for (unsigned i = 0; i < tracks.size(); ++i) {
+  for (unsigned i : candidateTrackIds) {
     if (tracksters_near[i].empty() && tsNearTkAtInt[i].empty()) {  // nothing linked to track, make charged hadrons
       TICLCandidate chargedHad;
       const auto &tk = tracks[i];
