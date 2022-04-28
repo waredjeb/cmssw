@@ -145,15 +145,10 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
     std::pair<float, float> timeTrackster = timeEstimator.fixSizeHighestDensity(times, timeErrors);
 
     std::vector<unsigned int> filteredLayerclustersIndices;
+    size_t NFiltering = 0;
     if(cleaning_selection){
     layerClusterSelectioEM(trackster, layerClusters, layerClusterEnergies, rhtools, filteredLayerclustersIndices );
-    }
-    else{
-
-    }
-    size_t NFiltering = 0;
-    if ((cleaning_selection)) {
-      NFiltering = filteredLayerclustersIndices.size();
+    NFiltering = filteredLayerclustersIndices.size();
     }
     else{
       NFiltering = N;
