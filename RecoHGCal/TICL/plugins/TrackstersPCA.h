@@ -9,7 +9,9 @@ namespace ticl {
   void assignPCAtoTracksters(std::vector<Trackster> &,
                              const std::vector<reco::CaloCluster> &,
                              const edm::ValueMap<std::pair<float, float>> &,
+                             hgcal::RecHitTools rhtools,
                              double,
-                             bool energyWeight = true);
+                             bool energyWeight = true,
+                             bool cleaning_selection = false);
 }
 #endif

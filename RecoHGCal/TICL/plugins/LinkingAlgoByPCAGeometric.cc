@@ -46,7 +46,7 @@ math::XYZVector LinkingAlgoByPCAGeometric::propagateTrackster(const Trackster &t
 
   //FP: disable PCA propagation for the moment and fallback to barycenter position
   // if (t.eigenvalues()[0] / t.eigenvalues()[1] < 20)
-    directnv = baryc.unit();
+  directnv = baryc.unit();
 
   assert(abs(directnv.Z()) > 0.00001);
 
@@ -112,10 +112,9 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
-
+  //std::cout << "N mu: " << muons.size() << std::endl;
   auto bFieldProd = bfield_.product();
   const Propagator &prop = (*propagator_);
-
 
   // propagated point collections
   // elements in the propagated points collecions are used
@@ -149,7 +148,8 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     reco::TrackRef trackref = reco::TrackRef(tkH, i);
     // also veto tracks associated to muons
     int muId = PFMuonAlgo::muAssocToTrack(trackref, muons);
-    //std::cout << "track (eta)" << i << " (" << tk.eta() <<") time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << std::endl; 
+    // std::cout << "track (eta)" << i << " (" << tk.eta() << ")"
+    //           << "  muid " << muId << std::endl;
     if (!cutTk((tk)) or muId != -1) {
       continue;
     }
@@ -224,7 +224,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           tracksters_near[tkId].insert(
               std::end(tracksters_near[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
         }
@@ -243,7 +243,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           tracksters_near[tkId].insert(
               std::end(tracksters_near[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
         }
@@ -273,7 +273,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           tsNearTkAtInt[tkId].insert(
               std::end(tsNearTkAtInt[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
         }
@@ -292,7 +292,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           tsNearTkAtInt[tkId].insert(
               std::end(tsNearTkAtInt[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
         }
@@ -319,7 +319,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       }
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           for (const unsigned t_i : tracksters_in_box) {
             if (!tsMask2[t_i]) {
               tsNearAtInt[tsId].push_back(t_i);
@@ -340,7 +340,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       }
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           for (const unsigned t_i : tracksters_in_box) {
             if (!tsMask2[t_i]) {
               tsNearAtInt[tsId].push_back(t_i);
@@ -373,7 +373,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       }
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           for (const unsigned t_i : tracksters_in_box) {
             if (!tsMask1[t_i]) {
               tsHadNearAtInt[tsId].push_back(t_i);
@@ -393,7 +393,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       }
       for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           for (const unsigned t_i : tracksters_in_box) {
             if (!tsMask1[t_i]) {
               tsHadNearAtInt[tsId].push_back(t_i);
