@@ -199,11 +199,17 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
     }
   }
 
-  ticl::assignPCAtoTracksters(
-      *result, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
+  ticl::assignPCAtoTracksters(*result,
+                              layerClusters,
+                              layerClustersTimes,
+                              rhtools_,
+                              rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
   result->shrink_to_fit();
-  ticl::assignPCAtoTracksters(
-      *result_fromCP, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
+  ticl::assignPCAtoTracksters(*result_fromCP,
+                              layerClusters,
+                              layerClustersTimes,
+                              rhtools_,
+                              rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
   result_fromCP->shrink_to_fit();
 
   evt.put(std::move(result));

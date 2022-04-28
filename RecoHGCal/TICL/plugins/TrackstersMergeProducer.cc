@@ -407,12 +407,13 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
         else
           outTrackster.setIdProbability(ticl::Trackster::ParticleType::neutral_hadron, 1.f);
       }
-      if(!outTrackster.vertices().empty())
+      if (!outTrackster.vertices().empty())
         resultTrackstersMerged->push_back(outTrackster);
     }
     assignPCAtoTracksters(*resultTrackstersMerged,
                           layerClusters,
                           layerClustersTimes,
+                          rhtools_,
                           rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z());
 
     // Compute timing
@@ -464,7 +465,9 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
     assignPCAtoTracksters(*resultTrackstersMerged,
                           layerClusters,
                           layerClustersTimes,
+                          rhtools_,
                           rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z());
+
     energyRegressionAndID(layerClusters, tfSession_, *resultTrackstersMerged);
 
     printTrackstersDebug(*resultTrackstersMerged, "TrackstersMergeProducer");
