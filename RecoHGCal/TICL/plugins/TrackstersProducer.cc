@@ -140,6 +140,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
 }
 
 void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
+  std::cout << "TrackstersProduce hello! " << std::endl;
   auto result = std::make_unique<std::vector<Trackster>>();
   auto output_mask = std::make_unique<std::vector<float>>();
 
