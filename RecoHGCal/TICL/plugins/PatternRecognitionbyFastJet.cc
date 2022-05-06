@@ -79,12 +79,13 @@ void PatternRecognitionbyFastJet<TILES>::buildJetAndTracksters(std::vector<Pseud
 template <typename TILES>
 void PatternRecognitionbyFastJet<TILES>::makeTracksters(
     const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
-    std::vector<Trackster> &result,
+    typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
   // Protect from events with no seeding regions
   if (input.regions.empty())
     return;
 
+  std::vector<Trackster> &result = output.result;
   edm::EventSetup const &es = input.es;
   const CaloGeometry &geom = es.getData(caloGeomToken_);
   rhtools_.setGeometry(geom);
