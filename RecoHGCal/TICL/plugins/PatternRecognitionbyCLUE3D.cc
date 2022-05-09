@@ -16,6 +16,14 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 
 using namespace ticl;
+int countAvailable(std::vector<float> mask) {
+  int count = 0;
+  for (auto& x : mask) {
+    if (x > 0)
+      count += 1;
+  }
+  return count;
+}
 
 template <typename TILES>
 PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::ParameterSet &conf, edm::ConsumesCollector iC)
@@ -35,6 +43,7 @@ PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::Paramet
       criticalEtaPhiDistance_(conf.getParameter<double>("criticalEtaPhiDistance")),
       criticalXYDistance_(conf.getParameter<double>("criticalXYDistance")),
       criticalZDistanceLyr_(conf.getParameter<int>("criticalZDistanceLyr")),
+      eta_phi_window_nearest_(conf.getParameter<int>("eta_phi_window")),
       outlierMultiplier_(conf.getParameter<double>("outlierMultiplier")),
       minNumLayerCluster_(conf.getParameter<int>("minNumLayerCluster")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
@@ -153,11 +162,24 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
   // Protect from events with no seeding regions
+
+  std::cout << "CLUE3DPR Available " << countAvailable(input.mask) << std::endl;
+  std::cout << "SIZE MASK " << input.mask.size() << " layereClusters size" << input.layerClusters.size() << std::endl;
+  for(size_t i_lc = 0; i_lc < input.mask.size(); i_lc++ ){
+    if(input.mask[i_lc] > 0){
+    auto lc = input.layerClusters[i_lc];
+      if(lc.hitsAndFractions().size() == 1){
+        std::cout << "WHAT" << std::endl;
+      }
+    }
+  }
   if (input.regions.empty())
     return;
 
   std::vector<Trackster> &result = output.result;
   std::vector<int> &tracksterSeeds = output.tracksterSeeds;
+  std::vector<Trackster> tmp_result;
+  std::vector<int> tmp_tracksterSeeds;
   const int eventNumber = input.ev.eventAuxiliary().event();
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
     edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "New Event";
@@ -179,7 +201,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
   clusters_.clear();
   clusters_.resize(2 * rhtools_.lastLayer(false));
   std::vector<std::pair<int, int>> layerIdx2layerandSoa;  //used everywhere also to propagate cluster masking
-
+  
   layerIdx2layerandSoa.reserve(input.layerClusters.size());
   unsigned int layerIdx = 0;
   for (auto const &lc : input.layerClusters) {
@@ -204,7 +226,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     float sum_sqr_y = 0.;
     float ref_x = lc.x();
     float ref_y = lc.y();
-    float invClsize = 1. / lc.hitsAndFractions().size();
+    float invClsize = 1.f / lc.hitsAndFractions().size();
     for (auto const &hitsAndFractions : lc.hitsAndFractions()) {
       auto const &point = rhtools_.getPosition(hitsAndFractions.first);
       sum_x += point.x() - ref_x;
@@ -257,7 +279,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     clusters_[layer].phi.emplace_back(lc.phi());
     clusters_[layer].cells.push_back(lc.hitsAndFractions().size());
     clusters_[layer].isSilicon.push_back(rhtools_.isSilicon(detId));
-    clusters_[layer].energy.emplace_back(lc.energy());
+    clusters_[layer].energy.emplace_back(lc.energy() * input.mask[layerIdx]);
     clusters_[layer].isSeed.push_back(false);
     clusters_[layer].clusterIndex.emplace_back(-1);
     clusters_[layer].layerClusterOriginalIdx.emplace_back(layerIdx++);
@@ -288,8 +310,8 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
   }
 
   // Build Trackster
-  result.resize(nTracksters);
-  tracksterSeeds.reserve(nTracksters);
+  tmp_result.resize(nTracksters);
+  tmp_tracksterSeeds.reserve(nTracksters);
 
   for (unsigned int layer = 0; layer < clusters_.size(); ++layer) {
     const auto &thisLayer = clusters_[layer];
@@ -305,27 +327,40 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
           edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " adding lcIdx: " << thisLayer.layerClusterOriginalIdx[lc];
         }
         if (thisLayer.isSeed[lc]) {
-          tracksterSeeds.emplace_back(thisLayer.layerClusterOriginalIdx[lc]);
+          tmp_tracksterSeeds.emplace_back(thisLayer.layerClusterOriginalIdx[lc]);
+          std::vector<int> tmp_followers;
+          tmp_followers.reserve(thisLayer.followers[lc].size());
+          for (auto [follower_lyrIdx, follower_soaIdx] : thisLayer.followers[lc]) {
+            tmp_followers.emplace_back(
+                (unsigned int)clusters_[follower_lyrIdx].layerClusterOriginalIdx[follower_soaIdx]);
+          }
         }
-        result[thisLayer.clusterIndex[lc]].vertices().push_back(thisLayer.layerClusterOriginalIdx[lc]);
-        result[thisLayer.clusterIndex[lc]].vertex_multiplicity().push_back(1);
+        tmp_result[thisLayer.clusterIndex[lc]].vertices().push_back(thisLayer.layerClusterOriginalIdx[lc]);
+        tmp_result[thisLayer.clusterIndex[lc]].vertex_multiplicity().push_back(
+            input.mask[thisLayer.layerClusterOriginalIdx[lc]]);
         // loop over followers
         for (auto [follower_lyrIdx, follower_soaIdx] : thisLayer.followers[lc]) {
           std::array<unsigned int, 2> edge = {
               {(unsigned int)thisLayer.layerClusterOriginalIdx[lc],
                (unsigned int)clusters_[follower_lyrIdx].layerClusterOriginalIdx[follower_soaIdx]}};
-          result[thisLayer.clusterIndex[lc]].edges().push_back(edge);
+          tmp_result[thisLayer.clusterIndex[lc]].edges().push_back(edge);
         }
       }
     }
   }
 
-  result.erase(
-      std::remove_if(std::begin(result),
-                     std::end(result),
-                     [&](auto const &v) { return static_cast<int>(v.vertices().size()) < minNumLayerCluster_; }),
-      result.end());
+  for (size_t i = 0; i < tmp_result.size(); i++) {
+    if (static_cast<int>(tmp_result[i].vertices().size()) >= minNumLayerCluster_) {
+      result.push_back(tmp_result[i]);
+      tracksterSeeds.push_back(tmp_tracksterSeeds[i]);
+    }
+  }
+
   result.shrink_to_fit();
+  tracksterSeeds.shrink_to_fit();
+
+  result.shrink_to_fit();
+  tracksterSeeds.shrink_to_fit();
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
@@ -388,8 +423,9 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
     // note: after the loop, sumClusterEnergy might be just above the threshold which is enough to
     // decide whether to run inference for the trackster or not
     float sumClusterEnergy = 0.;
-    for (const unsigned int &vertex : tracksters[i].vertices()) {
-      sumClusterEnergy += static_cast<float>(layerClusters[vertex].energy());
+    for (size_t j = 0; j < tracksters[i].vertices().size(); ++j) {
+      auto vertex = tracksters[i].vertices(j);
+      sumClusterEnergy += static_cast<float>(layerClusters[vertex].energy() / tracksters[i].vertex_multiplicity(j));
       // there might be many clusters, so try to stop early
       if (sumClusterEnergy >= eidMinClusterEnergy_) {
         // set default values (1)
@@ -689,8 +725,8 @@ void PatternRecognitionbyCLUE3D<TILES>::calculateDistanceToHigher(
       if (!nearestHigherOnSameLayer_ && (layerId == currentLayer))
         continue;
       const auto &tileOnLayer = tiles[currentLayer];
-      int etaWindow = 1;
-      int phiWindow = 1;
+      int etaWindow = eta_phi_window_nearest_;
+      int phiWindow = eta_phi_window_nearest_;
       int etaBinMin = std::max(tileOnLayer.etaBin(clustersOnLayer.eta[i]) - etaWindow, 0);
       int etaBinMax = std::min(tileOnLayer.etaBin(clustersOnLayer.eta[i]) + etaWindow, nEtaBin);
       int phiBinMin = tileOnLayer.phiBin(clustersOnLayer.phi[i]) - phiWindow;
@@ -872,7 +908,8 @@ void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDes
       ->setComment("Minimal distance in cm on the XY plane from nearestHigher to become a seed");
   iDesc.add<int>("criticalZDistanceLyr", 5)
       ->setComment("Minimal distance in layers along the Z axis from nearestHigher to become a seed");
-  iDesc.add<double>("outlierMultiplier", 2);
+  iDesc.add<int>("eta_phi_window", 1)->setComment("eta - phi windows for nearestHigher search");
+  iDesc.add<double>("outlierMultiplier", 1);
   iDesc.add<int>("minNumLayerCluster", 2)->setComment("Not Inclusive");
   iDesc.add<std::string>("eid_input_name", "input");
   iDesc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
