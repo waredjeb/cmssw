@@ -1,6 +1,6 @@
 /* for High Granularity Calorimeter
- * This geometry is essentially driven by topology, 
- * which is thus encapsulated in this class. 
+ * This geometry is essentially driven by topology,
+ * which is thus encapsulated in this class.
  * This makes this geometry not suitable to be loaded
  * by regular CaloGeometryLoader<T>
  */
@@ -399,7 +399,7 @@ HGCalGeometry::CornersVec HGCalGeometry::getNewCorners(const DetId& detid) const
       co[i] = GlobalPoint(
           (r + signr[i] * dr) * cos(fi + signf[i] * dfi), (r + signr[i] * dr) * sin(fi + signf[i] * dfi), (v.z() + dz));
     }
-    co[ncorner - 1] = co[0];
+    co[ncorner - 1] = GlobalPoint(0, 0, -2 * dz);
   } else if (cellIndex < m_cellVec.size() && m_det != DetId::HGCalHSc) {
     std::pair<float, float> xy;
     float dx = k_fac2 * m_cellVec[cellIndex].param()[FlatHexagon::k_r];
@@ -423,7 +423,7 @@ HGCalGeometry::CornersVec HGCalGeometry::getNewCorners(const DetId& detid) const
         co[i] = GlobalPoint(xx, xyglob.second, id.zSide * (zz + dz));
       }
     }
-    co[ncorner - 1] = co[0];
+    co[ncorner - 1] = GlobalPoint(0, 0, -2 * dz);
   }
   return co;
 }

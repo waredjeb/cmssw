@@ -15,7 +15,7 @@ namespace ticl {
     ~PatternRecognitionbyCLUE3D() override = default;
 
     void makeTracksters(const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
-                        std::vector<Trackster>& result,
+                        typename PatternRecognitionAlgoBaseT<TILES>::Outputs& output,
                         std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) override;
 
     void energyRegressionAndID(const std::vector<reco::CaloCluster>& layerClusters,
@@ -101,6 +101,9 @@ namespace ticl {
     const double densityEtaPhiDistanceSqr_;
     const double densityOnSameLayer_;
     const double criticalEtaPhiDistance_;
+    const double criticalXYDistance_;
+    const int criticalZDistanceLyr_;
+    const int eta_phi_window_nearest_;
     const double outlierMultiplier_;
     const int minNumLayerCluster_;
     const std::vector<int> filter_on_categories_;
