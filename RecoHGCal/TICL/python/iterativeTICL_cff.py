@@ -42,7 +42,6 @@ ticlIterLabels = [_step.itername.value() for _iteration in ticlIterationsTask fo
 
 ticlTracksterMergeTask = cms.Task(ticlTrackstersMerge)
 ticlTracksterMergeTaskV3 = cms.Task(ticlTrackstersMergeV3)
-
 ticl_v3.toModify(pfTICL, ticlCandidateSrc = "ticlTrackstersMergeV3")
 
 mergeTICLTask = cms.Task(ticlLayerTileTask
