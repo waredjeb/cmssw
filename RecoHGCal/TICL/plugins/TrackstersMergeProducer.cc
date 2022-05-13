@@ -1,6 +1,4 @@
 #include <memory>  // unique_ptr
-#include <ostream>
-
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -47,12 +45,6 @@
 #include "Geometry/HGCalCommonData/interface/HGCalDDDConstants.h"
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "Geometry/CommonDetUnit/interface/GeomDet.h"
-
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "CommonTools/UtilAlgos/interface/TFileService.h"
-
-#include "TTree.h"
-#include "TH2D.h"
 
 #include "TrackstersPCA.h"
 #include "SeedingRegionByTracks.h"
@@ -178,7 +170,7 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       track_min_eta_(ps.getParameter<double>("track_min_eta")),
       track_max_eta_(ps.getParameter<double>("track_max_eta")),
       track_max_missing_outerhits_(ps.getParameter<int>("track_max_missing_outerhits")),
-      trackTimeQualThreshold_(ps.getParameter<double>("timingQualityThreshold")),
+      trackTimeQualThreshold_(ps.getParameter<double>("timing_quality_threshold")),
       cosangle_align_(ps.getParameter<double>("cosangle_align")),
       e_over_h_threshold_(ps.getParameter<double>("e_over_h_threshold")),
       pt_neutral_threshold_(ps.getParameter<double>("pt_neutral_threshold")),
@@ -602,7 +594,7 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<double>("track_min_eta", 1.48);
   desc.add<double>("track_max_eta", 3.);
   desc.add<int>("track_max_missing_outerhits", 5);
-  desc.add<double>("timingQualityThreshold", 0.5);
+  desc.add<double>("timing_quality_threshold", 0.5);
   desc.add<double>("cosangle_align", 0.9945);
   desc.add<double>("e_over_h_threshold", 1.);
   desc.add<double>("pt_neutral_threshold", 2.);
