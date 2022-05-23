@@ -24,7 +24,6 @@ void LinkingAlgoByPCAGeometric::initialize(const HGCalDDDConstants *hgcons,
   rhtools_ = rhtools;
   buildLayers();
 
-  //bFieldProd = &es.getData(bfieldToken_);
   bfield_ = bfieldH;
   propagator_ = propH;
 }
@@ -33,8 +32,7 @@ math::XYZVector LinkingAlgoByPCAGeometric::propagateTrackster(const Trackster &t
                                                               const unsigned idx,
                                                               float zVal,
                                                               std::array<TICLLayerTile, 2> &tracksterTiles) {
-  // any energy or caloparticle based selection has to be handled outside
-  // need to only provide the positive Z co-ordinate of the surface to propagate to
+  // needs only the positive Z co-ordinate of the surface to propagate to
   // the correct sign is calculated inside according to the barycenter of trackster
   Vector baryc = t.barycenter();
   Vector directnv = t.eigenvectors(0);
@@ -66,7 +64,77 @@ math::XYZVector LinkingAlgoByPCAGeometric::propagateTrackster(const Trackster &t
   return tPoint;
 }
 
+void LinkingAlgoByPCAGeometric::findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
+                                                       const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                                       double delta,
+                                                       unsigned trackstersSize,
+                                                       std::vector<std::vector<unsigned>> &resultCollection,
+                                                       bool useMask = false) {
+  // Finds tracksters in tracksterTiles within an eta-phi window
+  // (given by delta) of the objects (track/trackster) in the seedingCollection.
+  // Element i in resultCollection is the vector of trackster
+  // indices found close to the i-th object in the seedingCollection.
+  // If specified, Tracksters are masked once found as close to an object.
+
+  int mask[trackstersSize] = {0};
+
+  for (auto &i : seedingCollection) {
+    auto seed_eta = i.first.Eta();
+    auto seed_phi = i.first.Phi();
+    unsigned seedId = i.second; 
+
+    if (seed_eta > 0.) {
+      // look in the forward tile
+      const TICLLayerTile &tile = tracksterTiles[1];
+      double eta_min = std::max(seed_eta - delta, (double)TileConstants::minEta);
+      double eta_max = std::min(seed_eta + delta, (double)TileConstants::maxEta);
+
+      std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
+      if (search_box[2] > search_box[3])
+      search_box[3] += TileConstants::nPhiBins;
+
+      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
+        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
+          const auto &in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          for (const unsigned t_i : in_box) {
+            if (!mask[t_i]) {
+              resultCollection[seedId].push_back(t_i);
+              if (useMask) mask[t_i] = 1;
+            }
+          }
+        }
+      }
+    } // forward
+
+    else if (seed_eta < 0.) {
+      // backward tile
+      const TICLLayerTile &tile = tracksterTiles[0];
+      double eta_min = std::max(abs(seed_eta) - delta, (double)TileConstants::minEta);
+      double eta_max = std::min(abs(seed_eta) + delta, (double)TileConstants::maxEta);
+
+      std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
+      if (search_box[2] > search_box[3])
+      search_box[3] += TileConstants::nPhiBins;
+
+      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
+        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
+          const auto &in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
+          for (const unsigned t_i : in_box) {
+            if (!mask[t_i]) {
+              resultCollection[seedId].push_back(t_i);
+              if (useMask) mask[t_i] = 1;
+            }
+          }
+        }
+      }
+    } // backward
+  } // seeding collection loop
+
+}
+
 void LinkingAlgoByPCAGeometric::buildLayers() {
+  // build disks at HGCal front & EM-Had interface for track propagation
+
   float zVal = hgcons_->waferZ(1, true);
   std::pair<double, double> rMinMax = hgcons_->rangeR(zVal, true);
 
@@ -99,16 +167,15 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
                                                const StringCutObjectSelector<reco::Track> cutTk,
                                                const edm::Handle<std::vector<Trackster>> tsH,
                                                std::vector<TICLCandidate> &resultLinked) {
-  // Selections based on CaloParticles or energy have to be implemented outside
 
   constexpr double mpion = 0.13957;
   constexpr float mpion2 = mpion * mpion;
 
   // search box deltas in eta-phi
-  const double delta3 = 0.02;     // track -> trackster, at layer 1
-  const double delta4 = 0.03;     // track -> trackster, at interface
-  const double del_ts = 0.03;     // trackster CE-E -> CE-H
-  const double del_tsHad = 0.03;  // CE-H -> CE-H
+  const double delta3 = 0.02;     // track -> tracksters, at layer 1
+  const double delta4 = 0.03;     // track -> tracksters, at interface
+  const double del_ts = 0.03;     // tracksters CE-E -> CE-H
+  const double del_tsHad = 0.03;  // tracksters CE-H -> CE-H
 
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
@@ -125,7 +192,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   std::vector<std::pair<Vector, unsigned>> tsPropIntColl;  // Tracksters in CE-E, propagated to lastLayerEE
   std::vector<std::pair<Vector, unsigned>> tsHadPropIntColl;  // Tracksters in CE-H, propagated to lastLayerEE
 
-  // tiles, layer 0 is bw, 1 is fw
+  // tiles, element 0 is bw, 1 is fw
   std::array<TICLLayerTile, 2> tracksterPropTiles = {};  // all Tracksters, propagated to layer 1
   std::array<TICLLayerTile, 2> tsPropIntTiles = {};      // all Tracksters, propagated to lastLayerEE
   std::array<TICLLayerTile, 2> tsHadPropIntTiles = {};   // Tracksters in CE-H, propagated to lastLayerEE
@@ -146,14 +213,15 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   // Propagate tracks
   std::vector<unsigned> candidateTrackIds;
   for (unsigned i = 0; i < tracks.size(); ++i) {
-    const auto tk = tracks[i];
+    const auto &tk = tracks[i];
+
     reco::TrackRef trackref = reco::TrackRef(tkH, i);
     // also veto tracks associated to muons
     int muId = PFMuonAlgo::muAssocToTrack(trackref, muons);
     //std::cout << "track (eta)" << i << " (" << tk.eta() <<") time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << std::endl; 
-    if (!cutTk((tk)) or muId != -1) {
+    if (!cutTk((tk)) or muId != -1)
       continue;
-    }
+
     // record tracks that can used to make a ticlcandidate
     candidateTrackIds.push_back(i);
 
@@ -161,21 +229,18 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     if (std::sqrt(tk.p() * tk.p() + mpion2) < 2.0)
       continue;
 
-    FreeTrajectoryState fts = trajectoryStateTransform::outerFreeState((tk), bFieldProd);
     int iSide = int(tk.eta() > 0);
-
+    FreeTrajectoryState fts = trajectoryStateTransform::outerFreeState((tk), bFieldProd);
     // to the HGCal front
     TrajectoryStateOnSurface tsos = prop.propagate(fts, firstDisk_[iSide]->surface());
     if (tsos.isValid()) {
       Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
-
       trackPColl.emplace_back(trackP, i);
     }
     // to lastLayerEE
     tsos = prop.propagate(fts, interfaceDisk_[iSide]->surface());
     if (tsos.isValid()) {
       Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
-
       tkPropIntColl.emplace_back(trackP, i);
     }
   }  // Tracks
@@ -205,217 +270,36 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     }
   }  // TS
 
-  // Track-Trackster linking
-  // step 3: linking tracks -> all tracksters, at layer 1
-  std::vector<unsigned> tracksters_near[tracks.size()] =
-      {};  // i-th element: vector of indices of tracksters 'linked' to track i
+  // Track - Trackster link finding
+  // step 3: tracks -> all tracksters, at layer 1
+  
+  std::vector<std::vector<unsigned>> tsNearTk(tracks.size());
+  findTrackstersInWindow(trackPColl, tracksterPropTiles, delta3, tracksters.size(), tsNearTk);
 
-  for (auto i : trackPColl) {
-    auto trackP = i.first;
-    const unsigned tkId = i.second;
+  // step 4: tracks -> all tracksters, at lastLayerEE
 
-    double tk_eta = trackP.Eta();
-    double tk_phi = trackP.Phi();
+  std::vector<std::vector<unsigned>> tsNearTkAtInt(tracks.size());
+  findTrackstersInWindow(tkPropIntColl, tsPropIntTiles, delta4, tracksters.size(), tsNearTkAtInt);
 
-    if (tk_eta >= 0) {
-      double eta_min = std::max(tk_eta - delta3, 0.);
+  // Trackster - Trackster link finding
+  // step 2: tracksters EM -> HAD, at lastLayerEE
+  
+  std::vector<std::vector<unsigned>> tsNearAtInt(tracksters.size());
+  findTrackstersInWindow(tsPropIntColl, tsHadPropIntTiles, del_ts, tracksters.size(), tsNearAtInt, true);
 
-      const TICLLayerTile &tile = tracksterPropTiles[1];
-      std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, tk_eta + delta3, tk_phi - delta3, tk_phi + delta3);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
+  // step 1: tracksters HAD -> HAD, at lastLayerEE
 
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          tracksters_near[tkId].insert(
-              std::end(tracksters_near[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
-        }
-      }  // TS
-    }    // forward
+  std::vector<std::vector<unsigned>> tsHadNearAtInt(tracksters.size());
+  findTrackstersInWindow(tsHadPropIntColl, tsHadPropIntTiles, del_tsHad, tracksters.size(), tsHadNearAtInt, true);
 
-    if (tk_eta < 0) {
-      double eta_min = std::max(abs(tk_eta) - delta3, 0.);
-
-      const TICLLayerTile &tile = tracksterPropTiles[0];
-      std::array<int, 4> search_box =
-          tile.searchBoxEtaPhi(eta_min, abs(tk_eta) + delta3, tk_phi - delta3, tk_phi + delta3);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          tracksters_near[tkId].insert(
-              std::end(tracksters_near[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
-        }
-      }  // TS
-    }    // backward
-
-  }  // propagated tracks
-
-  // step 4: linking tracks -> all tracksters, at lastLayerEE
-  std::vector<unsigned> tsNearTkAtInt[tracks.size()] = {};
-
-  for (auto i : tkPropIntColl) {
-    auto trackP = i.first;
-    const auto tkId = i.second;
-
-    double tk_eta = trackP.Eta();
-    double tk_phi = trackP.Phi();
-
-    if (tk_eta > 0) {
-      double eta_min = std::max(tk_eta - delta4, 0.);
-
-      const TICLLayerTile &tile = tsPropIntTiles[1];
-      std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, tk_eta + delta4, tk_phi - delta4, tk_phi + delta4);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          tsNearTkAtInt[tkId].insert(
-              std::end(tsNearTkAtInt[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
-        }
-      }  // TS
-    }    // forward
-
-    if (tk_eta < 0) {
-      double eta_min = std::max(abs(tk_eta) - delta4, 0.);
-
-      const TICLLayerTile &tile = tsPropIntTiles[0];
-      std::array<int, 4> search_box =
-          tile.searchBoxEtaPhi(eta_min, abs(tk_eta) + delta4, tk_phi - delta4, tk_phi + delta4);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          tsNearTkAtInt[tkId].insert(
-              std::end(tsNearTkAtInt[tkId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
-        }
-      }  // TS
-    }    // backward
-  }
-
-  // Trackster - Trackster linking
-  // step 2: linking Tracksters EM -> HAD, at lastLayerEE
-  std::vector<unsigned> tsNearAtInt[tracksters.size()] = {};
-  int tsMask2[tracksters.size()] = {0};
-
-  for (auto i : tsPropIntColl) {
-    auto ts_eta = i.first.Eta();
-    auto ts_phi = i.first.Phi();
-    const unsigned tsId = i.second;
-
-    if (ts_eta > 0) {
-      double eta_min = std::max(ts_eta - del_ts, 0.);
-      const TICLLayerTile &tile = tsHadPropIntTiles[1];
-      std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, ts_eta + del_ts, ts_phi - del_ts, ts_phi + del_ts);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          for (const unsigned t_i : tracksters_in_box) {
-            if (!tsMask2[t_i]) {
-              tsNearAtInt[tsId].push_back(t_i);
-              tsMask2[t_i] = 1;
-            }
-          }
-          //tsNearAtInt[tsId].insert(std::end(tsNearAtInt[tsId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
-        }
-      }  // TS
-    }    // forward
-    if (ts_eta < 0) {
-      double eta_min = std::max(abs(ts_eta) - del_ts, 0.);
-      const TICLLayerTile &tile = tsHadPropIntTiles[0];
-      std::array<int, 4> search_box =
-          tile.searchBoxEtaPhi(eta_min, abs(ts_eta) + del_ts, ts_phi - del_ts, ts_phi + del_ts);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          for (const unsigned t_i : tracksters_in_box) {
-            if (!tsMask2[t_i]) {
-              tsNearAtInt[tsId].push_back(t_i);
-              tsMask2[t_i] = 1;
-            }
-          }
-          //tsNearAtInt[tsId].insert(std::end(tsNearAtInt[tsId]), std::begin(tracksters_in_box), std::end(tracksters_in_box));
-        }
-      }  // TS
-    }    // backward
-
-  }  // tsPropIntColl
-
-  // step 1: Linking Tracksters HAD -> HAD, at lastLayerEE
-  std::vector<unsigned> tsHadNearAtInt[tracksters.size()] = {};
-  int tsMask1[tracksters.size()] = {0};
-
-  for (auto i : tsHadPropIntColl) {
-    double ts_eta = i.first.Eta();
-    double ts_phi = i.first.Phi();
-    const unsigned tsId = i.second;
-
-    if (ts_eta > 0) {
-      double eta_min = std::max(ts_eta - del_tsHad, 0.);
-      const TICLLayerTile &tile = tsHadPropIntTiles[1];
-      std::array<int, 4> search_box =
-          tile.searchBoxEtaPhi(eta_min, ts_eta + del_tsHad, ts_phi - del_tsHad, ts_phi + del_tsHad);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          for (const unsigned t_i : tracksters_in_box) {
-            if (!tsMask1[t_i]) {
-              tsHadNearAtInt[tsId].push_back(t_i);
-              tsMask1[t_i] = 1;
-            }
-          }
-        }
-      }  // TS
-    }    // forward
-    if (ts_eta < 0) {
-      double eta_min = std::max(abs(ts_eta) - del_tsHad, 0.);
-      const TICLLayerTile &tile = tsHadPropIntTiles[0];
-      std::array<int, 4> search_box =
-          tile.searchBoxEtaPhi(eta_min, abs(ts_eta) + del_tsHad, ts_phi - del_tsHad, ts_phi + del_tsHad);
-      if (search_box[2] > search_box[3]) {
-        search_box[3] += TileConstants::nPhiBins;
-      }
-      for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
-        for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-          const auto &tracksters_in_box = tile[tile.globalBin(eta_i, (phi_i%TileConstants::nPhiBins))];
-          for (const unsigned t_i : tracksters_in_box) {
-            if (!tsMask1[t_i]) {
-              tsHadNearAtInt[tsId].push_back(t_i);
-              tsMask1[t_i] = 1;
-            }
-          }
-        }
-      }  // TS
-    }    // backward
-  }      // tsHadPropIntColl
-
+  
   // make final collections
 
   std::vector<TICLCandidate> chargedCandidates;
   std::vector<TICLCandidate> chargedHadronsFromTk;
   int chargedMask[tracksters.size()] = {0};
   for (unsigned i : candidateTrackIds) {
-    if (tracksters_near[i].empty() && tsNearTkAtInt[i].empty()) {  // nothing linked to track, make charged hadrons
+    if (tsNearTk[i].empty() && tsNearTkAtInt[i].empty()) {  // nothing linked to track, make charged hadrons
       TICLCandidate chargedHad;
       const auto &tk = tracks[i];
       chargedHad.setCharge(tk.charge());
@@ -435,8 +319,8 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       // compatible if accumulated energy does not 
       // exceed track momentum by more than threshold
       double threshold = std::min(0.2*ts.raw_energy(), 10.0);
-      if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
-      std::cout << "track p : " << tk.p() << " trackster energy : " << ts.raw_energy() << std::endl;
+      /*if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
+      std::cout << "track p : " << tk.p() << " trackster energy : " << ts.raw_energy() << std::endl;*/
       return (total_raw_energy + ts.raw_energy() < tk.p() + threshold); 
     };
     auto timeCompatible = [&](const Trackster & ts, const reco::TrackRef tk) -> bool {
@@ -450,13 +334,13 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       double tkTErr = tkTimeErr[tk];
 
       if (tsT == -99. or tkTimeQual[tk] < tkTimeQualThreshold) return true;
-      if (!(std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr)))
-      std::cout << "track time : " << tkT << " trackster time : " << tsT << std::endl;
+      /*if (!(std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr)))
+      std::cout << "track time : " << tkT << " trackster time : " << tsT << std::endl;*/
       return (std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr));
     };
     auto tkRef = reco::TrackRef(tkH, i);
 
-    for (const unsigned ts3_idx : tracksters_near[i]) {  // tk -> ts
+    for (const unsigned ts3_idx : tsNearTk[i]) {  // tk -> ts
       if (!chargedMask[ts3_idx]) {
         if (!energyCompatible(tracksters[ts3_idx], tracks[i]) or !timeCompatible(tracksters[ts3_idx], tkRef)) continue;
         chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts3_idx));
