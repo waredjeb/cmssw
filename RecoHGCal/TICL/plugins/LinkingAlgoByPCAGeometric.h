@@ -62,6 +62,13 @@ namespace ticl {
                                        float zVal,
                                        std::array<TICLLayerTile, 2> &tracksterTiles);
 
+    void findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
+                                const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                double delta,
+                                unsigned trackstersSize,
+                                std::vector<std::vector<unsigned>> &resultCollection,
+                                bool useMask);
+
     std::once_flag initializeGeometry_;
 
     const HGCalDDDConstants *hgcons_;
