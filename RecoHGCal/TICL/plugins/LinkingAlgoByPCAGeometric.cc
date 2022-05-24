@@ -1,10 +1,9 @@
 #include <cmath>
-#include <ostream>
+#include <string>
 #include "RecoHGCal/TICL/plugins/LinkingAlgoByPCAGeometric.h"
 
-#include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
-#include "DataFormats/HGCalReco/interface/TICLCandidate.h"
+#include "DataFormats/HGCalReco/interface/Common.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -14,7 +13,17 @@
 
 using namespace ticl;
 
-LinkingAlgoByPCAGeometric::LinkingAlgoByPCAGeometric(const edm::ParameterSet &conf) : LinkingAlgoBase(conf) {}
+LinkingAlgoByPCAGeometric::LinkingAlgoByPCAGeometric(const edm::ParameterSet &conf)
+  : LinkingAlgoBase(conf),
+    del_tk_ts_layer1_(conf.getParameter<double>("delta_tk_ts_layer1")),
+    del_tk_ts_int_(conf.getParameter<double>("delta_tk_ts_interface")),
+    del_ts_em_had_(conf.getParameter<double>("delta_ts_em_had")),
+    del_ts_had_had_(conf.getParameter<double>("delta_ts_had_had")),
+    timing_quality_threshold_(conf.getParameter<double>("track_time_quality_threshold")),
+    pid_threshold_(conf.getParameter<double>("pid_threshold")),
+    energy_em_over_total_threshold_(conf.getParameter<double>("energy_em_over_total_threshold")),
+    filter_on_categories_(conf.getParameter<std::vector<int>>("filter_hadronic_on_categories")),
+    cutTk_(conf.getParameter<std::string>("cutTk")) {}
 
 LinkingAlgoByPCAGeometric::~LinkingAlgoByPCAGeometric() {}
 
@@ -179,20 +188,12 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
                                                const edm::ValueMap<float> &tkTime,
                                                const edm::ValueMap<float> &tkTimeErr,
                                                const edm::ValueMap<float> &tkTimeQual,
-                                               const double tkTimeQualThreshold,
                                                const std::vector<reco::Muon> &muons,
-                                               const StringCutObjectSelector<reco::Track> cutTk,
                                                const edm::Handle<std::vector<Trackster>> tsH,
                                                std::vector<TICLCandidate> &resultLinked) {
 
   constexpr double mpion = 0.13957;
   constexpr float mpion2 = mpion * mpion;
-
-  // search box deltas in eta-phi
-  const double delta3 = 0.02;     // track -> tracksters, at layer 1
-  const double delta4 = 0.03;     // track -> tracksters, at interface
-  const double del_ts = 0.03;     // tracksters CE-E -> CE-H
-  const double del_tsHad = 0.03;  // tracksters CE-H -> CE-H
 
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
@@ -215,12 +216,9 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   std::array<TICLLayerTile, 2> tsHadPropIntTiles = {};   // Tracksters in CE-H, propagated to lastLayerEE
 
   // filters (true for) anything but EM
-  auto isHadron = [](const Trackster &t) -> bool {
-    std::vector<int> filter_on_categories_ = {0, 1};
-    double pid_threshold_ = 0.5;
-    double energy_em_over_total_threshold_ = 0.9;
+  auto isHadron = [&](const Trackster &t) -> bool {
     auto cumulative_prob = 0.;
-    for (auto index : filter_on_categories_) {
+    for (const auto index : filter_on_categories_) {
       cumulative_prob += t.id_probabilities(index);
     }
     return ((cumulative_prob <= pid_threshold_) and (t.raw_em_energy() == t.raw_energy())) or
@@ -239,7 +237,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     int muId = PFMuonAlgo::muAssocToTrack(trackref, muons);
     if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
       LogDebug("LinkingAlgoByPCAGeometric") << "track " << i << " - eta " << tk.eta() << " phi " << tk.phi() <<" time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << "\n"; 
-    if (!cutTk((tk)) or muId != -1)
+    if (!cutTk_((tk)) or muId != -1)
       continue;
 
     // record tracks that can used to make a ticlcandidate
@@ -295,23 +293,23 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   // step 3: tracks -> all tracksters, at layer 1
   
   std::vector<std::vector<unsigned>> tsNearTk(tracks.size());
-  findTrackstersInWindow(trackPColl, tracksterPropTiles, delta3, tracksters.size(), tsNearTk);
+  findTrackstersInWindow(trackPColl, tracksterPropTiles, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
 
   // step 4: tracks -> all tracksters, at lastLayerEE
 
   std::vector<std::vector<unsigned>> tsNearTkAtInt(tracks.size());
-  findTrackstersInWindow(tkPropIntColl, tsPropIntTiles, delta4, tracksters.size(), tsNearTkAtInt);
+  findTrackstersInWindow(tkPropIntColl, tsPropIntTiles, del_tk_ts_int_, tracksters.size(), tsNearTkAtInt);
 
   // Trackster - Trackster link finding
   // step 2: tracksters EM -> HAD, at lastLayerEE
   
   std::vector<std::vector<unsigned>> tsNearAtInt(tracksters.size());
-  findTrackstersInWindow(tsPropIntColl, tsHadPropIntTiles, del_ts, tracksters.size(), tsNearAtInt, true);
+  findTrackstersInWindow(tsPropIntColl, tsHadPropIntTiles, del_ts_em_had_, tracksters.size(), tsNearAtInt, true);
 
   // step 1: tracksters HAD -> HAD, at lastLayerEE
 
   std::vector<std::vector<unsigned>> tsHadNearAtInt(tracksters.size());
-  findTrackstersInWindow(tsHadPropIntColl, tsHadPropIntTiles, del_tsHad, tracksters.size(), tsHadNearAtInt, true);
+  findTrackstersInWindow(tsHadPropIntColl, tsHadPropIntTiles, del_ts_had_had_, tracksters.size(), tsHadNearAtInt, true);
 
   dumpLinksFound(tsNearTk, "track -> tracksters at layer 1");
   dumpLinksFound(tsNearTkAtInt, "track -> tracksters at lastLayerEE");
@@ -348,7 +346,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
         if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
-          LogDebug("LinkingAlgoByPCAGeometric") << "energy incompatible : track p : " << tk.p() << " trackster energy : " << ts.raw_energy() << "\n";
+          LogDebug("LinkingAlgoByPCAGeometric") << "energy incompatible : track p " << tk.p() << " trackster energy " << ts.raw_energy() << "\n";
       
       return (total_raw_energy + ts.raw_energy() < tk.p() + threshold); 
     };
@@ -362,7 +360,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       double tkT = tkTime[tk];
       double tkTErr = tkTimeErr[tk];
 
-      if (tsT == -99. or tkTimeQual[tk] < tkTimeQualThreshold) return true;
+      if (tsT == -99. or tkTimeQual[tk] < timing_quality_threshold_) return true;
 
       if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
         if (!(std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr)))
@@ -583,5 +581,16 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 }  // linkTracksters
 
 void LinkingAlgoByPCAGeometric::fillPSetDescription(edm::ParameterSetDescription &desc) {
+  desc.add<std::string>("cutTk",
+                        "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
+                        "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");
+  desc.add<double>("delta_tk_ts_layer1", 0.02);
+  desc.add<double>("delta_tk_ts_interface", 0.03);
+  desc.add<double>("delta_ts_em_had", 0.03);
+  desc.add<double>("delta_ts_had_had", 0.03);
+  desc.add<double>("track_time_quality_threshold", 0.5);
+  desc.add<double>("pid_threshold", 0.5);
+  desc.add<double>("energy_em_over_total_threshold", 0.9);
+  desc.add<std::vector<int>>("filter_hadronic_on_categories", {0, 1});
   LinkingAlgoBase::fillPSetDescription(desc);
 }
