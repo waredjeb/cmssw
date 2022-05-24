@@ -35,7 +35,6 @@
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
-#include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
@@ -118,7 +117,6 @@ private:
   const double track_min_eta_;
   const double track_max_eta_;
   const int track_max_missing_outerhits_;
-  const double trackTimeQualThreshold_;
   const double cosangle_align_;
   const double e_over_h_threshold_;
   const double pt_neutral_threshold_;
@@ -136,7 +134,6 @@ private:
   std::once_flag initializeGeometry_;
 
   const HGCalDDDConstants *hgcons_;
-  const StringCutObjectSelector<reco::Track> cutTk_;
 
   std::unique_ptr<GeomDet> firstDisk_[2];
 
@@ -183,7 +180,6 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       track_min_eta_(ps.getParameter<double>("track_min_eta")),
       track_max_eta_(ps.getParameter<double>("track_max_eta")),
       track_max_missing_outerhits_(ps.getParameter<int>("track_max_missing_outerhits")),
-      trackTimeQualThreshold_(ps.getParameter<double>("timing_quality_threshold")),
       cosangle_align_(ps.getParameter<double>("cosangle_align")),
       e_over_h_threshold_(ps.getParameter<double>("e_over_h_threshold")),
       pt_neutral_threshold_(ps.getParameter<double>("pt_neutral_threshold")),
@@ -198,7 +194,6 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       eidMinClusterEnergy_(ps.getParameter<double>("eid_min_cluster_energy")),
       eidNLayers_(ps.getParameter<int>("eid_n_layers")),
       eidNClusters_(ps.getParameter<int>("eid_n_clusters")),
-      cutTk_(ps.getParameter<std::string>("cutTk")),
       eidSession_(nullptr) {
   produces<std::vector<Trackster>>();
   produces<std::vector<TICLCandidate>>();
@@ -336,7 +331,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
     const auto &trackTimeQual = *trackTimeQual_h;
     
     // Linking
-    linkingAlgo_->linkTracksters(track_h, trackTime, trackTimeErr, trackTimeQual, trackTimeQualThreshold_, muons, cutTk_, trackstersclue3d_h, *resultCandidates);
+    linkingAlgo_->linkTracksters(track_h, trackTime, trackTimeErr, trackTimeQual, muons, trackstersclue3d_h, *resultCandidates);
 
     // Print debug info
     if (debug_) {
@@ -965,9 +960,6 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<edm::InputTag>("muons", edm::InputTag("muons1stStep"));
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
-  desc.add<std::string>("cutTk",
-                        "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
-                        "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");
   desc.add<bool>("optimiseAcrossTracksters", true);
   desc.add<bool>("TICLV4", false);
   desc.add<int>("eta_bin_window", 1);
@@ -979,7 +971,6 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<double>("track_min_eta", 1.48);
   desc.add<double>("track_max_eta", 3.);
   desc.add<int>("track_max_missing_outerhits", 5);
-  desc.add<double>("timing_quality_threshold", 0.5);
   desc.add<double>("cosangle_align", 0.9945);
   desc.add<double>("e_over_h_threshold", 1.);
   desc.add<double>("pt_neutral_threshold", 2.);
