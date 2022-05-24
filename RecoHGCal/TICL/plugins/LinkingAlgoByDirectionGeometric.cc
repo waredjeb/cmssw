@@ -56,7 +56,6 @@ math::XYZVector LinkingAlgoByDirectionGeometric::propagateTrackster(const Tracks
   //FP: disable PCA propagation for the moment and fallback to barycenter position
   // if (t.eigenvalues()[0] / t.eigenvalues()[1] < 20)
   directnv = baryc.unit();
-
   assert(abs(directnv.Z()) > 0.00001);
 
   zVal *= (baryc.Z() > 0) ? 1 : -1;
