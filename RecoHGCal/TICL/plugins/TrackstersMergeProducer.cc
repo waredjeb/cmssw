@@ -340,8 +340,9 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
     // Print debug info
     if (debug_) {
-      std::cout << "No. of Tracks : " << tracks.size() << std::endl;
-      std::cout << "No. of Tracksters : " << (*trackstersclue3d_h).size() << std::endl;
+      LogDebug("TrackstersMergeProducer") << "Results from the linking step : " << std::endl <<
+       "No. of Tracks : " << tracks.size() << "  No. of Tracksters : " << (*trackstersclue3d_h).size() << std::endl <<
+       "(neutral candidates have track id -1)" << std::endl;
     }
     std::vector<TICLCandidate> &candidates = *resultCandidates;
     for (auto cand : candidates) {
@@ -350,7 +351,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
       if (debug_) {
         auto track_idx = track_ptr.get() - (edm::Ptr<reco::Track>(track_h, 0)).get();
         track_idx = (track_ptr.isNull()) ? -1 : track_idx;
-        std::cout << "track id (p) : " << track_idx << " (" << (track_ptr.isNull() ? -1 : track_ptr->p()) << ") "
+        LogDebug("TrackstersMergeProducer") << "track id (p) : " << track_idx << " (" << (track_ptr.isNull() ? -1 : track_ptr->p()) << ") "
                   << " trackster ids (E) : ";
       }
       
@@ -360,7 +361,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
       for (auto ts_ptr : trackster_ptrs) {
         if (debug_) {
           auto ts_idx = ts_ptr.get() - (edm::Ptr<ticl::Trackster>(trackstersclue3d_h, 0)).get();
-          std::cout << ts_idx << " (" << ts_ptr->raw_energy() << ") ";
+          LogDebug("TrackstersMergeProducer") << ts_idx << " (" << ts_ptr->raw_energy() << ") ";
         }
         auto &thisTrackster = *ts_ptr;
         updated_size += thisTrackster.vertices().size();
@@ -374,7 +375,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
                   std::back_inserter(outTrackster.vertex_multiplicity()));
       }
       if (debug_)
-        std::cout << std::endl;
+        LogDebug("TrackstersMergeProducer") << std::endl;
       // Find duplicate LCs
       auto &orig_vtx = outTrackster.vertices();
       auto vtx_sorted{orig_vtx};

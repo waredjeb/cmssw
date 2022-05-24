@@ -30,7 +30,8 @@ namespace edm {
 namespace ticl {
   class LinkingAlgoBase {
   public:
-    LinkingAlgoBase(const edm::ParameterSet& conf) {}
+    LinkingAlgoBase(const edm::ParameterSet& conf) 
+      : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
 
     virtual ~LinkingAlgoBase(){};
 
@@ -49,7 +50,12 @@ namespace ticl {
                                 const edm::Handle<std::vector<Trackster>> tsH,
                                 std::vector<TICLCandidate>& resultTracksters) = 0;
 
-    static void fillPSetDescription(edm::ParameterSetDescription& desc){};
+    static void fillPSetDescription(edm::ParameterSetDescription& desc){ desc.add<int>("algo_verbosity", 0); };
+
+    enum VerbosityLevel { None = 0, Basic, Advanced, Expert, Guru };
+  
+  protected:
+    int algo_verbosity_;
   };
 }  // namespace ticl
 
