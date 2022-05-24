@@ -400,16 +400,16 @@ void TrackClassifier::processesAtSimulation()
         update(flags_[DecayProcess], process == CMS::Decay);
         update(flags_[ComptonProcess], process == CMS::Compton);
         update(flags_[AnnihilationProcess], process == CMS::Annihilation);
-        update(flags_[EIoniProcess], process == CMS::EIoni);
-        update(flags_[HIoniProcess], process == CMS::HIoni);
-        update(flags_[MuIoniProcess], process == CMS::MuIoni);
+	//        update(flags_[EIoniProcess], process == CMS::EIoni);
+	//        update(flags_[HIoniProcess], process == CMS::HIoni);
+	//        update(flags_[MuIoniProcess], process == CMS::MuIoni);
         update(flags_[PhotonProcess], process == CMS::Photon);
-        update(flags_[MuPairProdProcess], process == CMS::MuPairProd);
+	//        update(flags_[MuPairProdProcess], process == CMS::MuPairProd);
         update(flags_[ConversionsProcess], process == CMS::Conversions);
-        update(flags_[EBremProcess], process == CMS::EBrem);
+	//        update(flags_[EBremProcess], process == CMS::EBrem);
         update(flags_[SynchrotronRadiationProcess], process == CMS::SynchrotronRadiation);
-        update(flags_[MuBremProcess], process == CMS::MuBrem);
-        update(flags_[MuNuclProcess], process == CMS::MuNucl);
+	//        update(flags_[MuBremProcess], process == CMS::MuBrem);
+	//        update(flags_[MuNuclProcess], process == CMS::MuNucl);
 
         // Get particle type
         HepPDT::ParticleID particleID(pdgid);

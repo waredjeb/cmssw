@@ -100,9 +100,9 @@ void VertexHistoryAnalyzer::analyze(const edm::Event& event, const edm::EventSet
             // Loop over all simParticles
             for (std::size_t hindex=0; hindex<simParticles.size(); hindex++)
             {
-                std::cout << "  simParticles [" << hindex << "] : "
-                          << particleString(simParticles[hindex]->pdgId())
-                          << std::endl;
+	      std::cout << "  simParticles [" << hindex << "] : pdgId "<<simParticles[hindex]->pdgId() <<std::endl;
+                          // << particleString(simParticles[hindex]->pdgId())
+                          // << std::endl;
             }
 
             // Get the list of TrackingVertexes associated to
@@ -113,12 +113,15 @@ void VertexHistoryAnalyzer::analyze(const edm::Event& event, const edm::EventSet
             {
                 for (std::size_t hindex=0; hindex<simVertexes.size(); hindex++)
                 {
-                    std::cout << "  simVertex    [" << hindex << "] : "
-                              << vertexString(
-                                  simVertexes[hindex]->sourceTracks(),
-                                  simVertexes[hindex]->daughterTracks()
-                              )
-                              << std::endl;
+		  std::cout << "  simVertex    [" << hindex << "] : " << std::endl;
+		  std::cout << "  incoming      " << std::endl;
+                  for (std::size_t j = 0; j < simVertexes[hindex]->sourceTracks().size(); j++){
+		    std::cout << "Nr " << j << ": pdgId "  << simVertexes[hindex]->sourceTracks()[j]->pdgId() <<std::endl;
+                  }
+		  std::cout << "  outgoing      " << std::endl;
+                  for (std::size_t j = 0; j < simVertexes[hindex]->daughterTracks().size(); j++){
+		    std::cout << "Nr " << j << ": pdgId "  << simVertexes[hindex]->daughterTracks()[j]->pdgId() <<std::endl;
+                  }
                 }
             }
             else
@@ -127,30 +130,36 @@ void VertexHistoryAnalyzer::analyze(const edm::Event& event, const edm::EventSet
             // Get the list of GenParticles associated to
             VertexHistory::GenParticleTrail genParticles(tracer.genParticleTrail());
 
+	    std::cout << "analyzer genParticleTrail size " << tracer.genParticleTrail().size() << std::endl;
+
             // Loop over all genParticles
             for (std::size_t hindex=0; hindex<genParticles.size(); hindex++)
             {
-                std::cout << "  genParticles [" << hindex << "] : "
-                          << particleString(genParticles[hindex]->pdg_id())
-                          << std::endl;
+	      std::cout << "  genParticles [" << hindex << "] : pdgId "<<genParticles[hindex]->pdg_id() <<std::endl;
             }
 
             // Get the list of TrackingVertexes associated to
             VertexHistory::GenVertexTrail genVertexes(tracer.genVertexTrail());
+
+	    std::cout << "analyzer genVertexTrail size " << tracer.genVertexTrail().size() << std::endl;
 
             // Loop over all simVertexes
             if ( !genVertexes.empty() )
             {
                 for (std::size_t hindex=0; hindex<genVertexes.size(); hindex++)
                 {
-                    std::cout << "  genVertex    [" << hindex << "] : "
-                              << vertexString(
-                                  genVertexes[hindex]->particles_in_const_begin(),
-                                  genVertexes[hindex]->particles_in_const_end(),
-                                  genVertexes[hindex]->particles_out_const_begin(),
-                                  genVertexes[hindex]->particles_out_const_end()
-                              )
-                              << std::endl;
+		  std::cout << "  genVertex    [" << hindex << "] : " << std::endl;
+		  HepMC::GenVertex::particles_in_const_iterator in, out;
+		  std::cout << "  incoming      " << std::endl;
+                  for (in = genVertexes[hindex]->particles_in_const_begin(); in != genVertexes[hindex]->particles_in_const_end(); in++\
+		       ){
+		    std::cout << "pdgId : "  << (*in)->pdg_id() <<std::endl;
+                  }
+		  std::cout << "  outgoing      " << std::endl;
+                  for (out = genVertexes[hindex]->particles_out_const_begin(); out != genVertexes[hindex]->particles_out_const_end(); \
+		       out++){
+		    std::cout << " pdgId : "  << (*out)->pdg_id() <<std::endl;
+                  }
                 }
             }
             else

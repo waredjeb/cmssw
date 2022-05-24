@@ -16,4 +16,7 @@
     <class name="std::vector<VertexCategories>" persistent="false"/>
     <class name="edm::Wrapper<std::vector<VertexCategories> >" persistent="false"/>
 
+    <class name="edm::Wrapper<reco::PFJet>" persistent="false"/>
+    <class name="edm::Wrapper<reco::Jet>" persistent="false"/>
+
 </lcgdict>

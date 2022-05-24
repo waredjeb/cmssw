@@ -9,20 +9,25 @@ struct CMS
         Undefined = 0,
         Unknown,
         Primary,
-        Hadronic,
-        Decay,
-        Compton,
+	Ionisation,
+	Bremsstrahlung,
+	EPairProd,
         Annihilation,
-        EIoni,
-        HIoni,
-        MuIoni,
+	/*	MultipleScattering, */
         Photon,
-        MuPairProd,
+        Compton,
         Conversions,
-        EBrem,
         SynchrotronRadiation,
-        MuBrem,
-        MuNucl
+        Hadronic,
+	Neutron,
+        Decay
+        /* EIoni, */
+        /* HIoni, */
+        /* MuIoni, */
+        /* MuPairProd, */
+        /* EBrem, */
+        /* MuBrem, */
+        /* MuNucl */
     };
 };
 

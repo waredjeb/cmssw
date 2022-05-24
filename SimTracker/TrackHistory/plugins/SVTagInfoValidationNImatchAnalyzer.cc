@@ -9,8 +9,8 @@
 #include "TH2D.h"
 #include "TMath.h"
 #include "DataFormats/BTauReco/interface/SecondaryVertexTagInfo.h"
-#include "DataFormats/JetReco/interface/PFJet.h"
-#include "DataFormats/JetReco/interface/Jet.h"
+#include "DataFormats/BTauReco/interface/CandSecondaryVertexTagInfo.h"
+#include "DataFormats/Math/interface/deltaR.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
@@ -43,12 +43,12 @@ using namespace reco;
 using namespace std;
 using namespace edm;
 
-class SVTagInfoValidationAnalyzer : public edm::one::EDAnalyzer<>
+class SVTagInfoValidationNImatchAnalyzer : public edm::one::EDAnalyzer<>
 {
 
 public:
 
-    explicit SVTagInfoValidationAnalyzer(const edm::ParameterSet&);
+    explicit SVTagInfoValidationNImatchAnalyzer(const edm::ParameterSet&);
 
 private:
 
@@ -61,8 +61,8 @@ private:
     Int_t numberVertexClassifier_;
     edm::InputTag trackingTruth_;
     edm::InputTag svTagInfoProducer_;
-    edm::InputTag jets_;
-  //    edm::EDGetTokenT<std::vector<reco::PFJet> > jetsToken_;
+    edm::InputTag secondaryVertices_;
+  //    edm::InputTag fileName_;
 
     // Get the file service
     edm::Service<TFileService> fs_;
@@ -98,7 +98,7 @@ private:
 
   // Fill Tree with objects and Histograms
   TFile* output_;
-  TString filename = "/nfs/dust/cms/user/eichm/btag/ntuple/vertex_QCD_classification_withoutCut.root";
+  TString filename = "/nfs/dust/cms/user/eichm/btag/ntuple/vertex_QCD_class_NImatch.root";
   //  TString filename = "/vertex_QCD_test_classification.root";
 
   TTree * tree;
@@ -106,9 +106,7 @@ private:
   std::vector<int> category_all_rs;
   std::vector<SimVertex> vertices_all_sr;
   std::vector<int> category_all_sr;
-  std::vector<int> n_jets_all;
-  std::vector<reco::PFJet> jets_all_rs;
-  int n_jets;
+
 
   std::vector<std::string> prepreNameHisto;
   std::vector<std::string> preNameHisto;
@@ -116,11 +114,10 @@ private:
 };
 
 
-SVTagInfoValidationAnalyzer::SVTagInfoValidationAnalyzer(const edm::ParameterSet& config) : classifier_(config, consumesCollector())
+SVTagInfoValidationNImatchAnalyzer::SVTagInfoValidationNImatchAnalyzer(const edm::ParameterSet& config) : classifier_(config, consumesCollector())
 {
   //Initialize counters
     n_event = 0;
-    n_jets = 0;
     rs_total_nall = 0; 
     rs_total_nsv = 0;
     rs_total_nbv = 0;
@@ -154,15 +151,22 @@ SVTagInfoValidationAnalyzer::SVTagInfoValidationAnalyzer(const edm::ParameterSet
 
     // Get the track collection
     svTagInfoProducer_ = config.getUntrackedParameter<edm::InputTag> ( "svTagInfoProducer" );
-    consumes<reco::SecondaryVertexTagInfoCollection>(svTagInfoProducer_);
+    consumes<reco::CandSecondaryVertexTagInfoCollection>(svTagInfoProducer_);
 
     // Name of the traking pariticle collection
     trackingTruth_ = config.getUntrackedParameter<edm::InputTag> ( "trackingTruth" );
     consumes<TrackingVertexCollection>(trackingTruth_);
 
-    jets_ = config.getUntrackedParameter<edm::InputTag> ( "jets");
-    consumes<reco::PFJetCollection>(jets_);
-    //    jetsToken_ = consumes<std::vector<reco::PFJet> >(config.getUntrackedParameter<edm::InputTag> ( "jets"));
+    secondaryVertices_ = config.getUntrackedParameter<edm::InputTag> ( "secondaryVertices" );
+    consumes<VertexCompositePtrCandidateCollection>(secondaryVertices_);
+
+    // fileName_ = config.getUntrackedParameter<edm::InputTag>("fileName");
+    // consumes<std::string>(fileName_);
+
+    // edm::Handle<std::string> fileNa;
+    // event.getByLabel(fileName_, fileNa);
+    
+    // filename = "/nfs/dust/cms/user/eichm/btag/ntuple/vertex_classification_"+fileNa+".root";
 
     // Number of track categories
     numberVertexClassifier_ = VertexCategories::Unknown+1;
@@ -184,7 +188,6 @@ SVTagInfoValidationAnalyzer::SVTagInfoValidationAnalyzer(const edm::ParameterSet
                                         numberVertexClassifier_ - 0.5
 						       );
     
-    TH1Index_["n_jets"] = fs_->make<TH1D>( "n_jets", "Number of Jets", 30, 0, 30);
     //--- RecoToSim
     TH1Index_["rs_All_MatchQuality"]= fs_->make<TH1D>( "rs_All_MatchQuality", "Quality of Match", 51, -0.01, 1.01 );
     TH1Index_["rs_All_FlightDistance2d"]= fs_->make<TH1D>( "rs_All_FlightDistance2d", "Transverse flight distance [cm]", 100, 0, 17 );
@@ -246,12 +249,10 @@ SVTagInfoValidationAnalyzer::SVTagInfoValidationAnalyzer(const edm::ParameterSet
     tree->Branch("Vertices_recosim", "std::vector<reco::Vertex>", &vertices_all_rs);
     tree->Branch("Classifier_simreco", "std::vector<int>", &category_all_sr);
     tree->Branch("Vertices_simreco", "std::vector<SimVertex>", &vertices_all_sr);
-    tree->Branch("n_jets", "std::vector<int>", &n_jets_all);
-    tree->Branch("Jets_recosim", "std::vector<reco::PFJet>", &jets_all_rs);
 }   
 
 
-void SVTagInfoValidationAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& setup)
+void SVTagInfoValidationNImatchAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
   ++n_event;
 
@@ -265,11 +266,8 @@ void SVTagInfoValidationAnalyzer::analyze(const edm::Event& event, const edm::Ev
   edm::Handle<reco::SecondaryVertexTagInfoCollection> svTagInfoCollection;
   event.getByLabel(svTagInfoProducer_, svTagInfoCollection);
 
-  edm::Handle<reco::PFJetCollection> jets;
-  event.getByLabel(jets_, jets);
-
-  n_jets = 0;
-  n_jets = jets->size();
+  edm::Handle<reco::VertexCompositePtrCandidateCollection> secondaryVertices;
+  event.getByLabel(secondaryVertices_, secondaryVertices);
 
   // Get a constant reference to the track history associated to the classifier
   VertexHistory const & tracer = classifier_.history();
@@ -292,26 +290,41 @@ void SVTagInfoValidationAnalyzer::analyze(const edm::Event& event, const edm::Ev
   int sr_nlv = 0;
   int nmiss = 0;
 
-  n_jets_all.clear();
   vertices_all_rs.clear();
   category_all_rs.clear();
   vertices_all_sr.clear();
   category_all_sr.clear();
-  jets_all_rs.clear();
 
-  for (std::size_t index = 0; index < jets->size(); ++index){
-    jets_all_rs.push_back((*jets)[index]);
-  }
-  n_jets_all.push_back(n_jets);
-  
+  std::cout << "size sV " << secondaryVertices->size() << std::endl;
+
   // Loop over the svTagInfo collection.
   for (std::size_t index = 0; index < svTagInfoCollection->size(); ++index){
-
     reco::SecondaryVertexTagInfoRef svTagInfo(svTagInfoCollection, index);
+
+    if (svTagInfo->nVertices() > 0)    std::cout << "size sVTagInfo " << svTagInfo->nVertices() << std::endl;
 
     // Loop over the vertexes in svTagInfo
     for ( std::size_t vindex = 0; vindex < svTagInfo->nVertices(); ++vindex ){
-
+      for (std::size_t indexSV = 0; indexSV < secondaryVertices->size(); ++ indexSV){
+	reco::VertexCompositePtrCandidate sV = (*secondaryVertices)[indexSV];
+	//	float dR = reco::deltaR(sV, svTagInfo->secondaryVertex(vindex));
+	// std::cout << "sV p4 " << sV.p4() << std::endl;
+	// std::cout << "sVTagInfo p4 " << svTagInfo->secondaryVertex(vindex).p4() << std::endl;
+	// std::cout << "sV position " << sV.position() << std::endl;
+	// std::cout << "sVTagInfo position " << svTagInfo->secondaryVertex(vindex).position() << std::endl;
+	TVector3 vec(svTagInfo->secondaryVertex(vindex).x(), svTagInfo->secondaryVertex(vindex).y(), svTagInfo->secondaryVertex(vindex).z());
+	std::cout << "sV eta " << sV.eta() << std::endl;
+	std::cout << "sVTagInfo eta " << vec.PseudoRapidity() << std::endl;
+	std::cout << "sV phi " << sV.phi() << std::endl;
+	std::cout << "sVTagInfo phi " << vec.Phi() << std::endl;
+	float p1 = sV.phi(); 
+	float p2 = vec.Phi(); 
+	float e1 = sV.eta(); 
+	float e2 = vec.PseudoRapidity(); 
+	auto dp=std::abs(p1-p2); if (dp>float(M_PI)) dp-=float(2*M_PI);  
+	//	return (e1-e2)*(e1-e2) + dp*dp;
+	std::cout << "dR " << ((e1-e2)*(e1-e2) + dp*dp) << std::endl;
+	if (sV.p4() == svTagInfo->secondaryVertex(vindex).p4() and sV.position() == svTagInfo->secondaryVertex(vindex).position()){//dR < 0.01){
  
       // Classify the vertices
       classifier_.evaluate(svTagInfo, vindex);
@@ -390,12 +403,14 @@ void SVTagInfoValidationAnalyzer::analyze(const edm::Event& event, const edm::Ev
 	// TH1Index_["rs_Fake_FlightDistance2d"]->Fill( svTagInfo->flightDistance( vindex, true ).value() );
         nfake++;
       }
-   }//end loop over vertices in svTagInfo
+	} // end if loop for NI match
+      } // end for loop over secondaryVertices
 
-  }//loop over svTagInfo
+    }//end loop over vertices in svTagInfo
+
+}//loop over svTagInfo
 
   tree->Fill();
-  TH1Index_["n_jets"]->Fill(n_jets);
   TH1Index_["rs_All_nRecVtx"]->Fill( rs_nall );
   TH1Index_["rs_SecondaryVertex_nRecVtx"]->Fill( rs_nsv );
   TH1Index_["rs_BWeakDecay_nRecVtx"]->Fill( rs_nbv );
@@ -507,7 +522,7 @@ void SVTagInfoValidationAnalyzer::analyze(const edm::Event& event, const edm::Ev
 }
 
 
-void SVTagInfoValidationAnalyzer::bookRecoToSim(std::string const & prefix){
+void SVTagInfoValidationNImatchAnalyzer::bookRecoToSim(std::string const & prefix){
   // Book pull histograms
 
   std::string name = prefix + "_Pullx";
@@ -575,7 +590,7 @@ void SVTagInfoValidationAnalyzer::bookRecoToSim(std::string const & prefix){
 }
 
 
-void SVTagInfoValidationAnalyzer::bookSimToReco(std::string const & prefix){
+void SVTagInfoValidationNImatchAnalyzer::bookSimToReco(std::string const & prefix){
   // Book pull histograms
 
   std::string name = prefix + "_Pullx";
@@ -643,7 +658,7 @@ void SVTagInfoValidationAnalyzer::bookSimToReco(std::string const & prefix){
 }
 
 
-void SVTagInfoValidationAnalyzer::fillRecoToSim(std::string const & prefix, reco::Vertex const & vertex, TrackingVertexRef const & simVertex)
+void SVTagInfoValidationNImatchAnalyzer::fillRecoToSim(std::string const & prefix, reco::Vertex const & vertex, TrackingVertexRef const & simVertex)
 {
   double pullx = (vertex.x() - simVertex->position().x())/vertex.xError();
   double pully = (vertex.y() - simVertex->position().y())/vertex.yError();
@@ -734,7 +749,7 @@ void SVTagInfoValidationAnalyzer::fillRecoToSim(std::string const & prefix, reco
 }
 
 
-void SVTagInfoValidationAnalyzer::fillSimToReco(std::string const & prefix, reco::VertexBaseRef const & vertex, TrackingVertexRef const & simVertex)
+void SVTagInfoValidationNImatchAnalyzer::fillSimToReco(std::string const & prefix, reco::VertexBaseRef const & vertex, TrackingVertexRef const & simVertex)
 {
 
   double pullx = (vertex->x() - simVertex->position().x())/vertex->xError();
@@ -827,7 +842,7 @@ void SVTagInfoValidationAnalyzer::fillSimToReco(std::string const & prefix, reco
 
 
 void 
-SVTagInfoValidationAnalyzer::endJob() {
+SVTagInfoValidationNImatchAnalyzer::endJob() {
 
   output_->cd();
   for (unsigned int i=0; i<prepreNameHisto.size(); i++){
@@ -838,7 +853,6 @@ SVTagInfoValidationAnalyzer::endJob() {
     }
   }
 
-  TH1Index_["n_jets"]->Write();
   TH1Index_["rs_All_MatchQuality"]->Write();
   TH1Index_["sr_All_MatchQuality"]->Write();
   TH1Index_["sr_All_nRecVtx"]->Write();
@@ -875,4 +889,4 @@ SVTagInfoValidationAnalyzer::endJob() {
 } 
 
 
-DEFINE_FWK_MODULE(SVTagInfoValidationAnalyzer);
+DEFINE_FWK_MODULE(SVTagInfoValidationNImatchAnalyzer);

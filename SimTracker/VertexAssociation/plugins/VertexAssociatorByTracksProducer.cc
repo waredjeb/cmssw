@@ -89,6 +89,8 @@ void VertexAssociatorByTracksProducer::fillDescriptions(edm::ConfigurationDescri
   descTp.add<bool>("chargedOnlyTP", true);
   descTp.add<std::vector<int>>("pdgIdTP",  std::vector<int>());
   descTp.add<bool>("signalOnlyTP", true);
+  descTp.add<bool>("stableOnlyTP", true);
+  descTp.add<bool>("intimeOnlyTP", true);
   descTp.add<double>("minRapidityTP", -2.4);
   descTp.add<int>("minHitTP", 0);
   descTp.add<double>("ptMinTP", 0.9);

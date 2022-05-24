@@ -258,9 +258,17 @@ void BasicSingleVertexState::computeError() const
   if (!valid) throw VertexException("BasicSingleVertexState::computeError::invalid");
   int ifail;
   if( vertexIs4D ) {
+    if (weight4D().matrix4D()[0][0] != weight4D().matrix4D()[0][0]){
+      theErrAvailable = false;
+      return;
+    }
     theErr = weight4D().matrix4D().Inverse(ifail);
     if (ifail != 0) throw VertexException("BasicSingleVertexState::could not invert weight matrix");
   } else {
+    if (weight4D().matrix()[0][0] != weight4D().matrix()[0][0]){
+      theErrAvailable = false;
+      return;
+    }
     theErr = weight4D().matrix().Inverse(ifail);
     if (ifail != 0) throw VertexException("BasicSingleVertexState::could not invert weight matrix");
   }

@@ -220,7 +220,6 @@ void VertexClassifier::processesAtSimulation()
         if((*ivertex)->nG4Vertices() > 0) {
 	  processG4 = (*(*ivertex)->g4Vertices_begin()).processType();
 	}
-	
 	unsigned int process = g4toCMSProcMap_.processId(processG4);
 	
 	// Flagging all the different processes
@@ -238,17 +237,14 @@ void VertexClassifier::processesAtSimulation()
 	update(flags_[DecayProcess], process == CMS::Decay);
 	update(flags_[ComptonProcess], process == CMS::Compton);
 	update(flags_[AnnihilationProcess], process == CMS::Annihilation);
-	update(flags_[EIoniProcess], process == CMS::EIoni);
-	update(flags_[HIoniProcess], process == CMS::HIoni);
-	update(flags_[MuIoniProcess], process == CMS::MuIoni);
 	update(flags_[PhotonProcess], process == CMS::Photon);
-	update(flags_[MuPairProdProcess], process == CMS::MuPairProd);
+	update(flags_[EPairProdProcess], process == CMS::EPairProd);
 	update(flags_[ConversionsProcess], process == CMS::Conversions);
-	update(flags_[EBremProcess], process == CMS::EBrem);
+	update(flags_[BremProcess], process == CMS::Bremsstrahlung);
 	update(flags_[SynchrotronRadiationProcess], process == CMS::SynchrotronRadiation);
-	update(flags_[MuBremProcess], process == CMS::MuBrem);
-	update(flags_[MuNuclProcess], process == CMS::MuNucl);
-
+	update(flags_[IonisationProcess], process == CMS::Ionisation);
+	update(flags_[PhotonProcess], process == CMS::Photon);
+	update(flags_[NeutronProcess], process == CMS::Neutron);
 
         // Loop over the simulated particles
         for (
