@@ -21,7 +21,7 @@ namespace ticl {
     ~PatternRecognitionbyFastJet() override = default;
 
     void makeTracksters(const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
-                        typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
+                        typename PatternRecognitionAlgoBaseT<TILES>::Outputs& output,
                         std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) override;
 
     void energyRegressionAndID(const std::vector<reco::CaloCluster>& layerClusters,

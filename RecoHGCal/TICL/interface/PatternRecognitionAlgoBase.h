@@ -53,8 +53,23 @@ namespace ticl {
     struct Outputs {
       std::vector<Trackster>& result;
       std::vector<int>& tracksterSeeds;
+      std::vector<float>& clustersLocalDensity;
+      std::vector<float>& clustersRadius;
+      std::vector<unsigned int>& clustersSize;
+      std::vector<unsigned int>& clustersType;
 
-      Outputs(std::vector<Trackster>& r, std::vector<int>& s) : result(r), tracksterSeeds(s) {}
+      Outputs(std::vector<Trackster>& r,
+              std::vector<int>& s,
+              std::vector<float>& cLD,
+              std::vector<float>& cR,
+              std::vector<unsigned int>& cS,
+              std::vector<unsigned int>& cT)
+          : result(r),
+            tracksterSeeds(s),
+            clustersLocalDensity(cLD),
+            clustersRadius(cR),
+            clustersSize(cS),
+            clustersType(cT) {}
     };
 
     virtual void makeTracksters(const Inputs& input,

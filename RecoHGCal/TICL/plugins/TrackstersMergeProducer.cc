@@ -172,7 +172,7 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
       tracks_time_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTime"))),
       tracks_time_quality_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTimeQual"))),
-      tracks_time_err_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTimeErr"))), 
+      tracks_time_err_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTimeErr"))),
       muons_token_(consumes<std::vector<reco::Muon>>(ps.getParameter<edm::InputTag>("muons"))),
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
       tfDnnToken_(esConsumes(edm::ESInputTag("", tfDnnLabel_))),
@@ -356,7 +356,15 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
     const auto &trackTimeQual = *trackTimeQual_h;
     // Linking
     auto resultTrackstersLinked = std::make_unique<std::vector<TICLCandidate>>();
-    linkingAlgo_->linkTracksters(track_h, trackTime, trackTimeErr, trackTimeQual, trackTimeQualThreshold_, muons, cutTk_, trackstersclue3d_h, *resultTrackstersLinked);
+    linkingAlgo_->linkTracksters(track_h,
+                                 trackTime,
+                                 trackTimeErr,
+                                 trackTimeQual,
+                                 trackTimeQualThreshold_,
+                                 muons,
+                                 cutTk_,
+                                 trackstersclue3d_h,
+                                 *resultTrackstersLinked);
 
     // Print debug info
     if (debug_) {
@@ -428,7 +436,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
         else
           outTrackster.setIdProbability(ticl::Trackster::ParticleType::neutral_hadron, 1.f);
       }
-      if(!outTrackster.vertices().empty())
+      if (!outTrackster.vertices().empty())
         resultTrackstersMerged->push_back(outTrackster);
     }
     assignPCAtoTracksters(*resultTrackstersMerged,
