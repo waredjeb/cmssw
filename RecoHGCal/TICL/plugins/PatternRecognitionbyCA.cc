@@ -54,7 +54,7 @@ PatternRecognitionbyCA<TILES>::~PatternRecognitionbyCA(){};
 template <typename TILES>
 void PatternRecognitionbyCA<TILES>::makeTracksters(
     const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
-    typename PatternRecognitionAlgoBaseT<TILES>::Outputs& output,
+    typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
   // Protect from events with no seeding regions
   if (input.regions.empty())

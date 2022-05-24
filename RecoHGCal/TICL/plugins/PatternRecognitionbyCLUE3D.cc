@@ -8,6 +8,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/Exception.h"
+#include "RecoHGCal/TICL/interface/commons.h"
 #include "PatternRecognitionbyCLUE3D.h"
 
 #include "TrackstersPCA.h"
@@ -158,6 +159,16 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
 
   std::vector<Trackster> &result = output.result;
   std::vector<int> &tracksterSeeds = output.tracksterSeeds;
+  std::vector<float> &clustersLocalDensity = output.clustersLocalDensity;
+  std::vector<float> &clustersRadius = output.clustersRadius;
+  std::vector<unsigned int> &clustersSize = output.clustersSize;
+  std::vector<unsigned int> &clustersType = output.clustersType;
+
+  clustersLocalDensity.reserve(input.layerClusters.size());
+  clustersRadius.reserve(input.layerClusters.size());
+  clustersSize.reserve(input.layerClusters.size());
+  clustersType.reserve(input.layerClusters.size());
+
   const int eventNumber = input.ev.eventAuxiliary().event();
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
     edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "New Event";
@@ -288,15 +299,28 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
   }
 
   // Build Trackster
-  result.resize(nTracksters);
-  tracksterSeeds.reserve(nTracksters);
+
+  std::vector<Trackster> tmp_result;
+  std::vector<int> tmp_racksterSeeds;
+
+  tmp_result.resize(nTracksters);
+  tmp_racksterSeeds.reserve(nTracksters);
 
   for (unsigned int layer = 0; layer < clusters_.size(); ++layer) {
     const auto &thisLayer = clusters_[layer];
+
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
       edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Examining Layer: " << layer;
     }
     for (unsigned int lc = 0; lc < thisLayer.x.size(); ++lc) {
+      const auto &layerClusterIndex = thisLayer.layerClusterOriginalIdx[lc];
+      clustersLocalDensity[layerClusterIndex] = thisLayer.rho[lc];
+      clustersRadius[layerClusterIndex] = thisLayer.radius[lc];
+      clustersSize[layerClusterIndex] = input.layerClusters[layerClusterIndex].hitsAndFractions().size();
+      auto &lcs = input.layerClusters;
+      auto lc_seed = lcs[layerClusterIndex].seed();
+      clustersType[layerClusterIndex] = ticl::returnIndex(lc_seed, rhtools_);
+
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > PatternRecognitionAlgoBaseT<TILES>::Advanced) {
         edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Trackster " << thisLayer.clusterIndex[lc];
       }
@@ -305,27 +329,30 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
           edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " adding lcIdx: " << thisLayer.layerClusterOriginalIdx[lc];
         }
         if (thisLayer.isSeed[lc]) {
-          tracksterSeeds.emplace_back(thisLayer.layerClusterOriginalIdx[lc]);
+          tmp_racksterSeeds.emplace_back(thisLayer.layerClusterOriginalIdx[lc]);
         }
-        result[thisLayer.clusterIndex[lc]].vertices().push_back(thisLayer.layerClusterOriginalIdx[lc]);
-        result[thisLayer.clusterIndex[lc]].vertex_multiplicity().push_back(1);
+        tmp_result[thisLayer.clusterIndex[lc]].vertices().push_back(thisLayer.layerClusterOriginalIdx[lc]);
+        tmp_result[thisLayer.clusterIndex[lc]].vertex_multiplicity().push_back(1);
         // loop over followers
         for (auto [follower_lyrIdx, follower_soaIdx] : thisLayer.followers[lc]) {
           std::array<unsigned int, 2> edge = {
               {(unsigned int)thisLayer.layerClusterOriginalIdx[lc],
                (unsigned int)clusters_[follower_lyrIdx].layerClusterOriginalIdx[follower_soaIdx]}};
-          result[thisLayer.clusterIndex[lc]].edges().push_back(edge);
+          tmp_result[thisLayer.clusterIndex[lc]].edges().push_back(edge);
         }
       }
     }
   }
 
-  result.erase(
-      std::remove_if(std::begin(result),
-                     std::end(result),
-                     [&](auto const &v) { return static_cast<int>(v.vertices().size()) < minNumLayerCluster_; }),
-      result.end());
+  for (size_t i = 0; i < tmp_result.size(); ++i) {
+    if (static_cast<int>(tmp_result[i].vertices().size()) >= minNumLayerCluster_) {
+      result.push_back(tmp_result[i]);
+      tracksterSeeds.push_back(tmp_racksterSeeds[i]);
+    }
+  }
+
   result.shrink_to_fit();
+  tracksterSeeds.shrink_to_fit();
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,

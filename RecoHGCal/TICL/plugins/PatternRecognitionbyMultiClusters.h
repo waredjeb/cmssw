@@ -22,7 +22,7 @@ namespace ticl {
     ~PatternRecognitionbyMultiClusters() override{};
 
     void makeTracksters(const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
-                        typename PatternRecognitionAlgoBaseT<TILES>::Outputs &output,
+                        typename PatternRecognitionAlgoBaseT<TILES>::Outputs& output,
                         std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) override;
   };
 }  // namespace ticl
