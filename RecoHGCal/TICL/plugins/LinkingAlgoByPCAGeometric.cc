@@ -6,6 +6,8 @@
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
 
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 
 #include "RecoParticleFlow/PFProducer/interface/PFMuonAlgo.h"
@@ -132,6 +134,21 @@ void LinkingAlgoByPCAGeometric::findTrackstersInWindow(const std::vector<std::pa
 
 }
 
+void LinkingAlgoByPCAGeometric::dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char * label) const {
+  if (!(LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)) return;
+
+  LogDebug("LinkingAlgoByPCAGeometric") << "All links found - " << label << "\n";
+  LogDebug("LinkingAlgoByPCAGeometric") << "(seed can either be a track or trackster depending on the step)\n";
+  for (unsigned i = 0; i < resultCollection.size(); ++i) {
+    LogDebug("LinkingAlgoByPCAGeometric") << "seed " << i << " - tracksters : ";
+    const auto &links = resultCollection[i];
+    for (unsigned j = 0; j < links.size(); ++j) {
+      LogDebug("LinkingAlgoByPCAGeometric") << j;
+    }
+    LogDebug("LinkingAlgoByPCAGeometric") << "\n";
+  }
+}
+
 void LinkingAlgoByPCAGeometric::buildLayers() {
   // build disks at HGCal front & EM-Had interface for track propagation
 
@@ -209,6 +226,8 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     return ((cumulative_prob <= pid_threshold_) and (t.raw_em_energy() == t.raw_energy())) or
            (t.raw_em_energy() < energy_em_over_total_threshold_ * t.raw_energy());
   };
+  if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
+    LogDebug("LinkingAlgoByPCAGeometric") << "------- Geometric Linking ------- \n";
 
   // Propagate tracks
   std::vector<unsigned> candidateTrackIds;
@@ -218,7 +237,8 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     reco::TrackRef trackref = reco::TrackRef(tkH, i);
     // also veto tracks associated to muons
     int muId = PFMuonAlgo::muAssocToTrack(trackref, muons);
-    //std::cout << "track (eta)" << i << " (" << tk.eta() <<") time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << std::endl; 
+    if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
+      LogDebug("LinkingAlgoByPCAGeometric") << "track " << i << " - eta " << tk.eta() << " phi " << tk.phi() <<" time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << "\n"; 
     if (!cutTk((tk)) or muId != -1)
       continue;
 
@@ -248,7 +268,8 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   // Propagate tracksters
   for (unsigned i = 0; i < tracksters.size(); ++i) {
     const auto &t = tracksters[i];
-    //std::cout << "trackster " << i << " time " << t.time() << " energy " << t.raw_energy() << std::endl;
+    if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
+      LogDebug("LinkingAlgoByPCAGeometric") << "trackster " << i << " - eta " << t.barycenter().eta() << " phi " << t.barycenter().phi() << " time " << t.time() << " energy " << t.raw_energy() << "\n";
     Vector directnv = t.eigenvectors(0);
 
     if (abs(directnv.Z()) < 0.00001)
@@ -292,6 +313,11 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   std::vector<std::vector<unsigned>> tsHadNearAtInt(tracksters.size());
   findTrackstersInWindow(tsHadPropIntColl, tsHadPropIntTiles, del_tsHad, tracksters.size(), tsHadNearAtInt, true);
 
+  dumpLinksFound(tsNearTk, "track -> tracksters at layer 1");
+  dumpLinksFound(tsNearTkAtInt, "track -> tracksters at lastLayerEE");
+  dumpLinksFound(tsNearAtInt, "EM -> HAD tracksters at lastLayerEE");
+  dumpLinksFound(tsHadNearAtInt, "HAD -> HAD tracksters at lastLayerEE");
+
   
   // make final collections
 
@@ -319,8 +345,11 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       // compatible if accumulated energy does not 
       // exceed track momentum by more than threshold
       double threshold = std::min(0.2*ts.raw_energy(), 10.0);
-      /*if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
-      std::cout << "track p : " << tk.p() << " trackster energy : " << ts.raw_energy() << std::endl;*/
+
+      if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
+        if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
+          LogDebug("LinkingAlgoByPCAGeometric") << "energy incompatible : track p : " << tk.p() << " trackster energy : " << ts.raw_energy() << "\n";
+      
       return (total_raw_energy + ts.raw_energy() < tk.p() + threshold); 
     };
     auto timeCompatible = [&](const Trackster & ts, const reco::TrackRef tk) -> bool {
@@ -334,10 +363,14 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
       double tkTErr = tkTimeErr[tk];
 
       if (tsT == -99. or tkTimeQual[tk] < tkTimeQualThreshold) return true;
-      /*if (!(std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr)))
-      std::cout << "track time : " << tkT << " trackster time : " << tsT << std::endl;*/
+
+      if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
+        if (!(std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr)))
+          LogDebug("LinkingAlgoByPCAGeometric") << "time incompatible : track time " << tkT << " +/- " << tkTErr << " trackster time " << tsT << " +/- " << tsTErr << "\n";
+
       return (std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr));
     };
+    
     auto tkRef = reco::TrackRef(tkH, i);
 
     for (const unsigned ts3_idx : tsNearTk[i]) {  // tk -> ts

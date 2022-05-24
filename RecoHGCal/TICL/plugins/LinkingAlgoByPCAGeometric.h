@@ -69,6 +69,8 @@ namespace ticl {
                                 std::vector<std::vector<unsigned>> &resultCollection,
                                 bool useMask);
 
+    void dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char * label) const;
+
     std::once_flag initializeGeometry_;
 
     const HGCalDDDConstants *hgcons_;
