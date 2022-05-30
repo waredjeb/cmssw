@@ -1,6 +1,6 @@
 #include <cmath>
 #include <string>
-#include "RecoHGCal/TICL/plugins/LinkingAlgoByPCAGeometric.h"
+#include "RecoHGCal/TICL/plugins/LinkingAlgoByDirectionGeometric.h"
 
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
@@ -13,7 +13,7 @@
 
 using namespace ticl;
 
-LinkingAlgoByPCAGeometric::LinkingAlgoByPCAGeometric(const edm::ParameterSet &conf)
+LinkingAlgoByDirectionGeometric::LinkingAlgoByDirectionGeometric(const edm::ParameterSet &conf)
   : LinkingAlgoBase(conf),
     del_tk_ts_layer1_(conf.getParameter<double>("delta_tk_ts_layer1")),
     del_tk_ts_int_(conf.getParameter<double>("delta_tk_ts_interface")),
@@ -25,9 +25,9 @@ LinkingAlgoByPCAGeometric::LinkingAlgoByPCAGeometric(const edm::ParameterSet &co
     filter_on_categories_(conf.getParameter<std::vector<int>>("filter_hadronic_on_categories")),
     cutTk_(conf.getParameter<std::string>("cutTk")) {}
 
-LinkingAlgoByPCAGeometric::~LinkingAlgoByPCAGeometric() {}
+LinkingAlgoByDirectionGeometric::~LinkingAlgoByDirectionGeometric() {}
 
-void LinkingAlgoByPCAGeometric::initialize(const HGCalDDDConstants *hgcons,
+void LinkingAlgoByDirectionGeometric::initialize(const HGCalDDDConstants *hgcons,
                                            const hgcal::RecHitTools rhtools,
                                            const edm::ESHandle<MagneticField> bfieldH,
                                            const edm::ESHandle<Propagator> propH) {
@@ -39,7 +39,7 @@ void LinkingAlgoByPCAGeometric::initialize(const HGCalDDDConstants *hgcons,
   propagator_ = propH;
 }
 
-math::XYZVector LinkingAlgoByPCAGeometric::propagateTrackster(const Trackster &t,
+math::XYZVector LinkingAlgoByDirectionGeometric::propagateTrackster(const Trackster &t,
                                                               const unsigned idx,
                                                               float zVal,
                                                               std::array<TICLLayerTile, 2> &tracksterTiles) {
@@ -75,7 +75,7 @@ math::XYZVector LinkingAlgoByPCAGeometric::propagateTrackster(const Trackster &t
   return tPoint;
 }
 
-void LinkingAlgoByPCAGeometric::findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
+void LinkingAlgoByDirectionGeometric::findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
                                                        const std::array<TICLLayerTile, 2> &tracksterTiles,
                                                        double delta,
                                                        unsigned trackstersSize,
@@ -143,22 +143,22 @@ void LinkingAlgoByPCAGeometric::findTrackstersInWindow(const std::vector<std::pa
 
 }
 
-void LinkingAlgoByPCAGeometric::dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char * label) const {
+void LinkingAlgoByDirectionGeometric::dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char * label) const {
   if (!(LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)) return;
 
-  LogDebug("LinkingAlgoByPCAGeometric") << "All links found - " << label << "\n";
-  LogDebug("LinkingAlgoByPCAGeometric") << "(seed can either be a track or trackster depending on the step)\n";
+  LogDebug("LinkingAlgoByDirectionGeometric") << "All links found - " << label << "\n";
+  LogDebug("LinkingAlgoByDirectionGeometric") << "(seed can either be a track or trackster depending on the step)\n";
   for (unsigned i = 0; i < resultCollection.size(); ++i) {
-    LogDebug("LinkingAlgoByPCAGeometric") << "seed " << i << " - tracksters : ";
+    LogDebug("LinkingAlgoByDirectionGeometric") << "seed " << i << " - tracksters : ";
     const auto &links = resultCollection[i];
     for (unsigned j = 0; j < links.size(); ++j) {
-      LogDebug("LinkingAlgoByPCAGeometric") << j;
+      LogDebug("LinkingAlgoByDirectionGeometric") << j;
     }
-    LogDebug("LinkingAlgoByPCAGeometric") << "\n";
+    LogDebug("LinkingAlgoByDirectionGeometric") << "\n";
   }
 }
 
-void LinkingAlgoByPCAGeometric::buildLayers() {
+void LinkingAlgoByDirectionGeometric::buildLayers() {
   // build disks at HGCal front & EM-Had interface for track propagation
 
   float zVal = hgcons_->waferZ(1, true);
@@ -184,7 +184,7 @@ void LinkingAlgoByPCAGeometric::buildLayers() {
   }
 }
 
-void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
+void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
                                                const edm::ValueMap<float> &tkTime,
                                                const edm::ValueMap<float> &tkTimeErr,
                                                const edm::ValueMap<float> &tkTimeQual,
@@ -225,7 +225,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
            (t.raw_em_energy() < energy_em_over_total_threshold_ * t.raw_energy());
   };
   if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
-    LogDebug("LinkingAlgoByPCAGeometric") << "------- Geometric Linking ------- \n";
+    LogDebug("LinkingAlgoByDirectionGeometric") << "------- Geometric Linking ------- \n";
 
   // Propagate tracks
   std::vector<unsigned> candidateTrackIds;
@@ -236,7 +236,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
     // also veto tracks associated to muons
     int muId = PFMuonAlgo::muAssocToTrack(trackref, muons);
     if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
-      LogDebug("LinkingAlgoByPCAGeometric") << "track " << i << " - eta " << tk.eta() << " phi " << tk.phi() <<" time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << "\n"; 
+      LogDebug("LinkingAlgoByDirectionGeometric") << "track " << i << " - eta " << tk.eta() << " phi " << tk.phi() <<" time " << tkTime[reco::TrackRef(tkH, i)] << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << "\n"; 
     if (!cutTk_((tk)) or muId != -1)
       continue;
 
@@ -267,7 +267,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
   for (unsigned i = 0; i < tracksters.size(); ++i) {
     const auto &t = tracksters[i];
     if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
-      LogDebug("LinkingAlgoByPCAGeometric") << "trackster " << i << " - eta " << t.barycenter().eta() << " phi " << t.barycenter().phi() << " time " << t.time() << " energy " << t.raw_energy() << "\n";
+      LogDebug("LinkingAlgoByDirectionGeometric") << "trackster " << i << " - eta " << t.barycenter().eta() << " phi " << t.barycenter().phi() << " time " << t.time() << " energy " << t.raw_energy() << "\n";
     Vector directnv = t.eigenvectors(0);
 
     if (abs(directnv.Z()) < 0.00001)
@@ -346,7 +346,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
         if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
-          LogDebug("LinkingAlgoByPCAGeometric") << "energy incompatible : track p " << tk.p() << " trackster energy " << ts.raw_energy() << "\n";
+          LogDebug("LinkingAlgoByDirectionGeometric") << "energy incompatible : track p " << tk.p() << " trackster energy " << ts.raw_energy() << "\n";
       
       return (total_raw_energy + ts.raw_energy() < tk.p() + threshold); 
     };
@@ -364,7 +364,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
       if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
         if (!(std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr)))
-          LogDebug("LinkingAlgoByPCAGeometric") << "time incompatible : track time " << tkT << " +/- " << tkTErr << " trackster time " << tsT << " +/- " << tsTErr << "\n";
+          LogDebug("LinkingAlgoByDirectionGeometric") << "time incompatible : track time " << tkT << " +/- " << tkTErr << " trackster time " << tsT << " +/- " << tsTErr << "\n";
 
       return (std::abs(tsT - tkT) < maxDeltaT * sqrt(tsTErr * tsTErr + tkTErr * tkTErr));
     };
@@ -580,7 +580,7 @@ void LinkingAlgoByPCAGeometric::linkTracksters(const edm::Handle<std::vector<rec
 
 }  // linkTracksters
 
-void LinkingAlgoByPCAGeometric::fillPSetDescription(edm::ParameterSetDescription &desc) {
+void LinkingAlgoByDirectionGeometric::fillPSetDescription(edm::ParameterSetDescription &desc) {
   desc.add<std::string>("cutTk",
                         "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
                         "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");

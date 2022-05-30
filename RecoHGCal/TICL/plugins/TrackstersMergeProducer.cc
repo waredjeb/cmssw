@@ -31,7 +31,7 @@
 #include "RecoHGCal/TICL/plugins/SeedingRegionAlgoBase.h"
 #include "RecoHGCal/TICL/plugins/LinkingAlgoBase.h"
 #include "RecoHGCal/TICL/plugins/LinkingAlgoFactory.h"
-#include "RecoHGCal/TICL/plugins/LinkingAlgoByPCAGeometric.h"
+#include "RecoHGCal/TICL/plugins/LinkingAlgoByDirectionGeometric.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
@@ -346,6 +346,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
       if (debug_) {
         auto track_idx = track_ptr.get() - (edm::Ptr<reco::Track>(track_h, 0)).get();
         track_idx = (track_ptr.isNull()) ? -1 : track_idx;
+        LogDebug("TrackstersMergeProducer") << "PDG ID " << cand.pdgId() << " charge " << cand.charge() << " p " << cand.p() << std::endl;
         LogDebug("TrackstersMergeProducer") << "track id (p) : " << track_idx << " (" << (track_ptr.isNull() ? -1 : track_ptr->p()) << ") "
                   << " trackster ids (E) : ";
       }
@@ -942,7 +943,7 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   edm::ParameterSetDescription desc;
 
   edm::ParameterSetDescription linkingDesc;
-  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByPCAGeometric", true));
+  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByDirectionGeometric", true));
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
 
   desc.add<edm::InputTag>("tracksterstrkem", edm::InputTag("ticlTrackstersTrkEM"));

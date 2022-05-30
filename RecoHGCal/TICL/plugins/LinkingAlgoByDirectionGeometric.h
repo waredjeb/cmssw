@@ -1,5 +1,5 @@
-#ifndef RecoHGCal_TICL_LinkingAlgoByPCAGeometric_H__
-#define RecoHGCal_TICL_LinkingAlgoByPCAGeometric_H__
+#ifndef RecoHGCal_TICL_LinkingAlgoByDirectionGeometric_H__
+#define RecoHGCal_TICL_LinkingAlgoByDirectionGeometric_H__
 
 #include <memory>
 #include <array>
@@ -26,10 +26,10 @@
 //#include "RecoHGCal/TICL/test/PCA_mod.h"
 
 namespace ticl {
-  class LinkingAlgoByPCAGeometric final : public LinkingAlgoBase {
+  class LinkingAlgoByDirectionGeometric final : public LinkingAlgoBase {
   public:
-    LinkingAlgoByPCAGeometric(const edm::ParameterSet &conf);
-    ~LinkingAlgoByPCAGeometric() override;
+    LinkingAlgoByDirectionGeometric(const edm::ParameterSet &conf);
+    ~LinkingAlgoByDirectionGeometric() override;
 
     void initialize(const HGCalDDDConstants *hgcons,
                     const hgcal::RecHitTools rhtools,
