@@ -37,7 +37,6 @@ ticl_v3.toModify(ticlIterationsTask, func=lambda x : x.add( ticlTrkEMStepTask
     ,ticlEMStepTask
     ,ticlTrkStepTask
     ,ticlHADStepTask) )
-
 ticlIterLabels = [_step.itername.value() for _iteration in ticlIterationsTask for _step in _iteration if (_step._TypedParameterizable__type == "TrackstersProducer")]
 
 ticlTracksterMergeTask = cms.Task(ticlTrackstersMerge)

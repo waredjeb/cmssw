@@ -47,7 +47,6 @@
 #include "Geometry/CommonDetUnit/interface/GeomDet.h"
 
 #include "TrackstersPCA.h"
-#include "SeedingRegionByTracks.h"
 
 using namespace ticl;
 
@@ -101,7 +100,6 @@ private:
   const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bfield_token_;
   const edm::ESGetToken<Propagator, TrackingComponentsRecord> propagator_token_;
   const bool optimiseAcrossTracksters_;
-  const bool ticlv4_;
   const int eta_bin_window_;
   const int phi_bin_window_;
   const double pt_sigma_high_;
@@ -158,7 +156,6 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       propagator_token_(
           esConsumes<Propagator, TrackingComponentsRecord, edm::Transition::BeginRun>(edm::ESInputTag("", propName_))),
       optimiseAcrossTracksters_(ps.getParameter<bool>("optimiseAcrossTracksters")),
-      ticlv4_(ps.getParameter<bool>("TICLV4")),
       eta_bin_window_(ps.getParameter<int>("eta_bin_window")),
       phi_bin_window_(ps.getParameter<int>("phi_bin_window")),
       pt_sigma_high_(ps.getParameter<double>("pt_sigma_high")),
@@ -575,7 +572,6 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
   desc.add<bool>("optimiseAcrossTracksters", true);
-  desc.add<bool>("TICLV4", false);
   desc.add<int>("eta_bin_window", 1);
   desc.add<int>("phi_bin_window", 1);
   desc.add<double>("pt_sigma_high", 2.);
