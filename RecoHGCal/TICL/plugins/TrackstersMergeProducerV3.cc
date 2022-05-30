@@ -131,15 +131,15 @@ TrackstersMergeProducerV3::TrackstersMergeProducerV3(const edm::ParameterSet &ps
 }
 
 void TrackstersMergeProducerV3::fillTile(TICLTracksterTiles &tracksterTile,
-                                       const std::vector<Trackster> &tracksters,
-                                       TracksterIterIndex tracksterIteration) {
+                                         const std::vector<Trackster> &tracksters,
+                                         TracksterIterIndex tracksterIteration) {
   int tracksterId = 0;
   for (auto const &t : tracksters) {
     tracksterTile.fill(tracksterIteration, t.barycenter().eta(), t.barycenter().phi(), tracksterId);
     LogDebug("TrackstersMergeProducerV3") << "Adding tracksterId: " << tracksterId << " into bin [eta,phi]: [ "
-                                        << tracksterTile[tracksterIteration].etaBin(t.barycenter().eta()) << ", "
-                                        << tracksterTile[tracksterIteration].phiBin(t.barycenter().phi())
-                                        << "] for iteration: " << tracksterIteration << std::endl;
+                                          << tracksterTile[tracksterIteration].etaBin(t.barycenter().eta()) << ", "
+                                          << tracksterTile[tracksterIteration].phiBin(t.barycenter().phi())
+                                          << "] for iteration: " << tracksterIteration << std::endl;
 
     tracksterId++;
   }
@@ -543,8 +543,8 @@ void TrackstersMergeProducerV3::produce(edm::Event &evt, const edm::EventSetup &
 }
 
 void TrackstersMergeProducerV3::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
-                                                    const tensorflow::Session *eidSession,
-                                                    std::vector<Trackster> &tracksters) const {
+                                                      const tensorflow::Session *eidSession,
+                                                      std::vector<Trackster> &tracksters) const {
   // Energy regression and particle identification strategy:
   //
   // 1. Set default values for regressed energy and particle id for each trackster.
@@ -706,7 +706,8 @@ void TrackstersMergeProducerV3::assignTimeToCandidates(std::vector<TICLCandidate
   }
 }
 
-void TrackstersMergeProducerV3::printTrackstersDebug(const std::vector<Trackster> &tracksters, const char *label) const {
+void TrackstersMergeProducerV3::printTrackstersDebug(const std::vector<Trackster> &tracksters,
+                                                     const char *label) const {
   if (!debug_)
     return;
 

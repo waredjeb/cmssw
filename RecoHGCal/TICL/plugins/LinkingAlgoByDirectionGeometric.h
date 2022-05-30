@@ -37,10 +37,10 @@ namespace ticl {
                     const edm::ESHandle<Propagator> propH) override;
 
     void linkTracksters(const edm::Handle<std::vector<reco::Track>>,
-                        const edm::ValueMap<float>&,
-                        const edm::ValueMap<float>&,
-                        const edm::ValueMap<float>&,
-                        const std::vector<reco::Muon>&,
+                        const edm::ValueMap<float> &,
+                        const edm::ValueMap<float> &,
+                        const edm::ValueMap<float> &,
+                        const std::vector<reco::Muon> &,
                         const edm::Handle<std::vector<Trackster>>,
                         std::vector<TICLCandidate> &) override;
 
@@ -63,7 +63,7 @@ namespace ticl {
                                 std::vector<std::vector<unsigned>> &resultCollection,
                                 bool useMask);
 
-    void dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char * label) const;
+    void dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char *label) const;
 
     const double del_tk_ts_layer1_;
     const double del_tk_ts_int_;

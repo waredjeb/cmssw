@@ -23,8 +23,7 @@ namespace edm {
 namespace ticl {
   class LinkingAlgoBase {
   public:
-    LinkingAlgoBase(const edm::ParameterSet& conf) 
-      : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
+    LinkingAlgoBase(const edm::ParameterSet& conf) : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
 
     virtual ~LinkingAlgoBase(){};
 
@@ -34,17 +33,17 @@ namespace ticl {
                             const edm::ESHandle<Propagator> propH) = 0;
 
     virtual void linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
-                                const edm::ValueMap<float> &tkTime,
-                                const edm::ValueMap<float> &tkTimeErr,
-                                const edm::ValueMap<float> &tkTimeQual,
-                                const std::vector<reco::Muon> &muons,
+                                const edm::ValueMap<float>& tkTime,
+                                const edm::ValueMap<float>& tkTimeErr,
+                                const edm::ValueMap<float>& tkTimeQual,
+                                const std::vector<reco::Muon>& muons,
                                 const edm::Handle<std::vector<Trackster>> tsH,
                                 std::vector<TICLCandidate>& resultTracksters) = 0;
 
-    static void fillPSetDescription(edm::ParameterSetDescription& desc){ desc.add<int>("algo_verbosity", 0); };
+    static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
 
     enum VerbosityLevel { None = 0, Basic, Advanced, Expert, Guru };
-  
+
   protected:
     int algo_verbosity_;
   };
