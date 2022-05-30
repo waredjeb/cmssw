@@ -63,6 +63,7 @@ math::XYZVector LinkingAlgoByDirectionGeometric::propagateTrackster(const Tracks
   double xOnSurface = par * directnv.X() + baryc.X();
   double yOnSurface = par * directnv.Y() + baryc.Y();
   Vector tPoint(xOnSurface, yOnSurface, zVal);
+
   if (tPoint.Eta() > 0)
     tracksterTiles[1].fill(tPoint.Eta(), tPoint.Phi(), idx);
 
@@ -324,7 +325,6 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
 
   // Trackster - Trackster link finding
   // step 2: tracksters EM -> HAD, at lastLayerEE
-
   std::vector<std::vector<unsigned>> tsNearAtInt(tracksters.size());
   findTrackstersInWindow(tsPropIntColl, tsHadPropIntTiles, del_ts_em_had_, tracksters.size(), tsNearAtInt, true);
 
