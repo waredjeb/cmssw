@@ -20,8 +20,6 @@ ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
 
-
-
 pfTICL = _pfTICLProducer.clone()
 ticlPFTask = cms.Task(pfTICL)
 
