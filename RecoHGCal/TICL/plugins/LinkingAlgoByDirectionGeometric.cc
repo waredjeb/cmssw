@@ -573,16 +573,16 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
     cand.setP4(p4);
   }
 
-  resultLinked.insert(std::end(resultLinked), std::begin(neutralCandidates), std::end(neutralCandidates));
-  resultLinked.insert(std::end(resultLinked), std::begin(chargedCandidates), std::end(chargedCandidates));
-  resultLinked.insert(std::end(resultLinked), std::begin(chargedHadronsFromTk), std::end(chargedHadronsFromTk));
+  resultlinked.insert(std::end(resultlinked), std::begin(neutralcandidates), std::end(neutralcandidates));
+  resultlinked.insert(std::end(resultlinked), std::begin(chargedcandidates), std::end(chargedcandidates));
+  resultlinked.insert(std::end(resultlinked), std::begin(chargedhadronsfromtk), std::end(chargedhadronsfromtk));
 
-}  // linkTracksters
+}  // linktracksters
 
-void LinkingAlgoByDirectionGeometric::fillPSetDescription(edm::ParameterSetDescription &desc) {
-  desc.add<std::string>("cutTk",
-                        "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
-                        "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");
+void linkingalgobydirectiongeometric::fillpsetdescription(edm::parametersetdescription &desc) {
+  desc.add<std::string>("cuttk",
+                        "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highpurity\") && "
+                        "hitpattern().numberoflosthits(\"missing_outer_hits\") < 5");
   desc.add<double>("delta_tk_ts_layer1", 0.02);
   desc.add<double>("delta_tk_ts_interface", 0.03);
   desc.add<double>("delta_ts_em_had", 0.03);
