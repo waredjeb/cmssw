@@ -98,8 +98,8 @@ private:
 
   // Fill Tree with objects and Histograms
   TFile* output_;
-  TString filename = "/nfs/dust/cms/user/eichm/btag/ntuple/vertex_QCD_classification_withoutCut.root";
-  //  TString filename = "/vertex_QCD_test_classification.root";
+  // TString filename = "/nfs/dust/cms/user/eichm/btag/ntuple/vertex_QCD_classification_withoutCut.root";
+   TString filename = "./vertex_QCD_test_classification.root";
 
   TTree * tree;
   std::vector<reco::Vertex> vertices_all_rs;

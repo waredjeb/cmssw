@@ -98,7 +98,7 @@ private:
 
   // Fill Tree with objects and Histograms
   TFile* output_;
-  TString filename = "/nfs/dust/cms/user/eichm/btag/ntuple/vertex_QCD_class_NImatch.root";
+  TString filename = "./vertex_QCD_class_NImatch.root";
   //  TString filename = "/vertex_QCD_test_classification.root";
 
   TTree * tree;

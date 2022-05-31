@@ -21,7 +21,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 process.source = cms.Source ("PoolSource",
     fileNames=cms.untracked.vstring(
 #        'file:////nfs/dust/cms/user/eichm/btag/data/2018/RunIISpring18DRPremix_TTToHadronic_TuneCP5_13TeV-powheg-pythia8/328CB6C9-B161-E811-883C-A0369FE2C09C.root'
-'file:////nfs/dust/cms/user/eichm/btag/ntuple/NITMTTbar18.root'
+# 'file:////nfs/dust/cms/user/eichm/btag/ntuple/NITMTTbar18.root'
+        "file:/afs/cern.ch/work/w/wredjeb/public/forTIM/CMSSW_10_2_3/src/24034.0_TTbar_14TeV+TTbar_14TeV_TuneCUETP8M1_2023D28_GenSimHLBeamSpotFull14+DigiFullTrigger_2023D28+RecoFullGlobal_2023D28+HARVESTFullGlobal_2023D28/step3.root"
     )
 )
 
@@ -209,7 +210,8 @@ process.svTagInfoValidation = cms.EDAnalyzer("SVTagInfoValidationAnalyzer",
     enableSimToReco = cms.untracked.bool(False),
     hepMC = cms.untracked.InputTag("generatorSmeared"),
     longLivedDecayLength = cms.untracked.double(1e-14),
-    vertexClusteringDistance = cms.untracked.double(0.003)
+    vertexClusteringDistance = cms.untracked.double(0.003),
+    jets = cms.untracked.InputTag("ak4PFJets")
 )
 
 process.svTagInfoValidationNImatch = cms.EDAnalyzer("SVTagInfoValidationNImatchAnalyzer",
@@ -240,7 +242,7 @@ process.vertexHistoryAnalyzer = cms.EDAnalyzer("VertexHistoryAnalyzer",
 
 process.out = cms.OutputModule("PoolOutputModule",
 #     fileName = cms.untracked.string("/nfs/dust/cms/user/eichm/btag/ntuple/NITTbar18_test.root"),
-     fileName = cms.untracked.string("/nfs/dust/cms/user/eichm/btag/ntuple/NIcombInfo_test.root"),
+     fileName = cms.untracked.string("./test.root"),
     outputCommands = cms.untracked.vstring("keep *",
 #                        "keep *_*_*_*")
                         "keep *_*_*_IdAndTM",
@@ -252,13 +254,19 @@ process.out = cms.OutputModule("PoolOutputModule",
                         "keep *Jet*_*_*_*",
                         "keep *Candidate*_*_*_*",
                         "keep *_generalTracks_*_*",
+                        "keep *_vertexRefitted0_*_*",
                         "keep *_mix_MergedTrackTruth_*")
 )
 
 
-process.nuclearIdentification = cms.Sequence(
+#process.nuclearIdentification = cms.Sequence(
 #process.inclusiveCandidateVertexing * process.nuclearInteractionIdentifier0 * process.vertexRefitted0 * process.nuclearInteractionIdentifierAfterRefit * process.vertexAndTracksCandCleaned0 * process.inclusiveCandidateVertexFinder0 * process.candidateVertexMerger0 *  process.candidateVertexArbitrator0 * process.inclusiveSecondaryVerticesCleaned0 *
- process.tpClusterProducer * process.quickTrackAssociatorByHits* process.trackingParticleRecoTrackAsssociationByHits * process.ak4JetTracksAssociatorAtVertexPF * process.vertexAssociatorByTracksByHits * process.impactParameterTagInfos * process.secondaryVertexTagInfos * process.svTagInfoProxy * process.svTagInfoValidationNImatch)
+# process.tpClusterProducer * process.quickTrackAssociatorByHits* process.trackingParticleRecoTrackAsssociationByHits * process.ak4JetTracksAssociatorAtVertexPF * process.vertexAssociatorByTracksByHits * process.impactParameterTagInfos)# * process.secondaryVertexTagInfos * process.svTagInfoProxy * process.svTagInfoValidationNImatch)
+
+
+process.nuclearIdentification = cms.Sequence(
+process.inclusiveCandidateVertexing * process.nuclearInteractionIdentifier0 * process.vertexRefitted0 * process.nuclearInteractionIdentifierAfterRefit * process.vertexAndTracksCandCleaned0 * process.inclusiveCandidateVertexFinder0 * process.candidateVertexMerger0 *  process.candidateVertexArbitrator0 * process.inclusiveSecondaryVerticesCleaned0 *
+ process.tpClusterProducer * process.quickTrackAssociatorByHits* process.trackingParticleRecoTrackAsssociationByHits * process.ak4JetTracksAssociatorAtVertexPF * process.vertexAssociatorByTracksByHits * process.impactParameterTagInfos * process.secondaryVertexTagInfos * process.svTagInfoProxy * process.svTagInfoValidation)
 
 process.p = cms.Path(process.nuclearIdentification )
 
