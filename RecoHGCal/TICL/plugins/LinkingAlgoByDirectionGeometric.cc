@@ -223,7 +223,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
     for (const auto index : filter_on_categories_) {
       cumulative_prob += t.id_probabilities(index);
     }
-    return ((cumulative_prob <= pid_threshold_) and (t.raw_em_energy() == t.raw_energy())) or
+    return ((cumulative_prob <= pid_threshold_) and (t.raw_em_energy() != t.raw_energy())) or
            (t.raw_em_energy() < energy_em_over_total_threshold_ * t.raw_energy());
   };
   if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
