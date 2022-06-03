@@ -21,6 +21,7 @@
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/Math/interface/Vector3D.h"
 
@@ -84,6 +85,7 @@ private:
   std::unique_ptr<LinkingAlgoBase> linkingAlgo_;
 
   const edm::EDGetTokenT<std::vector<Trackster>> tracksters_clue3d_token_;
+  const edm::EDGetTokenT<TICLGraph> ticlGraph_token_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
@@ -141,6 +143,7 @@ private:
 
 TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
     : tracksters_clue3d_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3d"))),
+      ticlGraph_token_(consumes<TICLGraph>(ps.getParameter<edm::InputTag>("ticlgraph"))),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
@@ -268,6 +271,10 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
   edm::Handle<std::vector<Trackster>> trackstersclue3d_h;
   evt.getByToken(tracksters_clue3d_token_, trackstersclue3d_h);
+  
+  edm::Handle<TICLGraph> ticlGraph_h;
+  evt.getByToken(ticlGraph_token_, ticlGraph_h);
+  const auto &ticlGraph = *ticlGraph_h;
 
   edm::Handle<std::vector<reco::Muon>> muons_h;
   evt.getByToken(muons_token_, muons_h);
@@ -377,6 +384,20 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   energyRegressionAndID(layerClusters, tfSession_, *resultTrackstersMerged);
   // Compute timing
   assignTimeToCandidates(*resultCandidates);
+
+  if (debug_) {
+      // print info from graph
+      LogDebug("TrackstersMergeProducer") << "From graph:" << std::endl;
+      const auto nodes = ticlGraph.getNodes();
+      for (const auto &n : nodes) {
+        LogDebug("TrackstersMergeProducer") << "Trackster : " << n.getId() << std::endl;
+        LogDebug("TrackstersMergeProducer") << "inners : ";
+        for (auto &inner : n.getInner()) LogDebug("TrackstersMergeProducer") << (int)inner << " ";
+        LogDebug("TrackstersMergeProducer") << std::endl << "outers : ";
+        for (auto &outer : n.getOuter()) LogDebug("TrackstersMergeProducer") << (int)outer << " ";
+        LogDebug("TrackstersMergeProducer") << std::endl;
+      }
+    }
 
   evt.put(std::move(resultTrackstersMerged));
   evt.put(std::move(resultCandidates));
@@ -581,6 +602,7 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
 
   desc.add<edm::InputTag>("trackstersclue3d", edm::InputTag("ticlTrackstersCLUE3DHigh"));
+  desc.add<edm::InputTag>("ticlgraph", edm::InputTag("ticlGraph"));
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
