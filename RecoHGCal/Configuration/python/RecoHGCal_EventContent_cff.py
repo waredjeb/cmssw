@@ -23,7 +23,7 @@ TICL_RECO = cms.PSet(
       ['keep *_ticlGraph_*_*']
       ['keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*'] + 
       ['keep *_tracksterSimTracksterAssociationLinking_*_*' ,'keep *_tracksterSimTracksterAssociationPR_*_*', 'keep *_tracksterSimTracksterAssociationPRCP_*_*'] +
-      ['keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRCPbyCLUE3D_*_*']
+      ['keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRCPbyCLUE3D_*_*', 'keep *_muons1stStep_*_*']
       )
     )
 TICL_RECO.outputCommands.extend(TICL_AOD.outputCommands)
@@ -48,6 +48,7 @@ def customiseHGCalOnlyEventContent(process):
                                             'keep recoTracks_generalTracks_*_*',
                                             'keep recoTrackExtras_generalTracks_*_*',
                                             'keep SimTracks_g4SimHits_*_*',
+                                            'keep *_muons1stStep_*_*',
                                             'keep SimVertexs_g4SimHits_*_*',
                                             'keep *_layerClusterSimClusterAssociationProducer_*_*',
                                             'keep *_layerClusterCaloParticleAssociationProducer_*_*',
