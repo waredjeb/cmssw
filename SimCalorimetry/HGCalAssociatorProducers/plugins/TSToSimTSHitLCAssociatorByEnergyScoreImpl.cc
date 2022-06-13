@@ -43,7 +43,6 @@ hgcal::association TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
   // This vector contains the ids of the SimTracksters contributing with at least one hit to the Trackster and the association score
   //stsInTrackster[trackster][STSids]
   //Connects a Trackster with all related SimTracksters.
-  //std::vector<std::vector<std::pair<unsigned int, float>>> stsInTrackster;
   hgcal::tracksterToSimTrackster stsInTrackster;  // tsId->(stId,score)
   stsInTrackster.resize(nTracksters);
 
@@ -208,6 +207,7 @@ hgcal::association TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
   };
 
   // Loop through Tracksters
+  std::unordered_map<int, std::pair<float, float>> tracksterIdToEnergyAndScoreMap;
   for (unsigned int tstId = 0; tstId < nTracksters; ++tstId) {
     const auto& tst = tracksters[tstId];
     if (tst.vertices().empty())
@@ -274,7 +274,7 @@ hgcal::association TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
           if (std::find(cPIndices.begin(), cPIndices.end(), cpId) == cPIndices.end())
             continue;
 
-          tssInSimTrackster[iSTS].tracksterIdToEnergyAndScore[tstId].first += shared_fraction * hitEn;
+          tssInSimTrackster[iSTS][tstId].first += shared_fraction * hitEn;
           //Here cPOnLayer[caloparticle][layer] describe above is set.
           //Here for Tracksters with matched rechit the CP fraction times hit energy is added and saved
           cPOnLayer[cpId].layerClusterIdToEnergyAndScore[tstId].first += shared_fraction * hitEn;
@@ -283,6 +283,7 @@ hgcal::association TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
           sCOnLayer[cpId][iSim].layerClusterIdToEnergyAndScore[tstId].second = FLT_MAX;
           stsInTrackster[tstId].emplace_back(iSTS, FLT_MAX);
         }
+        
       }
 
     }  //end of loop through rechits of the layer cluster.
@@ -296,7 +297,6 @@ hgcal::association TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
       continue;
 
     // find the unique SimTrackster ids contributing to the Trackster
-    //stsInTrackster[trackster][STSids]
     std::sort(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
     const auto last = std::unique(stsInTrackster[tstId].begin(), stsInTrackster[tstId].end());
     stsInTrackster[tstId].erase(last, stsInTrackster[tstId].end());
@@ -493,8 +493,8 @@ hgcal::association TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
     const auto energyDenom = (valType == 0) ? SimEnergy : SimEnergy_LC;
 
     for (const auto tstId : stsId_tstId_related) {
-      tssInSimTrackster[iSTS].tracksterIdToEnergyAndScore[tstId].first = tstSharedEnergy[iSTS][tstId] / energyDenom;
-      tssInSimTrackster[iSTS].tracksterIdToEnergyAndScore[tstId].second = score3d_iSTS[tstId] /= scoreDenom;
+      tssInSimTrackster[iSTS][tstId].first = tstSharedEnergy[iSTS][tstId] / energyDenom;
+      tssInSimTrackster[iSTS][tstId].second = score3d_iSTS[tstId] /= scoreDenom;
     }
   }  // end of loop through SimTracksters
 
@@ -541,9 +541,13 @@ hgcal::SimToRecoCollectionSimTracksters TSToSimTSHitLCAssociatorByEnergyScoreImp
   hgcal::SimToRecoCollectionSimTracksters returnValue(productGetter_);
   const auto& links = makeConnections(tCH, lCCH, sCCH, cPCH, simTrackstersMapH, sTCH, sTfromCPCH, valType);
 
+
   const auto& tssInSimTrackster = std::get<1>(links);
   for (size_t stId = 0; stId < tssInSimTrackster.size(); ++stId) {
-    for (auto& tsPair : tssInSimTrackster[stId].tracksterIdToEnergyAndScore) {
+    for (auto& tsPair : tssInSimTrackster[stId]) {
+
+    LogDebug("TSToSimTSHitLCAssociatorByEnergyScoreImpl") << "SimTrackster Id:\t" << stId << "\tTrackster id:\t"
+                                                       << tsPair.first << "\tscore:\t" << tsPair.second.second << "\n";
       returnValue.insert(
           edm::Ref<ticl::TracksterCollection>(sTCH, stId),                           // Ref to ST
           std::make_pair(edm::Ref<ticl::TracksterCollection>(tCH, tsPair.first),     // Pair <Ref to TS,
