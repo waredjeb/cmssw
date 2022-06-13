@@ -34,6 +34,14 @@
 
 #include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociator.h"
+#include "SimDataFormats/Associations/interface/TracksterToSimTracksterHitLCAssociator.h"
+
+#include "TTree.h"
+#include "TFile.h"
+
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
 //
 // class declaration
 //
@@ -51,39 +59,57 @@ private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void endRun(edm::Run const& iEvent, edm::EventSetup const&) override{};
   void endJob() override;
+  void clear();
 
+  TTree* score_tree;
   const edm::InputTag trackstersMerge_;
+  const edm::InputTag simTracksters_;
   const edm::InputTag tracks_;
   const edm::InputTag caloParticles_;
   const edm::InputTag layerClusters_;
   const edm::InputTag associator_;
+  const edm::InputTag associatorStR_;
   hgcal::RecHitTools rhtools_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   edm::EDGetTokenT<std::vector<ticl::Trackster>> trackstersMergeToken_;
+  edm::EDGetTokenT<std::vector<ticl::Trackster>> simTrackstersToken_;
   edm::EDGetTokenT<std::vector<reco::Track>> tracksToken_;
   edm::EDGetTokenT<std::vector<CaloParticle>> caloParticlesToken_;
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> layerClustersToken_;
-  edm::EDGetTokenT<hgcal::RecoToSimCollection> associatorMapRtS;
-};
+  edm::EDGetTokenT<hgcal::RecoToSimCollectionSimTracksters> associatorMapRtS;
+  edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> associatorMapStR;
 
+  std::vector<float> str;
+  std::vector<float> rts;
+};
+void TiclDebugger::clear() {
+  str.clear();
+  rts.clear();
+}
 TiclDebugger::TiclDebugger(const edm::ParameterSet& iConfig)
     : trackstersMerge_(iConfig.getParameter<edm::InputTag>("trackstersMerge")),
+      simTracksters_(iConfig.getParameter<edm::InputTag>("simTracksters")),
       tracks_(iConfig.getParameter<edm::InputTag>("tracks")),
       caloParticles_(iConfig.getParameter<edm::InputTag>("caloParticles")),
       layerClusters_(iConfig.getParameter<edm::InputTag>("layerClusters")),
       associator_(iConfig.getParameter<edm::InputTag>("associator")),
+      associatorStR_(iConfig.getParameter<edm::InputTag>("associatorStR")),
       caloGeometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()) {
   edm::ConsumesCollector&& iC = consumesCollector();
   trackstersMergeToken_ = iC.consumes<std::vector<ticl::Trackster>>(trackstersMerge_);
+  simTrackstersToken_ = iC.consumes<std::vector<ticl::Trackster>>(simTracksters_);
   tracksToken_ = iC.consumes<std::vector<reco::Track>>(tracks_);
   caloParticlesToken_ = iC.consumes<std::vector<CaloParticle>>(caloParticles_);
   layerClustersToken_ = iC.consumes<std::vector<reco::CaloCluster>>(layerClusters_);
-  associatorMapRtS = consumes<hgcal::RecoToSimCollection>(associator_);
+  associatorMapRtS = consumes<hgcal::RecoToSimCollectionSimTracksters>(associator_);
+  associatorMapStR = consumes<hgcal::SimToRecoCollectionSimTracksters>(associatorStR_);
 }
 
 TiclDebugger::~TiclDebugger() {}
 
 void TiclDebugger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
+  clear();
   static const char* particle_kind[] = {"gam", "e", "mu", "pi0", "h", "h0", "?", "!"};
   using namespace edm;
   using std::begin;
@@ -95,6 +121,11 @@ void TiclDebugger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   iEvent.getByToken(trackstersMergeToken_, trackstersMergeH);
   auto const& tracksters = *trackstersMergeH.product();
+
+  edm::Handle<std::vector<ticl::Trackster>> simTrackstersH;
+
+  iEvent.getByToken(simTrackstersToken_, simTrackstersH);
+  auto const& simTracksters = *simTrackstersH.product();
   std::vector<int> sorted_tracksters_idx(tracksters.size());
   iota(begin(sorted_tracksters_idx), end(sorted_tracksters_idx), 0);
   sort(begin(sorted_tracksters_idx), end(sorted_tracksters_idx), [&tracksters](int i, int j) {
@@ -115,24 +146,45 @@ void TiclDebugger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   std::vector<std::pair<int, float>> bestCPMatches;
 
-  std::cout << " in ticldebugger " << std::endl;
-  edm::Handle<hgcal::RecoToSimCollection> recotosimCollectionH;
+  edm::Handle<hgcal::RecoToSimCollectionSimTracksters> recotosimCollectionH;
   iEvent.getByToken(associatorMapRtS, recotosimCollectionH);
   auto recSimColl = *recotosimCollectionH;
-  for(size_t lcId = 0; lcId < layerClusters.size(); ++lcId){
-    const edm::Ref<reco::CaloClusterCollection> lcRef(layerClustersH, lcId);
-    const auto& cpsIt = recSimColl.find(lcRef);
-    if (cpsIt == recSimColl.end()){
+
+  edm::Handle<hgcal::SimToRecoCollectionSimTracksters> simtorecoCollectionH;
+  iEvent.getByToken(associatorMapStR, simtorecoCollectionH);
+  auto simRecColl = *simtorecoCollectionH;
+
+  for (size_t tsId = 0; tsId < tracksters.size(); ++tsId) {
+    const edm::Ref<std::vector<ticl::Trackster>> tsRef(trackstersMergeH, tsId);
+    const auto& stsIt = recSimColl.find(tsRef);
+    if (stsIt == recSimColl.end()) {
       std::cout << "Not found " << std::endl;
       continue;
     }
-    const auto& cps = cpsIt->val;
-    for (const auto& cpPair : cps){
-      std::cout << "LC ID " << lcId  << " SCORE " << cpPair.second << std::endl;
+    const auto& sts = stsIt->val;
+    auto idSts = 0;
+    for (const auto& stsPair : sts) {
+      std::cout << "TS ID " << tsId << " STS ID " <<  idSts << " SCORE " << stsPair.second << std::endl;
+      idSts += 1;
+      rts.push_back(stsPair.second);
     }
   }
-  std::cout << " end ticldebugger " << std::endl;
 
+  for (size_t stsId = 0; stsId < simTracksters.size(); ++stsId) {
+    const edm::Ref<std::vector<ticl::Trackster>> stsRef(simTrackstersH, stsId);
+    const auto& tsIt = simRecColl.find(stsRef);
+    if (tsIt == simRecColl.end()) {
+      std::cout << "Not found " << std::endl;
+      continue;
+    }
+    const auto& ts = tsIt->val;
+    auto idSts = 0;
+    for (const auto& tsPair : ts) {
+      std::cout << "STS ID " << stsId << " TS ID " <<  idSts << " SHARED ENERGY " << tsPair.second.first << " SCORE " << tsPair.second.second << std::endl;
+      idSts += 1;
+      str.push_back(tsPair.second.second);
+    }
+  }
 
   auto bestCaloParticleMatches = [&](const ticl::Trackster& t) -> void {
     bestCPMatches.clear();
@@ -235,6 +287,7 @@ void TiclDebugger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       LogVerbatim("TICLDebugger") << std::endl;
     }
   }
+  score_tree->Fill();
 }
 
 void TiclDebugger::beginRun(edm::Run const&, edm::EventSetup const& es) {
@@ -242,18 +295,27 @@ void TiclDebugger::beginRun(edm::Run const&, edm::EventSetup const& es) {
   rhtools_.setGeometry(geom);
 }
 
-void TiclDebugger::beginJob() {}
+void TiclDebugger::beginJob() {
+  edm::Service<TFileService> fs;
+  score_tree = fs->make<TTree>("scores", "TICLscore");
+
+  score_tree->Branch("rts", &rts);
+  score_tree->Branch("str", &str);
+
+}
 
 void TiclDebugger::endJob() {}
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void TiclDebugger::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("trackstersMerge", edm::InputTag("ticlTrackstersMerge"));
+  desc.add<edm::InputTag>("trackstersMerge", edm::InputTag("ticlTrackstersCLUE3DHigh"));
+  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("caloParticles", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalLayerClusters"));
-  desc.add<edm::InputTag>("associator", edm::InputTag("layerClusterCaloParticleAssociationProducer"));
+  desc.add<edm::InputTag>("associator", edm::InputTag("tracksterSimTracksterAssociationPRbyCLUE3D"));
+  desc.add<edm::InputTag>("associatorStR", edm::InputTag("tracksterSimTracksterAssociationPRbyCLUE3D"));
   descriptions.add("ticlDebugger", desc);
 }
 
