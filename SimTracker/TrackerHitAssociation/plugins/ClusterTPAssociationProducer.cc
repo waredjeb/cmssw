@@ -95,7 +95,7 @@ ClusterTPAssociationProducer::ClusterTPAssociationProducer(const edm::ParameterS
 void ClusterTPAssociationProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("simTrackSrc", edm::InputTag("g4SimHits"));
-  desc.add<edm::InputTag>("pixelSimLinkSrc", edm::InputTag("simSiPixelDigis"));
+  desc.add<edm::InputTag>("pixelSimLinkSrc", edm::InputTag("simSiPixelDigis", "Pixel"));
   desc.add<edm::InputTag>("stripSimLinkSrc", edm::InputTag("simSiStripDigis"));
   desc.add<edm::InputTag>("phase2OTSimLinkSrc", edm::InputTag("simSiPixelDigis", "Tracker"));
   desc.add<edm::InputTag>("pixelClusterSrc", edm::InputTag("siPixelClusters"));

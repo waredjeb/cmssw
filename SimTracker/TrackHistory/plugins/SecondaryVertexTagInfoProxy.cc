@@ -18,11 +18,10 @@
 //
 // class decleration
 //
-
 class SecondaryVertexTagInfoProxy : public edm::global::EDProducer<> {
 public:
   explicit SecondaryVertexTagInfoProxy(const edm::ParameterSet &);
-
+  typedef edm::AssociationMap<edm::OneToMany<reco::SecondaryVertexTagInfoCollection, reco::VertexCollection>> AssocSVTagInfoVertex;
 private:
   void produce(edm::StreamID, edm::Event &, const edm::EventSetup &) const override;
 
@@ -36,7 +35,7 @@ SecondaryVertexTagInfoProxy::SecondaryVertexTagInfoProxy(const edm::ParameterSet
 
   // Declare the type of objects to be produced.
   produces<reco::VertexCollection>();
-  produces<edm::AssociationMap<edm::OneToMany<reco::SecondaryVertexTagInfoCollection, reco::VertexCollection>>>();
+  produces<AssocSVTagInfoVertex>();
 }
 
 void SecondaryVertexTagInfoProxy::produce(edm::StreamID, edm::Event &event, const edm::EventSetup &setup) const {
@@ -46,8 +45,9 @@ void SecondaryVertexTagInfoProxy::produce(edm::StreamID, edm::Event &event, cons
 
   // Auto pointers to the collection to be added to the event
   std::unique_ptr<reco::VertexCollection> proxy(new reco::VertexCollection);
-  std::unique_ptr<edm::AssociationMap<edm::OneToMany<reco::SecondaryVertexTagInfoCollection, reco::VertexCollection>>>
-      assoc(new edm::AssociationMap<edm::OneToMany<reco::SecondaryVertexTagInfoCollection, reco::VertexCollection>>);
+//  std::unique_ptr<edm::AssociationMap<edm::OneToMany<reco::SecondaryVertexTagInfoCollection, reco::VertexCollection>>>
+  //    assoc(new edm::AssociationMap<edm::OneToMany<reco::SecondaryVertexTagInfoCollection, reco::VertexCollection>>);
+  auto assoc = std::make_unique<AssocSVTagInfoVertex>(&event.productGetter());
 
   // Get a reference before to put in the event
   reco::VertexRefProd vertexRefProd = event.getRefBeforePut<reco::VertexCollection>();
