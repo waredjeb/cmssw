@@ -36,10 +36,6 @@ namespace hgcal {
     std::unordered_map<unsigned int, std::pair<float, float>> layerClusterIdToEnergyAndScore;
   };
 
-  struct simTracksterOnLayer {
-    std::unordered_map<int, std::pair<float, float>> tracksterIdToEnergyAndScore;
-  };
-
   // This object connects a Trackster, identified through its id (tsId), with a vector of pairs containing all
   // the SimTracksters (via their ids (stIds)) that share at least one LayerCluster. In that pair
   // it stores the score (tsId->(stId,score)). Keep in mind that the association is not unique, since there could be
@@ -47,7 +43,7 @@ namespace hgcal {
   typedef std::vector<std::vector<std::pair<unsigned int, float>>> tracksterToSimTrackster;
   // This is used to save the simTracksterOnLayer structure for all simTracksters.
   // It is not exactly what is returned outside, but out of its entries, the output object is build.
-  typedef std::vector<hgcal::simTracksterOnLayer> simTracksterToTrackster;
+  typedef std::vector<std::unordered_map<int, std::pair<float, float>>> simTracksterToTrackster;
   typedef std::tuple<tracksterToSimTrackster, simTracksterToTrackster> association;
 }  // namespace hgcal
 
