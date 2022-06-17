@@ -55,12 +55,9 @@ TSToSimTSHitLCAssociatorEDProducer::TSToSimTSHitLCAssociatorEDProducer(const edm
 
   TSCollectionToken_ = consumes<ticl::TracksterCollection>(pset.getParameter<edm::InputTag>("label_tst"));
   SimTSCollectionToken_ = consumes<ticl::TracksterCollection>(pset.getParameter<edm::InputTag>("label_simTst"));
-  SimTSFromCPCollectionToken_ = consumes<ticl::TracksterCollection>(pset.getParameter<edm::InputTag>("label_simTstFromCP"));
   LCCollectionToken_ = consumes<reco::CaloClusterCollection>(pset.getParameter<edm::InputTag>("label_lcl"));
   SCCollectionToken_ = consumes<SimClusterCollection>(pset.getParameter<edm::InputTag>("label_scl"));
   CPCollectionToken_ = consumes<CaloParticleCollection>(pset.getParameter<edm::InputTag>("label_cp"));
-  simTrackstersMap_ = consumes<std::map<uint, std::vector<uint>>>(edm::InputTag("ticlSimTracksters"));
-  valType_ = hgcal::validationType(pset.getParameter<int>("valType"));
   associatorToken_ = consumes<hgcal::TracksterToSimTracksterHitLCAssociator>(pset.getParameter<edm::InputTag>("associator"));
 }
 
@@ -72,6 +69,7 @@ TSToSimTSHitLCAssociatorEDProducer::~TSToSimTSHitLCAssociatorEDProducer() {}
 
 // ------------ method called to produce the data  ------------
 void TSToSimTSHitLCAssociatorEDProducer::produce(edm::StreamID, edm::Event &iEvent, const edm::EventSetup &iSetup) const {
+  // std::cout << "Produce " << std::endl;
   using namespace edm;
 
   edm::Handle<hgcal::TracksterToSimTracksterHitLCAssociator> theAssociator;
@@ -83,9 +81,6 @@ void TSToSimTSHitLCAssociatorEDProducer::produce(edm::StreamID, edm::Event &iEve
   Handle<ticl::TracksterCollection> SimTSCollection;
   iEvent.getByToken(SimTSCollectionToken_, SimTSCollection);
 
-  Handle<ticl::TracksterCollection> SimTSFromCPCollection;
-  iEvent.getByToken(SimTSFromCPCollectionToken_, SimTSFromCPCollection);
-
   Handle<reco::CaloClusterCollection> LCCollection;
   iEvent.getByToken(LCCollectionToken_, LCCollection);
 
@@ -95,17 +90,16 @@ void TSToSimTSHitLCAssociatorEDProducer::produce(edm::StreamID, edm::Event &iEve
   Handle<CaloParticleCollection> CPCollection;
   iEvent.getByToken(CPCollectionToken_, CPCollection);
 
-  Handle<std::map<uint, std::vector<uint>>> simTrackstersMap;
-  iEvent.getByToken(simTrackstersMap_, simTrackstersMap);
-
   // associate TS and SimTS
   LogTrace("AssociatorValidator") << "Calling associateRecoToSim method\n";
+//  const auto links = theAssociator->makeConnections(TSCollection, LCCollection, SCCollection, CPCollection, SimTSCollection);
+  
   hgcal::RecoToSimCollectionSimTracksters recSimColl =
-      theAssociator->associateRecoToSim(TSCollection, LCCollection, SCCollection, CPCollection, simTrackstersMap, SimTSCollection, SimTSFromCPCollection, valType_);
+      theAssociator->associateRecoToSim(TSCollection, LCCollection, SCCollection, CPCollection, SimTSCollection);
 
   LogTrace("AssociatorValidator") << "Calling associateSimToReco method\n";
   hgcal::SimToRecoCollectionSimTracksters simRecColl =
-      theAssociator->associateSimToReco(TSCollection, LCCollection, SCCollection, CPCollection, simTrackstersMap, SimTSCollection, SimTSFromCPCollection, valType_);
+      theAssociator->associateSimToReco(TSCollection, LCCollection, SCCollection, CPCollection, SimTSCollection);
 
   auto rts = std::make_unique<hgcal::RecoToSimCollectionSimTracksters>(recSimColl);
   auto str = std::make_unique<hgcal::SimToRecoCollectionSimTracksters>(simRecColl);

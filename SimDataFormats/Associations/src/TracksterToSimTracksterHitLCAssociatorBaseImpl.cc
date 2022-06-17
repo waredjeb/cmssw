@@ -6,15 +6,22 @@ namespace hgcal {
   TracksterToSimTracksterHitLCAssociatorBaseImpl::TracksterToSimTracksterHitLCAssociatorBaseImpl(){};
   TracksterToSimTracksterHitLCAssociatorBaseImpl::~TracksterToSimTracksterHitLCAssociatorBaseImpl(){};
 
+  hgcal::association_t TracksterToSimTracksterHitLCAssociatorBaseImpl::makeConnections(
+      const edm::Handle<ticl::TracksterCollection>& tCH,
+      const edm::Handle<reco::CaloClusterCollection>& lCCH,
+      const edm::Handle<SimClusterCollection>& sCCH,
+      const edm::Handle<CaloParticleCollection>& cPCH,    
+      const edm::Handle<ticl::TracksterCollection>& sTCH
+      ) const {
+        return hgcal::association_t();
+      }
+
   hgcal::RecoToSimCollectionSimTracksters TracksterToSimTracksterHitLCAssociatorBaseImpl::associateRecoToSim(
       const edm::Handle<ticl::TracksterCollection> &tCH,
       const edm::Handle<reco::CaloClusterCollection> &lCCH,
       const edm::Handle<SimClusterCollection> &sCCH,
       const edm::Handle<CaloParticleCollection> &cPCH,
-      const edm::Handle<std::map<uint, std::vector<uint>>> &simTrackstersMapH,
-      const edm::Handle<ticl::TracksterCollection> &sTCH,
-      const edm::Handle<ticl::TracksterCollection> &sTfromCPCH,
-      const validationType valType) const {
+      const edm::Handle<ticl::TracksterCollection> &sTCH) const {
     return hgcal::RecoToSimCollectionSimTracksters();
   }
 
@@ -23,10 +30,7 @@ namespace hgcal {
       const edm::Handle<reco::CaloClusterCollection> &lCCH,
       const edm::Handle<SimClusterCollection> &sCCH,
       const edm::Handle<CaloParticleCollection> &cPCH,
-      const edm::Handle<std::map<uint, std::vector<uint>>> &simTrackstersMapH,
-      const edm::Handle<ticl::TracksterCollection> &sTCH,
-      const edm::Handle<ticl::TracksterCollection> &sTfromCPCH,
-      const validationType valType) const {
+      const edm::Handle<ticl::TracksterCollection> &sTCH) const {
     return hgcal::SimToRecoCollectionSimTracksters();
   }
 
