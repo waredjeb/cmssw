@@ -26,17 +26,24 @@ namespace hgcal {
     ~TracksterToSimTracksterHitLCAssociator() = default;
 
     // ---------- const member functions ---------------------
+
+    hgcal::association_t makeConnections(
+        const edm::Handle<ticl::TracksterCollection>& tCH,
+        const edm::Handle<reco::CaloClusterCollection>& lCCH,
+        const edm::Handle<SimClusterCollection>& sCCH,
+        const edm::Handle<CaloParticleCollection>& cPCH,    
+        const edm::Handle<ticl::TracksterCollection>& sTCH) const {
+          return m_impl->makeConnections(tCH, lCCH, sCCH, cPCH, sTCH);
+        } 
     /// Associate a Trackster to SimClusters
     hgcal::RecoToSimCollectionSimTracksters associateRecoToSim(
         const edm::Handle<ticl::TracksterCollection> &tCH,
         const edm::Handle<reco::CaloClusterCollection> &lCCH,
         const edm::Handle<SimClusterCollection> &sCCH,
         const edm::Handle<CaloParticleCollection> &cPCH,
-        const edm::Handle<std::map<uint, std::vector<uint>>> &simTrackstersMapH,
-        const edm::Handle<ticl::TracksterCollection> &sTCH,
-        const edm::Handle<ticl::TracksterCollection> &sTfromCPCH,
-        const validationType valType) const {
-      return m_impl->associateRecoToSim(tCH, lCCH, sCCH, cPCH, simTrackstersMapH, sTCH, sTfromCPCH, valType);
+        const edm::Handle<ticl::TracksterCollection> &sTCH)
+        const {
+      return m_impl->associateRecoToSim(tCH, lCCH, sCCH, cPCH, sTCH);
     };
 
     /// Associate a SimCluster to Tracksters
@@ -45,11 +52,9 @@ namespace hgcal {
         const edm::Handle<reco::CaloClusterCollection> &lCCH,
         const edm::Handle<SimClusterCollection> &sCCH,
         const edm::Handle<CaloParticleCollection> &cPCH,
-        const edm::Handle<std::map<uint, std::vector<uint>>> &simTrackstersMapH,
-        const edm::Handle<ticl::TracksterCollection> &sTCH,
-        const edm::Handle<ticl::TracksterCollection> &sTfromCPCH,
-        const validationType valType) const {
-      return m_impl->associateSimToReco(tCH, lCCH, sCCH, cPCH, simTrackstersMapH, sTCH, sTfromCPCH, valType);
+        const edm::Handle<ticl::TracksterCollection> &sTCH
+        ) const {
+      return m_impl->associateSimToReco(tCH, lCCH, sCCH, cPCH, sTCH);
     }
 
   private:
