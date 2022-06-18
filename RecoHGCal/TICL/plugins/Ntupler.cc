@@ -52,7 +52,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-class Ntupler : public edm::one::EDAnalyzer<edm::one::WatchRuns> {
+class Ntupler : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one::SharedResources> {
     public:
   explicit Ntupler(const edm::ParameterSet&);
   ~Ntupler() override;
@@ -559,11 +559,11 @@ Ntupler::~Ntupler() { clearVariables(); };
 void Ntupler::beginRun(edm::Run const&, edm::EventSetup const& es) {
   const CaloGeometry& geom = es.getData(caloGeometry_token_);
   rhtools_.setGeometry(geom);
+// Define tree and branches  
 }
 
 
 void Ntupler::beginJob() {
-  // Define tree and branches
   edm::Service<TFileService> fs;
   trackster_tree_ = fs->make<TTree>("tracksters", "TICL tracksters");
   cluster_tree_ = fs->make<TTree>("clusters", "TICL tracksters");
@@ -645,6 +645,7 @@ void Ntupler::beginJob() {
   simtrackstersSC_tree_->Branch("stsSC_vertices_correctedEnergy", &stsSC_trackster_vertices_correctedEnergy);
   simtrackstersSC_tree_->Branch("stsSC_vertices_correctedEnergyUncertainty", &stsSC_trackster_vertices_correctedEnergyUncertainty);
   simtrackstersSC_tree_->Branch("stsSC_vertices_multiplicity", &stsSC_trackster_vertices_multiplicity); //NEW
+  simtrackstersSC_tree_->Branch("NsimTrackstersSC", &nsimTrackstersSC);
 
   simtrackstersCP_tree_->Branch("stsCP_event", &ev_event_);
   simtrackstersCP_tree_->Branch("stsCP_NClusters", &stsCP_nclusters_);
@@ -679,7 +680,7 @@ void Ntupler::beginJob() {
   simtrackstersCP_tree_->Branch("stsCP_vertices_correctedEnergy", &stsCP_trackster_vertices_correctedEnergy);
   simtrackstersCP_tree_->Branch("stsCP_vertices_correctedEnergyUncertainty", &stsCP_trackster_vertices_correctedEnergyUncertainty);
   simtrackstersCP_tree_->Branch("stsCP_vertices_multiplicity", &stsCP_trackster_vertices_multiplicity); //NEW
-
+  simtrackstersSC_tree_->Branch("NsimTrackstersCP", &nsimTrackstersCP);
 
   graph_tree_->Branch("linked_inners", &node_linked_inners);
   graph_tree_->Branch("linked_outers", &node_linked_outers);
@@ -736,9 +737,6 @@ void Ntupler::beginJob() {
   associations_tree_->Branch("Mergetracksters_simToReco_CP", &MergeTracksters_simToReco_CP);
   associations_tree_->Branch("Mergetracksters_simToReco_CP_score", &MergeTracksters_simToReco_CP_score);
   associations_tree_->Branch("Mergetracksters_recoToSim_CP_sharedE", &MergeTracksters_simToReco_CP_sharedE);
-
-
-  simtrackstersSC_tree_->Branch("NsimTracksters", &nsimTrackstersSC);
   
   cluster_tree_->Branch("seedID", &cluster_seedID);
   cluster_tree_->Branch("energy", &cluster_energy);
@@ -771,11 +769,9 @@ void Ntupler::beginJob() {
   tracks_tree_->Branch("track_time",&track_time);
   tracks_tree_->Branch("track_time_quality",&track_time_quality);
   tracks_tree_->Branch("track_time_err",&track_time_err);
-  tracks_tree_->Branch("track_nhits",&track_nhits);
-  
+  tracks_tree_->Branch("track_nhits",&track_nhits); 
 
   event_index = 0;
-  
 }
 
 void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
