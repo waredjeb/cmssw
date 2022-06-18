@@ -88,6 +88,7 @@ private:
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_merged_token_;
   const edm::EDGetTokenT<std::vector<float>> layerClustersLocalDensity_token_;
   const edm::EDGetTokenT<std::vector<float>> layerClustersRadius_token_;
+  const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<int>> tracksterSeeds_token_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_SC_token_;
@@ -288,6 +289,8 @@ private:
   std::vector<float_t> cluster_position_eta;
   std::vector<float_t> cluster_position_phi;
   std::vector<int> cluster_type;
+  std::vector<float> cluster_time;
+  std::vector<float> cluster_timeErr;
   std::vector<float> cluster_ld;
   std::vector<float> cluster_radius;
   std::vector<uint32_t> cluster_number_of_hits;
@@ -488,6 +491,8 @@ void Ntupler::clearVariables() {
   cluster_position_eta.clear();
   cluster_position_phi.clear();
   cluster_type.clear();
+  cluster_time.clear();
+  cluster_timeErr.clear();
   cluster_ld.clear();
   cluster_radius.clear();
   cluster_number_of_hits.clear();
@@ -533,6 +538,8 @@ Ntupler::Ntupler(const edm::ParameterSet& ps)
       tracksters_merged_token_(consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("trackstersmerged"))),
       layerClustersLocalDensity_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("layerClustersLocalDensity"))),
       layerClustersRadius_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("layerClustersRadius"))),
+      clustersTime_token_(
+          consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
       tracksterSeeds_token_(consumes<std::vector<int>>(ps.getParameter<edm::InputTag>("tracksterSeeds"))),
       caloGeometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       simTracksters_SC_token_(consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersSC"))),
@@ -743,6 +750,8 @@ void Ntupler::beginJob() {
   cluster_tree_->Branch("position_eta", &cluster_position_eta);
   cluster_tree_->Branch("position_phi", &cluster_position_phi);
   cluster_tree_->Branch("cluster_type", &cluster_type);
+  cluster_tree_->Branch("cluster_time", &cluster_time);
+  cluster_tree_->Branch("cluster_timeErr", &cluster_timeErr);
   cluster_tree_->Branch("cluster_local_density", &cluster_ld);
   cluster_tree_->Branch("cluster_radius", &cluster_radius);
   cluster_tree_->Branch("cluster_number_of_hits", &cluster_number_of_hits);
@@ -782,6 +791,10 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
   edm::Handle<std::vector<reco::CaloCluster>> layer_clusters_h;
   event.getByToken(layer_clusters_token_, layer_clusters_h);
   const auto& clusters = *layer_clusters_h;
+
+  edm::Handle<edm::ValueMap<std::pair<float, float>>> clustersTime_h;
+  event.getByToken(clustersTime_token_, clustersTime_h);
+  const auto &layerClustersTimes = *clustersTime_h;
 
   //TICL Graph
   edm::Handle<TICLGraph> ticl_graph_h;
@@ -1146,6 +1159,9 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     cluster_number_of_hits.push_back(number_of_hits);  
     cluster_type.push_back(ticl::returnIndex(lc_seed, rhtools_));
 
+    cluster_timeErr.push_back(layerClustersTimes.get(c_id).second);
+    cluster_time.push_back(layerClustersTimes.get(c_id).first);
+
     auto c_ld = 0.;
     if(layer_cluster_density[c_id] > 1e-5 && layer_cluster_density[c_id] < 3000){
       c_ld = layer_cluster_density[c_ld];
@@ -1436,6 +1452,7 @@ void Ntupler::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("trackstersclue3d", edm::InputTag("ticlTrackstersCLUE3DHigh"));
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalLayerClusters"));
+  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("ticlgraph", edm::InputTag("ticlGraph"));
   desc.add<edm::InputTag>("ticlcandidates", edm::InputTag("ticlTrackstersMerge"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
