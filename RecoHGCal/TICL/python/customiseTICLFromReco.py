@@ -26,6 +26,13 @@ def customiseTICLFromReco(process):
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
                             process.ticlTracksterMergeTask)
+
+    process.ntuplizer = ticlNtuplizer.clone()
+
+    process.TFileService = cms.Service("TFileService", 
+            fileName = cms.string("histo.root")
+    )
+
 # Validation
     process.TICL_ValidationProducers = cms.Task(process.hgcalRecHitMapProducer,
                                                 process.lcAssocByEnergyScoreProducer,
@@ -39,7 +46,7 @@ def customiseTICLFromReco(process):
                                        process.TICL_Validator
                                       )
 # Path and EndPath definitions
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.ntuplizer)
     process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition

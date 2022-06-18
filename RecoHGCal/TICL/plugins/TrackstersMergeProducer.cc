@@ -70,6 +70,7 @@ public:
 private:
   typedef ticl::Trackster::IterationIndex TracksterIterIndex;
   typedef math::XYZVector Vector;
+  typedef std::vector<double> Vec;
 
   void fillTile(TICLTracksterTiles &, const std::vector<Trackster> &, TracksterIterIndex);
 
@@ -186,6 +187,15 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       eidSession_(nullptr) {
   produces<std::vector<Trackster>>();
   produces<std::vector<TICLCandidate>>();
+  produces<std::vector<bool>>("maskTracks");
+  produces<std::vector<double>>("hgcaltracksX");
+  produces<std::vector<double>>("hgcaltracksY");
+  produces<std::vector<double>>("hgcaltracksZ");
+  produces<std::vector<double>>("hgcaltracksEta"); 
+  produces<std::vector<double>>("hgcaltracksPhi"); 
+  produces<std::vector<double>>("hgcaltracksPx");  
+  produces<std::vector<double>>("hgcaltracksPy");  
+  produces<std::vector<double>>("hgcaltracksPz");  
 
   std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
   hdc_token_ =
@@ -253,6 +263,15 @@ void TrackstersMergeProducer::dumpTrackster(const Trackster &t) const {
 void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   auto resultTrackstersMerged = std::make_unique<std::vector<Trackster>>();
   auto resultCandidates = std::make_unique<std::vector<TICLCandidate>>();
+  auto masked_tracks = std::make_unique<std::vector<bool>>();
+  auto hgcaltracks_x = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_y = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_z = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_eta = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_phi = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_px = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_py = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_pz = std::make_unique<std::vector<double>>();
 
   tfSession_ = es.getData(tfDnnToken_).getSession();
 
@@ -281,9 +300,10 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   const auto &trackTimeQual = evt.get(tracks_time_quality_token_);
 
   // Linking
-  linkingAlgo_->linkTracksters(
-      track_h, trackTime, trackTimeErr, trackTimeQual, muons, trackstersclue3d_h, *resultCandidates);
 
+  masked_tracks->resize(tracks.size(), false);
+  linkingAlgo_->linkTracksters(
+      track_h, trackTime, trackTimeErr, trackTimeQual, muons, trackstersclue3d_h, *resultCandidates,*hgcaltracks_x,*hgcaltracks_y,*hgcaltracks_z,*hgcaltracks_eta,*hgcaltracks_phi,*hgcaltracks_px,*hgcaltracks_py,*hgcaltracks_pz,*masked_tracks);
   // Print debug info
   if (debug_) {
     LogDebug("TrackstersMergeProducer") << "Results from the linking step : " << std::endl
@@ -388,6 +408,15 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
   evt.put(std::move(resultTrackstersMerged));
   evt.put(std::move(resultCandidates));
+  evt.put(std::move(hgcaltracks_x),"hgcaltracksX");
+  evt.put(std::move(hgcaltracks_y),"hgcaltracksY");
+  evt.put(std::move(hgcaltracks_z),"hgcaltracksZ");
+  evt.put(std::move(hgcaltracks_eta),"hgcaltracksEta");
+  evt.put(std::move(hgcaltracks_phi),"hgcaltracksPhi");
+  evt.put(std::move(hgcaltracks_px), "hgcaltracksPx");
+  evt.put(std::move(hgcaltracks_py), "hgcaltracksPy");
+  evt.put(std::move(hgcaltracks_pz), "hgcaltracksPz");
+  evt.put(std::move(masked_tracks), "maskTracks");
 }
 
 void TrackstersMergeProducer::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
