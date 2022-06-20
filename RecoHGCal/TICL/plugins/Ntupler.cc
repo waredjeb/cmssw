@@ -868,7 +868,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
 // simTracksters from CP
   edm::Handle<std::vector<ticl::Trackster>> simTrackstersCP_h;
   event.getByToken(simTracksters_CP_token_, simTrackstersCP_h);
-  const auto& simTrackstersCP = *simTrackstersSP_h;
+  const auto& simTrackstersCP = *simTrackstersCP_h;
 
   // trackster reco to sim SC
   edm::Handle<hgcal::RecoToSimCollectionSimTracksters> tsRecoToSimSC_h;
