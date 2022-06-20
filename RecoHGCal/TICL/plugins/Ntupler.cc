@@ -868,7 +868,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
 // simTracksters from CP
   edm::Handle<std::vector<ticl::Trackster>> simTrackstersCP_h;
   event.getByToken(simTracksters_CP_token_, simTrackstersCP_h);
-  const auto& simTrackstersCP = *simTrackstersSC_h;
+  const auto& simTrackstersCP = *simTrackstersSP_h;
 
   // trackster reco to sim SC
   edm::Handle<hgcal::RecoToSimCollectionSimTracksters> tsRecoToSimSC_h;
@@ -1174,7 +1174,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
   }
   
   tracksters_in_candidate.resize(ticlcandidates.size());
-  track_in_candidate.resize(ticlcandidates.size());
+  track_in_candidate.resize(ticlcandidates.size(), -1);
   nCandidates = ticlcandidates.size();
   for (size_t i = 0; i < ticlcandidates.size(); ++i) {
     const auto& candidate = ticlcandidates[i];
