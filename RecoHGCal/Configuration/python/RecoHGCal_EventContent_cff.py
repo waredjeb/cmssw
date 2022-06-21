@@ -20,7 +20,8 @@ TICL_RECO = cms.PSet(
        'keep *_ticlTrackstersHFNoseHAD_*_*',
        'keep *_ticlTrackstersHFNoseMerge_*_*',] +
       ['keep *_pfTICL_*_*'] +
-      ['keep *_ticlGraph_*_*']
+      ['keep *_tofPID_*_*'] +
+      ['keep *_ticlGraph_*_*'] +
       ['keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*'] + 
       ['keep *_tracksterSimTracksterAssociationLinking_*_*' ,'keep *_tracksterSimTracksterAssociationPR_*_*'] +
       ['keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*', 'keep *_muons1stStep_*_*']
@@ -50,6 +51,7 @@ def customiseHGCalOnlyEventContent(process):
                                             'keep SimTracks_g4SimHits_*_*',
                                             'keep *_muons1stStep_*_*',
                                             'keep SimVertexs_g4SimHits_*_*',
+                                            'keep *_tofPID_*_*',
                                             'keep *_layerClusterSimClusterAssociationProducer_*_*',
                                             'keep *_layerClusterCaloParticleAssociationProducer_*_*',
                                             'keep *_randomEngineStateProducer_*_*',
