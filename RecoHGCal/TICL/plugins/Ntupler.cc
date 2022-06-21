@@ -1264,7 +1264,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     if (ts_iter != tsSimToRecoSCMap.end()) {
       const auto& tsAssociated = ts_iter->val;
       for (auto &ts : tsAssociated) {
-        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_handle, i)).get();
+        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_handle, 0)).get();
         trackstersCLUE3D_simToReco_SC[i].push_back(ts_idx);
         trackstersCLUE3D_simToReco_SC_score[i].push_back(ts.second.second);
         trackstersCLUE3D_simToReco_SC_sharedE[i].push_back(ts.second.first);
@@ -1305,7 +1305,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     if (ts_iter != tsSimToRecoCPMap.end()) {
       const auto& tsAssociated = ts_iter->val;
       for (auto &ts : tsAssociated) {
-        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_handle, i)).get();
+        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_handle, 0)).get();
         trackstersCLUE3D_simToReco_CP[i].push_back(ts_idx);
         trackstersCLUE3D_simToReco_CP_score[i].push_back(ts.second.second);
         trackstersCLUE3D_simToReco_CP_sharedE[i].push_back(ts.second.first);
@@ -1344,7 +1344,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     if (ts_iter != MergetsSimToRecoSCMap.end()) {
       const auto& tsAssociated = ts_iter->val;
       for (auto &ts : tsAssociated) {
-        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_merged_h, i)).get();
+        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_merged_h, 0)).get();
         MergeTracksters_simToReco_SC[i].push_back(ts_idx);
         MergeTracksters_simToReco_SC_score[i].push_back(ts.second.second);
         MergeTracksters_simToReco_SC_sharedE[i].push_back(ts.second.first);
@@ -1386,7 +1386,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     if (ts_iter != MergetsSimToRecoCPMap.end()) {
       const auto& tsAssociated = ts_iter->val;
       for (auto &ts : tsAssociated) {
-        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_merged_h, i)).get();
+        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_merged_h, 0)).get();
         MergeTracksters_simToReco_CP[i].push_back(ts_idx);
         MergeTracksters_simToReco_CP_score[i].push_back(ts.second.second);
         MergeTracksters_simToReco_CP_sharedE[i].push_back(ts.second.first);
