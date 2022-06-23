@@ -148,11 +148,12 @@ private:
   std::vector<std::vector<float_t> > trackster_vertices_x;
   std::vector<std::vector<float_t> > trackster_vertices_y;
   std::vector<std::vector<float_t> > trackster_vertices_z;
+  std::vector<std::vector<float_t>>  trackster_vertices_time;
+  std::vector<std::vector<float_t>>  trackster_vertices_timeErr;
   std::vector<std::vector<float_t> > trackster_vertices_energy;
   std::vector<std::vector<float_t> > trackster_vertices_correctedEnergy;
   std::vector<std::vector<float_t> > trackster_vertices_correctedEnergyUncertainty;
   std::vector<std::vector<float_t> > trackster_vertices_multiplicity;
-  
   std::vector<float_t> stsSC_trackster_time;
   std::vector<float_t> stsSC_trackster_timeError;
   std::vector<float_t> stsSC_trackster_regressed_energy;
@@ -179,6 +180,8 @@ private:
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_x;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_y;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_z;
+  std::vector<std::vector<float_t>> stsSC_trackster_vertices_time;
+  std::vector<std::vector<float_t>> stsSC_trackster_vertices_timeErr;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_energy;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_correctedEnergy;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_correctedEnergyUncertainty;
@@ -209,6 +212,8 @@ private:
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_x;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_y;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_z;
+  std::vector<std::vector<float_t>> stsCP_trackster_vertices_time;
+  std::vector<std::vector<float_t>> stsCP_trackster_vertices_timeErr;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_energy;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_correctedEnergy;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_correctedEnergyUncertainty;
@@ -357,6 +362,8 @@ void Ntupler::clearVariables() {
   trackster_vertices_x.clear();
   trackster_vertices_y.clear();
   trackster_vertices_z.clear();
+  trackster_vertices_time.clear();
+  trackster_vertices_timeErr.clear();
   trackster_vertices_energy.clear();
   trackster_vertices_correctedEnergy.clear();
   trackster_vertices_correctedEnergyUncertainty.clear();
@@ -388,6 +395,8 @@ void Ntupler::clearVariables() {
   stsSC_trackster_vertices_x.clear();
   stsSC_trackster_vertices_y.clear();
   stsSC_trackster_vertices_z.clear();
+  stsSC_trackster_vertices_time.clear();
+  stsSC_trackster_vertices_timeErr.clear();
   stsSC_trackster_vertices_energy.clear();
   stsSC_trackster_vertices_correctedEnergy.clear();
   stsSC_trackster_vertices_correctedEnergyUncertainty.clear();
@@ -419,6 +428,8 @@ void Ntupler::clearVariables() {
   stsCP_trackster_vertices_x.clear();
   stsCP_trackster_vertices_y.clear();
   stsCP_trackster_vertices_z.clear();
+  stsCP_trackster_vertices_time.clear();
+  stsCP_trackster_vertices_timeErr.clear();
   stsCP_trackster_vertices_energy.clear();
   stsCP_trackster_vertices_correctedEnergy.clear();
   stsCP_trackster_vertices_correctedEnergyUncertainty.clear();
@@ -606,6 +617,8 @@ void Ntupler::beginJob() {
   trackster_tree_->Branch("vertices_x", &trackster_vertices_x);
   trackster_tree_->Branch("vertices_y", &trackster_vertices_y);
   trackster_tree_->Branch("vertices_z", &trackster_vertices_z);
+  trackster_tree_->Branch("vertices_time", &trackster_vertices_time);
+  trackster_tree_->Branch("vertices_timeErr", &trackster_vertices_timeErr);
   trackster_tree_->Branch("vertices_energy", &trackster_vertices_energy);
   trackster_tree_->Branch("vertices_correctedEnergy", &trackster_vertices_correctedEnergy);
   trackster_tree_->Branch("vertices_correctedEnergyUncertainty", &trackster_vertices_correctedEnergyUncertainty);
@@ -643,6 +656,8 @@ void Ntupler::beginJob() {
   simtrackstersSC_tree_->Branch("stsSC_vertices_x", &stsSC_trackster_vertices_x);
   simtrackstersSC_tree_->Branch("stsSC_vertices_y", &stsSC_trackster_vertices_y);
   simtrackstersSC_tree_->Branch("stsSC_vertices_z", &stsSC_trackster_vertices_z);
+  simtrackstersSC_tree_->Branch("stsSC_vertices_time", &stsSC_trackster_vertices_time);
+  simtrackstersSC_tree_->Branch("stsSC_vertices_timeErr", &stsSC_trackster_vertices_timeErr);
   simtrackstersSC_tree_->Branch("stsSC_vertices_energy", &stsSC_trackster_vertices_energy);
   simtrackstersSC_tree_->Branch("stsSC_vertices_correctedEnergy", &stsSC_trackster_vertices_correctedEnergy);
   simtrackstersSC_tree_->Branch("stsSC_vertices_correctedEnergyUncertainty", &stsSC_trackster_vertices_correctedEnergyUncertainty);
@@ -678,11 +693,13 @@ void Ntupler::beginJob() {
   simtrackstersCP_tree_->Branch("stsCP_vertices_x", &stsCP_trackster_vertices_x);
   simtrackstersCP_tree_->Branch("stsCP_vertices_y", &stsCP_trackster_vertices_y);
   simtrackstersCP_tree_->Branch("stsCP_vertices_z", &stsCP_trackster_vertices_z);
+  simtrackstersCP_tree_->Branch("stsCP_vertices_time", &stsCP_trackster_vertices_time);
+  simtrackstersCP_tree_->Branch("stsCP_vertices_timeErr", &stsCP_trackster_vertices_timeErr);
   simtrackstersCP_tree_->Branch("stsCP_vertices_energy", &stsCP_trackster_vertices_energy);
   simtrackstersCP_tree_->Branch("stsCP_vertices_correctedEnergy", &stsCP_trackster_vertices_correctedEnergy);
   simtrackstersCP_tree_->Branch("stsCP_vertices_correctedEnergyUncertainty", &stsCP_trackster_vertices_correctedEnergyUncertainty);
   simtrackstersCP_tree_->Branch("stsCP_vertices_multiplicity", &stsCP_trackster_vertices_multiplicity); //NEW
-  simtrackstersSC_tree_->Branch("NsimTrackstersCP", &nsimTrackstersCP);
+  simtrackstersCP_tree_->Branch("NsimTrackstersCP", &nsimTrackstersCP);
 
   graph_tree_->Branch("linked_inners", &node_linked_inners);
   graph_tree_->Branch("linked_outers", &node_linked_outers);
@@ -966,6 +983,8 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     std::vector<float_t> vertices_x;
     std::vector<float_t> vertices_y;
     std::vector<float_t> vertices_z;
+    std::vector<float_t> vertices_time;
+    std::vector<float_t> vertices_timeErr;
     std::vector<float_t> vertices_energy;
     std::vector<float_t> vertices_correctedEnergy;
     std::vector<float_t> vertices_correctedEnergyUncertainty;
@@ -978,11 +997,15 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
         vertices_energy.push_back(associated_cluster.energy());
         vertices_correctedEnergy.push_back(associated_cluster.correctedEnergy());
         vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
+        vertices_time.push_back(layerClustersTimes.get(idx).first);
+        vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
     }
     trackster_vertices_indexes.push_back(vertices_indexes);
     trackster_vertices_x.push_back(vertices_x);
     trackster_vertices_y.push_back(vertices_y);
     trackster_vertices_z.push_back(vertices_z);
+    trackster_vertices_time.push_back(vertices_time);
+    trackster_vertices_timeErr.push_back(vertices_timeErr);
     trackster_vertices_energy.push_back(vertices_energy);
     trackster_vertices_correctedEnergy.push_back(vertices_correctedEnergy);
     trackster_vertices_correctedEnergyUncertainty.push_back(vertices_correctedEnergyUncertainty);
@@ -1033,6 +1056,8 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     std::vector<float_t> vertices_x;
     std::vector<float_t> vertices_y;
     std::vector<float_t> vertices_z;
+    std::vector<float_t> vertices_time;
+    std::vector<float_t> vertices_timeErr;
     std::vector<float_t> vertices_energy;
     std::vector<float_t> vertices_correctedEnergy;
     std::vector<float_t> vertices_correctedEnergyUncertainty;
@@ -1045,11 +1070,15 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
         vertices_energy.push_back(associated_cluster.energy());
         vertices_correctedEnergy.push_back(associated_cluster.correctedEnergy());
         vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
+        vertices_time.push_back(layerClustersTimes.get(idx).first);
+        vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
     }
     stsSC_trackster_vertices_indexes.push_back(vertices_indexes);
     stsSC_trackster_vertices_x.push_back(vertices_x);
     stsSC_trackster_vertices_y.push_back(vertices_y);
     stsSC_trackster_vertices_z.push_back(vertices_z);
+    stsSC_trackster_vertices_time.push_back(vertices_time);
+    stsSC_trackster_vertices_timeErr.push_back(vertices_timeErr);
     stsSC_trackster_vertices_energy.push_back(vertices_energy);
     stsSC_trackster_vertices_correctedEnergy.push_back(vertices_correctedEnergy);
     stsSC_trackster_vertices_correctedEnergyUncertainty.push_back(vertices_correctedEnergyUncertainty);
@@ -1098,6 +1127,8 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     std::vector<float_t> vertices_x;
     std::vector<float_t> vertices_y;
     std::vector<float_t> vertices_z;
+    std::vector<float_t> vertices_time;
+    std::vector<float_t> vertices_timeErr;
     std::vector<float_t> vertices_energy;
     std::vector<float_t> vertices_correctedEnergy;
     std::vector<float_t> vertices_correctedEnergyUncertainty;
@@ -1110,11 +1141,15 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
         vertices_energy.push_back(associated_cluster.energy());
         vertices_correctedEnergy.push_back(associated_cluster.correctedEnergy());
         vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
+        vertices_time.push_back(layerClustersTimes.get(idx).first);
+        vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
     }
     stsCP_trackster_vertices_indexes.push_back(vertices_indexes);
     stsCP_trackster_vertices_x.push_back(vertices_x);
     stsCP_trackster_vertices_y.push_back(vertices_y);
     stsCP_trackster_vertices_z.push_back(vertices_z);
+    stsCP_trackster_vertices_time.push_back(vertices_time);
+    stsCP_trackster_vertices_timeErr.push_back(vertices_timeErr);
     stsCP_trackster_vertices_energy.push_back(vertices_energy);
     stsCP_trackster_vertices_correctedEnergy.push_back(vertices_correctedEnergy);
     stsCP_trackster_vertices_correctedEnergyUncertainty.push_back(vertices_correctedEnergyUncertainty);
