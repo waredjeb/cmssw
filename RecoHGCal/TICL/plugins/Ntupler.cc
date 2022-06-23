@@ -288,6 +288,7 @@ private:
   std::vector<float_t> cluster_position_z;
   std::vector<float_t> cluster_position_eta;
   std::vector<float_t> cluster_position_phi;
+  std::vector<unsigned int> cluster_layer_id;
   std::vector<int> cluster_type;
   std::vector<float> cluster_time;
   std::vector<float> cluster_timeErr;
@@ -490,6 +491,7 @@ void Ntupler::clearVariables() {
   cluster_position_z.clear();
   cluster_position_eta.clear();
   cluster_position_phi.clear();
+  cluster_layer_id.clear();
   cluster_type.clear();
   cluster_time.clear();
   cluster_timeErr.clear();
@@ -718,25 +720,25 @@ void Ntupler::beginJob() {
   associations_tree_->Branch("tsCLUE3D_recoToSim_SC_score", &trackstersCLUE3D_recoToSim_SC_score);
   associations_tree_->Branch("tsCLUE3D_simToReco_SC", &trackstersCLUE3D_simToReco_SC);
   associations_tree_->Branch("tsCLUE3D_simToReco_SC_score", &trackstersCLUE3D_simToReco_SC_score);
-  associations_tree_->Branch("tsCLUE3D_recoToSim_SC_sharedE", &trackstersCLUE3D_simToReco_SC_sharedE);
+  associations_tree_->Branch("tsCLUE3D_simToReco_SC_sharedE", &trackstersCLUE3D_simToReco_SC_sharedE);
 
   associations_tree_->Branch("tsCLUE3D_recoToSim_CP", &trackstersCLUE3D_recoToSim_CP);
   associations_tree_->Branch("tsCLUE3D_recoToSim_CP_score", &trackstersCLUE3D_recoToSim_CP_score);
   associations_tree_->Branch("tsCLUE3D_simToReco_CP", &trackstersCLUE3D_simToReco_CP);
   associations_tree_->Branch("tsCLUE3D_simToReco_CP_score", &trackstersCLUE3D_simToReco_CP_score);
-  associations_tree_->Branch("tsCLUE3D_recoToSim_CP_sharedE", &trackstersCLUE3D_simToReco_CP_sharedE);
+  associations_tree_->Branch("tsCLUE3D_simToReco_CP_sharedE", &trackstersCLUE3D_simToReco_CP_sharedE);
 
   associations_tree_->Branch("Mergetstracksters_recoToSim_SC", &MergeTracksters_recoToSim_SC);
   associations_tree_->Branch("Mergetstracksters_recoToSim_SC_score", &MergeTracksters_recoToSim_SC_score);
   associations_tree_->Branch("Mergetstracksters_simToReco_SC", &MergeTracksters_simToReco_SC);
   associations_tree_->Branch("Mergetstracksters_simToReco_SC_score", &MergeTracksters_simToReco_SC_score);
-  associations_tree_->Branch("Mergetstracksters_recoToSim_SC_sharedE", &MergeTracksters_simToReco_SC_sharedE);
+  associations_tree_->Branch("Mergetstracksters_simToReco_SC_sharedE", &MergeTracksters_simToReco_SC_sharedE);
 
   associations_tree_->Branch("Mergetracksters_recoToSim_CP", &MergeTracksters_recoToSim_CP);
   associations_tree_->Branch("Mergetracksters_recoToSim_CP_score", &MergeTracksters_recoToSim_CP_score);
   associations_tree_->Branch("Mergetracksters_simToReco_CP", &MergeTracksters_simToReco_CP);
   associations_tree_->Branch("Mergetracksters_simToReco_CP_score", &MergeTracksters_simToReco_CP_score);
-  associations_tree_->Branch("Mergetracksters_recoToSim_CP_sharedE", &MergeTracksters_simToReco_CP_sharedE);
+  associations_tree_->Branch("Mergetracksters_simToReco_CP_sharedE", &MergeTracksters_simToReco_CP_sharedE);
   
   cluster_tree_->Branch("seedID", &cluster_seedID);
   cluster_tree_->Branch("energy", &cluster_energy);
@@ -747,6 +749,7 @@ void Ntupler::beginJob() {
   cluster_tree_->Branch("position_z", &cluster_position_z);
   cluster_tree_->Branch("position_eta", &cluster_position_eta);
   cluster_tree_->Branch("position_phi", &cluster_position_phi);
+  cluster_tree_->Branch("cluster_layer_id", &cluster_layer_id);
   cluster_tree_->Branch("cluster_type", &cluster_type);
   cluster_tree_->Branch("cluster_time", &cluster_time);
   cluster_tree_->Branch("cluster_timeErr", &cluster_timeErr);
@@ -1150,8 +1153,10 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     cluster_position_z.push_back(cluster_iterator->z());
     cluster_position_eta.push_back(cluster_iterator->eta());
     cluster_position_phi.push_back(cluster_iterator->phi());
-    uint32_t number_of_hits = cluster_iterator->hitsAndFractions().size();
-    cluster_number_of_hits.push_back(number_of_hits);    
+    auto haf = cluster_iterator->hitsAndFractions();
+    auto layerId = rhtools_.getLayerWithOffset(haf[0].first);
+    cluster_layer_id.push_back(layerId);    
+    uint32_t number_of_hits = cluster_iterator->hitsAndFractions().size();    
     cluster_number_of_hits.push_back(number_of_hits);  
     cluster_type.push_back(ticl::returnIndex(lc_seed, rhtools_));
 
