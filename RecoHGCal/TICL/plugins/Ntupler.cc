@@ -39,6 +39,8 @@
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/Math/interface/Point3D.h"
+#include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
+#include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
@@ -101,6 +103,8 @@ private:
   const edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> MergeSimToRecoSC_token_;
   const edm::EDGetTokenT<hgcal::RecoToSimCollectionSimTracksters> MergeRecoToSimCP_token_;
   const edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> MergeSimToRecoCP_token_;
+  const edm::EDGetTokenT<std::vector<SimCluster>> simclusters_token_;
+  const edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
   hgcal::RecHitTools rhtools_;
   
 
@@ -175,6 +179,7 @@ private:
   std::vector<float_t> stsSC_trackster_sigmaPCA3;
   std::vector<float_t> stsSC_trackster_barycenter_eta;
   std::vector<float_t> stsSC_trackster_barycenter_phi;
+  std::vector<int> stsSC_pdgID;
   std::vector<std::vector<float_t>> stsSC_trackster_id_probabilities;
   std::vector<std::vector<uint16_t> > stsSC_trackster_vertices_indexes;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_x;
@@ -207,6 +212,7 @@ private:
   std::vector<float_t> stsCP_trackster_sigmaPCA3;
   std::vector<float_t> stsCP_trackster_barycenter_eta;
   std::vector<float_t> stsCP_trackster_barycenter_phi;
+  std::vector<int> stsCP_pdgID;
   std::vector<std::vector<float_t>> stsCP_trackster_id_probabilities;
   std::vector<std::vector<uint16_t> > stsCP_trackster_vertices_indexes;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_x;
@@ -390,6 +396,7 @@ void Ntupler::clearVariables() {
   stsSC_trackster_sigmaPCA3.clear();
   stsSC_trackster_barycenter_eta.clear();
   stsSC_trackster_barycenter_phi.clear();
+  stsSC_pdgID.clear();
   stsSC_trackster_id_probabilities.clear();
   stsSC_trackster_vertices_indexes.clear();
   stsSC_trackster_vertices_x.clear();
@@ -423,6 +430,7 @@ void Ntupler::clearVariables() {
   stsCP_trackster_sigmaPCA3.clear();
   stsCP_trackster_barycenter_eta.clear();
   stsCP_trackster_barycenter_phi.clear();
+  stsCP_pdgID.clear();
   stsCP_trackster_id_probabilities.clear();
   stsCP_trackster_vertices_indexes.clear();
   stsCP_trackster_vertices_x.clear();
@@ -564,7 +572,9 @@ Ntupler::Ntupler(const edm::ParameterSet& ps)
       MergeRecoToSimSC_token_(consumes<hgcal::RecoToSimCollectionSimTracksters>(ps.getParameter<edm::InputTag>("MergerecoToSimAssociatorSC"))),
       MergeSimToRecoSC_token_(consumes<hgcal::SimToRecoCollectionSimTracksters>(ps.getParameter<edm::InputTag>("MergesimToRecoAssociatorSC"))),
       MergeRecoToSimCP_token_(consumes<hgcal::RecoToSimCollectionSimTracksters>(ps.getParameter<edm::InputTag>("MergerecoToSimAssociatorCP"))),
-      MergeSimToRecoCP_token_(consumes<hgcal::SimToRecoCollectionSimTracksters>(ps.getParameter<edm::InputTag>("MergesimToRecoAssociatorCP")))      {
+      MergeSimToRecoCP_token_(consumes<hgcal::SimToRecoCollectionSimTracksters>(ps.getParameter<edm::InputTag>("MergesimToRecoAssociatorCP"))),
+      simclusters_token_(consumes(ps.getParameter<edm::InputTag>("simclusters"))),
+      caloparticles_token_(consumes(ps.getParameter<edm::InputTag>("caloparticles"))){
       };
 
 Ntupler::~Ntupler() { clearVariables(); };
@@ -651,6 +661,7 @@ void Ntupler::beginJob() {
   simtrackstersSC_tree_->Branch("stsSC_sigmaPCA3", &stsSC_trackster_sigmaPCA3);
   simtrackstersSC_tree_->Branch("stsSC_trackster_barycenter_eta", &stsSC_trackster_barycenter_eta);
   simtrackstersSC_tree_->Branch("stsSC_trackster_barycenter_phi", &stsSC_trackster_barycenter_phi);
+  simtrackstersSC_tree_->Branch("stsSC_pdgID", &stsSC_pdgID);
   simtrackstersSC_tree_->Branch("stsSC_id_probabilities", &stsSC_trackster_id_probabilities);
   simtrackstersSC_tree_->Branch("stsSC_vertices_indexes", &stsSC_trackster_vertices_indexes);
   simtrackstersSC_tree_->Branch("stsSC_vertices_x", &stsSC_trackster_vertices_x);
@@ -679,6 +690,7 @@ void Ntupler::beginJob() {
   simtrackstersCP_tree_->Branch("stsCP_barycenter_z", &stsCP_trackster_barycenter_z);
   simtrackstersCP_tree_->Branch("stsCP_trackster_barycenter_eta", &stsCP_trackster_barycenter_eta);
   simtrackstersCP_tree_->Branch("stsCP_trackster_barycenter_phi", &stsCP_trackster_barycenter_phi);
+  simtrackstersCP_tree_->Branch("stsCP_pdgID", &stsCP_pdgID);
   simtrackstersCP_tree_->Branch("stsCP_EV1", &stsCP_trackster_EV1);
   simtrackstersCP_tree_->Branch("stsCP_EV2", &stsCP_trackster_EV2);
   simtrackstersCP_tree_->Branch("stsCP_EV3", &stsCP_trackster_EV3);
@@ -944,6 +956,8 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
   const auto& tracksterSeeds = *trackster_cluster_seed_h;
 
 
+  const auto& simclusters = event.get(simclusters_token_);
+  const auto& caloparticles = event.get(caloparticles_token_);
 
   ev_event_ = event_index;
   ntracksters_ = tracksters.size();
@@ -1046,6 +1060,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     stsSC_trackster_sigmaPCA1.push_back(trackster_iterator->sigmasPCA()[0]);
     stsSC_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsSC_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
+    stsSC_pdgID.push_back(simclusters[trackster_iterator->seedIndex()].pdgId());
     std::vector<float_t> id_probs;
     for (size_t i = 0; i < 8; i++)
       id_probs.push_back(trackster_iterator->id_probabilities(i));
@@ -1117,6 +1132,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     stsCP_trackster_sigmaPCA1.push_back(trackster_iterator->sigmasPCA()[0]);
     stsCP_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsCP_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
+    stsCP_pdgID.push_back(caloparticles[trackster_iterator->seedIndex()].pdgId());
     std::vector<float_t> id_probs;
     for (size_t i = 0; i < 8; i++)
       id_probs.push_back(trackster_iterator->id_probabilities(i));
@@ -1518,6 +1534,8 @@ void Ntupler::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   desc.add<edm::InputTag>("MergesimToRecoAssociatorSC", edm::InputTag("tracksterSimTracksterAssociationPR"));
   desc.add<edm::InputTag>("MergerecoToSimAssociatorCP", edm::InputTag("tracksterSimTracksterAssociationLinking"));
   desc.add<edm::InputTag>("MergesimToRecoAssociatorCP", edm::InputTag("tracksterSimTracksterAssociationLinking"));
+  desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
   descriptions.add("ticlNtuplizer", desc);
 }
 
