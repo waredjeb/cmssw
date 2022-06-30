@@ -94,9 +94,9 @@ void PFTICLProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
     for (const auto& t : ticl_cand.tracksters()) {
       double ecal_energy_fraction = t->raw_em_pt() / t->raw_pt();
-      ecal_energy += t->raw_energy() * ecal_energy_fraction;
+      ecal_energy += t->regressed_energy() * ecal_energy_fraction;
     }
-    double hcal_energy = ticl_cand.rawEnergy() - ecal_energy;
+    double hcal_energy = ticl_cand.p4().energy() - ecal_energy;
     // fix for floating point rounding could go slightly below 0
     hcal_energy = hcal_energy < 0 ? 0 : hcal_energy;
 
