@@ -263,6 +263,16 @@ private:
   std::vector<float_t> tracksters_merged_sigmaPCA1;
   std::vector<float_t> tracksters_merged_sigmaPCA2;
   std::vector<float_t> tracksters_merged_sigmaPCA3;
+  std::vector<std::vector<uint16_t> > tracksters_merged_vertices_indexes;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_x;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_y;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_z;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_time;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_timeErr;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_energy;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_correctedEnergy;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_correctedEnergyUncertainty;
+  std::vector<std::vector<float_t> > tracksters_merged_vertices_multiplicity;
   std::vector<std::vector<float_t>> tracksters_merged_id_probabilities;
 
   // associations
@@ -474,6 +484,16 @@ void Ntupler::clearVariables() {
   tracksters_merged_sigmaPCA2.clear();
   tracksters_merged_sigmaPCA3.clear();
   tracksters_merged_id_probabilities.clear();
+
+  tracksters_merged_vertices_indexes.clear();
+  tracksters_merged_vertices_x.clear();
+  tracksters_merged_vertices_y.clear();
+  tracksters_merged_vertices_z.clear();
+  tracksters_merged_vertices_time.clear();
+  tracksters_merged_vertices_timeErr.clear();
+  tracksters_merged_vertices_energy.clear();
+  tracksters_merged_vertices_correctedEnergy.clear();
+  tracksters_merged_vertices_correctedEnergyUncertainty.clear();
 
   trackstersCLUE3D_recoToSim_SC.clear();
   trackstersCLUE3D_recoToSim_SC_score.clear();
@@ -744,6 +764,17 @@ void Ntupler::beginJob() {
   tracksters_merged_tree_->Branch("sigmaPCA2", &tracksters_merged_sigmaPCA2);
   tracksters_merged_tree_->Branch("sigmaPCA3", &tracksters_merged_sigmaPCA3);
   tracksters_merged_tree_->Branch("id_probabilities", &tracksters_merged_id_probabilities);
+
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_indexes", &tracksters_merged_vertices_indexes);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_x", &tracksters_merged_vertices_x);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_y", &tracksters_merged_vertices_y);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_z", &tracksters_merged_vertices_z);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_time", &tracksters_merged_vertices_time);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_timeErr", &tracksters_merged_vertices_timeErr);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_energy", &tracksters_merged_vertices_energy);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_correctedEnergy", &tracksters_merged_vertices_correctedEnergy);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_correctedEnergyUncertainty", &tracksters_merged_vertices_correctedEnergyUncertainty);
+  tracksters_merged_tree_->Branch("tracksters_merged_vertices_multiplicity", &tracksters_merged_vertices_multiplicity); //NEW
 
   associations_tree_->Branch("tsCLUE3D_recoToSim_SC", &trackstersCLUE3D_recoToSim_SC);
   associations_tree_->Branch("tsCLUE3D_recoToSim_SC_score", &trackstersCLUE3D_recoToSim_SC_score);
@@ -1264,7 +1295,15 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     }
   }
 
-  
+  std::vector<uint16_t> vertices_indexes;
+  std::vector<float_t> vertices_x;
+  std::vector<float_t> vertices_y;
+  std::vector<float_t> vertices_z;
+  std::vector<float_t> vertices_time;
+  std::vector<float_t> vertices_timeErr;
+  std::vector<float_t> vertices_energy;
+  std::vector<float_t> vertices_correctedEnergy;
+  std::vector<float_t> vertices_correctedEnergyUncertainty;
   nTrackstersMerged = trackstersmerged.size();
   for (size_t i = 0; i < trackstersmerged.size(); ++i) {
     const auto& tsm = trackstersmerged[i];
@@ -1285,6 +1324,28 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     for (size_t i = 0; i < 8; i++)
       id_probs.push_back(tsm.id_probabilities(i));
     tracksters_merged_id_probabilities.push_back(id_probs);
+
+    for (auto idx : tsm.vertices()) {
+        vertices_indexes.push_back(idx);
+        auto associated_cluster = (*layer_clusters_h)[idx];
+        vertices_x.push_back(associated_cluster.x());
+        vertices_y.push_back(associated_cluster.y());
+        vertices_z.push_back(associated_cluster.z());
+        vertices_energy.push_back(associated_cluster.energy());
+        vertices_correctedEnergy.push_back(associated_cluster.correctedEnergy());
+        vertices_correctedEnergyUncertainty.push_back(associated_cluster.correctedEnergyUncertainty());
+        vertices_time.push_back(layerClustersTimes.get(idx).first);
+        vertices_timeErr.push_back(layerClustersTimes.get(idx).second);
+    }
+    tracksters_merged_vertices_indexes.push_back(vertices_indexes);
+    tracksters_merged_vertices_x.push_back(vertices_x);
+    tracksters_merged_vertices_y.push_back(vertices_y);
+    tracksters_merged_vertices_z.push_back(vertices_z);
+    tracksters_merged_vertices_time.push_back(vertices_time);
+    tracksters_merged_vertices_timeErr.push_back(vertices_timeErr);
+    tracksters_merged_vertices_energy.push_back(vertices_energy);
+    tracksters_merged_vertices_correctedEnergy.push_back(vertices_correctedEnergy);
+    tracksters_merged_vertices_correctedEnergyUncertainty.push_back(vertices_correctedEnergyUncertainty);
   }
 
   
