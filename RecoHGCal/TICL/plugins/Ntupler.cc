@@ -118,11 +118,10 @@ private:
   // Variables for branches
   unsigned int ev_event_;
   unsigned int ntracksters_;
+  unsigned int nclusters_;
   unsigned int stsSC_ntracksters_;
   unsigned int stsCP_ntracksters_;
-  unsigned int nclusters_;
-  unsigned int stsSC_nclusters_;
-  unsigned int stsCP_nclusters_;
+  unsigned int tracksters_merged_ntracksters_;
   size_t nsimTrackstersSC;
   size_t nsimTrackstersCP;
 
@@ -168,6 +167,8 @@ private:
   std::vector<float_t> stsSC_trackster_barycenter_x;
   std::vector<float_t> stsSC_trackster_barycenter_y;
   std::vector<float_t> stsSC_trackster_barycenter_z;
+  std::vector<float_t> stsSC_trackster_barycenter_eta;
+  std::vector<float_t> stsSC_trackster_barycenter_phi;
   std::vector<float_t> stsSC_trackster_EV1;
   std::vector<float_t> stsSC_trackster_EV2;
   std::vector<float_t> stsSC_trackster_EV3;
@@ -177,8 +178,6 @@ private:
   std::vector<float_t> stsSC_trackster_sigmaPCA1;
   std::vector<float_t> stsSC_trackster_sigmaPCA2;
   std::vector<float_t> stsSC_trackster_sigmaPCA3;
-  std::vector<float_t> stsSC_trackster_barycenter_eta;
-  std::vector<float_t> stsSC_trackster_barycenter_phi;
   std::vector<int> stsSC_pdgID;
   std::vector<std::vector<float_t>> stsSC_trackster_id_probabilities;
   std::vector<std::vector<uint16_t> > stsSC_trackster_vertices_indexes;
@@ -201,6 +200,8 @@ private:
   std::vector<float_t> stsCP_trackster_barycenter_x;
   std::vector<float_t> stsCP_trackster_barycenter_y;
   std::vector<float_t> stsCP_trackster_barycenter_z;
+  std::vector<float_t> stsCP_trackster_barycenter_eta;
+  std::vector<float_t> stsCP_trackster_barycenter_phi;
   std::vector<float_t> stsCP_trackster_EV1;
   std::vector<float_t> stsCP_trackster_EV2;
   std::vector<float_t> stsCP_trackster_EV3;
@@ -210,8 +211,6 @@ private:
   std::vector<float_t> stsCP_trackster_sigmaPCA1;
   std::vector<float_t> stsCP_trackster_sigmaPCA2;
   std::vector<float_t> stsCP_trackster_sigmaPCA3;
-  std::vector<float_t> stsCP_trackster_barycenter_eta;
-  std::vector<float_t> stsCP_trackster_barycenter_phi;
   std::vector<int> stsCP_pdgID;
   std::vector<std::vector<float_t>> stsCP_trackster_id_probabilities;
   std::vector<std::vector<uint16_t> > stsCP_trackster_vertices_indexes;
@@ -251,9 +250,18 @@ private:
 
   // merged tracksters
   size_t nTrackstersMerged;
+  std::vector<float_t> tracksters_merged_time;
+  std::vector<float_t> tracksters_merged_timeError;
+  std::vector<float_t> tracksters_merged_regressed_energy;
+  std::vector<float_t> tracksters_merged_raw_energy;
+  std::vector<float_t> tracksters_merged_raw_em_energy;
+  std::vector<float_t> tracksters_merged_raw_pt;
+  std::vector<float_t> tracksters_merged_raw_em_pt;
   std::vector<float_t> tracksters_merged_barycenter_x;
   std::vector<float_t> tracksters_merged_barycenter_y;
   std::vector<float_t> tracksters_merged_barycenter_z;
+  std::vector<float_t> tracksters_merged_barycenter_eta;
+  std::vector<float_t> tracksters_merged_barycenter_phi;
   std::vector<float_t> tracksters_merged_EV1;
   std::vector<float_t> tracksters_merged_EV2;
   std::vector<float_t> tracksters_merged_EV3;
@@ -471,9 +479,18 @@ void Ntupler::clearVariables() {
   track_in_candidate.clear();
 
   nTrackstersMerged = 0;
+  tracksters_merged_time.clear();
+  tracksters_merged_timeError.clear();
+  tracksters_merged_regressed_energy.clear();
+  tracksters_merged_raw_energy.clear();
+  tracksters_merged_raw_em_energy.clear();
+  tracksters_merged_raw_pt.clear();
+  tracksters_merged_raw_em_pt.clear();
   tracksters_merged_barycenter_x.clear();
   tracksters_merged_barycenter_y.clear();
   tracksters_merged_barycenter_z.clear();
+  tracksters_merged_barycenter_eta.clear();
+  tracksters_merged_barycenter_phi.clear();
   tracksters_merged_EV1.clear();
   tracksters_merged_EV2.clear();
   tracksters_merged_EV3.clear();
@@ -484,6 +501,13 @@ void Ntupler::clearVariables() {
   tracksters_merged_sigmaPCA2.clear();
   tracksters_merged_sigmaPCA3.clear();
   tracksters_merged_id_probabilities.clear();
+  tracksters_merged_time.clear();
+  tracksters_merged_timeError.clear();
+  tracksters_merged_regressed_energy.clear();
+  tracksters_merged_raw_energy.clear();
+  tracksters_merged_raw_em_energy.clear();
+  tracksters_merged_raw_pt.clear();
+  tracksters_merged_raw_em_pt.clear();
 
   tracksters_merged_vertices_indexes.clear();
   tracksters_merged_vertices_x.clear();
@@ -656,7 +680,6 @@ void Ntupler::beginJob() {
   trackster_tree_->Branch("layer_cluster_seed", &layer_cluster_seed);
 
   simtrackstersSC_tree_->Branch("stsSC_event", &ev_event_);
-  simtrackstersSC_tree_->Branch("stsSC_NClusters", &stsSC_nclusters_);
   simtrackstersSC_tree_->Branch("stsSC_NTracksters", &stsSC_ntracksters_);
   simtrackstersSC_tree_->Branch("stsSC_time", &stsSC_trackster_time);
   simtrackstersSC_tree_->Branch("stsSC_timeError", &stsSC_trackster_timeError);
@@ -679,8 +702,6 @@ void Ntupler::beginJob() {
   simtrackstersSC_tree_->Branch("stsSC_sigmaPCA1", &stsSC_trackster_sigmaPCA1);
   simtrackstersSC_tree_->Branch("stsSC_sigmaPCA2", &stsSC_trackster_sigmaPCA2);
   simtrackstersSC_tree_->Branch("stsSC_sigmaPCA3", &stsSC_trackster_sigmaPCA3);
-  simtrackstersSC_tree_->Branch("stsSC_trackster_barycenter_eta", &stsSC_trackster_barycenter_eta);
-  simtrackstersSC_tree_->Branch("stsSC_trackster_barycenter_phi", &stsSC_trackster_barycenter_phi);
   simtrackstersSC_tree_->Branch("stsSC_pdgID", &stsSC_pdgID);
   simtrackstersSC_tree_->Branch("stsSC_id_probabilities", &stsSC_trackster_id_probabilities);
   simtrackstersSC_tree_->Branch("stsSC_vertices_indexes", &stsSC_trackster_vertices_indexes);
@@ -696,7 +717,6 @@ void Ntupler::beginJob() {
   simtrackstersSC_tree_->Branch("NsimTrackstersSC", &nsimTrackstersSC);
 
   simtrackstersCP_tree_->Branch("stsCP_event", &ev_event_);
-  simtrackstersCP_tree_->Branch("stsCP_NClusters", &stsCP_nclusters_);
   simtrackstersCP_tree_->Branch("stsCP_NTracksters", &stsCP_ntracksters_);
   simtrackstersCP_tree_->Branch("stsCP_time", &stsCP_trackster_time);
   simtrackstersCP_tree_->Branch("stsCP_timeError", &stsCP_trackster_timeError);
@@ -750,10 +770,21 @@ void Ntupler::beginJob() {
   candidate_tree_->Branch("track_in_candidate", &track_in_candidate);
   candidate_tree_->Branch("tracksters_in_candidate", &tracksters_in_candidate);
 
+  tracksters_merged_tree_->Branch("event", &ev_event_);
+  tracksters_merged_tree_->Branch("NTracksters", &tracksters_merged_ntracksters_);
+  tracksters_merged_tree_->Branch("time", &tracksters_merged_time);
+  tracksters_merged_tree_->Branch("timeError", &tracksters_merged_timeError);
+  tracksters_merged_tree_->Branch("regressed_energy", &tracksters_merged_regressed_energy);
+  tracksters_merged_tree_->Branch("raw_energy", &tracksters_merged_raw_energy);
+  tracksters_merged_tree_->Branch("raw_em_energy", &tracksters_merged_raw_em_energy);
+  tracksters_merged_tree_->Branch("raw_pt", &tracksters_merged_raw_pt);
+  tracksters_merged_tree_->Branch("raw_em_pt", &tracksters_merged_raw_em_pt);
   tracksters_merged_tree_->Branch("NTrackstersMerged", &nTrackstersMerged);
   tracksters_merged_tree_->Branch("barycenter_x", &tracksters_merged_barycenter_x);
   tracksters_merged_tree_->Branch("barycenter_y", &tracksters_merged_barycenter_y);
   tracksters_merged_tree_->Branch("barycenter_z", &tracksters_merged_barycenter_z);
+  tracksters_merged_tree_->Branch("barycenter_eta", &tracksters_merged_barycenter_eta);
+  tracksters_merged_tree_->Branch("barycenter_phi", &tracksters_merged_barycenter_phi);
   tracksters_merged_tree_->Branch("EV1", &tracksters_merged_EV1);
   tracksters_merged_tree_->Branch("EV2", &tracksters_merged_EV2);
   tracksters_merged_tree_->Branch("EV3", &tracksters_merged_EV3);
@@ -764,17 +795,16 @@ void Ntupler::beginJob() {
   tracksters_merged_tree_->Branch("sigmaPCA2", &tracksters_merged_sigmaPCA2);
   tracksters_merged_tree_->Branch("sigmaPCA3", &tracksters_merged_sigmaPCA3);
   tracksters_merged_tree_->Branch("id_probabilities", &tracksters_merged_id_probabilities);
-
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_indexes", &tracksters_merged_vertices_indexes);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_x", &tracksters_merged_vertices_x);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_y", &tracksters_merged_vertices_y);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_z", &tracksters_merged_vertices_z);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_time", &tracksters_merged_vertices_time);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_timeErr", &tracksters_merged_vertices_timeErr);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_energy", &tracksters_merged_vertices_energy);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_correctedEnergy", &tracksters_merged_vertices_correctedEnergy);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_correctedEnergyUncertainty", &tracksters_merged_vertices_correctedEnergyUncertainty);
-  tracksters_merged_tree_->Branch("tracksters_merged_vertices_multiplicity", &tracksters_merged_vertices_multiplicity); //NEW
+  tracksters_merged_tree_->Branch("vertices_indexes", &tracksters_merged_vertices_indexes);
+  tracksters_merged_tree_->Branch("vertices_x", &tracksters_merged_vertices_x);
+  tracksters_merged_tree_->Branch("vertices_y", &tracksters_merged_vertices_y);
+  tracksters_merged_tree_->Branch("vertices_z", &tracksters_merged_vertices_z);
+  tracksters_merged_tree_->Branch("vertices_time", &tracksters_merged_vertices_time);
+  tracksters_merged_tree_->Branch("vertices_timeErr", &tracksters_merged_vertices_timeErr);
+  tracksters_merged_tree_->Branch("vertices_energy", &tracksters_merged_vertices_energy);
+  tracksters_merged_tree_->Branch("vertices_correctedEnergy", &tracksters_merged_vertices_correctedEnergy);
+  tracksters_merged_tree_->Branch("vertices_correctedEnergyUncertainty", &tracksters_merged_vertices_correctedEnergyUncertainty);
+  tracksters_merged_tree_->Branch("vertices_multiplicity", &tracksters_merged_vertices_multiplicity); //NEW
 
   associations_tree_->Branch("tsCLUE3D_recoToSim_SC", &trackstersCLUE3D_recoToSim_SC);
   associations_tree_->Branch("tsCLUE3D_recoToSim_SC_score", &trackstersCLUE3D_recoToSim_SC_score);
@@ -1305,27 +1335,35 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
   std::vector<float_t> vertices_correctedEnergy;
   std::vector<float_t> vertices_correctedEnergyUncertainty;
   nTrackstersMerged = trackstersmerged.size();
-  for (size_t i = 0; i < trackstersmerged.size(); ++i) {
-    const auto& tsm = trackstersmerged[i];
-    tracksters_merged_barycenter_x.push_back(tsm.barycenter().x());
-    tracksters_merged_barycenter_y.push_back(tsm.barycenter().y());
-    tracksters_merged_barycenter_z.push_back(tsm.barycenter().z());
-    tracksters_merged_EV1.push_back(tsm.eigenvalues()[0]);
-    tracksters_merged_EV2.push_back(tsm.eigenvalues()[1]);
-    tracksters_merged_EV3.push_back(tsm.eigenvalues()[2]);
-    tracksters_merged_eVector0_x.push_back(tsm.eigenvectors(0).x());
-    tracksters_merged_eVector0_y.push_back(tsm.eigenvectors(0).y());
-    tracksters_merged_eVector0_z.push_back(tsm.eigenvectors(0).z());
-    tracksters_merged_sigmaPCA1.push_back(tsm.sigmasPCA()[0]);
-    tracksters_merged_sigmaPCA2.push_back(tsm.sigmasPCA()[1]);
-    tracksters_merged_sigmaPCA3.push_back(tsm.sigmasPCA()[2]);
+  for (auto trackster_iterator = trackstersmerged.begin(); trackster_iterator != trackstersmerged.end(); ++trackster_iterator) {
+    tracksters_merged_time.push_back(trackster_iterator->time());
+    tracksters_merged_timeError.push_back(trackster_iterator->timeError());
+    tracksters_merged_regressed_energy.push_back(trackster_iterator->regressed_energy());
+    tracksters_merged_raw_energy.push_back(trackster_iterator->raw_energy());
+    tracksters_merged_raw_em_energy.push_back(trackster_iterator->raw_em_energy());
+    tracksters_merged_raw_pt.push_back(trackster_iterator->raw_pt());
+    tracksters_merged_raw_em_pt.push_back(trackster_iterator->raw_em_pt());
+    tracksters_merged_barycenter_x.push_back(trackster_iterator->barycenter().x());
+    tracksters_merged_barycenter_y.push_back(trackster_iterator->barycenter().y());
+    tracksters_merged_barycenter_z.push_back(trackster_iterator->barycenter().z());
+    tracksters_merged_barycenter_eta.push_back(trackster_iterator->barycenter().eta());
+    tracksters_merged_barycenter_phi.push_back(trackster_iterator->barycenter().phi());
+    tracksters_merged_EV1.push_back(trackster_iterator->eigenvalues()[0]);
+    tracksters_merged_EV2.push_back(trackster_iterator->eigenvalues()[1]);
+    tracksters_merged_EV3.push_back(trackster_iterator->eigenvalues()[2]);
+    tracksters_merged_eVector0_x.push_back((trackster_iterator->eigenvectors()[0]).x());
+    tracksters_merged_eVector0_y.push_back((trackster_iterator->eigenvectors()[0]).y());
+    tracksters_merged_eVector0_z.push_back((trackster_iterator->eigenvectors()[0]).z());
+    tracksters_merged_sigmaPCA1.push_back(trackster_iterator->sigmasPCA()[0]);
+    tracksters_merged_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
+    tracksters_merged_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     
     std::vector<float_t> id_probs;
     for (size_t i = 0; i < 8; i++)
-      id_probs.push_back(tsm.id_probabilities(i));
+      id_probs.push_back(trackster_iterator->id_probabilities(i));
     tracksters_merged_id_probabilities.push_back(id_probs);
 
-    for (auto idx : tsm.vertices()) {
+    for (auto idx : trackster_iterator->vertices()) {
         vertices_indexes.push_back(idx);
         auto associated_cluster = (*layer_clusters_h)[idx];
         vertices_x.push_back(associated_cluster.x());
