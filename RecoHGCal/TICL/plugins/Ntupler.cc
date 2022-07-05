@@ -179,6 +179,14 @@ private:
   std::vector<float_t> stsSC_trackster_sigmaPCA2;
   std::vector<float_t> stsSC_trackster_sigmaPCA3;
   std::vector<int> stsSC_pdgID;
+  std::vector<float_t> stsSC_boundaryX;
+  std::vector<float_t> stsSC_boundaryY;
+  std::vector<float_t> stsSC_boundaryZ;
+  std::vector<float_t> stsSC_boundaryEta;
+  std::vector<float_t> stsSC_boundaryPhi;
+  std::vector<float_t> stsSC_boundaryPx;
+  std::vector<float_t> stsSC_boundaryPy;
+  std::vector<float_t> stsSC_boundaryPz;
   std::vector<std::vector<float_t>> stsSC_trackster_id_probabilities;
   std::vector<std::vector<uint16_t> > stsSC_trackster_vertices_indexes;
   std::vector<std::vector<float_t> > stsSC_trackster_vertices_x;
@@ -212,6 +220,14 @@ private:
   std::vector<float_t> stsCP_trackster_sigmaPCA2;
   std::vector<float_t> stsCP_trackster_sigmaPCA3;
   std::vector<int> stsCP_pdgID;
+  std::vector<float_t> stsCP_boundaryX;
+  std::vector<float_t> stsCP_boundaryY;
+  std::vector<float_t> stsCP_boundaryZ;
+  std::vector<float_t> stsCP_boundaryEta;
+  std::vector<float_t> stsCP_boundaryPhi;
+  std::vector<float_t> stsCP_boundaryPx;
+  std::vector<float_t> stsCP_boundaryPy;
+  std::vector<float_t> stsCP_boundaryPz;
   std::vector<std::vector<float_t>> stsCP_trackster_id_probabilities;
   std::vector<std::vector<uint16_t> > stsCP_trackster_vertices_indexes;
   std::vector<std::vector<float_t> > stsCP_trackster_vertices_x;
@@ -415,6 +431,14 @@ void Ntupler::clearVariables() {
   stsSC_trackster_barycenter_eta.clear();
   stsSC_trackster_barycenter_phi.clear();
   stsSC_pdgID.clear();
+  stsSC_boundaryX.clear();
+  stsSC_boundaryY.clear();
+  stsSC_boundaryZ.clear();
+  stsSC_boundaryEta.clear();
+  stsSC_boundaryPhi.clear();
+  stsSC_boundaryPx.clear();
+  stsSC_boundaryPy.clear();
+  stsSC_boundaryPz.clear();
   stsSC_trackster_id_probabilities.clear();
   stsSC_trackster_vertices_indexes.clear();
   stsSC_trackster_vertices_x.clear();
@@ -449,6 +473,14 @@ void Ntupler::clearVariables() {
   stsCP_trackster_barycenter_eta.clear();
   stsCP_trackster_barycenter_phi.clear();
   stsCP_pdgID.clear();
+  stsCP_boundaryX.clear();
+  stsCP_boundaryY.clear();
+  stsCP_boundaryZ.clear();
+  stsCP_boundaryEta.clear();
+  stsCP_boundaryPhi.clear();
+  stsCP_boundaryPx.clear();
+  stsCP_boundaryPy.clear();
+  stsCP_boundaryPz.clear();
   stsCP_trackster_id_probabilities.clear();
   stsCP_trackster_vertices_indexes.clear();
   stsCP_trackster_vertices_x.clear();
@@ -703,6 +735,14 @@ void Ntupler::beginJob() {
   simtrackstersSC_tree_->Branch("stsSC_sigmaPCA2", &stsSC_trackster_sigmaPCA2);
   simtrackstersSC_tree_->Branch("stsSC_sigmaPCA3", &stsSC_trackster_sigmaPCA3);
   simtrackstersSC_tree_->Branch("stsSC_pdgID", &stsSC_pdgID);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryX", &stsSC_boundaryX);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryY", &stsSC_boundaryY);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryZ", &stsSC_boundaryZ);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryEta", &stsSC_boundaryEta);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryPhi", &stsSC_boundaryPhi);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryPx", &stsSC_boundaryPx);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryPy", &stsSC_boundaryPy);
+  simtrackstersSC_tree_->Branch("stsSC_boundaryPz", &stsSC_boundaryPz);
   simtrackstersSC_tree_->Branch("stsSC_id_probabilities", &stsSC_trackster_id_probabilities);
   simtrackstersSC_tree_->Branch("stsSC_vertices_indexes", &stsSC_trackster_vertices_indexes);
   simtrackstersSC_tree_->Branch("stsSC_vertices_x", &stsSC_trackster_vertices_x);
@@ -731,6 +771,14 @@ void Ntupler::beginJob() {
   simtrackstersCP_tree_->Branch("stsCP_trackster_barycenter_eta", &stsCP_trackster_barycenter_eta);
   simtrackstersCP_tree_->Branch("stsCP_trackster_barycenter_phi", &stsCP_trackster_barycenter_phi);
   simtrackstersCP_tree_->Branch("stsCP_pdgID", &stsCP_pdgID);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryX", &stsCP_boundaryX);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryY", &stsCP_boundaryY);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryZ", &stsCP_boundaryZ);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryEta", &stsCP_boundaryEta);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryPhi", &stsCP_boundaryPhi);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryPx", &stsCP_boundaryPx);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryPy", &stsCP_boundaryPy);
+  simtrackstersCP_tree_->Branch("stsCP_boundaryPz", &stsCP_boundaryPz);
   simtrackstersCP_tree_->Branch("stsCP_EV1", &stsCP_trackster_EV1);
   simtrackstersCP_tree_->Branch("stsCP_EV2", &stsCP_trackster_EV2);
   simtrackstersCP_tree_->Branch("stsCP_EV3", &stsCP_trackster_EV3);
@@ -1122,6 +1170,27 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     stsSC_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsSC_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     stsSC_pdgID.push_back(simclusters[trackster_iterator->seedIndex()].pdgId());
+    auto simTrack = simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
+    if(simTrack.crossedBoundary()){
+      stsSC_boundaryX.push_back(simTrack.getPositionAtBoundary().x());
+      stsSC_boundaryY.push_back(simTrack.getPositionAtBoundary().y());
+      stsSC_boundaryZ.push_back(simTrack.getPositionAtBoundary().z());
+      stsSC_boundaryEta.push_back(simTrack.getPositionAtBoundary().eta());
+      stsSC_boundaryPhi.push_back(simTrack.getPositionAtBoundary().phi());
+      stsSC_boundaryPx.push_back(simTrack.getMomentumAtBoundary().x());
+      stsSC_boundaryPy.push_back(simTrack.getMomentumAtBoundary().y());
+      stsSC_boundaryPz.push_back(simTrack.getMomentumAtBoundary().z());
+    }
+    else{
+      stsSC_boundaryX.push_back(-999);
+      stsSC_boundaryY.push_back(-999);
+      stsSC_boundaryZ.push_back(-999);
+      stsSC_boundaryEta.push_back(-999);
+      stsSC_boundaryPhi.push_back(-999);
+      stsSC_boundaryPx.push_back(-999);
+      stsSC_boundaryPy.push_back(-999);
+      stsSC_boundaryPz.push_back(-999);
+    }
     std::vector<float_t> id_probs;
     for (size_t i = 0; i < 8; i++)
       id_probs.push_back(trackster_iterator->id_probabilities(i));
@@ -1194,6 +1263,28 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     stsCP_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsCP_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     stsCP_pdgID.push_back(caloparticles[trackster_iterator->seedIndex()].pdgId());
+    auto simTrack = caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0];
+    if(simTrack.crossedBoundary()){
+      stsCP_boundaryX.push_back(simTrack.getPositionAtBoundary().x());
+      stsCP_boundaryY.push_back(simTrack.getPositionAtBoundary().y());
+      stsCP_boundaryZ.push_back(simTrack.getPositionAtBoundary().z());
+      stsCP_boundaryEta.push_back(simTrack.getPositionAtBoundary().eta());
+      stsCP_boundaryPhi.push_back(simTrack.getPositionAtBoundary().phi());
+      stsCP_boundaryPx.push_back(simTrack.getMomentumAtBoundary().x());
+      stsCP_boundaryPy.push_back(simTrack.getMomentumAtBoundary().y());
+      stsCP_boundaryPz.push_back(simTrack.getMomentumAtBoundary().z());
+    }
+    else{
+      stsCP_boundaryX.push_back(-999);
+      stsCP_boundaryY.push_back(-999);
+      stsCP_boundaryZ.push_back(-999);
+      stsCP_boundaryEta.push_back(-999);
+      stsCP_boundaryPhi.push_back(-999);
+      stsCP_boundaryPx.push_back(-999);
+      stsCP_boundaryPy.push_back(-999);
+      stsCP_boundaryPz.push_back(-999);
+    }
+
     std::vector<float_t> id_probs;
     for (size_t i = 0; i < 8; i++)
       id_probs.push_back(trackster_iterator->id_probabilities(i));
