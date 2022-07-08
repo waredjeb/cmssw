@@ -631,7 +631,6 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   desc.add<double>("resol_calo_scale_em", 0.15);
   desc.add<bool>("debug", false);
   desc.add<std::string>("tfDnnLabel", "tracksterSelectionTf");
-  desc.add<std::string>("tfDnnLabelER", "tracksterSelectionTfER");
   desc.add<std::string>("eid_input_name", "input");
   desc.add<std::string>("eid_input_nameER", "input");
   desc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
