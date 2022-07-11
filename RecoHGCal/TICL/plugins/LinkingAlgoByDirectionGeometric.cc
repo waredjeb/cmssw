@@ -23,7 +23,8 @@ LinkingAlgoByDirectionGeometric::LinkingAlgoByDirectionGeometric(const edm::Para
       pid_threshold_(conf.getParameter<double>("pid_threshold")),
       energy_em_over_total_threshold_(conf.getParameter<double>("energy_em_over_total_threshold")),
       filter_on_categories_(conf.getParameter<std::vector<int>>("filter_hadronic_on_categories")),
-      cutTk_(conf.getParameter<std::string>("cutTk")) {}
+      cutTk_(conf.getParameter<std::string>("cutTk")),
+      energy_from_regression_(conf.getParameter<bool>("energyFromRegression")) {}
 
 LinkingAlgoByDirectionGeometric::~LinkingAlgoByDirectionGeometric() {}
 
@@ -400,7 +401,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
     }
 
     TICLCandidate chargedCandidate;
-    double total_raw_energy = 0.;
+    double total_energy = 0.;
 
     auto tkRef = reco::TrackRef(tkH, i);
     auto track_time = tkTime[tkRef];
@@ -526,51 +527,75 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : chargedCandidates) {
     bool isHAD = false;
     double rawE = 0.;
+		double regrE = 0.;
+    double energy;
     const auto track = cand.trackPtr();
     for (const auto &ts : cand.tracksters()) {
       // isHAD if atleast one trackster is not EM
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
+			regrE += ts->regressed_energy();
     }
     auto pdgID = isHAD ? 211 : 11;
 
-    cand.setCharge(track->charge());
-    cand.setPdgId(pdgID * track->charge());
-    cand.setRawEnergy(rawE);
-    math::XYZTLorentzVector p4(rawE * track->momentum().unit().x(),
-                               rawE * track->momentum().unit().y(),
-                               rawE * track->momentum().unit().z(),
-                               rawE);
-    cand.setP4(p4);
+    energy = energy_from_regression_ ? regrE : rawE;
+    if (isHAD) {  // charged hadron
+      cand.setCharge(track->charge());
+      cand.setPdgId(211 * track->charge());
+      cand.setRawEnergy(rawE);
+      math::XYZTLorentzVector p4(energy * track->momentum().unit().x(),
+                                 energy * track->momentum().unit().y(),
+                                 energy * track->momentum().unit().z(),
+                                 energy);
+      cand.setP4(p4);
+    } else {  // electron
+      cand.setCharge(track->charge());
+      cand.setPdgId(11 * track->charge());
+      cand.setRawEnergy(rawE);
+      math::XYZTLorentzVector p4(energy * track->momentum().unit().x(),
+                                 energy * track->momentum().unit().y(),
+                                 energy * track->momentum().unit().z(),
+                                 energy);
+      cand.setP4(p4);
+    }
   }
 
   for (auto &cand : neutralCandidates) {
     bool isHAD = false;
     double rawE = 0.;
+		double energy = 0.;
     const auto track = cand.trackPtr();
     double wtSum_baryc[3] = {0};
     for (const auto &ts : cand.tracksters()) {
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
-      wtSum_baryc[0] += (ts->raw_energy()) * (ts->barycenter().x());
-      wtSum_baryc[1] += (ts->raw_energy()) * (ts->barycenter().y());
-      wtSum_baryc[2] += (ts->raw_energy()) * (ts->barycenter().z());
+			energy += energy_from_regression_ ? ts->regressed_energy() : ts->raw_energy();
+      wtSum_baryc[0] += (energy) * (ts->barycenter().x());
+      wtSum_baryc[1] += (energy) * (ts->barycenter().y());
+      wtSum_baryc[2] += (energy) * (ts->barycenter().z());
     }
-    Vector combined_baryc(wtSum_baryc[0] / rawE, wtSum_baryc[1] / rawE, wtSum_baryc[2] / rawE);
+    Vector combined_baryc(wtSum_baryc[0] / energy, wtSum_baryc[1] / energy, wtSum_baryc[2] / energy);
     auto pdgID = isHAD ? 130 : 22;
-    auto const &magnitude = isHAD ? std::sqrt(rawE * rawE - ticl::mpion2) : rawE;
-
-    cand.setCharge(0);
-    cand.setPdgId(pdgID);
-    cand.setRawEnergy(rawE);
-    math::XYZTLorentzVector p4(magnitude * combined_baryc.unit().x(),
-                               magnitude * combined_baryc.unit().y(),
-                               magnitude * combined_baryc.unit().z(),
-                               rawE);
-
-    cand.setP4(p4);
+    if (isHAD) {  // neutral hadron
+      cand.setCharge(0);
+      cand.setPdgId(130);
+      cand.setRawEnergy(rawE);
+      float momentum = std::sqrt(energy * energy - mpion2);
+      math::XYZTLorentzVector p4(momentum * combined_baryc.unit().x(),
+                                 momentum * combined_baryc.unit().y(),
+                                 momentum * combined_baryc.unit().z(),
+                                 energy);
+      cand.setP4(p4);
+    } else {  // photon
+      cand.setCharge(0);
+      cand.setPdgId(22);
+      cand.setRawEnergy(rawE);
+      math::XYZTLorentzVector p4(
+          energy * combined_baryc.unit().x(), energy * combined_baryc.unit().y(), energy * combined_baryc.unit().z(), energy);
+      cand.setP4(p4);
+    }
   }
 
   resultlinked.insert(std::end(resultlinked), std::begin(neutralcandidates), std::end(neutralcandidates));
@@ -591,5 +616,8 @@ void linkingalgobydirectiongeometric::fillpsetdescription(edm::parametersetdescr
   desc.add<double>("pid_threshold", 0.5);
   desc.add<double>("energy_em_over_total_threshold", 0.9);
   desc.add<std::vector<int>>("filter_hadronic_on_categories", {0, 1});
+  desc.add<bool>("energyFromRegression", false)->setComment(
+          "Boolean. If true uses the Tracksters regressed energy for building TICLCandidate four-momentum"
+          "If false uses the Tracksters raw energy instead");
   LinkingAlgoBase::fillPSetDescription(desc);
 }

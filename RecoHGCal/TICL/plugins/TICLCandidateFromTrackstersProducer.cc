@@ -87,7 +87,7 @@ void TICLCandidateFromTrackstersProducer::fillDescriptions(edm::ConfigurationDes
 
   edm::ParameterSetDescription desc_momentum;
   desc_momentum.add<std::string>("plugin", "TracksterP4FromEnergySum");
-  desc_momentum.add<bool>("energyFromRegression", false);
+  desc_momentum.add<bool>("energyFromRegression", true);
   desc_momentum.add<edm::InputTag>("vertices", edm::InputTag("offlinePrimaryVertices"));
   desc_momentum.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalLayerClusters"));
   desc_momentum.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
