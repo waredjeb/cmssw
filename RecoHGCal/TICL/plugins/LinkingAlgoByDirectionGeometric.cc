@@ -23,7 +23,8 @@ LinkingAlgoByDirectionGeometric::LinkingAlgoByDirectionGeometric(const edm::Para
       pid_threshold_(conf.getParameter<double>("pid_threshold")),
       energy_em_over_total_threshold_(conf.getParameter<double>("energy_em_over_total_threshold")),
       filter_on_categories_(conf.getParameter<std::vector<int>>("filter_hadronic_on_categories")),
-      cutTk_(conf.getParameter<std::string>("cutTk")) {}
+      cutTk_(conf.getParameter<std::string>("cutTk")),
+      energy_from_regression_(conf.getParameter<bool>("energyFromRegression")) {}
 
 LinkingAlgoByDirectionGeometric::~LinkingAlgoByDirectionGeometric() {}
 
@@ -343,18 +344,19 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
     }
 
     TICLCandidate chargedCandidate;
-    double total_raw_energy = 0.;
+    double total_energy = 0.;
     auto energyCompatible = [&](const Trackster &ts, const reco::Track tk) -> bool {
       // compatible if accumulated energy does not
       // exceed track momentum by more than threshold
-      double threshold = std::min(0.2 * ts.raw_energy(), 10.0);
+      double energy = energy_from_regression_ ? ts.regressed_energy() : ts.raw_energy();
+      double threshold = std::min(0.2 * energy, 10.0);    
 
       if (LinkingAlgoBase::algo_verbosity_ > LinkingAlgoBase::Advanced)
-        if (!(total_raw_energy + ts.raw_energy() < tk.p() + threshold))
+        if (!(total_energy + energy < tk.p() + threshold))
           LogDebug("LinkingAlgoByDirectionGeometric")
-              << "energy incompatible : track p " << tk.p() << " trackster energy " << ts.raw_energy() << "\n";
+              << "energy incompatible : track p " << tk.p() << " trackster energy " << energy << "\n";
 
-      return (total_raw_energy + ts.raw_energy() < tk.p() + threshold);
+      return (total_energy + energy < tk.p() + threshold);
     };
     auto timeCompatible = [&](const Trackster &ts, const reco::TrackRef tk) -> bool {
       // compatible if trackster time is within 3sigma of
@@ -385,7 +387,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
           continue;
         chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts3_idx));
         chargedMask[ts3_idx] = 1;
-        total_raw_energy += tracksters[ts3_idx].raw_energy();
+        total_energy += energy_from_regression_ ? tracksters[ts3_idx].regressed_energy() : tracksters[ts3_idx].raw_energy();
       }
       for (const unsigned ts2_idx : tsNearAtInt[ts3_idx]) {  // ts_EM -> ts_HAD
         if (!chargedMask[ts2_idx]) {
@@ -393,7 +395,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
             continue;
           chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts2_idx));
           chargedMask[ts2_idx] = 1;
-          total_raw_energy += tracksters[ts2_idx].raw_energy();
+          total_energy += energy_from_regression_ ? tracksters[ts2_idx].regressed_energy() : tracksters[ts2_idx].raw_energy();
         }
         for (const unsigned ts1_idx : tsHadNearAtInt[ts2_idx]) {  // ts_HAD -> ts_HAD
           if (!chargedMask[ts1_idx]) {
@@ -401,7 +403,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
               continue;
             chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts1_idx));
             chargedMask[ts1_idx] = 1;
-            total_raw_energy += tracksters[ts1_idx].raw_energy();
+            total_energy += energy_from_regression_ ? tracksters[ts1_idx].regressed_energy() : tracksters[ts1_idx].raw_energy();
           }
         }
       }
@@ -411,7 +413,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
             continue;
           chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts1_idx));
           chargedMask[ts1_idx] = 1;
-          total_raw_energy += tracksters[ts1_idx].raw_energy();
+          total_energy += energy_from_regression_ ? tracksters[ts1_idx].regressed_energy() : tracksters[ts1_idx].raw_energy();
         }
       }
     }
@@ -422,7 +424,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
           continue;
         chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts4_idx));
         chargedMask[ts4_idx] = 1;
-        total_raw_energy += tracksters[ts4_idx].raw_energy();
+        total_energy += energy_from_regression_ ? tracksters[ts4_idx].regressed_energy() : tracksters[ts4_idx].raw_energy();
       }
       for (const unsigned ts2_idx : tsNearAtInt[ts4_idx]) {
         if (!chargedMask[ts2_idx]) {
@@ -430,7 +432,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
             continue;
           chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts2_idx));
           chargedMask[ts2_idx] = 1;
-          total_raw_energy += tracksters[ts2_idx].raw_energy();
+          total_energy += energy_from_regression_ ? tracksters[ts2_idx].regressed_energy() : tracksters[ts2_idx].raw_energy();
         }
         for (const unsigned ts1_idx : tsHadNearAtInt[ts2_idx]) {
           if (!chargedMask[ts1_idx]) {
@@ -438,7 +440,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
               continue;
             chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts1_idx));
             chargedMask[ts1_idx] = 1;
-            total_raw_energy += tracksters[ts1_idx].raw_energy();
+            total_energy += energy_from_regression_ ? tracksters[ts1_idx].regressed_energy() : tracksters[ts1_idx].raw_energy();
           }
         }
       }
@@ -448,7 +450,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
             continue;
           chargedCandidate.addTrackster(edm::Ptr<Trackster>(tsH, ts1_idx));
           chargedMask[ts1_idx] = 1;
-          total_raw_energy += tracksters[ts1_idx].raw_energy();
+          total_energy += energy_from_regression_ ? tracksters[ts1_idx].regressed_energy() : tracksters[ts1_idx].raw_energy();
         }
       }
     }
@@ -526,31 +528,34 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : chargedCandidates) {
     bool isHAD = false;
     double rawE = 0.;
+		double regrE = 0.;
+    double energy;
     const auto track = cand.trackPtr();
     for (const auto ts : cand.tracksters()) {
       // isHAD if atleast one trackster is not EM
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
+			regrE += ts->regressed_energy();
     }
-
+    energy = energy_from_regression_ ? regrE : rawE;
     if (isHAD) {  // charged hadron
       cand.setCharge(track->charge());
       cand.setPdgId(211 * track->charge());
       cand.setRawEnergy(rawE);
-      math::XYZTLorentzVector p4(rawE * track->momentum().unit().x(),
-                                 rawE * track->momentum().unit().y(),
-                                 rawE * track->momentum().unit().z(),
-                                 rawE);
+      math::XYZTLorentzVector p4(energy * track->momentum().unit().x(),
+                                 energy * track->momentum().unit().y(),
+                                 energy * track->momentum().unit().z(),
+                                 energy);
       cand.setP4(p4);
     } else {  // electron
       cand.setCharge(track->charge());
       cand.setPdgId(11 * track->charge());
       cand.setRawEnergy(rawE);
-      math::XYZTLorentzVector p4(rawE * track->momentum().unit().x(),
-                                 rawE * track->momentum().unit().y(),
-                                 rawE * track->momentum().unit().z(),
-                                 rawE);
+      math::XYZTLorentzVector p4(energy * track->momentum().unit().x(),
+                                 energy * track->momentum().unit().y(),
+                                 energy * track->momentum().unit().z(),
+                                 energy);
       cand.setP4(p4);
     }
   }
@@ -558,34 +563,36 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : neutralCandidates) {
     bool isHAD = false;
     double rawE = 0.;
+		double energy = 0.;
     const auto track = cand.trackPtr();
     double wtSum_baryc[3] = {0};
     for (const auto ts : cand.tracksters()) {
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
-      wtSum_baryc[0] += (ts->raw_energy()) * (ts->barycenter().x());
-      wtSum_baryc[1] += (ts->raw_energy()) * (ts->barycenter().y());
-      wtSum_baryc[2] += (ts->raw_energy()) * (ts->barycenter().z());
+			energy += energy_from_regression_ ? ts->regressed_energy() : ts->raw_energy();
+      wtSum_baryc[0] += (energy) * (ts->barycenter().x());
+      wtSum_baryc[1] += (energy) * (ts->barycenter().y());
+      wtSum_baryc[2] += (energy) * (ts->barycenter().z());
     }
-    Vector combined_baryc(wtSum_baryc[0] / rawE, wtSum_baryc[1] / rawE, wtSum_baryc[2] / rawE);
+    Vector combined_baryc(wtSum_baryc[0] / energy, wtSum_baryc[1] / energy, wtSum_baryc[2] / energy);
 
     if (isHAD) {  // neutral hadron
       cand.setCharge(0);
       cand.setPdgId(130);
       cand.setRawEnergy(rawE);
-      float momentum = std::sqrt(rawE * rawE - mpion2);
+      float momentum = std::sqrt(energy * energy - mpion2);
       math::XYZTLorentzVector p4(momentum * combined_baryc.unit().x(),
                                  momentum * combined_baryc.unit().y(),
                                  momentum * combined_baryc.unit().z(),
-                                 rawE);
+                                 energy);
       cand.setP4(p4);
     } else {  // photon
       cand.setCharge(0);
       cand.setPdgId(22);
       cand.setRawEnergy(rawE);
       math::XYZTLorentzVector p4(
-          rawE * combined_baryc.unit().x(), rawE * combined_baryc.unit().y(), rawE * combined_baryc.unit().z(), rawE);
+          energy * combined_baryc.unit().x(), energy * combined_baryc.unit().y(), energy * combined_baryc.unit().z(), energy);
       cand.setP4(p4);
     }
   }
@@ -608,5 +615,8 @@ void LinkingAlgoByDirectionGeometric::fillPSetDescription(edm::ParameterSetDescr
   desc.add<double>("pid_threshold", 0.5);
   desc.add<double>("energy_em_over_total_threshold", 0.9);
   desc.add<std::vector<int>>("filter_hadronic_on_categories", {0, 1});
+  desc.add<bool>("energyFromRegression", false)->setComment(
+          "Boolean. If true uses the Tracksters regressed energy for building TICLCandidate four-momentum"
+          "If false uses the Tracksters raw energy instead");
   LinkingAlgoBase::fillPSetDescription(desc);
 }

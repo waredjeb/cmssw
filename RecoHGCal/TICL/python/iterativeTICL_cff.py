@@ -18,12 +18,22 @@ from RecoHGCal.TICL.tracksterSelectionTf_cfi import *
 
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
-ticlTrackstersMerge = _trackstersMergeProducer.clone()
+useRegressedEnergy = False
+
+ticlTrackstersMerge = _trackstersMergeProducer.clone(
+		linkingPSet = dict(
+	    energyFromRegression = cms.bool(useRegressedEnergy)
+		)
+)
+
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
 ticlGraph = _ticlGraphProducer.clone()
 
 
-pfTICL = _pfTICLProducer.clone()
+pfTICL = _pfTICLProducer.clone(
+		energyFromRegression = cms.bool(useRegressedEnergy)
+)
+
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(

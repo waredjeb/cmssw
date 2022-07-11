@@ -76,6 +76,7 @@ namespace ticl {
     const std::vector<int> filter_on_categories_;
 
     const StringCutObjectSelector<reco::Track> cutTk_;
+    const bool energy_from_regression_;
     std::once_flag initializeGeometry_;
 
     const HGCalDDDConstants *hgcons_;
