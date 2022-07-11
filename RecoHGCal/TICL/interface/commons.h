@@ -41,22 +41,6 @@ namespace ticl {
   // verbosity levels for ticl algorithms
   enum VerbosityLevel { None = 0, Basic, Advanced, Expert, Guru };
 
-  enum LayerType {
-
-    CE_E_120 = 0,
-    CE_E_200 = 1,
-    CE_E_300 = 2,
-    CE_H_120_F = 3,
-    CE_H_200_F = 4,
-    CE_H_300_F = 5,
-    CE_H_120_C = 6,
-    CE_H_200_C = 7,
-    CE_H_300_C = 8,
-    CE_H_SCINT_C = 9,
-    EnumSize = 10
-
-  };
-
   inline int returnIndex(DetId& lc_seed, const hgcal::RecHitTools& rhtools_) {
     auto layer_number = rhtools_.getLayerWithOffset(lc_seed);
     auto thickness = rhtools_.getSiThickIndex(lc_seed);

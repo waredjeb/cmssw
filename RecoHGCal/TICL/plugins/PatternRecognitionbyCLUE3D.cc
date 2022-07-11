@@ -355,7 +355,6 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
                                                               const tensorflow::Session *eidSession,
-                                                              const tensorflow::Session *eidSessionEnergyRegression,
                                                               std::vector<Trackster> &tracksters) {
   // Energy regression and particle identification strategy:
   //
@@ -422,6 +421,7 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   // fill input tensor (5)
   for (int i = 0; i < batchSize; i++) {
     const Trackster &trackster = tracksters[tracksterIndices[i]];
+
     // per layer, we only consider the first eidNClusters_ clusters in terms of energy, so in order
     // to avoid creating large / nested structures to do the sorting for an unknown number of total
     // clusters, create a sorted list of layer cluster indices to keep track of the filled clusters
@@ -469,6 +469,16 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   // run the inference (7)
   tensorflow::run(const_cast<tensorflow::Session *>(eidSession), inputList, outputNames, &outputs);
 
+  // store regressed energy per trackster (8)
+  if (!eidOutputNameEnergy_.empty()) {
+    // get the pointer to the energy tensor, dimension is batch x 1
+    float *energy = outputs[0].flat<float>().data();
+
+    for (const int &i : tracksterIndices) {
+      tracksters[i].setRegressedEnergy(*(energy++));
+    }
+  }
+
   // store id probabilities per trackster (8)
   if (!eidOutputNameId_.empty()) {
     // get the pointer to the id probability tensor, dimension is batch x id_probabilities.size()
@@ -479,69 +489,6 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
       tracksters[i].setProbabilities(probs);
       probs += tracksters[i].id_probabilities().size();
     }
-  }
-  // NEW ENERGY REGRESSION!
-  std::vector<int> tracksterIndicesHadronic;
-  auto index_trackster = 0;
-  for (auto &t : tracksters) {
-    t.setRegressedEnergy(t.raw_energy());
-    if ((t.id_probability(ticl::Trackster::ParticleType::photon) +
-         t.id_probability(ticl::Trackster::ParticleType::electron)) >= 0.) {
-      tracksterIndicesHadronic.push_back(index_trackster);
-    }
-    index_trackster++;
-  }
-  batchSize = static_cast<int>(tracksterIndicesHadronic.size());
-  if (batchSize == 0) {
-    return;
-  }
-  // create input and output tensors for energy regression
-  tensorflow::TensorShape shapeER({batchSize, eidNFeaturesER_});
-  tensorflow::Tensor inputEnergyRegression(tensorflow::DT_FLOAT, shapeER);
-  tensorflow::NamedTensorList inputListEnergyRegression = {{eidInputNameER_, inputEnergyRegression}};
-
-  std::vector<tensorflow::Tensor> outputsEnergyRegression;
-  std::vector<std::string> outputNamesEnergyRegression;
-
-  outputNamesEnergyRegression.push_back(eidOutputNameEnergyER_);
-
-  // fill input tensor (5)
-  for (int i = 0; i < batchSize; i++) {
-    const Trackster &trackster = tracksters[tracksterIndicesHadronic[i]]; 
-    float en_total = 0;
-    float *featuresER = &inputEnergyRegression.tensor<float, 2>()(i, 0);
-    std::array<float, eidNFeaturesER_> inputsArrayER;
-    for (size_t j = 0; j < inputsArrayER.size(); j++) {
-      inputsArrayER[j] = 0.;
-    }
-
-    for (int k = 0; k < (int)trackster.vertices().size(); k++) {
-      const reco::CaloCluster &cluster = layerClusters[trackster.vertices(k)];
-      auto lc_seed = cluster.seed();
-      auto index = returnIndex(lc_seed, rhtools_);
-        if(index >= 0){
-          inputsArrayER[index] += cluster.energy() / trackster.raw_energy(); //energy fraction
-        }
-      en_total += cluster.energy();
-    }
-    
-    inputsArrayER[ticl::LayerType::EnumSize] = trackster.barycenter().eta(); //eta
-    inputsArrayER[ticl::LayerType::EnumSize+1] = trackster.raw_energy(); //total trackster energy
-    for(size_t i_p = 0; i_p < trackster.id_probabilities().size(); i_p++){
-      inputsArrayER[ticl::LayerType::EnumSize+2+i_p] = trackster.id_probabilities(i_p); //probabilities
-    }
-    for (size_t j = 0; j < inputsArrayER.size(); j++) {
-      *(featuresER++) = inputsArrayER[j];
-    }
-  }
-
-  tensorflow::run(const_cast<tensorflow::Session *>(eidSessionEnergyRegression),
-                  inputListEnergyRegression,
-                  outputNamesEnergyRegression,
-                  &outputsEnergyRegression);
-  float *energy = outputsEnergyRegression[0].flat<float>().data();
-  for (const int &i : tracksterIndicesHadronic) {
-    tracksters[i].setRegressedEnergy(*(energy++));
   }
 }
 
