@@ -48,7 +48,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
     auto cpIndex = cPIndices[i];
     cPOnLayer[cpIndex].resize(layers_ * 2);
     for (unsigned int j = 0; j < layers_ * 2; ++j) {
-      cPOnLayer[cpIndex][j].caloParticleId = cpIndex;
+      cPOnLayer[cpIndex][j].simObjectId = cpIndex;
       cPOnLayer[cpIndex][j].energy = 0.f;
       cPOnLayer[cpIndex][j].hits_and_fractions.clear();
     }
@@ -121,7 +121,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
     for (size_t cpp = 0; cpp < cPOnLayer[cp].size(); ++cpp) {
       LogDebug("MultiClusterAssociatorByEnergyScoreImpl") << "  On Layer: " << cpp << " we have:" << std::endl;
       LogDebug("MultiClusterAssociatorByEnergyScoreImpl")
-          << "    CaloParticleIdx: " << cPOnLayer[cp][cpp].caloParticleId << std::endl;
+          << "    CaloParticleIdx: " << cPOnLayer[cp][cpp].simObjectId << std::endl;
       LogDebug("MultiClusterAssociatorByEnergyScoreImpl")
           << "    Energy:          " << cPOnLayer[cp][cpp].energy << std::endl;
       double tot_energy = 0.;
@@ -132,7 +132,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
         tot_energy += haf.second * hitMap_->at(haf.first)->energy();
       }
       LogDebug("MultiClusterAssociatorByEnergyScoreImpl") << "    Tot Sum haf: " << tot_energy << std::endl;
-      for (auto const& mc : cPOnLayer[cp][cpp].multiClusterIdToEnergyAndScore) {
+      for (auto const& mc : cPOnLayer[cp][cpp].clusterIdToEnergyAndScore) {
         LogDebug("MultiClusterAssociatorByEnergyScoreImpl") << "      mcIdx/energy/score: " << mc.first << "/"
                                                             << mc.second.first << "/" << mc.second.second << std::endl;
       }
@@ -238,7 +238,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
         auto hit_find_in_CP = detIdToCaloParticleId_Map.find(rh_detid);
 
         // If the fraction is zero or the hit does not belong to any calo
-        // particle, set the caloParticleId for the hit to -1 and this will
+        // particle, set the simObjectId for the hit to -1 and this will
         // contribute to the number of noise hits
         if (rhFraction == 0.) {  // this could be a real hit that has been marked as halo
           hitsToCaloParticleId[hitId] = -2;
@@ -260,9 +260,8 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
             CPEnergyInLC[h.clusterId] += shared_fraction * hit->energy();
             //Here cPOnLayer[caloparticle][layer] described above is set
             //Here for multiClusters with matched recHit, the CP fraction times hit energy is added and saved
-            cPOnLayer[h.clusterId][lcLayerId].multiClusterIdToEnergyAndScore[mcId].first +=
-                shared_fraction * hit->energy();
-            cPOnLayer[h.clusterId][lcLayerId].multiClusterIdToEnergyAndScore[mcId].second = FLT_MAX;
+            cPOnLayer[h.clusterId][lcLayerId].clusterIdToEnergyAndScore[mcId].first += shared_fraction * hit->energy();
+            cPOnLayer[h.clusterId][lcLayerId].clusterIdToEnergyAndScore[mcId].second = FLT_MAX;
             //cpsInMultiCluster[multicluster][CPids]
             //Connects a multiCluster with all related caloParticles
             cpsInMultiCluster[mcId].emplace_back(h.clusterId, FLT_MAX);
@@ -420,7 +419,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
       float maxEnergyMCLperlayerinCP = 0.f;
       float CPenergy = cPOnLayer[cpId][layerId].energy;
       float CPEnergyFractionInMCLperlayer = 0.f;
-      for (auto& mc : cPOnLayer[cpId][layerId].multiClusterIdToEnergyAndScore) {
+      for (auto& mc : cPOnLayer[cpId][layerId].clusterIdToEnergyAndScore) {
         if (mc.second.first > maxEnergyMCLperlayerinCP) {
           maxEnergyMCLperlayerinCP = mc.second.first;
           mcWithMaxEnergyInCP = mc.first;
@@ -455,7 +454,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
         auto itcheck = hitMap_->find(cp_hitDetId);
         const HGCRecHit* hit = itcheck->second;
         float hitEnergyWeight = hit->energy() * hit->energy();
-        for (auto& mcPair : cPOnLayer[cpId][layerId].multiClusterIdToEnergyAndScore) {
+        for (auto& mcPair : cPOnLayer[cpId][layerId].clusterIdToEnergyAndScore) {
           unsigned int multiClusterId = mcPair.first;
           float mcFraction = 0.f;
 
@@ -480,7 +479,7 @@ hgcal::association MultiClusterAssociatorByEnergyScoreImpl::makeConnections(
         }  // End of loop over MultiClusters linked to hits of this CaloParticle
       }    // End of loop over hits of CaloParticle on a Layer
 #ifdef EDM_ML_DEBUG
-      if (cPOnLayer[cpId][layerId].multiClusterIdToEnergyAndScore.empty())
+      if (cPOnLayer[cpId][layerId].clusterIdToEnergyAndScore.empty())
         LogDebug("HGCalValidator") << "CP Id: \t" << cpId << "\t MCL id:\t-1 "
                                    << "\t layer \t " << layerId << " Sub score in \t -1"
                                    << "\n";
@@ -518,7 +517,7 @@ hgcal::SimToRecoCollectionWithMultiClusters MultiClusterAssociatorByEnergyScoreI
   const auto& cPOnLayer = std::get<1>(links);
   for (size_t cpId = 0; cpId < cPOnLayer.size(); ++cpId) {
     for (size_t layerId = 0; layerId < cPOnLayer[cpId].size(); ++layerId) {
-      for (auto& mcPair : cPOnLayer[cpId][layerId].multiClusterIdToEnergyAndScore) {
+      for (auto& mcPair : cPOnLayer[cpId][layerId].clusterIdToEnergyAndScore) {
         returnValue.insert(
             edm::Ref<CaloParticleCollection>(cPCH, cpId),                                    // Ref to CP
             std::make_pair(edm::Ref<reco::HGCalMultiClusterCollection>(mCCH, mcPair.first),  // Pair <Ref to MC,

@@ -9,6 +9,7 @@
 #include "DataFormats/HGCRecHit/interface/HGCRecHit.h"
 #include "SimDataFormats/Associations/interface/MultiClusterToCaloParticleAssociator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 
 namespace edm {
   class EDProductGetter;
@@ -30,13 +31,6 @@ namespace hgcal {
     unsigned int multiclusterId;
     long unsigned int clusterId;
     float fraction;
-  };
-
-  struct caloParticleOnLayer {
-    unsigned int caloParticleId;
-    float energy = 0;
-    std::vector<std::pair<DetId, float>> hits_and_fractions;
-    std::unordered_map<int, std::pair<float, float>> multiClusterIdToEnergyAndScore;
   };
 
   typedef std::vector<std::vector<std::pair<unsigned int, float>>> multiClusterToCaloParticle;

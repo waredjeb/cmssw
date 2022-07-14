@@ -9,6 +9,7 @@
 #include "DataFormats/HGCRecHit/interface/HGCRecHit.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 
 namespace edm {
   class EDProductGetter;
@@ -27,23 +28,6 @@ namespace hgcal {
       clusterId = cId;
       fraction = fr;
     }
-  };
-
-  // This introduces a simCluster on layer concept. For a simCluster it stores:
-  // 1. Its id: simClusterId.
-  // 2. The energy that the simCluster deposited in a specific layer and it was reconstructed.
-  // 3. The hits_and_fractions that contributed to that deposition. SimHits that aren't reconstructed
-  //    and doesn't have any matched rechits are disregarded.
-  // 4. A map to save the LayerClusters ids (id is the key) that reconstructed at least one SimHit of the simCluster under study
-  //    together with the energy that the Layercluster reconstructed from the SimClusters and the score. The energy
-  //    is not the energy of the LayerCluster, but the energy of the LayerCluster coming from the SimCluster.
-  //    So, there will be energy of the LayerCluster that is disregarded here, since there may be LayerCluster's
-  //    cells that the SimCluster didn't contribute.
-  struct simClusterOnLayer {
-    unsigned int simClusterId;
-    float energy = 0;
-    std::vector<std::pair<DetId, float>> hits_and_fractions;
-    std::unordered_map<int, std::pair<float, float>> layerClusterIdToEnergyAndScore;
   };
 
   // This object connects a LayerCluster, identified through its id (lcId), with a vector of pairs containing all the SimClusters

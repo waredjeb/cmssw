@@ -9,6 +9,7 @@
 #include "DataFormats/HGCRecHit/interface/HGCRecHit.h"
 #include "SimDataFormats/Associations/interface/TracksterToSimClusterAssociator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 
 namespace edm {
   class EDProductGetter;
@@ -23,13 +24,6 @@ namespace hgcal {
       clusterId = cId;
       fraction = fr;
     }
-  };
-
-  struct simClusterOnLayer {
-    unsigned int simClusterId;
-    float energy = 0;
-    std::vector<std::pair<DetId, float>> hits_and_fractions;
-    std::unordered_map<int, std::pair<float, float>> tracksterIdToEnergyAndScore;
   };
 
   typedef std::vector<std::vector<std::pair<unsigned int, float>>> tracksterToSimCluster;
