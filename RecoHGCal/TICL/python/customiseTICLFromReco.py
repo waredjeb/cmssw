@@ -1,6 +1,5 @@
 # Reconstruction
 from RecoHGCal.TICL.iterativeTICL_cff import *
-from RecoHGCal.TICL.ticlNtuplizer_cfi import ticlNtuplizer
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClusters
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cfi import *
