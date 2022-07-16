@@ -525,31 +525,33 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : chargedCandidates) {
     bool isHAD = false;
     double rawE = 0.;
+		double regrE = 0.;
     const auto track = cand.trackPtr();
     for (const auto ts : cand.tracksters()) {
       // isHAD if atleast one trackster is not EM
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
+			regrE += ts->regressed_energy();
     }
 
     if (isHAD) {  // charged hadron
       cand.setCharge(track->charge());
       cand.setPdgId(211 * track->charge());
       cand.setRawEnergy(rawE);
-      math::XYZTLorentzVector p4(rawE * track->momentum().unit().x(),
-                                 rawE * track->momentum().unit().y(),
-                                 rawE * track->momentum().unit().z(),
-                                 rawE);
+      math::XYZTLorentzVector p4(regrE * track->momentum().unit().x(),
+                                 regrE * track->momentum().unit().y(),
+                                 regrE * track->momentum().unit().z(),
+                                 regrE);
       cand.setP4(p4);
     } else {  // electron
       cand.setCharge(track->charge());
       cand.setPdgId(11 * track->charge());
       cand.setRawEnergy(rawE);
-      math::XYZTLorentzVector p4(rawE * track->momentum().unit().x(),
-                                 rawE * track->momentum().unit().y(),
-                                 rawE * track->momentum().unit().z(),
-                                 rawE);
+      math::XYZTLorentzVector p4(regrE * track->momentum().unit().x(),
+                                 regrE * track->momentum().unit().y(),
+                                 regrE * track->momentum().unit().z(),
+                                 regrE);
       cand.setP4(p4);
     }
   }
@@ -557,34 +559,36 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : neutralCandidates) {
     bool isHAD = false;
     double rawE = 0.;
+		double regrE = 0.;
     const auto track = cand.trackPtr();
     double wtSum_baryc[3] = {0};
     for (const auto ts : cand.tracksters()) {
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
-      wtSum_baryc[0] += (ts->raw_energy()) * (ts->barycenter().x());
-      wtSum_baryc[1] += (ts->raw_energy()) * (ts->barycenter().y());
-      wtSum_baryc[2] += (ts->raw_energy()) * (ts->barycenter().z());
+			regrE += ts->regressed_energy();
+      wtSum_baryc[0] += (ts->regressed_energy()) * (ts->barycenter().x());
+      wtSum_baryc[1] += (ts->regressed_energy()) * (ts->barycenter().y());
+      wtSum_baryc[2] += (ts->regressed_energy()) * (ts->barycenter().z());
     }
-    Vector combined_baryc(wtSum_baryc[0] / rawE, wtSum_baryc[1] / rawE, wtSum_baryc[2] / rawE);
+    Vector combined_baryc(wtSum_baryc[0] / regrE, wtSum_baryc[1] / regrE, wtSum_baryc[2] / regrE);
 
     if (isHAD) {  // neutral hadron
       cand.setCharge(0);
       cand.setPdgId(130);
       cand.setRawEnergy(rawE);
-      float momentum = std::sqrt(rawE * rawE - mpion2);
+      float momentum = std::sqrt(regrE * regrE - mpion2);
       math::XYZTLorentzVector p4(momentum * combined_baryc.unit().x(),
                                  momentum * combined_baryc.unit().y(),
                                  momentum * combined_baryc.unit().z(),
-                                 rawE);
+                                 regrE);
       cand.setP4(p4);
     } else {  // photon
       cand.setCharge(0);
       cand.setPdgId(22);
       cand.setRawEnergy(rawE);
       math::XYZTLorentzVector p4(
-          rawE * combined_baryc.unit().x(), rawE * combined_baryc.unit().y(), rawE * combined_baryc.unit().z(), rawE);
+          regrE * combined_baryc.unit().x(), regrE * combined_baryc.unit().y(), regrE * combined_baryc.unit().z(), regrE);
       cand.setP4(p4);
     }
   }
