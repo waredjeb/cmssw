@@ -527,7 +527,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : chargedCandidates) {
     bool isHAD = false;
     double rawE = 0.;
-		double regrE = 0.;
+    double regrE = 0.;
     double energy;
     const auto track = cand.trackPtr();
     for (const auto &ts : cand.tracksters()) {
@@ -535,7 +535,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
-			regrE += ts->regressed_energy();
+      regrE += ts->regressed_energy();
     }
     auto pdgID = isHAD ? 211 : 11;
 
@@ -564,14 +564,14 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   for (auto &cand : neutralCandidates) {
     bool isHAD = false;
     double rawE = 0.;
-		double energy = 0.;
+    double energy = 0.;
     const auto track = cand.trackPtr();
     double wtSum_baryc[3] = {0};
     for (const auto &ts : cand.tracksters()) {
       if (isHadron(*ts))
         isHAD = true;
       rawE += ts->raw_energy();
-			energy += energy_from_regression_ ? ts->regressed_energy() : ts->raw_energy();
+      energy += energy_from_regression_ ? ts->regressed_energy() : ts->raw_energy();
       wtSum_baryc[0] += (energy) * (ts->barycenter().x());
       wtSum_baryc[1] += (energy) * (ts->barycenter().y());
       wtSum_baryc[2] += (energy) * (ts->barycenter().z());
@@ -592,8 +592,10 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
       cand.setCharge(0);
       cand.setPdgId(22);
       cand.setRawEnergy(rawE);
-      math::XYZTLorentzVector p4(
-          energy * combined_baryc.unit().x(), energy * combined_baryc.unit().y(), energy * combined_baryc.unit().z(), energy);
+      math::XYZTLorentzVector p4(energy * combined_baryc.unit().x(),
+                                 energy * combined_baryc.unit().y(),
+                                 energy * combined_baryc.unit().z(),
+                                 energy);
       cand.setP4(p4);
     }
   }
@@ -616,7 +618,8 @@ void linkingalgobydirectiongeometric::fillpsetdescription(edm::parametersetdescr
   desc.add<double>("pid_threshold", 0.5);
   desc.add<double>("energy_em_over_total_threshold", 0.9);
   desc.add<std::vector<int>>("filter_hadronic_on_categories", {0, 1});
-  desc.add<bool>("energyFromRegression", false)->setComment(
+  desc.add<bool>("energyFromRegression", false)
+      ->setComment(
           "Boolean. If true uses the Tracksters regressed energy for building TICLCandidate four-momentum"
           "If false uses the Tracksters raw energy instead");
   LinkingAlgoBase::fillPSetDescription(desc);

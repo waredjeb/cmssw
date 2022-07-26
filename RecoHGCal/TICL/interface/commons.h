@@ -73,9 +73,8 @@ namespace ticl {
             return CE_H_120_C;
           } else if (thickness == 1) {
             return CE_H_200_C;
-          }
-            else if (thickness == 2) {
-              return CE_H_300_C;
+          } else if (thickness == 2) {
+            return CE_H_300_C;
           }
         }
       }

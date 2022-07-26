@@ -156,7 +156,7 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       propName_(ps.getParameter<std::string>("propagator")),
       bfield_token_(esConsumes<MagneticField, IdealMagneticFieldRecord, edm::Transition::BeginRun>()),
       propagator_token_(
-          esConsumes<Propagator, TrackingComponentsRecord, edm::Transition::BeginRun>(edm::ESInputTag("", propName_))),      
+          esConsumes<Propagator, TrackingComponentsRecord, edm::Transition::BeginRun>(edm::ESInputTag("", propName_))),
       optimiseAcrossTracksters_(ps.getParameter<bool>("optimiseAcrossTracksters")),
       eta_bin_window_(ps.getParameter<int>("eta_bin_window")),
       phi_bin_window_(ps.getParameter<int>("phi_bin_window")),
@@ -179,7 +179,7 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       eidOutputNameId_(ps.getParameter<std::string>("eid_output_name_id")),
       eidMinClusterEnergy_(ps.getParameter<double>("eid_min_cluster_energy")),
       eidNLayers_(ps.getParameter<int>("eid_n_layers")),
-      eidNClusters_(ps.getParameter<int>("eid_n_clusters")){
+      eidNClusters_(ps.getParameter<int>("eid_n_clusters")) {
   produces<std::vector<Trackster>>();
   produces<std::vector<TICLCandidate>>();
 
