@@ -8,22 +8,21 @@
 
 namespace ticl {
 
+  enum LayerType {
 
-    enum LayerType {
+    CE_E_120 = 0,
+    CE_E_200 = 1,
+    CE_E_300 = 2,
+    CE_H_120_F = 3,
+    CE_H_200_F = 4,
+    CE_H_300_F = 5,
+    CE_H_120_C = 6,
+    CE_H_200_C = 7,
+    CE_H_300_C = 8,
+    CE_H_SCINT_C = 9,
+    EnumSize = 10
 
-      CE_E_120 = 0,
-      CE_E_200 = 1,
-      CE_E_300 = 2,
-      CE_H_120_F = 3,
-      CE_H_200_F = 4,
-      CE_H_300_F = 5,
-      CE_H_120_C = 6,
-      CE_H_200_C = 7,
-      CE_H_300_C = 8,
-      CE_H_SCINT_C = 9,
-      EnumSize = 10
-
-    };
+  };
 
   inline Trackster::ParticleType tracksterParticleTypeFromPdgId(int pdgId, int charge) {
     if (pdgId == 111) {
@@ -120,9 +119,8 @@ namespace ticl {
             return CE_H_120_C;
           } else if (thickness == 1) {
             return CE_H_200_C;
-          }
-            else if (thickness == 2) {
-              return CE_H_300_C;
+          } else if (thickness == 2) {
+            return CE_H_300_C;
           }
         }
       }

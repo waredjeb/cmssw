@@ -175,14 +175,8 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
   } else {
     const auto& layer_clusters_tiles = evt.get(layer_clusters_tiles_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(evt,
-                                                                             es,
-                                                                             layerClusters,
-                                                                             inputClusterMask,
-                                                                             layerClustersTimes,
-                                                                             layer_clusters_tiles,
-                                                                             seeding_regions,
-                                                                             tfSession_);
+    const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
+        evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_tiles, seeding_regions, tfSession_);
 
     myAlgo_->makeTracksters(input, *result, seedToTrackstersAssociation);
   }
