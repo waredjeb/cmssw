@@ -191,11 +191,11 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
   produces<std::vector<double>>("hgcaltracksX");
   produces<std::vector<double>>("hgcaltracksY");
   produces<std::vector<double>>("hgcaltracksZ");
-  produces<std::vector<double>>("hgcaltracksEta"); 
-  produces<std::vector<double>>("hgcaltracksPhi"); 
-  produces<std::vector<double>>("hgcaltracksPx");  
-  produces<std::vector<double>>("hgcaltracksPy");  
-  produces<std::vector<double>>("hgcaltracksPz");  
+  produces<std::vector<double>>("hgcaltracksEta");
+  produces<std::vector<double>>("hgcaltracksPhi");
+  produces<std::vector<double>>("hgcaltracksPx");
+  produces<std::vector<double>>("hgcaltracksPy");
+  produces<std::vector<double>>("hgcaltracksPz");
 
   std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
   hdc_token_ =
@@ -289,7 +289,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
   edm::Handle<std::vector<Trackster>> trackstersclue3d_h;
   evt.getByToken(tracksters_clue3d_token_, trackstersclue3d_h);
-  
+
   edm::Handle<TICLGraph> ticlGraph_h;
   evt.getByToken(ticlGraph_token_, ticlGraph_h);
   const auto &ticlGraph = *ticlGraph_h;
@@ -302,8 +302,22 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   // Linking
 
   masked_tracks->resize(tracks.size(), false);
-  linkingAlgo_->linkTracksters(
-      track_h, trackTime, trackTimeErr, trackTimeQual, muons, trackstersclue3d_h, *resultCandidates,*hgcaltracks_x,*hgcaltracks_y,*hgcaltracks_z,*hgcaltracks_eta,*hgcaltracks_phi,*hgcaltracks_px,*hgcaltracks_py,*hgcaltracks_pz,*masked_tracks);
+  linkingAlgo_->linkTracksters(track_h,
+                               trackTime,
+                               trackTimeErr,
+                               trackTimeQual,
+                               muons,
+                               trackstersclue3d_h,
+                               *resultCandidates,
+                               *hgcaltracks_x,
+                               *hgcaltracks_y,
+                               *hgcaltracks_z,
+                               *hgcaltracks_eta,
+                               *hgcaltracks_phi,
+                               *hgcaltracks_px,
+                               *hgcaltracks_py,
+                               *hgcaltracks_pz,
+                               *masked_tracks);
   // Print debug info
   if (debug_) {
     LogDebug("TrackstersMergeProducer") << "Results from the linking step : " << std::endl
@@ -393,26 +407,28 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   assignTimeToCandidates(*resultCandidates);
 
   if (debug_) {
-      // print info from graph
-      LogDebug("TrackstersMergeProducer") << "From graph:" << std::endl;
-      const auto nodes = ticlGraph.getNodes();
-      for (const auto &n : nodes) {
-        LogDebug("TrackstersMergeProducer") << "Trackster : " << n.getId() << std::endl;
-        LogDebug("TrackstersMergeProducer") << "inners : ";
-        for (auto &inner : n.getInner()) LogDebug("TrackstersMergeProducer") << (int)inner << " ";
-        LogDebug("TrackstersMergeProducer") << std::endl << "outers : ";
-        for (auto &outer : n.getOuter()) LogDebug("TrackstersMergeProducer") << (int)outer << " ";
-        LogDebug("TrackstersMergeProducer") << std::endl;
-      }
+    // print info from graph
+    LogDebug("TrackstersMergeProducer") << "From graph:" << std::endl;
+    const auto nodes = ticlGraph.getNodes();
+    for (const auto &n : nodes) {
+      LogDebug("TrackstersMergeProducer") << "Trackster : " << n.getId() << std::endl;
+      LogDebug("TrackstersMergeProducer") << "inners : ";
+      for (auto &inner : n.getInner())
+        LogDebug("TrackstersMergeProducer") << (int)inner << " ";
+      LogDebug("TrackstersMergeProducer") << std::endl << "outers : ";
+      for (auto &outer : n.getOuter())
+        LogDebug("TrackstersMergeProducer") << (int)outer << " ";
+      LogDebug("TrackstersMergeProducer") << std::endl;
     }
+  }
 
   evt.put(std::move(resultTrackstersMerged));
   evt.put(std::move(resultCandidates));
-  evt.put(std::move(hgcaltracks_x),"hgcaltracksX");
-  evt.put(std::move(hgcaltracks_y),"hgcaltracksY");
-  evt.put(std::move(hgcaltracks_z),"hgcaltracksZ");
-  evt.put(std::move(hgcaltracks_eta),"hgcaltracksEta");
-  evt.put(std::move(hgcaltracks_phi),"hgcaltracksPhi");
+  evt.put(std::move(hgcaltracks_x), "hgcaltracksX");
+  evt.put(std::move(hgcaltracks_y), "hgcaltracksY");
+  evt.put(std::move(hgcaltracks_z), "hgcaltracksZ");
+  evt.put(std::move(hgcaltracks_eta), "hgcaltracksEta");
+  evt.put(std::move(hgcaltracks_phi), "hgcaltracksPhi");
   evt.put(std::move(hgcaltracks_px), "hgcaltracksPx");
   evt.put(std::move(hgcaltracks_py), "hgcaltracksPy");
   evt.put(std::move(hgcaltracks_pz), "hgcaltracksPz");

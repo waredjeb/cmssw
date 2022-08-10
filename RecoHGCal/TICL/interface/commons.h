@@ -52,6 +52,45 @@ namespace ticl {
     }
   }
 
+  inline int returnIndex(DetId& lc_seed, const hgcal::RecHitTools& rhtools_) {
+    auto layer_number = rhtools_.getLayerWithOffset(lc_seed);
+    auto thickness = rhtools_.getSiThickIndex(lc_seed);
+    auto isEELayer = (layer_number <= rhtools_.lastLayerEE(false));
+    auto isScintillator = rhtools_.isScintillator(lc_seed);
+    auto isFine = (layer_number <= rhtools_.lastLayerEE(false) + 7);
+
+    if (isEELayer) {
+      if (thickness == 0) {
+        return CE_E_120;
+      } else if (thickness == 1) {
+        return CE_E_200;
+      } else if (thickness == 2) {
+        return CE_E_300;
+      }
+    } else if (!isEELayer) {
+      if (isScintillator) {
+        return CE_H_SCINT_C;
+      } else {
+        if (isFine) {
+          if (thickness == 0) {
+            return CE_H_120_F;
+          } else if (thickness == 1) {
+            return CE_H_200_F;
+          } else if (thickness == 2) {
+            return CE_H_300_F;
+          }
+        } else {
+          if (thickness == 0) {
+            return CE_H_120_C;
+          } else if (thickness == 1) {
+            return CE_H_200_C;
+          }
+        }
+      }
+    }
+    return -1;
+  };
+
 }  // namespace ticl
 
 #endif

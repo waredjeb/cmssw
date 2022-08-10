@@ -14,7 +14,6 @@
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "Geometry/HGCalCommonData/interface/HGCalDDDConstants.h"
-#include "DataFormats/Math/interface/Vector3D.h"
 
 namespace edm {
   class Event;
@@ -24,20 +23,16 @@ namespace edm {
 namespace ticl {
   class LinkingAlgoBase {
   public:
-
-    typedef std::vector<double> Vec;
     LinkingAlgoBase(const edm::ParameterSet& conf) : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
 
     virtual ~LinkingAlgoBase(){};
-
-    
 
     virtual void initialize(const HGCalDDDConstants* hgcons,
                             const hgcal::RecHitTools rhtools,
                             const edm::ESHandle<MagneticField> bfieldH,
                             const edm::ESHandle<Propagator> propH) = 0;
 
-    virtual void linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
+   virtual void linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
                                 const edm::ValueMap<float>& tkTime,
                                 const edm::ValueMap<float>& tkTimeErr,
                                 const edm::ValueMap<float>& tkTimeQual,
@@ -57,6 +52,7 @@ namespace ticl {
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
 
     enum VerbosityLevel { None = 0, Basic, Advanced, Expert, Guru };
+
   protected:
     int algo_verbosity_;
   };
