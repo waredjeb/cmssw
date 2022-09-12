@@ -17,22 +17,22 @@ set -x
 if [ -z "$PERJOB" ]; then
     PERJOB=200
 fi
-
+CPPPATH="/eos/user/w/wredjeb/HGCAL/TICLv4Validation/FixTICLv4Validation/QCDPU200/TICLv4_fix/"
 #
 #set default conditions - run3 2021
-CONDITIONS=auto:phase1_2022_realistic ERA=Run3 GEOM=DB.Extended CUSTOM=
+#CONDITIONS=auto:phase1_2022_realistic ERA=Run3 GEOM=DB.Extended CUSTOM=
 #
 #conditions - 2018
 #CONDITIONS=auto:phase1_2018_realistic ERA=Run2_2018 GEOM=DB.Extended CUSTOM=
 #
 #conditions - phase2
-#CONDITIONS=auto:phase2_realistic_T15 ERA=Phase2C9 GEOM=Extended2026D49 CUSTOM="--customise SLHCUpgradeSimulations/Configuration/aging.customise_aging_1000"
+CONDITIONS=auto:phase2_realistic_T21 ERA=Phase2C17I13M9 GEOM=Extended2026D88 #CUSTOM="--procModifiers ticl_v3"
 
 #Running with 2 threads allows to use more memory on grid
 NTHREADS=8
 
 #Argument parsing
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 4 ]; then
     echo "Must pass exactly 3 arguments: run_relval.sh [QCD|QCDPU|ZEEPU|ZMMPU|TenTauPU|NuGunPU] [reco|dqm] [njob]"
     exit 0
 fi
@@ -133,7 +133,8 @@ if [ $STEP == "RECO" ]; then
 	#Run the actual CMS reco with particle flow.
 	echo "Running step RECO" 
 	cmsDriver.py step3 --conditions $CONDITIONS -s RAW2DIGI,L1Reco,RECO,RECOSIM,PAT --datatier MINIAODSIM --nThreads $NTHREADS -n -1 --era $ERA --eventcontent MINIAODSIM --geometry=$GEOM --filein $FILENAME --fileout file:step3_inMINIAODSIM.root $CUSTOM | tee step3.log  2>&1
-   
+  
+  cp step3_inMINIAODSIM.root $CPPPATH/step3_inMINIAODSIM.${3}.${4}.root	
 	#NanoAOD
 	#On lxplus, this step takes about 1 minute / 1000 events
 	#Can be skipped if doing DQM directly from RECO
@@ -144,7 +145,7 @@ if [ $STEP == "RECO" ]; then
 elif [ $STEP == "DQM" ]; then
     echo "Running step DQM" 
 
-    cd $NAME
+    cd $CPPPATH 
     
     #get all the filenames and make them into a python-compatible list of strings
     #STEP3FNS=`ls -1 step3*MINIAODSIM*.root | sed 's/^/"file:/;s/$/",/' | tr '\n' ' '`
