@@ -138,7 +138,6 @@ void TrackstersMergeProducerV3::fillTile(TICLTracksterTiles &tracksterTile,
                                           << tracksterTile[tracksterIteration].etaBin(t.barycenter().eta()) << ", "
                                           << tracksterTile[tracksterIteration].phiBin(t.barycenter().phi())
                                           << "] for iteration: " << tracksterIteration << std::endl;
-
     tracksterId++;
   }
 }
@@ -183,7 +182,6 @@ void TrackstersMergeProducerV3::produce(edm::Event &evt, const edm::EventSetup &
 
   // associating seed to the index of the trackster in the merged collection and the iteration that found it
   std::map<int, std::vector<std::pair<int, TracksterIterIndex>>> seedToTracksterAssociator;
-
   edm::Handle<std::vector<reco::Track>> track_h;
   evt.getByToken(tracks_token_, track_h);
   const auto &tracks = *track_h;
