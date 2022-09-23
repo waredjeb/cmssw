@@ -45,6 +45,7 @@ namespace ticl {
           raw_energy_(0.f),
           raw_em_energy_(0.f),
           raw_pt_(0.f),
+          regressed_pt_(0.f),
           raw_em_pt_(0.f),
           barycenter_({0., 0., 0.}),
           eigenvalues_{{0.f, 0.f, 0.f}},
@@ -71,6 +72,7 @@ namespace ticl {
     inline void setRawEmEnergy(float value) { raw_em_energy_ = value; }
     inline void addToRawEmEnergy(float value) { raw_em_energy_ += value; }
     inline void setRawPt(float value) { raw_pt_ = value; }
+    inline void setRegressedPt(float value) { regressed_pt_ = value; }
     inline void setRawEmPt(float value) { raw_em_pt_ = value; }
     inline void setBarycenter(Vector value) { barycenter_ = value; }
     inline void fillPCAVariables(Eigen::Vector3d &eigenvalues,
@@ -130,6 +132,7 @@ namespace ticl {
     inline const float raw_energy() const { return raw_energy_; }
     inline const float raw_em_energy() const { return raw_em_energy_; }
     inline const float raw_pt() const { return raw_pt_; }
+    inline const float regressed_pt() const { return regressed_pt_; }
     inline const float raw_em_pt() const { return raw_em_pt_; }
     inline const Vector &barycenter() const { return barycenter_; }
     inline const std::array<float, 3> &eigenvalues() const { return eigenvalues_; }
@@ -187,6 +190,7 @@ namespace ticl {
     float raw_energy_;
     float raw_em_energy_;
     float raw_pt_;
+    float regressed_pt_;
     float raw_em_pt_;
 
     // PCA Variables
