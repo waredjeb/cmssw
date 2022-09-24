@@ -204,6 +204,7 @@ private:
   std::vector<float_t> stsCP_trackster_raw_energy;
   std::vector<float_t> stsCP_trackster_raw_em_energy;
   std::vector<float_t> stsCP_trackster_raw_pt;
+  std::vector<float_t> stsCP_trackster_regressed_pt;
   std::vector<float_t> stsCP_trackster_raw_em_pt;
   std::vector<float_t> stsCP_trackster_barycenter_x;
   std::vector<float_t> stsCP_trackster_barycenter_y;
@@ -459,6 +460,7 @@ void NtuplerLight::clearVariables() {
   stsCP_trackster_raw_energy.clear();
   stsCP_trackster_raw_em_energy.clear();
   stsCP_trackster_raw_pt.clear();
+  stsCP_trackster_regressed_pt.clear();
   stsCP_trackster_raw_em_pt.clear();
   stsCP_trackster_barycenter_x.clear();
   stsCP_trackster_barycenter_y.clear();
@@ -766,6 +768,7 @@ void NtuplerLight::beginJob() {
   simtrackstersCP_tree_->Branch("stsCP_raw_energy", &stsCP_trackster_raw_energy);
   simtrackstersCP_tree_->Branch("stsCP_raw_em_energy", &stsCP_trackster_raw_em_energy);
   simtrackstersCP_tree_->Branch("stsCP_raw_pt", &stsCP_trackster_raw_pt);
+  simtrackstersCP_tree_->Branch("stsCP_regressed_pt", &stsCP_trackster_regressed_pt);
   simtrackstersCP_tree_->Branch("stsCP_raw_em_pt", &stsCP_trackster_raw_em_pt);
   simtrackstersCP_tree_->Branch("stsCP_barycenter_x", &stsCP_trackster_barycenter_x);
   simtrackstersCP_tree_->Branch("stsCP_barycenter_y", &stsCP_trackster_barycenter_y);
@@ -1249,6 +1252,7 @@ void NtuplerLight::analyze(const edm::Event& event, const edm::EventSetup& setup
     stsCP_trackster_raw_energy.push_back(trackster_iterator->raw_energy());
     stsCP_trackster_raw_em_energy.push_back(trackster_iterator->raw_em_energy());
     stsCP_trackster_raw_pt.push_back(trackster_iterator->raw_pt());
+    stsCP_trackster_regressed_pt.push_back(trackster_iterator->regressed_pt());
     stsCP_trackster_raw_em_pt.push_back(trackster_iterator->raw_em_pt());
 //    stsCP_trackster_barycenter_x.push_back(trackster_iterator->barycenter().x());
 //    stsCP_trackster_barycenter_y.push_back(trackster_iterator->barycenter().y());
