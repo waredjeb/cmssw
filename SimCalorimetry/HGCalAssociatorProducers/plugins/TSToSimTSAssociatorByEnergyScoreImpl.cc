@@ -128,7 +128,7 @@ hgcal::association TSToSimTSAssociatorByEnergyScoreImpl::makeConnections(
           tssInSimTrackster[st.clusterId].tracksterIdToEnergyAndScore[tsId].first +=
               lcFractionInTs * st.fraction * layerClusters[lcId].energy();
           //TS_i -> ST_j, ST_k, ...
-          stsInTrackster[tsId].emplace_back(st.clusterId, std::make_pair(0.f,0.f));
+          stsInTrackster[tsId].emplace_back(st.clusterId, std::make_pair(0.f, 0.f));
         }
       }
     }  // End loop over LayerClusters in Trackster
@@ -296,7 +296,8 @@ hgcal::association TSToSimTSAssociatorByEnergyScoreImpl::makeConnections(
       for (auto& stPair : stsInTrackster[tsId]) {
         stPair.second.second = 1.;
         LogDebug("TSToSimTSAssociatorByEnergyScoreImpl")
-            << "TracksterId:\t " << tsId << "\tST id:\t" << stPair.first << "\tenergy" << stPair.second.first << "\tscore\t " << stPair.second.second << "\n";
+            << "TracksterId:\t " << tsId << "\tST id:\t" << stPair.first << "\tenergy" << stPair.second.first
+            << "\tscore\t " << stPair.second.second << "\n";
       }
       continue;
     }
@@ -446,9 +447,10 @@ hgcal::RecoToSimCollectionSimTracksters TSToSimTSAssociatorByEnergyScoreImpl::as
       LogDebug("TSToSimTSAssociatorByEnergyScoreImpl") << "Trackster Id:\t" << tsId << "\tSimTrackster id:\t"
                                                        << stPair.first << "\tscore:\t" << stPair.second << "\n";
       // Fill AssociationMap
-      returnValue.insert(edm::Ref<ticl::TracksterCollection>(tCH, tsId),  // Ref to TS
-                         std::make_pair(edm::Ref<ticl::TracksterCollection>(sTCH, stPair.first),  //Pair <Refo to TS>
-                                        std::make_pair(stPair.second.first, stPair.second.second))  // Pair <energy, score>
+      returnValue.insert(
+          edm::Ref<ticl::TracksterCollection>(tCH, tsId),                            // Ref to TS
+          std::make_pair(edm::Ref<ticl::TracksterCollection>(sTCH, stPair.first),    //Pair <Refo to TS>
+                         std::make_pair(stPair.second.first, stPair.second.second))  // Pair <energy, score>
       );
     }
   }

@@ -170,8 +170,14 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
                 std::find_if(detIdToRecoTSId_Map[hitId].begin(),
                              detIdToRecoTSId_Map[hitId].end(),
                              [=](const std::pair<int, float>& v) { return v.first == static_cast<int>(j); });
-            if (found_reco != detIdToRecoTSId_Map[hitId].end())
-              recoFraction = found_reco->second;
+            if (found_reco != detIdToRecoTSId_Map[hitId].end()){
+							if(recHitTools_->isSilicon(hitId)){
+	              recoFraction = found_reco->second;
+							}
+							else{
+								recoFraction = 0.f;
+							}
+						}
             numerator_simToReco[i][j] +=
                 std::min(simFractionSquared, (simFraction - recoFraction) * (simFraction - recoFraction)) *
                 hitEnergySquared;
@@ -195,8 +201,14 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
           auto found = std::find_if(detIdToRecoTSId_Map[hitId].begin(),
                                     detIdToRecoTSId_Map[hitId].end(),
                                     [=](const std::pair<int, float>& v) { return v.first == static_cast<int>(i); });
-          if (found != detIdToRecoTSId_Map[hitId].end())
-            recoFraction = found->second;
+          if (found != detIdToRecoTSId_Map[hitId].end()){
+						 if(recHitTools_->isSilicon(hitId)){
+	           	 recoFraction = found->second;
+						 }
+						 else{
+							 recoFraction = 0.f;
+						 }
+					}
 
           float hitEnergy = hitMap_->find(hitId)->second->energy();
           float hitEnergySquared = hitEnergy * hitEnergy;
@@ -210,8 +222,13 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
                 detIdSimTSId_Map[hitId].begin(), detIdSimTSId_Map[hitId].end(), [=](const std::pair<int, float>& v) {
                   return v.first == static_cast<int>(j);
                 });
-            if (found_sim != detIdSimTSId_Map[hitId].end())
-              simFraction = found_sim->second;
+            if (found_sim != detIdSimTSId_Map[hitId].end()){
+							 if(recHitTools_->isSilicon(hitId)){
+           		 simFraction = found_sim->second;
+							 } else {
+							 	simFraction = 0.f;
+							 }
+						}
             numerator_recoToSim[i][j] +=
                 std::min(recoFractionSquared, (simFraction - recoFraction) * (simFraction - recoFraction)) *
                 hitEnergySquared;
