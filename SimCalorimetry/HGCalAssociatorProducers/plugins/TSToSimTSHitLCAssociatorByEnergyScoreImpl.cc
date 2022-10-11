@@ -132,8 +132,12 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
       for (const auto& v : lcsInSimTrackster) {
         for (const auto& haf : layerClusters[v].hitsAndFractions()) {
           const auto hitId = haf.first;
+					bool isScint = false;
+          if(!recHitTools_->isSilicon(hitId)) {
+						isScint = true;
+            std::cout << "Scintillator SIMTORECO " << std::endl;
+					}
           float simFraction = 0.f;
-
           std::vector<std::pair<int, float>>::iterator found;
           if (simTSs[i].seedID() == cPHandle_id) {
             found = std::find_if(detIdSimTSId_Map[hitId].begin(),
@@ -155,7 +159,12 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
                                  detIdSimClusterId_Map[hitId].end(),
                                  [=](const std::pair<int, float>& v) { return v.first == seedIndex; });
             if (found != detIdSimClusterId_Map[hitId].end()) {
-              simFraction = found->second;
+              if(recHitTools_->isSilicon(hitId)){
+                simFraction = found->second;
+              }
+              else{
+                simFraction = 0.f;
+              }
             }
           }
 
@@ -163,6 +172,8 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
           float hitEnergySquared = hitEnergy * hitEnergy;
           float simFractionSquared = simFraction * simFraction;
           denominator_simToReco[i] += simFractionSquared * hitEnergySquared;
+					if(isScint)
+	          std::cout << "\tDenominator Sim To Reco [i]" << denominator_simToReco[i] << std::endl;
           for (size_t j = 0; j < nTracksters; ++j) {
             float recoFraction = 0.f;
 
@@ -181,7 +192,11 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
             numerator_simToReco[i][j] +=
                 std::min(simFractionSquared, (simFraction - recoFraction) * (simFraction - recoFraction)) *
                 hitEnergySquared;
+						if(isScint)
+							std::cout << "\tShared energy [i][j] " << sharedEnergy[i][j];
             sharedEnergy[i][j] += std::min(simFraction, recoFraction) * hitEnergy;
+						if(isScint)
+							std::cout << "\t shared energy sim to reco += "   << std::min(simFraction, recoFraction) * hitEnergy << std::endl;
           }
         }
       }
@@ -195,7 +210,12 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
       const auto& lcsInTrackster = tracksters[i].vertices();
       for (const auto& v : lcsInTrackster) {
         for (const auto& haf : layerClusters[v].hitsAndFractions()) {
+					bool isScint = false;
           const auto hitId = haf.first;
+          if(!recHitTools_->isSilicon(hitId)){
+						isScint = true;
+            std::cout << "Scintillator RECOTOSIM" << std::endl;;
+          }
           float recoFraction = 0.f;
 
           auto found = std::find_if(detIdToRecoTSId_Map[hitId].begin(),
@@ -209,10 +229,11 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
 							 recoFraction = 0.f;
 						 }
 					}
-
           float hitEnergy = hitMap_->find(hitId)->second->energy();
           float hitEnergySquared = hitEnergy * hitEnergy;
           float recoFractionSquared = recoFraction * recoFraction;
+					if(isScint)
+	          std::cout << "\t Hit energy" << hitEnergy << " recoFraction " << recoFraction;
           denominator_recoToSim[i] += recoFractionSquared * hitEnergySquared;
 
           for (size_t j = 0; j < nSimTracksters; ++j) {
@@ -232,6 +253,10 @@ hgcal::association_t TSToSimTSHitLCAssociatorByEnergyScoreImpl::makeConnections(
             numerator_recoToSim[i][j] +=
                 std::min(recoFractionSquared, (simFraction - recoFraction) * (simFraction - recoFraction)) *
                 hitEnergySquared;
+					 if(isScint){
+           	std::cout << "\tDenominator Reco To sim " << denominator_recoToSim[i] << std::endl;
+          	 std::cout << "\tNumerator Reco To sim " << numerator_recoToSim[i][j] << std::endl;
+					 }
           }
         }
       }
