@@ -1431,44 +1431,67 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
     }
   }
 
-  nTrackstersMerged = trackstersmerged.size();
   for (auto trackster_iterator = trackstersmerged.begin(); trackster_iterator != trackstersmerged.end(); ++trackster_iterator) {
+      //per-trackster analysis
+
     tracksters_merged_time.push_back(trackster_iterator->time());
+
     tracksters_merged_timeError.push_back(trackster_iterator->timeError());
+
     tracksters_merged_regressed_energy.push_back(trackster_iterator->regressed_energy());
+
     tracksters_merged_raw_energy.push_back(trackster_iterator->raw_energy());
+
     tracksters_merged_raw_em_energy.push_back(trackster_iterator->raw_em_energy());
+
     tracksters_merged_raw_pt.push_back(trackster_iterator->raw_pt());
+
     tracksters_merged_raw_em_pt.push_back(trackster_iterator->raw_em_pt());
+
     tracksters_merged_barycenter_x.push_back(trackster_iterator->barycenter().x());
+
     tracksters_merged_barycenter_y.push_back(trackster_iterator->barycenter().y());
+
     tracksters_merged_barycenter_z.push_back(trackster_iterator->barycenter().z());
+
     tracksters_merged_barycenter_eta.push_back(trackster_iterator->barycenter().eta());
+
     tracksters_merged_barycenter_phi.push_back(trackster_iterator->barycenter().phi());
+
     tracksters_merged_EV1.push_back(trackster_iterator->eigenvalues()[0]);
+
     tracksters_merged_EV2.push_back(trackster_iterator->eigenvalues()[1]);
+
     tracksters_merged_EV3.push_back(trackster_iterator->eigenvalues()[2]);
+
     tracksters_merged_eVector0_x.push_back((trackster_iterator->eigenvectors()[0]).x());
+
     tracksters_merged_eVector0_y.push_back((trackster_iterator->eigenvectors()[0]).y());
+
     tracksters_merged_eVector0_z.push_back((trackster_iterator->eigenvectors()[0]).z());
+
     tracksters_merged_sigmaPCA1.push_back(trackster_iterator->sigmasPCA()[0]);
+
     tracksters_merged_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
+
     tracksters_merged_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
-    
+
     std::vector<float_t> id_probs;
     for (size_t i = 0; i < 8; i++)
       id_probs.push_back(trackster_iterator->id_probabilities(i));
     tracksters_merged_id_probabilities.push_back(id_probs);
 
-  	std::vector<uint32_t> vertices_indexes;
-  	std::vector<float_t> vertices_x;
-  	std::vector<float_t> vertices_y;
-  	std::vector<float_t> vertices_z;
-  	std::vector<float_t> vertices_time;
-  	std::vector<float_t> vertices_timeErr;
-  	std::vector<float_t> vertices_energy;
-  	std::vector<float_t> vertices_correctedEnergy;
-  	std::vector<float_t> vertices_correctedEnergyUncertainty;
+    // Clusters
+    std::vector<uint32_t> vertices_indexes;
+    std::vector<float_t> vertices_x;
+    std::vector<float_t> vertices_y;
+    std::vector<float_t> vertices_z;
+    std::vector<float_t> vertices_time;
+    std::vector<float_t> vertices_timeErr;
+    std::vector<float_t> vertices_energy;
+    std::vector<float_t> vertices_correctedEnergy;
+    std::vector<float_t> vertices_correctedEnergyUncertainty;
+
     for (auto idx : trackster_iterator->vertices()) {
         vertices_indexes.push_back(idx);
         auto associated_cluster = (*layer_clusters_h)[idx];
