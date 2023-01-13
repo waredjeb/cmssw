@@ -1,0 +1,267 @@
+
+// -*- C++ -*-
+//
+// Package:    RecoHGCal/TrackingParticleEDAnalyzer
+// Class:      TrackingParticleEDAnalyzer
+//
+/**\class TrackingParticleEDAnalyzer TrackingParticleEDAnalyzer.cc RecoHGCal/TrackingParticleEDAnalyzer/plugins/TrackingParticleEDAnalyzer.cc
+
+ Description: [one line class summary]
+
+ Implementation:
+     [Notes on implementation]
+*/
+//
+// Original Author:  Wahid Redjeb
+//         Created:  Mon, 07 Nov 2022 16:46:30 GMT
+//
+//
+
+// system include files
+#include <memory>
+
+// user include files
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "SimDataFormats/Track/interface/SimTrack.h"
+#include "SimDataFormats/Vertex/interface/SimVertex.h"
+#include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
+#include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
+#include "SimDataFormats/Associations/interface/TrackAssociation.h"
+#include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
+using namespace ticl;
+using namespace reco;
+// class declaration
+//
+
+// If the analyzer does not use TFileService, please remove
+// the template argument to the base class so the class inherits
+// from  edm::one::EDAnalyzer<>
+// This will improve performance in multithreaded jobs.
+
+using reco::TrackCollection;
+
+class TrackingParticleEDAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> {
+public:
+  explicit TrackingParticleEDAnalyzer(const edm::ParameterSet&);
+  ~TrackingParticleEDAnalyzer() override;
+
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+private:
+  void beginJob() override;
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  void endJob() override;
+
+  // ----------member data ---------------------------
+  edm::EDGetTokenT<edm::View<reco::Track>> tracksToken_;  //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<std::vector<TrackingParticle>>
+      trackingParticleToken_;                              //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<std::vector<SimTrack>> simTrackToken_;  //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<std::vector<SimVertex>> simVertexToken_;  //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<std::vector<Trackster>>
+      simTrackstersToken_;  //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<std::vector<CaloParticle>>
+      caloParticlesToken_;  //used to select what tracks to read from configuration file
+  edm::EDGetTokenT<std::vector<SimCluster>>
+      simClustersToken_;  //used to select what tracks to read from configuration file
+                          //  std::vector<edm::EDGetTokenT<reco::TrackToTrackingParticleAssociator>> associatorTokens;
+  edm::EDGetTokenT<reco::SimToRecoCollection> associatormapStRsToken_;
+  edm::EDGetTokenT<reco::RecoToSimCollection> associatormapRtSsToken_;
+};
+
+//
+// constants, enums and typedefs
+//
+
+//
+// static data member definitions
+//
+
+//
+// constructors and destructor
+//
+TrackingParticleEDAnalyzer::TrackingParticleEDAnalyzer(const edm::ParameterSet& iConfig)
+    : tracksToken_(consumes<edm::View<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
+      trackingParticleToken_(consumes<std::vector<TrackingParticle>>(iConfig.getParameter<edm::InputTag>("tps"))),
+      simTrackToken_(consumes<std::vector<SimTrack>>(iConfig.getParameter<edm::InputTag>("simTracks"))),
+      simVertexToken_(consumes<std::vector<SimVertex>>(iConfig.getParameter<edm::InputTag>("simVertices"))),
+      simTrackstersToken_(consumes<std::vector<Trackster>>(iConfig.getParameter<edm::InputTag>("simTracksters"))),
+      caloParticlesToken_(consumes<std::vector<CaloParticle>>(iConfig.getParameter<edm::InputTag>("caloParticles"))),
+      simClustersToken_(consumes(iConfig.getParameter<edm::InputTag>("simClusters"))),
+      associatormapStRsToken_(consumes(iConfig.getParameter<edm::InputTag>("tpToTrack"))),
+      associatormapRtSsToken_(consumes(iConfig.getParameter<edm::InputTag>("trackToTp"))) {
+  //now do what ever initialization is needed
+}
+
+TrackingParticleEDAnalyzer::~TrackingParticleEDAnalyzer() {
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
+  //
+  // please remove this method altogether if it would be left empty
+}
+
+//
+// member functions
+//
+
+// ------------ method called for each event  ------------
+void TrackingParticleEDAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  using namespace edm;
+  edm::Handle<std::vector<TrackingParticle>> trackingParticles_h;
+  iEvent.getByToken(trackingParticleToken_, trackingParticles_h);
+  const auto& trackingParticles = *trackingParticles_h;
+
+  edm::Handle<edm::View<reco::Track>> tracks_h;
+  iEvent.getByToken(tracksToken_, tracks_h);
+  const auto& tracks = *tracks_h;
+
+  edm::Handle<std::vector<SimTrack>> simTracks_h;
+  iEvent.getByToken(simTrackToken_, simTracks_h);
+  const auto& simTracks = *simTracks_h;
+
+  edm::Handle<std::vector<SimVertex>> simVertices_h;
+  iEvent.getByToken(simVertexToken_, simVertices_h);
+  const auto& simVertices = *simVertices_h;
+
+  edm::Handle<std::vector<ticl::Trackster>> simTracksters_h;
+  iEvent.getByToken(simTrackstersToken_, simTracksters_h);
+  const auto& simTracksters = *simTracksters_h;
+
+  edm::Handle<std::vector<CaloParticle>> caloParticle_h;
+  iEvent.getByToken(caloParticlesToken_, caloParticle_h);
+  const auto& caloParticles = *caloParticle_h;
+
+  edm::Handle<std::vector<SimCluster>> simClusters_h;
+  iEvent.getByToken(simClustersToken_, simClusters_h);
+  const auto& simClusters = *simClusters_h;
+
+  edm::Handle<RecoToSimCollection> associatorRecoToSim_h;
+  iEvent.getByToken(associatormapRtSsToken_, associatorRecoToSim_h);
+  const auto& associatorRecoToSim = *associatorRecoToSim_h;
+
+  edm::Handle<SimToRecoCollection> associatorSimToReco_h;
+  iEvent.getByToken(associatormapStRsToken_, associatorSimToReco_h);
+  const auto& associatorSimToReco = *associatorSimToReco_h;
+
+  std::cout << " NUMBER OF RECO TRACKS " << tracks.size() << std::endl;
+  std::cout << " NUMBER OF RECO TPS " << trackingParticles.size() << std::endl;
+  std::cout << " NUMBER OF RECO SIMTRACKS " << simTracks.size() << std::endl;
+  std::cout << " NUMBER OF RECO SIMTRACKSTERS " << simTracksters.size() << std::endl;
+  std::cout << " NUMBER OF CALOPARTICLES " << caloParticles.size() << std::endl;
+  std::cout << "##### ASSOCIATIONS MAPS #####" << std::endl;
+  for (size_t i = 0; i < tracks.size(); i++) {
+    auto trackRef = tracks.refAt(i);
+
+    const auto recoToSim_iter = associatorRecoToSim.find(trackRef);
+
+    if (recoToSim_iter != associatorRecoToSim.end()) {
+      const auto& tpAssociated = recoToSim_iter->val;
+
+      for (auto& tpAss : tpAssociated) {
+        auto tp_id = (tpAss.first).get() - (edm::Ref<std::vector<TrackingParticle>>(trackingParticles_h, 0)).get();
+        std::cout << "TP ID " << tp_id << " TRACK ID " << i <<  " QUALITY " << tpAss.second << std::endl;
+        break;
+      }
+    }
+    else{
+      std::cout << "NO ASSOCIATION RECO TO SIM TRACK " << i << std::endl;
+    }
+  }
+
+  // SIM TO RECO
+  //loop over SimTracksters
+  for (size_t i = 0; i < simTracksters.size(); i++) {
+    auto const& simTrackster = simTracksters[i];
+    //skip neutral particles
+    if(simTrackster.id_probability(ticl::Trackster::ParticleType::photon) > 0.5 || simTrackster.id_probability(ticl::Trackster::ParticleType::neutral_pion) > 0.5 || simTrackster.id_probability(ticl::Trackster::ParticleType::neutral_hadron)){
+      continue;
+    }
+    //get SimClusters from SeedIndex of SimTrackster
+    auto const& sc = simClusters[simTrackster.seedIndex()];
+    //get associated g4Tracks associated to SimCluster
+    auto const& scG4Track = sc.g4Tracks()[0];
+    std::cout << "TRACK ID " << scG4Track.trackId() << std::endl;
+    // look for TrackingParticle that contains the simTrack
+    int tpIndex = -99;
+    for (size_t j = 0; j < trackingParticles.size(); j++) {
+      for (auto const& simTrackTP : trackingParticles[j].g4Tracks()) {
+
+        if (scG4Track.vertIndex() == -1) {
+          continue;
+        }
+        //use simVertex to see if the SimTrack belongs to the TP
+        auto& sVsc = simVertices[scG4Track.vertIndex()].position();
+        if (simTrackTP.vertIndex() == -1) {
+          continue;
+        }
+        auto& sVtp = simVertices[simTrackTP.vertIndex()].position();
+        if (sVsc == sVtp) {
+          std::cout << "TRACK ID SC " << scG4Track.trackId() << " TRACK ID TP " << simTrackTP.trackId() << std::endl;
+          tpIndex = j;
+        }
+      }
+    }
+    if (tpIndex != -99) {
+      auto const& tp = trackingParticles[tpIndex];
+
+      const auto simToReco_iter = associatorSimToReco.find(edm::Ref<std::vector<TrackingParticle>>(trackingParticles_h, tpIndex));
+      if(simToReco_iter != associatorSimToReco.end()){
+        const auto& tracksAssociated = simToReco_iter->val;
+        for(auto const& trackAss : tracksAssociated){
+          auto track_id = (trackAss.first).get() - (edm::Ref<edm::View<reco::Track>>(tracks_h, 0)).get();
+          std::cout << "SimTrackster " << i << " TRACK ID " << track_id << "TP " << i + tpIndex << " QUALITY " << trackAss.second << std::endl;
+          break;
+        }
+      }else{
+        std::cout << " NO ASSOCIATION SIM TO RECO SIMTRACKSTER " << i  << std::endl;
+      }
+    }
+  }
+}
+
+// ------------ method called once each job just before starting event loop  ------------
+void TrackingParticleEDAnalyzer::beginJob() {
+  // please remove this method if not needed
+}
+
+// ------------ method called once each job just after ending the event loop  ------------
+void TrackingParticleEDAnalyzer::endJob() {
+  // please remove this method if not needed
+}
+
+// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+void TrackingParticleEDAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  //The following says we do not know what parameters are allowed so do no validation
+  // Please change this to state exactly what you do use, even if it is no parameters
+  edm::ParameterSetDescription desc;
+  desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
+  desc.add<edm::InputTag>("tps", edm::InputTag("mix", "MergedTrackTruth"));
+  desc.add<edm::InputTag>("simTracks", edm::InputTag("g4SimHits"));
+  desc.add<edm::InputTag>("simVertices", edm::InputTag("g4SimHits"));
+  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
+  desc.add<edm::InputTag>("caloParticles", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("simClusters", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("tpToTrack", edm::InputTag("trackingParticleRecoTrackAsssociation"));
+  desc.add<edm::InputTag>("trackToTp", edm::InputTag("trackingParticleRecoTrackAsssociation"));
+  descriptions.add("trackingParticleAnalyzer", desc);
+
+  //Specify that only 'tracks' is allowed
+  //To use, remove the default given above and uncomment below
+  //ParameterSetDescription desc;
+  //desc.addUntracked<edm::InputTag>("tracks","ctfWithMaterialTracks");
+  //descriptions.addWithDefaultLabel(desc);
+}
+
+//define this as a plug-in
+DEFINE_FWK_MODULE(TrackingParticleEDAnalyzer);

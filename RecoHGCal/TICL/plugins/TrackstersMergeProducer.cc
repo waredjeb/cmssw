@@ -180,6 +180,7 @@ TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
       eidNClusters_(ps.getParameter<int>("eid_n_clusters")),
       eidSession_(nullptr) {
   produces<std::vector<Trackster>>();
+  produces<std::vector<int>>();
   produces<std::vector<TICLCandidate>>();
 
   std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
@@ -356,6 +357,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
                tracksterMerge.id_probability(Trackster::ParticleType::electron) <
            0.5;
   };
+  auto resultTrackstersMergedTracks = std::make_unique<std::vector<int>>(resultTrackstersMerged->size(), -1);
   for (size_t i = 0; i < resultTrackstersMerged->size(); i++) {
     auto const &tm = (*resultTrackstersMerged)[i];
     auto &cand = (*resultCandidates)[i];
@@ -363,6 +365,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
     cand.setIdProbabilities(tm.id_probabilities());
     //charged candidates
     if (!cand.trackPtr().isNull()) {
+      auto track_idx = cand.trackPtr().get() - (edm::Ptr<reco::Track>(track_h, 0)).get();
       auto pdgId = isHad(tm) ? 211 : 11;
       auto const &tk = cand.trackPtr().get();
       cand.setPdgId(pdgId * tk->charge());
@@ -374,6 +377,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
                                  regrE * tk->momentum().unit().z(),
                                  regrE);
       cand.setP4(p4);
+      (*resultTrackstersMergedTracks)[i] = track_idx;
     } else {  // neutral candidates
       auto pdgId = isHad(tm) ? 130 : 22;
       cand.setPdgId(pdgId);
@@ -401,6 +405,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   assignTimeToCandidates(*resultCandidates);
 
   evt.put(std::move(resultTrackstersMerged));
+  evt.put(std::move(resultTrackstersMergedTracks));
   evt.put(std::move(resultCandidates));
 }
 
