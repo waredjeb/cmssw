@@ -1078,21 +1078,21 @@ void Ntupler::beginJob() {
   associations_tree_->Branch("Mergetracksters_simToReco_CP_score", &MergeTracksters_simToReco_CP_score);
   associations_tree_->Branch("Mergetracksters_simToReco_CP_sharedE", &MergeTracksters_simToReco_CP_sharedE);
 
-  cluster_tree_->Branch("seedID", &cluster_seedID);
+//  cluster_tree_->Branch("seedID", &cluster_seedID);
   cluster_tree_->Branch("energy", &cluster_energy);
-  cluster_tree_->Branch("correctedEnergy", &cluster_correctedEnergy);
-  cluster_tree_->Branch("correctedEnergyUncertainty", &cluster_correctedEnergyUncertainty);
+//  cluster_tree_->Branch("correctedEnergy", &cluster_correctedEnergy);
+//  cluster_tree_->Branch("correctedEnergyUncertainty", &cluster_correctedEnergyUncertainty);
   cluster_tree_->Branch("position_x", &cluster_position_x);
   cluster_tree_->Branch("position_y", &cluster_position_y);
   cluster_tree_->Branch("position_z", &cluster_position_z);
   cluster_tree_->Branch("position_eta", &cluster_position_eta);
   cluster_tree_->Branch("position_phi", &cluster_position_phi);
-  cluster_tree_->Branch("cluster_layer_id", &cluster_layer_id);
-  cluster_tree_->Branch("cluster_type", &cluster_type);
-  cluster_tree_->Branch("cluster_time", &cluster_time);
-  cluster_tree_->Branch("cluster_timeErr", &cluster_timeErr);
-  cluster_tree_->Branch("cluster_local_density", &cluster_ld);
-  cluster_tree_->Branch("cluster_radius", &cluster_radius);
+//  cluster_tree_->Branch("cluster_layer_id", &cluster_layer_id);
+//  cluster_tree_->Branch("cluster_type", &cluster_type);
+//  cluster_tree_->Branch("cluster_time", &cluster_time);
+//  cluster_tree_->Branch("cluster_timeErr", &cluster_timeErr);
+//  cluster_tree_->Branch("cluster_local_density", &cluster_ld);
+//  cluster_tree_->Branch("cluster_radius", &cluster_radius);
   cluster_tree_->Branch("cluster_number_of_hits", &cluster_number_of_hits);
 
   tracks_tree_->Branch("track_ev", &track_ev);
@@ -1983,7 +1983,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
       track_hgcal_py.push_back(tracks_propagated_py[i]);
 
       track_hgcal_pz.push_back(tracks_propagated_pz[i]);
-      std::cout << "Ntupler GlobalMomentum " << tracks_propagated_px[i] << " " << tracks_propagated_py[i] << " " << tracks_propagated_pz[i] << std::endl;
+      //std::cout << "Ntupler GlobalMomentum " << tracks_propagated_px[i] << " " << tracks_propagated_py[i] << " " << tracks_propagated_pz[i] << std::endl;
       track_pt.push_back(tracks[i].pt());
       track_charge.push_back(tracks[i].charge());
 
