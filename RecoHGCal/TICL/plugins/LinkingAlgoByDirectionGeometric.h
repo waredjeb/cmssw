@@ -15,6 +15,10 @@
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 
+#include "PhysicsTools/TensorFlow/interface/TfGraphRecord.h"
+#include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
+#include "PhysicsTools/TensorFlow/interface/TfGraphDefWrapper.h"
+
 #include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
 
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
@@ -38,31 +42,80 @@ namespace ticl {
                         const edm::ValueMap<float> &,
                         const std::vector<reco::Muon> &,
                         const edm::Handle<std::vector<Trackster>>,
+                        const std::vector<reco::CaloCluster> &layerClusters,
+                        const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                        std::vector<Trackster> &tracksterMergeCollectionResult,
                         std::vector<TICLCandidate> &,
-                        std::vector<TICLCandidate> &) override;
+                        std::vector<TICLCandidate> &,
+                        const EnergyRegressionAndIDModel &,
+                        std::vector<float> &,
+                        std::vector<float> &,
+                        std::vector<float> &,
+                        std::vector<int> &,
+                        std::vector<double>& prop_tracks_x,
+                        std::vector<double>& prop_tracks_y,
+                        std::vector<double>& prop_tracks_z,
+                        std::vector<double>& prop_tracks_eta,
+                        std::vector<double>& prop_tracks_phi,
+                        std::vector<double>& prop_tracks_px,
+                        std::vector<double>& prop_tracks_py,
+                        std::vector<double>& prop_tracks_pz,
+                        std::vector<bool>& masked_track) override;
+
+      
 
     static void fillPSetDescription(edm::ParameterSetDescription &desc);
 
   private:
     typedef math::XYZVector Vector;
+    typedef std::vector<double> Vec;
 
     void buildLayers();
 
-    math::XYZVector propagateTrackster(const Trackster &t,
-                                       const unsigned idx,
-                                       float zVal,
-                                       std::array<TICLLayerTile, 2> &tracksterTiles);
+    void fillTrackstersTile(const std::vector<Trackster> &t, std::array<TICLLayerTile, 2> &tracksterTiles);
 
-    void findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
+    void fillTracksTile(const std::vector<std::pair<Vector, unsigned>> &propTracks,
+                        std::array<TICLLayerTile, 2> &tracksTiles);
+
+    void findSmallTrackstersInWindow(const std::vector<Trackster> &tracksters,
+                                     const std::vector<int> &maskSmall,
+                                     const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                     const float delta,
+                                     const float separation,
+                                     std::vector<std::vector<unsigned>> &resultCollection,
+                                     std::vector<float> &distancesVec,
+                                     std::vector<int> &distancesVecIdx,
+                                     bool useMask);
+    void findTrackstersInWindow(const std::vector<Trackster> &tracksters,
                                 const std::array<TICLLayerTile, 2> &tracksterTiles,
-                                const std::vector<Vector> &tracksterPropPoints,
-                                float delta,
-                                unsigned trackstersSize,
+                                const float delta,
+                                const float separation,
                                 std::vector<std::vector<unsigned>> &resultCollection,
+                                std::vector<float> &distancesVec,
+                                std::vector<int> &distancesVecIdx,
                                 bool useMask);
 
-    bool timeAndEnergyCompatible(float &total_raw_energy,
-                                 const reco::Track &track,
+    void tracksterToTrackLinking(std::vector<Trackster> &tracksterMergeCollection,
+                                 std::vector<std::vector<unsigned>> &tracksterMergeCollectionIndices,
+                                 const std::vector<Trackster> &trackster,
+                                 const edm::Handle<std::vector<Trackster>> tsH,
+                                 const std::vector<reco::Track> &tracks,
+                                 const edm::Handle<std::vector<reco::Track>> tkH,
+                                 const edm::ValueMap<float> &tkTime,
+                                 const edm::ValueMap<float> &tkTimeErr,
+                                 const edm::ValueMap<float> &tkTimeQual,
+                                 std::vector<std::pair<Vector, unsigned>> &propTracks,
+                                 std::array<TICLLayerTile, 2> &tracksterMergeTiles,
+                                 const float delta,
+                                 const float separation,
+                                 std::vector<TICLCandidate> &candidate,
+                                 std::vector<TICLCandidate> &chargedCandidatesFromTracks,
+                                 std::vector<float> &,
+                                 std::vector<float> &);
+
+    bool timeCompatible(const Trackster &, const Trackster &);
+
+    bool timeAndEnergyCompatible(const reco::Track &track,
                                  const Trackster &trackster,
                                  const float &tkTime,
                                  const float &tkTimeErr,
@@ -75,6 +128,9 @@ namespace ticl {
                          float &energy_in_candidate,
                          TICLCandidate &candidate);
 
+    void energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
+                               const tensorflow::Session *eidSession,
+                               std::vector<Trackster> &tracksters) const;
     void dumpLinksFound(std::vector<std::vector<unsigned>> &resultCollection, const char *label) const;
 
     const float tkEnergyCut_ = 2.0f;
@@ -83,7 +139,9 @@ namespace ticl {
     const float del_tk_ts_int_;
     const float del_ts_em_had_;
     const float del_ts_had_had_;
-
+    const float separationSmall_threshold_;
+    const float separation_threshold_;
+    const int maxDepth_;
     const float timing_quality_threshold_;
 
     const StringCutObjectSelector<reco::Track> cutTk_;
