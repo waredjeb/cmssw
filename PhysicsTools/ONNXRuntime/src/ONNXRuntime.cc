@@ -119,6 +119,7 @@ namespace cms::Ort {
         }
       }
       auto expected_len = std::accumulate(input_dims.begin(), input_dims.end(), 1, std::multiplies<int64_t>());
+
       if (expected_len != (int64_t)value->size()) {
         throw cms::Exception("RuntimeError")
             << "Input array " << name << " has a wrong size of " << value->size() << ", expected " << expected_len;

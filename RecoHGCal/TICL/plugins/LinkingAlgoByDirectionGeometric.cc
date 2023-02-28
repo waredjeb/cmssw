@@ -10,8 +10,10 @@
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 
 #include "RecoParticleFlow/PFProducer/interface/PFMuonAlgo.h"
+#include "DataFormats/Math/interface/Vector3D.h"
 
 using namespace ticl;
+using namespace cms::Ort;
 
 LinkingAlgoByDirectionGeometric::LinkingAlgoByDirectionGeometric(const edm::ParameterSet &conf)
     : LinkingAlgoBase(conf),
@@ -188,14 +190,43 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
                                                      const std::vector<reco::Muon> &muons,
                                                      const edm::Handle<std::vector<Trackster>> tsH,
                                                      std::vector<TICLCandidate> &resultLinked,
-                                                     std::vector<TICLCandidate> &chargedHadronsFromTk) {
+                                                     std::vector<TICLCandidate> &chargedHadronsFromTk,
+                                                     std::vector<double>& prop_tracks_x,
+                                                     std::vector<double>& prop_tracks_y,
+                                                     std::vector<double>& prop_tracks_z,
+                                                     std::vector<double>& prop_tracks_eta,
+                                                     std::vector<double>& prop_tracks_phi,
+                                                     std::vector<double>& prop_tracks_px,
+                                                     std::vector<double>& prop_tracks_py,
+                                                     std::vector<double>& prop_tracks_pz,
+                                                     std::vector<bool>& masked_tracks, 
+                                                     const TICLGraph &ticlGraph,
+                                                     const std::vector<reco::CaloCluster>& layerClusters,
+                                                     const ONNXRuntime *cache) {
+  constexpr double mpion = 0.13957;
+  constexpr float mpion2 = mpion * mpion;
+
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
 
   auto bFieldProd = bfield_.product();
   const Propagator &prop = (*propagator_);
-
-  std::array<TICLLayerTile, 2> tracksterPropTiles = {};  // all Tracksters
+  std::cout << "LINKING ALGO GEOMETRIC " << std::endl;
+  // propagated point collections
+  // elements in the propagated points collecions are used
+  // to look for potential linkages in the appropriate tiles
+  std::vector<std::pair<Vector, unsigned>> trackPColl;     // propagated track points and index of track in collection
+  std::vector<std::pair<Vector, unsigned>> tkPropIntColl;  // tracks propagated to lastLayerEE
+  std::vector<std::pair<Vector, unsigned>> tsPropIntColl;  // Tracksters in CE-E, propagated to lastLayerEE
+  std::vector<std::pair<Vector, unsigned>> tsHadPropIntColl;  // Tracksters in CE-H, propagated to lastLayerEE
+  trackPColl.reserve(tracks.size());
+  tkPropIntColl.reserve(tracks.size());
+  tsPropIntColl.reserve(tracksters.size());
+  tsHadPropIntColl.reserve(tracksters.size());
+  // tiles, element 0 is bw, 1 is fw
+  std::array<TICLLayerTile, 2> tracksterPropTiles = {};  // all Tracksters, propagated to layer 1
+  std::array<TICLLayerTile, 2> tsPropIntTiles = {};      // all Tracksters, propagated to lastLayerEE
+  std::array<TICLLayerTile, 2> tsHadPropIntTiles = {};   // Tracksters in CE-H, propagated to lastLayerEE
 
   // auto isHadron = [&](const Trackster &t) -> bool {
   //   auto boundary_z = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
@@ -224,16 +255,34 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
           << "track " << i << " - eta " << tk.eta() << " phi " << tk.phi() << " time " << tkTime[reco::TrackRef(tkH, i)]
           << " time qual " << tkTimeQual[reco::TrackRef(tkH, i)] << "  muid " << muId << "\n";
 
-    if (!cutTk_((tk)) or muId != -1)
+    if (!cutTk_((tk)) or muId != -1){
+      masked_tracks[i] = false;
+      prop_tracks_x.push_back(999);
+      prop_tracks_y.push_back(999);
+      prop_tracks_z.push_back(999);
+      prop_tracks_eta.push_back(999);
+      prop_tracks_phi.push_back(999);
+      prop_tracks_px.push_back(999);
+      prop_tracks_py.push_back(999);
+      prop_tracks_pz.push_back(999);
       continue;
-
+    }
     // record tracks that can be used to make a ticlcandidate
     candidateTrackIds.push_back(i);
 
     // don't consider tracks below 2 GeV for linking
-    if (std::sqrt(tk.p() * tk.p() + ticl::mpion2) < tkEnergyCut_)
+    if (std::sqrt(tk.p() * tk.p() + ticl::mpion2) < tkEnergyCut_){
+      masked_tracks[i] = false;
+      prop_tracks_x.push_back(999);
+      prop_tracks_y.push_back(999);
+      prop_tracks_z.push_back(999);
+      prop_tracks_eta.push_back(999);
+      prop_tracks_phi.push_back(999);
+      prop_tracks_px.push_back(999);
+      prop_tracks_py.push_back(999);
+      prop_tracks_pz.push_back(999);
       continue;
-
+		}
     int iSide = int(tk.eta() > 0);
     const auto &fts = trajectoryStateTransform::outerFreeState((tk), bFieldProd);
     // to the HGCal front
@@ -241,6 +290,19 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
     if (tsos.isValid()) {
       Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
       trackPColl.emplace_back(trackP, i);
+      prop_tracks_x.push_back(trackP.x());
+      prop_tracks_y.push_back(trackP.y());
+      prop_tracks_z.push_back(trackP.z());
+      prop_tracks_eta.push_back(trackP.eta());
+      prop_tracks_phi.push_back(trackP.phi());
+      prop_tracks_px.push_back(tsos.globalMomentum().x());
+      prop_tracks_py.push_back(tsos.globalMomentum().y());
+      prop_tracks_pz.push_back(tsos.globalMomentum().z());
+      masked_tracks[i] = true;
+      trackPColl.emplace_back(trackP, i);
+    }
+    else{
+      masked_tracks[i] = false;
     }
     // to lastLayerEE
     const auto &tsos_int = prop.propagate(fts, interfaceDisk_[iSide]->surface());
