@@ -63,11 +63,16 @@ namespace ticl {
 
     void buildLayers();
 
-    void fillTrackstersTile(const std::vector<Trackster> &t, std::array<TICLLayerTile, 2> &tracksterTiles);
+    math::XYZVector propagateTrackster(const Trackster &t,
+                                       const unsigned idx,
+                                       float zVal,
+                                       std::array<TICLLayerTile, 2> &tracksterTiles);
 
-    void findTrackstersInWindow(const std::vector<Trackster> &tracksters,
+    void findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
                                 const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                const std::vector<Vector> &tracksterPropPoints,
                                 float delta,
+                                unsigned trackstersSize,
                                 std::vector<std::vector<unsigned>> &resultCollection,
                                 bool useMask);
 
