@@ -12,6 +12,7 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
@@ -35,7 +36,9 @@ namespace ticl {
                             const edm::ESHandle<MagneticField> bfieldH,
                             const edm::ESHandle<Propagator> propH) = 0;
 
-    virtual void linkTracksters(const edm::Handle<std::vector<reco::Track>>,
+    virtual void linkTracksters(const std::vector<TICLGraph> &trackGraphs,
+//                                const std::vector<TICLGraph> &tracksterGraphs,
+                                const edm::Handle<std::vector<reco::Track>>,
                                 const edm::ValueMap<float> &,
                                 const edm::ValueMap<float> &,
                                 const edm::ValueMap<float> &,
@@ -51,15 +54,15 @@ namespace ticl {
                                 std::vector<float> &,
                                 std::vector<float> &,
                                 std::vector<int> &,
-                                std::vector<double>& prop_tracks_x,
-                                std::vector<double>& prop_tracks_y,
-                                std::vector<double>& prop_tracks_z,
-                                std::vector<double>& prop_tracks_eta,
-                                std::vector<double>& prop_tracks_phi,
-                                std::vector<double>& prop_tracks_px,
-                                std::vector<double>& prop_tracks_py,
-                                std::vector<double>& prop_tracks_pz,
-                                std::vector<bool>& masked_track) = 0;
+                                std::vector<double> &prop_tracks_x,
+                                std::vector<double> &prop_tracks_y,
+                                std::vector<double> &prop_tracks_z,
+                                std::vector<double> &prop_tracks_eta,
+                                std::vector<double> &prop_tracks_phi,
+                                std::vector<double> &prop_tracks_px,
+                                std::vector<double> &prop_tracks_py,
+                                std::vector<double> &prop_tracks_pz,
+                                std::vector<bool> &masked_track) = 0;
 
     static void fillPSetDescription(edm::ParameterSetDescription &desc) { desc.add<int>("algo_verbosity", 0); };
 

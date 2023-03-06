@@ -45,10 +45,10 @@ public:
                                   const std::vector<reco::CaloCluster>& lcs) {
     auto N = trackster.vertices().size();
     for (size_t i_lc = 0; i_lc < N; i_lc++) {
-      if(lcs[trackster.vertices(i_lc)].hitsAndFractions().size() > 1){
-      result_mask[trackster.vertices(i_lc)] =
-          1. / trackster.vertex_multiplicity(i_lc);  // make the lcs available weighted by the vertex_multiplicity.
-      test[trackster.vertices(i_lc)] = 1.;
+      if (lcs[trackster.vertices(i_lc)].hitsAndFractions().size() > 1) {
+        result_mask[trackster.vertices(i_lc)] =
+            1. / trackster.vertex_multiplicity(i_lc);  // make the lcs available weighted by the vertex_multiplicity.
+        test[trackster.vertices(i_lc)] = 1.;
       }
     }
   }
@@ -97,7 +97,7 @@ FineSimFineSimTrackstersProducer::FineSimFineSimTrackstersProducer(const edm::Pa
       seeding_regions_token_(
           consumes<std::vector<TICLSeedingRegion>>(ps.getParameter<edm::InputTag>("seeding_regions"))),
       itername_(ps.getParameter<std::string>("itername")),
-      geom_token_(esConsumes()){
+      geom_token_(esConsumes()) {
   auto plugin = ps.getParameter<std::string>("patternRecognitionBy");
   auto pluginMIP = ps.getParameter<std::string>("patternRecognitionMIPBy");
   auto pluginPSet = ps.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + plugin);
@@ -139,7 +139,7 @@ FineSimFineSimTrackstersProducer::FineSimFineSimTrackstersProducer(const edm::Pa
   produces<std::vector<float>>("layerClustersRadius");
   produces<std::vector<unsigned int>>("layerClustersSize");
   produces<std::vector<unsigned int>>("layerClustersType");
-//  produces<std::vector<int>>("tracksterSeeds");
+  //  produces<std::vector<int>>("tracksterSeeds");
 }
 
 void FineSimFineSimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -214,29 +214,29 @@ void FineSimFineSimTrackstersProducer::produce(edm::Event& evt, const edm::Event
     computeSingleTracksterMask(
         fine_input_cluster_mask, test_fine_input_cluster_mask, simTracksters[i_st], layerClusters);
     std::vector<float> output_mask(fine_input_cluster_mask);
-//    auto count_av = 0;
-//    auto count_av_2 =
-//        std::count_if(fine_input_cluster_mask.begin(), fine_input_cluster_mask.end(), [](float i) { return i > 0.; });
-//    for (size_t f_i = 0; f_i < fine_input_cluster_mask.size(); ++f_i) {
-//      if (fine_input_cluster_mask[f_i] > 0.) {
-//        count_av += 1;
-//      }
-//    }
-//    std::cout << "INITIAL LCs " << count_av << std::endl;
-//    if (count_av != static_cast<int>(simTracksters[i_st].vertices().size()) ||
-//        count_av_2 != static_cast<int>(simTracksters[i_st].vertices().size())) {
-//      std::cout << "DIFFERENCE " << count_av - static_cast<int>(simTracksters[i_st].vertices().size()) << std::endl;
-//      std::cout << "DIFFERENCE_2  " << count_av_2 - static_cast<int>(simTracksters[i_st].vertices().size())
-//                << std::endl;
-//
-//      for (size_t j = 0; j < simTracksters[i_st].vertices().size(); ++j) {
-//        auto lc_id = simTracksters[i_st].vertices(j);
-//        if (!(fine_input_cluster_mask[lc_id] > 0.)) {
-//          std::cout << " Mask " << fine_input_cluster_mask[lc_id] << " Vertex Multiplicity "
-//                    << simTracksters[i_st].vertex_multiplicity(j) << std::endl;
-//        }
-//      }
-//    }
+    //    auto count_av = 0;
+    //    auto count_av_2 =
+    //        std::count_if(fine_input_cluster_mask.begin(), fine_input_cluster_mask.end(), [](float i) { return i > 0.; });
+    //    for (size_t f_i = 0; f_i < fine_input_cluster_mask.size(); ++f_i) {
+    //      if (fine_input_cluster_mask[f_i] > 0.) {
+    //        count_av += 1;
+    //      }
+    //    }
+    //    std::cout << "INITIAL LCs " << count_av << std::endl;
+    //    if (count_av != static_cast<int>(simTracksters[i_st].vertices().size()) ||
+    //        count_av_2 != static_cast<int>(simTracksters[i_st].vertices().size())) {
+    //      std::cout << "DIFFERENCE " << count_av - static_cast<int>(simTracksters[i_st].vertices().size()) << std::endl;
+    //      std::cout << "DIFFERENCE_2  " << count_av_2 - static_cast<int>(simTracksters[i_st].vertices().size())
+    //                << std::endl;
+    //
+    //      for (size_t j = 0; j < simTracksters[i_st].vertices().size(); ++j) {
+    //        auto lc_id = simTracksters[i_st].vertices(j);
+    //        if (!(fine_input_cluster_mask[lc_id] > 0.)) {
+    //          std::cout << " Mask " << fine_input_cluster_mask[lc_id] << " Vertex Multiplicity "
+    //                    << simTracksters[i_st].vertex_multiplicity(j) << std::endl;
+    //        }
+    //      }
+    //    }
     auto tmp_result = std::make_unique<std::vector<Trackster>>();
     auto tmp_tracksterSeeds = std::make_unique<std::vector<int>>();
     auto tmp_resultMIP = std::make_unique<std::vector<Trackster>>();
@@ -336,12 +336,8 @@ void FineSimFineSimTrackstersProducer::produce(edm::Event& evt, const edm::Event
                                                                                   seeding_regions,
                                                                                   tfSession_);
 
-      typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs outputMIP(*tmp_resultMIP,
-                                                                              *tmp_tracksterSeedsMIP,
-                                                                              *clustersLocalDensity,
-                                                                              *clustersRadius,
-                                                                              *clustersSize,
-                                                                              *clustersType);
+      typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Outputs outputMIP(
+          *tmp_resultMIP, *tmp_tracksterSeedsMIP, *clustersLocalDensity, *clustersRadius, *clustersSize, *clustersType);
       myAlgoMIP_->makeTracksters(inputMIP, outputMIP, seedToTrackstersAssociation);
     }
 
@@ -359,33 +355,30 @@ void FineSimFineSimTrackstersProducer::produce(edm::Event& evt, const edm::Event
     // }
 
     // (*simTracksterToFineSimTracksters)[i_st] = fine_sim_trackster_index;
-    for(auto& tmp_t : *tmp_result){
+    for (auto& tmp_t : *tmp_result) {
       tmp_t.setSeed(simTracksters[i_st].seedID(), simTracksters[i_st].seedIndex());
     }
     result->insert(result->end(), tmp_result->begin(), tmp_result->end());
     resultMIP->insert(resultMIP->end(), tmp_resultMIP->begin(), tmp_resultMIP->end());
     tracksterSeedsMIP->insert(tracksterSeedsMIP->end(), tmp_tracksterSeedsMIP->begin(), tmp_tracksterSeedsMIP->end());
     tracksterSeeds->insert(tracksterSeeds->end(), tmp_tracksterSeeds->begin(), tmp_tracksterSeeds->end());
-
   }
-// end simtracksters loop
+  // end simtracksters loop
 
-assignPCAtoTracksters(*result,
-                            layerClusters,
-                            layerClustersTimes,
-                            rhtools_.getPositionLayer(rhtools_.lastLayerEE(false), false).z());
+  assignPCAtoTracksters(
+      *result, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE(false), false).z());
 
-// run energy regression and ID
-// energyRegressionAndID(layerClusters, result);
+  // run energy regression and ID
+  // energyRegressionAndID(layerClusters, result);
 
-evt.put(std::move(result), "fine");
-evt.put(std::move(resultMIP), "fineMIP");
-evt.put(std::move(simTracksterToFineSimTracksters), "fine");
-//evt.put(std::move(tracksterSeeds), "fine");
-//evt.put(std::move(tracksterSeedsMIP), "fineMIP");
-evt.put(std::move(clustersLocalDensity), "layerClustersLocalDensity");
-evt.put(std::move(clustersRadius), "layerClustersRadius");
-evt.put(std::move(clustersSize), "layerClustersSize");
-evt.put(std::move(clustersType), "layerClustersType");
-//evt.put(std::move(tracksterSeeds), "tracksterSeeds");
+  evt.put(std::move(result), "fine");
+  evt.put(std::move(resultMIP), "fineMIP");
+  evt.put(std::move(simTracksterToFineSimTracksters), "fine");
+  //evt.put(std::move(tracksterSeeds), "fine");
+  //evt.put(std::move(tracksterSeedsMIP), "fineMIP");
+  evt.put(std::move(clustersLocalDensity), "layerClustersLocalDensity");
+  evt.put(std::move(clustersRadius), "layerClustersRadius");
+  evt.put(std::move(clustersSize), "layerClustersSize");
+  evt.put(std::move(clustersType), "layerClustersType");
+  //evt.put(std::move(tracksterSeeds), "tracksterSeeds");
 }

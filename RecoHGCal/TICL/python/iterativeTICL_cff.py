@@ -30,7 +30,7 @@ ticlTrackstersMerge = _trackstersMergeProducer.clone(
 		maxDepth = cms.int32(10),
     track_time_quality_threshold = cms.double(0.5),
     algo_verbosity = cms.int32(0),
-    type = cms.string('LinkingAlgoByDirectionGeometric')
+    type = cms.string('LinkingAlgoByLouvainAlgo')
   
   )
 )

@@ -14,6 +14,7 @@
 #include "DataFormats/Math/interface/Vector3D.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 
 #include "PhysicsTools/TensorFlow/interface/TfGraphRecord.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
@@ -36,7 +37,9 @@ namespace ticl {
                     const edm::ESHandle<MagneticField> bfieldH,
                     const edm::ESHandle<Propagator> propH) override;
 
-    void linkTracksters(const edm::Handle<std::vector<reco::Track>>,
+    void linkTracksters(const std::vector<TICLGraph> &trackGraphs,
+//                        const std::vector<TICLGraph> &tracksterGraphs,
+                        const edm::Handle<std::vector<reco::Track>>,
                         const edm::ValueMap<float> &,
                         const edm::ValueMap<float> &,
                         const edm::ValueMap<float> &,
@@ -52,17 +55,15 @@ namespace ticl {
                         std::vector<float> &,
                         std::vector<float> &,
                         std::vector<int> &,
-                        std::vector<double>& prop_tracks_x,
-                        std::vector<double>& prop_tracks_y,
-                        std::vector<double>& prop_tracks_z,
-                        std::vector<double>& prop_tracks_eta,
-                        std::vector<double>& prop_tracks_phi,
-                        std::vector<double>& prop_tracks_px,
-                        std::vector<double>& prop_tracks_py,
-                        std::vector<double>& prop_tracks_pz,
-                        std::vector<bool>& masked_track) override;
-
-      
+                        std::vector<double> &prop_tracks_x,
+                        std::vector<double> &prop_tracks_y,
+                        std::vector<double> &prop_tracks_z,
+                        std::vector<double> &prop_tracks_eta,
+                        std::vector<double> &prop_tracks_phi,
+                        std::vector<double> &prop_tracks_px,
+                        std::vector<double> &prop_tracks_py,
+                        std::vector<double> &prop_tracks_pz,
+                        std::vector<bool> &masked_track) override;
 
     static void fillPSetDescription(edm::ParameterSetDescription &desc);
 

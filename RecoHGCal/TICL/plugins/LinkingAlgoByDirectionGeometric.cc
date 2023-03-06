@@ -563,7 +563,7 @@ void DFSVisits(std::vector<std::vector<unsigned>> &graph,
                 std::end(thisTrackster.vertex_multiplicity()),
                 std::back_inserter(outTrackster.vertex_multiplicity()));
       //std::cout << tabs << "Visiting " << *j << " Energy " << thisTrackster.raw_energy() << " Position "
-        //        << thisTrackster.barycenter() << std::endl;
+      //        << thisTrackster.barycenter() << std::endl;
 
       if (!secondStep) {
         outTracksterIndices.push_back(*j);
@@ -612,7 +612,7 @@ void DFS(std::vector<std::vector<unsigned>> &graph,
 
       int currentDepth = 0;
       //std::cout << " -- Trackster " << i << " Energy " << outTrackster.raw_energy() << " Position "
-        //        << outTrackster.barycenter() << std::endl;
+      //        << outTrackster.barycenter() << std::endl;
       DFSVisits(graph,
                 visits,
                 outTrackster,
@@ -652,7 +652,7 @@ void DFSFinal(std::vector<std::vector<unsigned>> &graph,
       Trackster outTrackster = tracksters[i];
       std::vector<unsigned> outTracksterIndices = previousCollectionIndices[i];
       //std::cout << " -- Trackster " << i << " Energy " << outTrackster.raw_energy() << " Position "
-        //        << outTrackster.barycenter() << std::endl;
+      //        << outTrackster.barycenter() << std::endl;
       auto currentDepth = 0;
       DFSVisits(graph,
                 visits,
@@ -695,7 +695,9 @@ void findSmallTracksters(const std::vector<Trackster> &tracksters,
   }
 }
 
-void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
+void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph> &graphsFromTrack,
+                                                    // const std::vector<TICLGraph> &graphFromTracksters,
+                                                     const edm::Handle<std::vector<reco::Track>> tkH,
                                                      const edm::ValueMap<float> &tkTime,
                                                      const edm::ValueMap<float> &tkTimeErr,
                                                      const edm::ValueMap<float> &tkTimeQual,
@@ -711,16 +713,15 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
                                                      std::vector<float> &separations2_ETCompatible_for_ntuples,
                                                      std::vector<float> &distancesVec,
                                                      std::vector<int> &distancesVecIdx,
-                                                     std::vector<double>& prop_tracks_x,
-                                                     std::vector<double>& prop_tracks_y,
-                                                     std::vector<double>& prop_tracks_z,
-                                                     std::vector<double>& prop_tracks_eta,
-                                                     std::vector<double>& prop_tracks_phi,
-                                                     std::vector<double>& prop_tracks_px,
-                                                     std::vector<double>& prop_tracks_py,
-                                                     std::vector<double>& prop_tracks_pz,
-                                                     std::vector<bool>& masked_tracks
-                                                     ) {
+                                                     std::vector<double> &prop_tracks_x,
+                                                     std::vector<double> &prop_tracks_y,
+                                                     std::vector<double> &prop_tracks_z,
+                                                     std::vector<double> &prop_tracks_eta,
+                                                     std::vector<double> &prop_tracks_phi,
+                                                     std::vector<double> &prop_tracks_px,
+                                                     std::vector<double> &prop_tracks_py,
+                                                     std::vector<double> &prop_tracks_pz,
+                                                     std::vector<bool> &masked_tracks) {
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
 
@@ -796,7 +797,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
     // to the HGCal front
     const auto &tsos = prop.propagate(fts, firstDisk_[iSide]->surface());
     Vector trackPFirstLayer;
-    float trackEnergy = sqrt(tracks[i].outerP() * tracks[i].outerP()  + mpion2);
+    float trackEnergy = sqrt(tracks[i].outerP() * tracks[i].outerP() + mpion2);
     if (tsos.isValid()) {
       Vector trackP(tsos.globalPosition().x(), tsos.globalPosition().y(), tsos.globalPosition().z());
       trackPFirstLayer = trackP;
@@ -808,9 +809,9 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
       prop_tracks_px.push_back(tsos.globalMomentum().x());
       prop_tracks_py.push_back(tsos.globalMomentum().y());
       prop_tracks_pz.push_back(tsos.globalMomentum().z());
-//      std::cout << "First Layer " << std::endl;
-//      std::cout << "Track " << i << " Energy " << trackEnergy << " Global Momentum" << tsos.globalMomentum() << " Position " << tsos.globalPosition() << std::endl;
-//      std::cout << "Track " << i << " Energy " << trackEnergy << " Global Direction " << tsos.globalDirection() << " Position " << tsos.globalPosition() << std::endl;
+      //      std::cout << "First Layer " << std::endl;
+      //      std::cout << "Track " << i << " Energy " << trackEnergy << " Global Momentum" << tsos.globalMomentum() << " Position " << tsos.globalPosition() << std::endl;
+      //      std::cout << "Track " << i << " Energy " << trackEnergy << " Global Direction " << tsos.globalDirection() << " Position " << tsos.globalPosition() << std::endl;
       masked_tracks[i] = true;
       trackPColl.emplace_back(trackP, i);
     } else {
@@ -824,25 +825,25 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
       Vector trackP(tsos_int.globalPosition().x(), tsos_int.globalPosition().y(), tsos_int.globalPosition().z());
       trackPIntLayer = trackP;
       tkPropIntColl.emplace_back(trackP, i);
-     // prop_tracks_xInt.push_back(trackP.x());
-     // prop_tracks_yInt.push_back(trackP.y());
-     // prop_tracks_zInt.push_back(trackP.z());
-     // prop_tracks_etaInt.push_back(trackP.eta());
-     // prop_tracks_phiInt.push_back(trackP.phi());
-     // prop_tracks_pxInt.push_back(tsos.globalMomentum().x());
-     // prop_tracks_pyInt.push_back(tsos.globalMomentum().y());
-     // prop_tracks_pzInt.push_back(tsos.globalMomentum().z());
-     // masked_tracks[i] = true;
+      // prop_tracks_xInt.push_back(trackP.x());
+      // prop_tracks_yInt.push_back(trackP.y());
+      // prop_tracks_zInt.push_back(trackP.z());
+      // prop_tracks_etaInt.push_back(trackP.eta());
+      // prop_tracks_phiInt.push_back(trackP.phi());
+      // prop_tracks_pxInt.push_back(tsos.globalMomentum().x());
+      // prop_tracks_pyInt.push_back(tsos.globalMomentum().y());
+      // prop_tracks_pzInt.push_back(tsos.globalMomentum().z());
+      // masked_tracks[i] = true;
       trackPColl.emplace_back(trackP, i);
-//      std::cout << "Interface Layer " << std::endl;
-//      std::cout << "Track " << i << "Energy " << trackEnergy << " Global Momentum " << tsos_int.globalMomentum() << " Position " << tsos_int.globalPosition() << std::endl;
-//      std::cout << "Track " << i << "Energy " << trackEnergy << " Global Direction " << tsos_int.globalDirection() << " Position " << tsos_int.globalPosition() << std::endl;
+      //      std::cout << "Interface Layer " << std::endl;
+      //      std::cout << "Track " << i << "Energy " << trackEnergy << " Global Momentum " << tsos_int.globalMomentum() << " Position " << tsos_int.globalPosition() << std::endl;
+      //      std::cout << "Track " << i << "Energy " << trackEnergy << " Global Direction " << tsos_int.globalDirection() << " Position " << tsos_int.globalPosition() << std::endl;
     } else {
       //masked_tracks[i] = false;
       // std::cout << "PROPAGATION NOT VALID! " << std::endl;
     }
-//    Vector directionFromTwoPoints = trackPIntLayer - trackPFirstLayer;
- //   std::cout << "Direction from two points " << directionFromTwoPoints.Unit() << std::endl;
+    //    Vector directionFromTwoPoints = trackPIntLayer - trackPFirstLayer;
+    //   std::cout << "Direction from two points " << directionFromTwoPoints.Unit() << std::endl;
   }  // Tracks
   tkPropIntColl.shrink_to_fit();
   trackPColl.shrink_to_fit();

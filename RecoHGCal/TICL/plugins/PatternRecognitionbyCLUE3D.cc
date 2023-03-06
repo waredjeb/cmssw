@@ -305,7 +305,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
 
   tmp_result.resize(nTracksters);
   tmp_racksterSeeds.reserve(nTracksters);
-	
+
   for (unsigned int layer = 0; layer < clusters_.size(); ++layer) {
     const auto &thisLayer = clusters_[layer];
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {

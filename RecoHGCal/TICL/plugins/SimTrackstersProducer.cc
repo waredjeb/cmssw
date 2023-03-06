@@ -108,8 +108,7 @@ SimTrackstersProducer::SimTrackstersProducer(const edm::ParameterSet& ps)
       fractionCut_(ps.getParameter<double>("fractionCut")),
       trackingParticleToken_(
           consumes<std::vector<TrackingParticle>>(ps.getParameter<edm::InputTag>("trackingParticles"))),
-      simVerticesToken_(
-          consumes<std::vector<SimVertex>>(ps.getParameter<edm::InputTag>("simVertices"))),
+      simVerticesToken_(consumes<std::vector<SimVertex>>(ps.getParameter<edm::InputTag>("simVertices"))),
       recoTracksToken_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("recoTracks"))),
       cutTk_(ps.getParameter<std::string>("cutTk")),
       associatormapStRsToken_(consumes(ps.getParameter<edm::InputTag>("tpToTrack"))),
@@ -283,7 +282,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
         }
       }
       scSimTracksterIdx.shrink_to_fit();
-    } 
+    }
     float time = simVertices[cp.g4Tracks()[0].vertIndex()].position().t();
     // Create a Trackster from any CP
     addTrackster(cpIndex,
@@ -308,8 +307,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   }
   // TODO: remove time computation from PCA calculation and
   //       store time from boundary position in simTracksters
-  ticl::assignPCAtoTracksters(
-      *result, layerClusters, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
+  ticl::assignPCAtoTracksters(*result, layerClusters, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
   result->shrink_to_fit();
   ticl::assignPCAtoTracksters(
       *result_fromCP, layerClusters, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
@@ -364,27 +362,23 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
 
   edm::OrphanHandle<std::vector<Trackster>> simTracksters_h = evt.put(std::move(result));
 
-
   result_ticlCandidates->resize(caloparticles.size());
-  for (size_t i =0; i< simTracksters_h->size(); ++i )
-  {
+  for (size_t i = 0; i < simTracksters_h->size(); ++i) {
     const auto& simTrackster = (*simTracksters_h)[i];
     int cp_index = (simTrackster.seedID() == caloParticles_h.id())
-                               ? simTrackster.seedIndex()
-                               : SimClusterToCaloParticleMap[simTrackster.seedIndex()];
+                       ? simTrackster.seedIndex()
+                       : SimClusterToCaloParticleMap[simTrackster.seedIndex()];
     auto& cand = (*result_ticlCandidates)[cp_index];
     cand.addTrackster(edm::Ptr<Trackster>(simTracksters_h, i));
     auto trackIndex = (*result_fromCP)[cp_index].trackIdx();
     cand.setTime((*result_fromCP)[cp_index].time());
     cand.setTimeError(0);
 
-    if(trackIndex != -1)
+    if (trackIndex != -1)
       cand.setTrackPtr(edm::Ptr<reco::Track>(recoTracks_h, trackIndex));
   }
 
-
-  for(size_t i = 0; i< result_ticlCandidates->size(); ++i)
-  {
+  for (size_t i = 0; i < result_ticlCandidates->size(); ++i) {
     auto& cand = (*result_ticlCandidates)[i];
     const auto& cp = caloparticles[i];
     auto const particleType = tracksterParticleTypeFromPdgId(cp.pdgId(), 1);
@@ -399,17 +393,14 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
     }
     cand.setRawEnergy(rawEnergy);
 
-    if(!cand.trackPtr().isNull())
-    {
+    if (!cand.trackPtr().isNull()) {
       auto track = cand.trackPtr();
       math::XYZTLorentzVector p4(regressedEnergy * track->momentum().unit().x(),
-                                       regressedEnergy * track->momentum().unit().y(),
-                                       regressedEnergy * track->momentum().unit().z(),
-                                       regressedEnergy);
+                                 regressedEnergy * track->momentum().unit().y(),
+                                 regressedEnergy * track->momentum().unit().z(),
+                                 regressedEnergy);
       cand.setP4(p4);
-    }
-    else
-    {
+    } else {
       const auto& simTracksterFromCP = (*result_fromCP)[i];
       float regressedEnergy = simTracksterFromCP.regressed_energy();
       math::XYZTLorentzVector p4(regressedEnergy * simTracksterFromCP.barycenter().unit().x(),
@@ -417,9 +408,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                                  regressedEnergy * simTracksterFromCP.barycenter().unit().z(),
                                  regressedEnergy);
       cand.setP4(p4);
-
     }
-
   }
 
   evt.put(std::move(result_ticlCandidates));

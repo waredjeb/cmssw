@@ -84,7 +84,8 @@ private:
   std::unique_ptr<LinkingAlgoBase> linkingAlgo_;
 
   const edm::EDGetTokenT<std::vector<Trackster>> tracksters_clue3d_token_;
-  const edm::EDGetTokenT<TICLGraph> ticlGraph_token_;
+//  const edm::EDGetTokenT<std::vector<TICLGraph>> ticlTrackGraph_token_;
+  const edm::EDGetTokenT<std::vector<TICLGraph>> ticlTracksterGraph_token_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
@@ -142,7 +143,9 @@ private:
 
 TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
     : tracksters_clue3d_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3d"))),
-      ticlGraph_token_(consumes<TICLGraph>(ps.getParameter<edm::InputTag>("ticlgraph"))),
+     // ticlTrackGraph_token_(consumes<std::vector<TICLGraph>>(ps.getParameter<edm::InputTag>("graphFromTracks"))),
+      ticlTracksterGraph_token_(
+          consumes<std::vector<TICLGraph>>(ps.getParameter<edm::InputTag>("graph"))),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
@@ -283,9 +286,9 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   evt.getByToken(tracksters_clue3d_token_, trackstersclue3d_h);
 
   auto masked_tracks = std::make_unique<std::vector<bool>>();
-  auto hgcaltracks_x  = std::make_unique<std::vector<double>>();
-  auto hgcaltracks_y  = std::make_unique<std::vector<double>>();
-  auto hgcaltracks_z  = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_x = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_y = std::make_unique<std::vector<double>>();
+  auto hgcaltracks_z = std::make_unique<std::vector<double>>();
   auto hgcaltracks_eta = std::make_unique<std::vector<double>>();
   auto hgcaltracks_phi = std::make_unique<std::vector<double>>();
   auto hgcaltracks_px = std::make_unique<std::vector<double>>();
@@ -304,16 +307,21 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   const auto &trackTime = evt.get(tracks_time_token_);
   const auto &trackTimeErr = evt.get(tracks_time_err_token_);
   const auto &trackTimeQual = evt.get(tracks_time_quality_token_);
+//  const auto &graphsFromTrack = evt.get(ticlTrackGraph_token_);
+  const auto &graphs= evt.get(ticlTracksterGraph_token_);
 
-  edm::Handle<TICLGraph> ticlGraph_h;
-  evt.getByToken(ticlGraph_token_, ticlGraph_h);
-  const auto &ticlGraph = *ticlGraph_h;
+  //  edm::Handle<TICLGraph> ticlGraph_h;
+  //  evt.getByToken(ticlGraph_token_, ticlGraph_h);
+  //  const auto &ticlGraph = *ticlGraph_h;
   // Linking
   auto separations2 = std::make_unique<std::vector<float>>();
   auto separations2_ET = std::make_unique<std::vector<float>>();
 
   masked_tracks->resize(tracks.size(), false);
-  linkingAlgo_->linkTracksters(track_h,
+
+  linkingAlgo_->linkTracksters(graphs,
+//                               graphsFromTrackster,
+                               track_h,
                                trackTime,
                                trackTimeErr,
                                trackTimeQual,
@@ -338,8 +346,6 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
                                *hgcaltracks_py,
                                *hgcaltracks_pz,
                                *masked_tracks);
-
-
 
   // Print debug info
   LogDebug("TrackstersMergeProducer") << "Results from the linking step : " << std::endl
@@ -412,6 +418,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
       cand.setP4(p4);
     }
   }
+
   for (auto &cand : *resultFromTracks) {  //Tracks with no linked tracksters are promoted to charged hadron candidates
     auto const &tk = cand.trackPtr().get();
     cand.setPdgId(211 * tk->charge());
@@ -620,11 +627,13 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   edm::ParameterSetDescription desc;
 
   edm::ParameterSetDescription linkingDesc;
-  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByDirectionGeometric", true));
+  //  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByDirectionGeometric", true));
+  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByLouvainAlgo", true));
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
 
   desc.add<edm::InputTag>("trackstersclue3d", edm::InputTag("ticlTrackstersCLUE3DHigh"));
-  desc.add<edm::InputTag>("ticlgraph", edm::InputTag("ticlGraph"));
+//  desc.add<edm::InputTag>("graphFromTracks", edm::InputTag("ticlGraph", "fromTracks"));
+  desc.add<edm::InputTag>("graph", edm::InputTag("ticlGraph"));
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
