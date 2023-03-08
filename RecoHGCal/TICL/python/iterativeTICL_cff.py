@@ -35,7 +35,10 @@ ticlTrackstersMerge = _trackstersMergeProducer.clone(
   )
 )
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
-ticlGraph = _ticlGraphProducer.clone()
+ticlGraph = _ticlGraphProducer.clone(
+    trackSep = cms.double(15),
+    deltaEtaPhi = cms.double(0.1)
+)
 
 
 pfTICL = _pfTICLProducer.clone()
