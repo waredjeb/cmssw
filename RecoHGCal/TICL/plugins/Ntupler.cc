@@ -2315,7 +2315,7 @@ void Ntupler::analyze(const edm::Event& event, const edm::EventSetup& setup) {
 //  finesimtracksters_tree_->Fill();
 
   tracks_tree_->Fill();
-// simTICLCandidate_tree->Fill();
+  simTICLCandidate_tree->Fill();
 }
 
 void Ntupler::endJob() {}
