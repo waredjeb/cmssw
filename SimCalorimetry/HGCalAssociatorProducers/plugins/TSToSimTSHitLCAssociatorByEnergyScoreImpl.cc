@@ -1,9 +1,6 @@
 #include <cfloat>
-
 #include "TSToSimTSHitLCAssociatorByEnergyScoreImpl.h"
-
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-
 #include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 
 TSToSimTSHitLCAssociatorByEnergyScoreImpl::TSToSimTSHitLCAssociatorByEnergyScoreImpl(

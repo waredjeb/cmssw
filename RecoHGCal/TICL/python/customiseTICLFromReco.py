@@ -1,6 +1,6 @@
 # Reconstruction
 from RecoHGCal.TICL.iterativeTICL_cff import *
-from RecoHGCal.TICL.ticlNtuplizer_cfi import ticlNtuplizer
+from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClusters
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cfi import *
@@ -26,13 +26,6 @@ def customiseTICLFromReco(process):
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
                             process.ticlTracksterMergeTask)
-
-    process.ntuplizer = ticlNtuplizer.clone()
-
-    process.TFileService = cms.Service("TFileService", 
-            fileName = cms.string("histo.root")
-    )
-
 # Validation
     process.TICL_ValidationProducers = cms.Task(process.hgcalRecHitMapProducer,
                                                 process.lcAssocByEnergyScoreProducer,
@@ -46,8 +39,7 @@ def customiseTICLFromReco(process):
                                        process.TICL_Validator
                                       )
 # Path and EndPath definitions
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.ntuplizer)
-    #process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
     process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition
@@ -59,3 +51,12 @@ def customiseTICLFromReco(process):
     process = customiseHGCalOnlyEventContent(process)
 
     return process
+
+def customiseTICLForDumper(process):
+
+				process.ticlDumper = ticlDumper.clone()
+				process.TFileService = cms.Service("TFileService",
+												fileName = cms.string("histo.root")
+												)
+				process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.ticlDumper)
+				return process

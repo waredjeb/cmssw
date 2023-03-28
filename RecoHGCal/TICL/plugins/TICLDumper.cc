@@ -1116,9 +1116,9 @@ void TICLDumper::buildLayers() {
 }
 
 void TICLDumper::initialize(const HGCalDDDConstants* hgcons,
-                         const hgcal::RecHitTools rhtools,
-                         const edm::ESHandle<MagneticField> bfieldH,
-                         const edm::ESHandle<Propagator> propH) {
+                            const hgcal::RecHitTools rhtools,
+                            const edm::ESHandle<MagneticField> bfieldH,
+                            const edm::ESHandle<Propagator> propH) {
   hgcons_ = hgcons;
   rhtools_ = rhtools;
   buildLayers();
@@ -1339,7 +1339,9 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     stsSC_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsSC_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     stsSC_pdgID.push_back(simclusters[trackster_iterator->seedIndex()].pdgId());
-    auto simTrack = trackster_iterator->seedID() == caloparticles_h.id() ? caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0] : simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
+    auto simTrack = trackster_iterator->seedID() == caloparticles_h.id()
+                        ? caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0]
+                        : simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
     if (simTrack.crossedBoundary()) {
       stsSC_boundaryX.push_back(simTrack.getPositionAtBoundary().x());
       stsSC_boundaryY.push_back(simTrack.getPositionAtBoundary().y());
@@ -1474,7 +1476,9 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     stsCP_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsCP_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     stsCP_pdgID.push_back(caloparticles[trackster_iterator->seedIndex()].pdgId());
-    auto simTrack = trackster_iterator->seedID() == caloparticles_h.id() ? caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0] : simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
+    auto simTrack = trackster_iterator->seedID() == caloparticles_h.id()
+                        ? caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0]
+                        : simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
     if (simTrack.crossedBoundary()) {
       stsCP_boundaryX.push_back(simTrack.getPositionAtBoundary().x());
       stsCP_boundaryY.push_back(simTrack.getPositionAtBoundary().y());
@@ -1974,7 +1978,6 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   simtrackstersCP_tree_->Fill();
   tracks_tree_->Fill();
   simTICLCandidate_tree->Fill();
-
 }
 
 void TICLDumper::endJob() {}

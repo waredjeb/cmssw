@@ -7,7 +7,7 @@
  * the handles of Tracksters, LayerClusters and SimTracksters collections and return an
  * AssociationMap (oneToManyWithQuality)
  *
- *  \author Leonardo Cristella
+ *  \authors Leonardo Cristella, Wahid Redjeb, Felice Pantaleo
  */
 
 #include "DataFormats/Common/interface/Handle.h"

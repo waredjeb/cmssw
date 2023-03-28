@@ -1,6 +1,6 @@
 #ifndef SimDataFormats_Associations_TracksterToSimTracksterHitLCAssociator_h
 #define SimDataFormats_Associations_TracksterToSimTracksterHitLCAssociator_h
-// Original Author:  Leonardo Cristella
+// Original Author:  Leonardo Cristella, Wahid Redjeb, Felice Pantaleo
 
 // system include files
 #include <memory>

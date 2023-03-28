@@ -18,22 +18,10 @@ from RecoHGCal.TICL.tracksterSelectionTf_cfi import *
 
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
-ticlTrackstersMerge = _trackstersMergeProducer.clone(
-  linkingPSet = cms.PSet(
-    cutTk = cms.string('1.48 < abs(eta) < 3.0 && pt > 1. && quality("highPurity") && hitPattern().numberOfLostHits("MISSING_OUTER_HITS") < 5'),
-    delta_tk_ts_layer1 = cms.double(0.02),
-    delta_tk_ts_interface = cms.double(0.03),
-    delta_ts_em_had = cms.double(0.03),
-    delta_ts_had_had = cms.double(0.03),
-    track_time_quality_threshold = cms.double(0.5),
-    algo_verbosity = cms.int32(0),
-    type = cms.string('LinkingAlgoByDirectionGeometric')
-  
-  )
-)
+ticlTrackstersMerge = _trackstersMergeProducer.clone()
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
-ticlGraph = _ticlGraphProducer.clone()
 
+ticlGraph = _ticlGraphProducer.clone()
 
 pfTICL = _pfTICLProducer.clone()
 ticlPFTask = cms.Task(pfTICL)
