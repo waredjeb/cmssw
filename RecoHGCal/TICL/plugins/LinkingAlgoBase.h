@@ -14,6 +14,9 @@
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "Geometry/HGCalCommonData/interface/HGCalDDDConstants.h"
+#include "DataFormats/HGCalReco/interface/EnergyRegressionAndIDModel.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
+
 
 namespace edm {
   class Event;
@@ -32,14 +35,21 @@ namespace ticl {
                             const edm::ESHandle<MagneticField> bfieldH,
                             const edm::ESHandle<Propagator> propH) = 0;
 
-    virtual void linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
-                                const edm::ValueMap<float>& tkTime,
-                                const edm::ValueMap<float>& tkTimeErr,
-                                const edm::ValueMap<float>& tkTimeQual,
-                                const std::vector<reco::Muon>& muons,
-                                const edm::Handle<std::vector<Trackster>> tsH,
-                                std::vector<TICLCandidate>& resultTracksters,
-                                std::vector<TICLCandidate>& resultFromTracks) = 0;
+    virtual void linkTracksters(const std::vector<TICLGraph>& trackGraphs,
+           //                     const std::vector<TICLGraph>& tracksterGraphs,
+                                const edm::Handle<std::vector<reco::Track>>,
+                                const edm::ValueMap<float> &,
+                                const edm::ValueMap<float> &,
+                                const edm::ValueMap<float> &,
+                                const std::vector<reco::Muon> &,
+                                const edm::Handle<std::vector<Trackster>>,
+                                const std::vector<reco::CaloCluster> &layerClusters,
+                                const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                                std::vector<Trackster> &tracksterMergeCollectionResult,
+                                std::vector<TICLCandidate> &,
+                                std::vector<TICLCandidate> &,
+                                const EnergyRegressionAndIDModel &) = 0 ;
+
 
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
 
