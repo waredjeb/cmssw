@@ -82,7 +82,7 @@ private:
   // some options
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_token_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
-  const edm::EDGetTokenT<TICLGraph> ticl_graph_token_;
+  const edm::EDGetTokenT<std::vector<TICLGraph>> ticl_graph_token_;
   const edm::EDGetTokenT<std::vector<TICLCandidate>> ticl_candidates_token_;
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
   const edm::EDGetTokenT<std::vector<bool>> tracks_mask_token_;
@@ -745,7 +745,7 @@ void TICLDumper::clearVariables() {
 TICLDumper::TICLDumper(const edm::ParameterSet& ps)
     : tracksters_token_(consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3d"))),
       layer_clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClusters"))),
-      ticl_graph_token_(consumes<TICLGraph>(ps.getParameter<edm::InputTag>("ticlgraph"))),
+      ticl_graph_token_(consumes<std::vector<TICLGraph>>(ps.getParameter<edm::InputTag>("ticlgraph"))),
       ticl_candidates_token_(consumes<std::vector<TICLCandidate>>(ps.getParameter<edm::InputTag>("ticlcandidates"))),
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
       tracks_time_token_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tracksTime"))),
@@ -1146,7 +1146,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   const auto& layerClustersTimes = *clustersTime_h;
 
   //TICL Graph
-  edm::Handle<TICLGraph> ticl_graph_h;
+  edm::Handle<std::vector<TICLGraph>> ticl_graph_h;
   event.getByToken(ticl_graph_token_, ticl_graph_h);
   const auto& graph = *ticl_graph_h;
 
@@ -1643,16 +1643,30 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
 
   node_linked_inners.resize(tracksters.size());
   node_linked_outers.resize(tracksters.size());
-  isRootTrackster.resize(tracksters.size(), false);
-  for (size_t i = 0; i < tracksters.size(); ++i) {
-    const auto& node = graph.getNode((int)i);
-    auto this_inners = node.getInner();
-    auto this_outers = node.getOuter();
-    node_linked_inners[i].insert(node_linked_inners[i].end(), this_inners.begin(), this_inners.end());
-    node_linked_outers[i].insert(node_linked_outers[i].end(), this_outers.begin(), this_outers.end());
-    if (node.getInner().empty())
-      isRootTrackster[i] = true;
+	int i_g = 0;
+  for (auto const& g : graph) {
+    for (size_t i = 0; i < g.size(); i++) {
+      const auto& node = g.getNode((int)i);
+      const auto& t_id = node.getId();
+      node_linked_inners[t_id].push_back(t_id);
+      node_linked_outers[t_id].push_back(i_g);
+      for (auto const& [neigh, weight] : node.getWeightedEdges()) {
+        node_linked_inners[t_id].push_back(neigh);
+        node_linked_outers[t_id].push_back(i_g);
+      }
+    }
+    i_g++;
   }
+  //  isRootTrackster.resize(tracksters.size(), false);
+  //  for (size_t i = 0; i < tracksters.size(); ++i) {
+  //    const auto& node = graph.getNode((int)i);
+  //    auto this_inners = node.getInner();
+  //    auto this_outers = node.getOuter();
+  //    node_linked_inners[i].insert(node_linked_inners[i].end(), this_inners.begin(), this_inners.end());
+  //    node_linked_outers[i].insert(node_linked_outers[i].end(), this_outers.begin(), this_outers.end());
+  //    if (node.getInner().empty())
+  //      isRootTrackster[i] = true;
+  //  }
 
   int c_id = 0;
 

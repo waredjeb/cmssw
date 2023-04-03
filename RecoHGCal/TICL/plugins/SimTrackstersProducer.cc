@@ -179,7 +179,7 @@ void SimTrackstersProducer::addTrackster(
   Trackster tmpTrackster;
   if (lcVec.empty()) {
     result[index] = tmpTrackster;
-std::cout << "empty" << std::endl;
+//std::cout << "empty" << std::endl;
     return;
   }
 
@@ -410,7 +410,7 @@ if (simTrackstersFromCP[i].vertices().size() == 0)
       auto& cand = (*result_ticlCandidates)[cp_index];
       cand.addTrackster(edm::Ptr<Trackster>(simTracksters_h, i));
     if (trackIndex != -1 and (trackIndex < 0 or trackIndex >= (long int)recoTracks.size())) {
-      std::cout << "ERRORE trackIndex != -1 !! -> " << trackIndex << std::endl;
+      //std::cout << "ERRORE trackIndex != -1 !! -> " << trackIndex << std::endl;
     }
       cand.setTime((*result_fromCP)[cp_index].time());
       cand.setTimeError(0);
@@ -418,7 +418,6 @@ if (simTrackstersFromCP[i].vertices().size() == 0)
         cand.setTrackPtr(edm::Ptr<reco::Track>(recoTracks_h, trackIndex));
       toKeep.push_back(cp_index);
     }else{
-std::cout << "AAAAAAAAAAAAAAAA" << std::endl;
   toRemove.push_back(cp_index);
     }
   }
@@ -448,7 +447,6 @@ std::cout << "AAAAAAAAAAAAAAAA" << std::endl;
     auto pdgId = cp.pdgId();
     auto charge = cp.charge();
     if (cand.trackPtr().isNonnull() and charge == 0) {
-      std::cout << "fotone con traccia! " <<  std::endl;
     }
     if (cand.trackPtr().isNonnull() and charge != 0) {
       auto const& track = cand.trackPtr().get();
@@ -481,28 +479,28 @@ if(std::abs(pdgId)==13){
   }
   for (size_t i = 0; i < result_ticlCandidates->size(); ++i) {
     auto const& cand = (*result_ticlCandidates)[i];
-    std::cout << "--- candidate " << i << " ---" << std::endl;
-    std::cout << "charge = " << cand.charge() << "\npdgId = " << cand.pdgId() << "\nntk = " << cand.tracksters().size()
-              << "\nraw energy = " << cand.rawEnergy() << std::endl;
+//    std::cout << "--- candidate " << i << " ---" << std::endl;
+//    std::cout << "charge = " << cand.charge() << "\npdgId = " << cand.pdgId() << "\nntk = " << cand.tracksters().size()
+//              << "\nraw energy = " << cand.rawEnergy() << std::endl;
     if (cand.trackPtr().get() == nullptr) {
-      std::cout << "track = -1" << std::endl;
+//      std::cout << "track = -1" << std::endl;
     } else {
       auto track_idx = cand.trackPtr().get() - (edm::Ptr<reco::Track>(recoTracks_h, 0)).get();
-      std::cout << "track = " << track_idx << std::endl;
+  //    std::cout << "track = " << track_idx << std::endl;
     }
     auto tracksters = cand.tracksters();
-    std::cout << " Tracksters Energies: "; 
+   // std::cout << " Tracksters Energies: "; 
     for (auto const& t_ptr : tracksters) {
-      std::cout << t_ptr->raw_energy(); 
+     // std::cout << t_ptr->raw_energy(); 
     }
-    std::cout << std::endl;
+   // std::cout << std::endl;
     auto cp_index = (*result_fromCP)[i].seedIndex();
 if (cp_index < 0)
   continue;
-    std::cout << "CP Size " << caloparticles.size() << " CP INDEX " << cp_index << std::endl;
+   // std::cout << "CP Size " << caloparticles.size() << " CP INDEX " << cp_index << std::endl;
     const auto& cp = caloparticles[cp_index];
-    std::cout << "CP charge = " << cp.charge() << "\nCP pdgId = " << cp.pdgId() << "\nCP eta = " << cp.eta()
-              << "\nCP phi = " << cp.phi() << "\nCP energy = " << cp.energy() << std::endl;
+   // std::cout << "CP charge = " << cp.charge() << "\nCP pdgId = " << cp.pdgId() << "\nCP eta = " << cp.eta()
+     //         << "\nCP phi = " << cp.phi() << "\nCP energy = " << cp.energy() << std::endl;
   }
 
   std::vector<int> all_nums(result_fromCP->size()); // vector containing all caloparticles indexes
@@ -511,11 +509,11 @@ if (cp_index < 0)
   std::set_difference(all_nums.begin(), all_nums.end(), toKeep.begin(), toKeep.end(), std::back_inserter(toRemove));
   std::sort(toRemove.begin(), toRemove.end(), [](int x, int y) { return x > y; });  
   for(auto const& r : toRemove){
-    std::cout << "removing candidate " << r << std::endl;
+    //std::cout << "removing candidate " << r << std::endl;
     result_fromCP->erase(result_fromCP->begin() + r);
     result_ticlCandidates->erase(result_ticlCandidates->begin() + r);
   }
-  std::cout << "CP Size " << caloparticles.size() << "ResultCP " << result_fromCP->size() << " TICLCandidate " << result_ticlCandidates->size() << std::endl;
+//  std::cout << "CP Size " << caloparticles.size() << "ResultCP " << result_fromCP->size() << " TICLCandidate " << result_ticlCandidates->size() << std::endl;
   evt.put(std::move(result_ticlCandidates));
   evt.put(std::move(output_mask));
   evt.put(std::move(result_fromCP), "fromCPs");
