@@ -73,9 +73,9 @@ void LinkingAlgoByDirectionGeometric::findTrackstersInWindow(
     const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
     const std::array<TICLLayerTile, 2> &tracksterTiles,
     const std::vector<Vector> &tracksterPropPoints,
-		const std::vector<float> &deltaEtas,
-		const std::vector<float> &etaBins,
-		const float deltaPhi,
+    const std::vector<float> &deltaEtas,
+    const std::vector<float> &etaBins,
+    const float deltaPhi,
     unsigned trackstersSize,
     std::vector<std::vector<unsigned>> &resultCollection,
     bool useMask = false) {
@@ -88,10 +88,11 @@ void LinkingAlgoByDirectionGeometric::findTrackstersInWindow(
   for (auto &i : seedingCollection) {
     float seed_eta = i.first.Eta();
     float seed_phi = i.first.Phi();
-		auto bin_it = std::upper_bound(etaBins.begin(), etaBins.end(), seed_eta);
-		int bin_index = std::distance(etaBins.begin(), bin_it) - 1;  // subtract 1 since upper_bound finds first value greater than Y
-		auto deltaEta = deltaEtas[bin_index];
-  	float delta2 = deltaPhi * deltaEta;
+    auto bin_it = std::upper_bound(etaBins.begin(), etaBins.end(), seed_eta);
+    int bin_index =
+        std::distance(etaBins.begin(), bin_it) - 1;  // subtract 1 since upper_bound finds first value greater than Y
+    auto deltaEta = deltaEtas[bin_index];
+    float delta2 = deltaPhi * deltaEta;
     unsigned seedId = i.second;
     auto sideZ = seed_eta > 0;  //forward or backward region
     const TICLLayerTile &tile = tracksterTiles[sideZ];
@@ -251,21 +252,29 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph
   // propagated point collections
   // elements in the propagated points collecions are used
   // to look for potential linkages in the appropriate tiles
-  std::vector<float> delta_etas = {0.02,       0.02188949, 0.02252418, 0.02318985, 0.02388884, 0.02462377, 0.02539751,
-                                 0.02621327, 0.02707464, 0.02798563, 0.02895074, 0.02997505, 0.03106429, 0.032225,
-                                 0.03346462, 0.03479167, 0.03621597, 0.03774887, 0.03940361, 0.04119566, 0.04314326,
-                                 0.04526807, 0.04759596, 0.05015817, 0.0529927,  0.05614629, 0.05967708, 0.06365829,
-                                 0.06818352, 0.07337427, 0.07939135, 0.08645205, 0.09485751, 0.10503764};
-
-  std::vector<float>
-      eta_bins = {1.50685404, 1.52874354, 1.55126772, 1.57445756, 1.5983464,  1.62297017, 1.64836767,
-                 1.67458094, 1.70165558, 1.72964121, 1.75859195, 1.788567,   1.81963129, 1.85185629,
-                 1.88532092, 1.92011258, 1.95632855, 1.99407742, 2.03348104, 2.0746767,  2.11781996,
-                 2.16308803, 2.21068399, 2.26084216, 2.31383486, 2.36998115, 2.42965823, 2.49331652,
-                 2.56150004, 2.63487431, 2.71426566, 2.80071771, 2.89557522, 3.00061286};
-
-  std::vector<std::pair<Vector, unsigned>>
-      trackPColl;                                          // propagated track points and index of track in collection
+  std::vector<float> delta_etas = {0.03798787,
+                                   0.03991647,
+                                   0.04201407,
+                                   0.04430428,
+                                   0.04681542,
+                                   0.0495818,
+                                   0.05264538,
+                                   0.05605803,
+                                   0.05988467,
+                                   0.06420764,
+                                   0.06913295,
+                                   0.07479954,
+                                   0.08139308,
+                                   0.08916754,
+                                   0.09847979,
+                                   0.10984792,
+                                   0.12405425,
+                                   0.14233966,
+                                   0.16680076};
+  std::vector<float> eta_bins = {1.50,       1.55653539, 1.59645186, 1.63846593, 1.68277022, 1.72958564, 1.77916744,
+                     1.83181282, 1.88787086, 1.94775553, 2.01196317, 2.08109612, 2.15589566, 2.23728874,
+                     2.32645628, 2.42493607, 2.53478399, 2.65883824, 2.8011779,  2.96797865};
+  std::vector<std::pair<Vector, unsigned>> trackPColl;     // propagated track points and index of track in collection
   std::vector<std::pair<Vector, unsigned>> tkPropIntColl;  // tracks propagated to lastLayerEE
   std::vector<std::pair<Vector, unsigned>> tsPropIntColl;  // Tracksters in CE-E, propagated to lastLayerEE
   std::vector<std::pair<Vector, unsigned>> tsHadPropIntColl;  // Tracksters in CE-H, propagated to lastLayerEE
@@ -372,25 +381,45 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph
   // step 3: tracks -> all tracksters, at layer 1
 
   std::vector<std::vector<unsigned>> tsNearTk(tracks.size());
-  findTrackstersInWindow(trackPColl, tracksterPropTiles, tsAllProp,delta_etas, eta_bins, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
+  findTrackstersInWindow(
+      trackPColl, tracksterPropTiles, tsAllProp, delta_etas, eta_bins, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
 
   // step 4: tracks -> all tracksters, at lastLayerEE
 
   std::vector<std::vector<unsigned>> tsNearTkAtInt(tracks.size());
-  findTrackstersInWindow(tkPropIntColl, tsPropIntTiles, tsAllPropInt, delta_etas, eta_bins, del_tk_ts_int_, tracksters.size(), tsNearTkAtInt);
+  findTrackstersInWindow(tkPropIntColl,
+                         tsPropIntTiles,
+                         tsAllPropInt,
+                         delta_etas,
+                         eta_bins,
+                         del_tk_ts_int_,
+                         tracksters.size(),
+                         tsNearTkAtInt);
 
   // Trackster - Trackster link finding
   // step 2: tracksters EM -> HAD, at lastLayerEE
 
   std::vector<std::vector<unsigned>> tsNearAtInt(tracksters.size());
-  findTrackstersInWindow(
-      tsPropIntColl, tsHadPropIntTiles, tsAllPropInt, delta_etas, eta_bins, del_ts_em_had_,  tracksters.size(), tsNearAtInt);
+  findTrackstersInWindow(tsPropIntColl,
+                         tsHadPropIntTiles,
+                         tsAllPropInt,
+                         delta_etas,
+                         eta_bins,
+                         del_ts_em_had_,
+                         tracksters.size(),
+                         tsNearAtInt);
 
   // step 1: tracksters HAD -> HAD, at lastLayerEE
 
   std::vector<std::vector<unsigned>> tsHadNearAtInt(tracksters.size());
-  findTrackstersInWindow(
-      tsHadPropIntColl, tsHadPropIntTiles, tsAllPropInt, delta_etas, eta_bins, del_ts_had_had_,  tracksters.size(), tsHadNearAtInt);
+  findTrackstersInWindow(tsHadPropIntColl,
+                         tsHadPropIntTiles,
+                         tsAllPropInt,
+                         delta_etas,
+                         eta_bins,
+                         del_ts_had_had_,
+                         tracksters.size(),
+                         tsHadNearAtInt);
 
 #ifdef EDM_ML_DEBUG
   dumpLinksFound(tsNearTk, "track -> tracksters at layer 1");
