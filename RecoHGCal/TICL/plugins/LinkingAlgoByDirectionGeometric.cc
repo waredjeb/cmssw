@@ -252,28 +252,12 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph
   // propagated point collections
   // elements in the propagated points collecions are used
   // to look for potential linkages in the appropriate tiles
-  std::vector<float> delta_etas = {0.03798787,
-                                   0.03991647,
-                                   0.04201407,
-                                   0.04430428,
-                                   0.04681542,
-                                   0.0495818,
-                                   0.05264538,
-                                   0.05605803,
-                                   0.05988467,
-                                   0.06420764,
-                                   0.06913295,
-                                   0.07479954,
-                                   0.08139308,
-                                   0.08916754,
-                                   0.09847979,
-                                   0.10984792,
-                                   0.12405425,
-                                   0.14233966,
-                                   0.16680076};
-  std::vector<float> eta_bins = {1.50,       1.55653539, 1.59645186, 1.63846593, 1.68277022, 1.72958564, 1.77916744,
-                     1.83181282, 1.88787086, 1.94775553, 2.01196317, 2.08109612, 2.15589566, 2.23728874,
-                     2.32645628, 2.42493607, 2.53478399, 2.65883824, 2.8011779,  2.96797865};
+  std::vector<float> delta_etas =
+								 {0.08000194, 0.0888295 , 0.0994608 , 0.11253006, 0.12901762,
+					       0.15052604, 0.17987287, 0.22253404, 0.290855 };
+  std::vector<float> eta_bins =
+	{1.50, 1.61800577, 1.70683526, 1.80629607, 1.91882612,
+					       2.04784375, 2.19836978, 2.37824266, 2.60077669, 2.8916317};
   std::vector<std::pair<Vector, unsigned>> trackPColl;     // propagated track points and index of track in collection
   std::vector<std::pair<Vector, unsigned>> tkPropIntColl;  // tracks propagated to lastLayerEE
   std::vector<std::pair<Vector, unsigned>> tsPropIntColl;  // Tracksters in CE-E, propagated to lastLayerEE
