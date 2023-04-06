@@ -351,7 +351,7 @@ bool one_level(const TICLGraph &graph,
         auto commN = communities[comm_n];
         auto increase = modularityGain(node, tracksters, tracks, node_i, communities[comm_n], comm_n, dnc);
       //  std::cout << "\t Neighbour " << trackster_to_node[neigh] << " community " << comm_n << " gain mod " << increase
-                       << std::endl;
+//                       << std::endl;
         if (increase > best_increase) {
 				//	std::cout << "\t\tmodularity has been maximised " << std::endl;
           best_comm = comm_n;
