@@ -72,23 +72,23 @@ void LinkingAlgoByLouvainAlgo::dumpLinksFound(std::vector<std::vector<unsigned>>
   //  if (!(LinkingAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced))
   //    return;
 
-  ////std::cout << "All links found - " << label << "\n";
-  ////std::cout << "(seed can either be a track or trackster depending on the step)\n";
+  //std::cout << "All links found - " << label << "\n";
+  //std::cout << "(seed can either be a track or trackster depending on the step)\n";
   for (unsigned i = 0; i < resultCollection.size(); ++i) {
-    ////std::cout << "seed " << i << " - tracksters : ";
+    //std::cout << "seed " << i << " - tracksters : ";
     const auto &links = resultCollection[i];
     for (unsigned j = 0; j < links.size(); ++j) {
-      ////std::cout << j;
+      //std::cout << j;
     }
-    ////std::cout << "\n";
+    //std::cout << "\n";
   }
   //#endif  // EDM_ML_DEBUG
 }
 
 class Community {
 public:
-  Community(const TICLGraph &g, const std::vector<uint32_t> &nodes, float iw, float tw)
-      : g_(g), nodes_(nodes), internal_weight_(iw), total_weight_(tw){};
+  Community(const TICLGraph &g, const std::vector<uint32_t> &nodes, float iw, float tw, int trackIndex)
+      : g_(g), nodes_(nodes), internal_weight_(iw), total_weight_(tw), trackIndex_(trackIndex){};
   void updateTotalWeight() {
     float community_total_weight = 0;
     for (size_t j = 0; j < nodes_.size(); j++) {
@@ -100,6 +100,16 @@ public:
   bool isNodeInCommunity(uint32_t node_id) const {
     return std::find(nodes_.begin(), nodes_.end(), node_id) != nodes_.end();
   }
+  bool trackNode(Node &ref) const {
+    auto nodeIt = std::find_if(
+        nodes_.begin(), nodes_.end(), [&](const uint32_t node) { return !(g_.getNode(node).isTrackster()); });
+    if (nodeIt != nodes_.end()) {
+      ref = nodes_[*nodeIt];
+      return true;
+    } else {
+      return false;
+    }
+  };
   void updateInternalWeight() {
     float tmp_internal_weight = 0;
     for (size_t i = 0; i < nodes_.size(); i++) {
@@ -116,17 +126,20 @@ public:
   std::vector<uint32_t> getNodes() const { return nodes_; }
   float getInternalWeight() const { return internal_weight_; }
   float getTotalWeight() const { return total_weight_; }
+  int getTrackIndex() const { return trackIndex_; }
   const TICLGraph &getGraph() const { return g_; }
   void setInternalWeight(const float w) { internal_weight_ = w; }
   void setTotalWeight(const float w) { total_weight_ = w; }
   void addInternalWeight(const float w) { internal_weight_ += w; }
   void addTotalWeight(const float w) { total_weight_ += w; }
+  void setTrackIndex(const int idx) { trackIndex_ = idx; }
 
 private:
   const TICLGraph &g_;
   std::vector<uint32_t> nodes_;
   float internal_weight_;
   float total_weight_;
+  int trackIndex_;
 };
 std::unordered_map<uint32_t, uint32_t> map_trackster_to_node(const TICLGraph &graph) {
   std::unordered_map<uint32_t, uint32_t> result;
@@ -146,12 +159,30 @@ std::unordered_map<uint32_t, uint32_t> map_node_to_community(const std::vector<C
   }
   return result;
 }
-float modularity(const TICLGraph &graph, std::vector<Community> &communities) {
+float modularity(const TICLGraph &graph, const std::vector<Trackster>& tracksters, const std::vector<reco::Track>& tracks,  std::vector<Community> &communities) {
   float q = 0.f;
   const float m2 = graph.getTotalWeight();
   for (size_t i = 0; i < communities.size(); ++i) {
     auto const &comm = communities[i];
-    q += comm.getInternalWeight() / m2 - ((comm.getTotalWeight() / m2) * (comm.getTotalWeight() / m2));
+		auto const trackIndex = comm.getTrackIndex();
+	//	auto pt_compatbility = 0.;
+		if(trackIndex != -1){
+			auto const& track = tracks[trackIndex];
+			math::XYZTLorentzVector p4Tot(0.,0.,0.,0.);
+			for(const auto nodeComm : comm.getNodes()){
+
+				auto const tracksterId = graph.getNode(nodeComm).getId();
+				auto const& trackster = tracksters[tracksterId]; 
+	  		auto const rawE = trackster.raw_energy();
+	  		math::XYZTLorentzVector p4ToAdd(rawE * trackster.barycenter().unit().x(),
+	  		                                  rawE * trackster.barycenter().unit().y(),
+	  		                                  rawE * trackster.barycenter().unit().z(),
+	  		                                  rawE);
+				p4Tot += p4ToAdd;
+			}
+		//	pt_compatbility = 1 - (track.pt() - p4Tot.pt()) / track.pt();
+		}
+    q += comm.getInternalWeight() / m2 - ((comm.getTotalWeight() / m2) * (comm.getTotalWeight() / m2));// + pt_compatbility;
   }
   return q;
 }
@@ -172,6 +203,7 @@ float getWeightedEdgesInCommunity(const Node &node,
   return result;
 }
 void removeNodeFromComm(const Node &node,
+												const std::vector<Trackster>& tracksters,
                         const uint32_t node_i,
                         Community &community,
                         const float weightInCommunity,
@@ -181,18 +213,69 @@ void removeNodeFromComm(const Node &node,
   community.addInternalWeight(-2 * weightInCommunity + community.getGraph().getSelfWeight(node_i));
   //  community.internal_weight -= 2 * weightInCommunity + graph.getSelfWeight(node_i);
   n2c[node_i] = -1;
+	auto const& tracksterToAdd = tracksters[node.getId()];
+  auto const rawE = tracksterToAdd.raw_energy();
+  math::XYZTLorentzVector p4ToAdd(rawE * tracksterToAdd.barycenter().unit().x(),
+                                    rawE * tracksterToAdd.barycenter().unit().y(),
+                                    rawE * tracksterToAdd.barycenter().unit().z(),
+                                    rawE);
+	// std::cout << "removing pT " << p4ToAdd.pt() << std::endl;
+
 }
 
-float modularityGain(
-    const Node &node, const uint32_t node_i, Community &comm, const uint32_t comm_i, const float weightInCommunity) {
+float modularityGain(const Node &node,
+                     const std::vector<Trackster> &tracksters,
+                     const std::vector<reco::Track> &tracks,
+                     const uint32_t node_i,
+                     Community &comm,
+                     const uint32_t comm_i,
+                     const float weightInCommunity,
+                     const float trackCompatibility = 0) {
   float totc = comm.getTotalWeight();
   float degc = comm.getInternalWeight();
   float m2 = comm.getGraph().getTotalWeight();
-
-  return (weightInCommunity - totc * degc / m2);
+  auto const &g = comm.getGraph();
+  auto const trackIndex = comm.getTrackIndex();
+  auto const &trackToTracksterInGraph = g.getTrackToTracksterEdge();
+  if (trackIndex != -1) {
+    // std::cout << " Community " << comm_i << " has node track " << std::endl;
+    auto const &track = tracks[comm.getTrackIndex()];
+    // std::cout << "Trackster With Track Node " << trackToTracksterInGraph.second << std::endl;
+    auto const &nodes = comm.getNodes();
+    float energyInComm = 0.;
+    math::XYZTLorentzVector p4Tot(0., 0., 0., 0.);
+    for (auto const nIdx : nodes) {
+      auto const &node = g.getNode(nIdx);
+      // std::cout << "Summing Pt " << node.getId() << " is Trackster " << node.isTrackster() << std::endl;
+      if (!node.isTrackster()) {
+        // std::cout << "WTFFFFFF " << std::endl;
+      }
+      auto const &trackster = tracksters[node.getId()];
+      auto rawE = trackster.raw_energy();
+      math::XYZTLorentzVector p4(rawE * trackster.barycenter().unit().x(),
+                                 rawE * trackster.barycenter().unit().y(),
+                                 rawE * trackster.barycenter().unit().z(),
+                                 rawE);
+      p4Tot += p4;
+    }
+    auto const &tracksterToAdd = tracksters[g.getNode(node_i).getId()];
+    auto const rawE = tracksterToAdd.raw_energy();
+    math::XYZTLorentzVector p4ToAdd(rawE * tracksterToAdd.barycenter().unit().x(),
+                                    rawE * tracksterToAdd.barycenter().unit().y(),
+                                    rawE * tracksterToAdd.barycenter().unit().z(),
+                                    rawE);
+    //std::cout << "Track PT " << track.pt() << " p4Tot " << p4Tot.pt() << " to add " << p4ToAdd.pt() << " tot "
+      //        << (p4Tot + p4ToAdd).pt() << std::endl;
+    float pt_compatibility = 1 - ((track.pt() - ((p4Tot + p4ToAdd).pt())) / track.pt());
+    //std::cout << " pt compatibility " << pt_compatibility << std::endl;
+    return (weightInCommunity - totc * degc / m2);// + pt_compatibility;
+  } else {
+    return (weightInCommunity - totc * degc / m2);
+  }
 }
 
-void insertNodeInComm(const Node &node,
+void NodeInComm(const Node &node,
+								      const std::vector<Trackster>& tracksters,
                       const uint32_t node_i,
                       Community &community,
                       const uint32_t comm_i,
@@ -203,9 +286,18 @@ void insertNodeInComm(const Node &node,
   community.addInternalWeight(2 * weightInCommunity + community.getGraph().getSelfWeight(node_i));
   //  community.internal_weight += 2 * weightInCommunity + graph.getSelfWeight(node_i);
   n2c[node_i] = comm_i;
+	auto const& tracksterToAdd = tracksters[node.getId()];
+  auto const rawE = tracksterToAdd.raw_energy();
+  math::XYZTLorentzVector p4ToAdd(rawE * tracksterToAdd.barycenter().unit().x(),
+                                    rawE * tracksterToAdd.barycenter().unit().y(),
+                                    rawE * tracksterToAdd.barycenter().unit().z(),
+                                    rawE);
+//	std::cout << "adding pT " << p4ToAdd.pt() << std::endl;
 }
 
 bool one_level(const TICLGraph &graph,
+               const std::vector<Trackster> &tracksters,
+               const std::vector<reco::Track> &tracks,
                std::vector<Community> &communities,
                std::unordered_map<uint32_t, uint32_t> &trackster_to_node,
                std::unordered_map<uint32_t, uint32_t> &node_to_community) {
@@ -223,10 +315,13 @@ bool one_level(const TICLGraph &graph,
   std::unordered_map<uint32_t, uint32_t> new_node_to_community;
   bool improvement = false;
   auto modImprov = true;
-  auto new_mod = modularity(graph, communities);
+  auto new_mod = modularity(graph, tracksters, tracks, communities);
   auto cur_mod = new_mod;
   auto node_move = 1;
   auto iterations = 0;
+  auto checkNodeHasTrack = [](const Node &node, const TICLGraph &graph) {
+    return graph.getTrackToTracksterEdge().second == static_cast<int>(node.getId());
+  };
   while (node_move >= 1 && modImprov) {
     node_move = 0;
     modImprov = false;
@@ -236,32 +331,41 @@ bool one_level(const TICLGraph &graph,
       auto &node = graph.getNode(node_i);
       auto node_w = node.getWeightedDegree();
       auto degInComm = getWeightedEdgesInCommunity(node, comm, node_to_community, trackster_to_node);
-      //      std::cout << "Node " << node_i << " Weight " << node_w << " Weight in Comm " << comm << " " << degInComm
-      //              << std::endl;
-      removeNodeFromComm(node, node_i, communities[comm], degInComm, node_to_community);
+            //std::cout << "Node " << node_i << " Weight " << node_w << " Weight in Comm " << comm << " " << degInComm
+              //      << std::endl;
+      if (checkNodeHasTrack(node, communities[comm].getGraph())) {
+        communities[comm].setTrackIndex(-1);
+      }
+      removeNodeFromComm(node, tracksters, node_i, communities[comm], degInComm, node_to_community);
       auto best_comm = comm;
       auto best_nblinks = 0.f;
       auto best_increase = 0.f;
       cur_mod = new_mod;
+		//	std::cout << "Removed node " << node_i << " from its community " << comm << " Start Moving the node around " << std::endl;
       for (auto &[neigh, n_w] : node.getWeightedEdges()) {
         auto comm_n = node_to_community[trackster_to_node[neigh]];
+			//	std::cout << "\tMoving node " << node_i << " to neighbours " << " n_w " << n_w << " " << trackster_to_node[neigh]  << " which is in community " << comm_n << std::endl;
         auto dnc = getWeightedEdgesInCommunity(node, comm_n, node_to_community, trackster_to_node);
-        //std::cout << "trackster to node " << trackster_to_node[neigh] << " trackster " << neigh << std::endl;
-        //std::cout << "node " << node_i << " comm n " << comm_n << std::endl;
+      //  std::cout << "\ttrackster to node " << trackster_to_node[neigh] << " trackster " << neigh << std::endl;
+      //  std::cout << "\tnode " << node_i << " comm n " << comm_n << std::endl;
         auto commN = communities[comm_n];
-        auto increase = modularityGain(node, node_i, communities[comm_n], comm_n, dnc);
-        //        std::cout << "\t Neighbour " << trackster_to_node[neigh] << " community " << comm_n << " gain mod " << increase
-        //                << std::endl;
+        auto increase = modularityGain(node, tracksters, tracks, node_i, communities[comm_n], comm_n, dnc);
+      //  std::cout << "\t Neighbour " << trackster_to_node[neigh] << " community " << comm_n << " gain mod " << increase
+                       << std::endl;
         if (increase > best_increase) {
+				//	std::cout << "\t\tmodularity has been maximised " << std::endl;
           best_comm = comm_n;
           best_nblinks = getWeightedEdgesInCommunity(node, comm_n, node_to_community, trackster_to_node);
-          //         std::cout << " Weight in comm " << comm_n << " " << best_nblinks << std::endl;
+        //  std::cout << "\t\t Weight in comm " << comm_n << " " << best_nblinks << std::endl;
           best_increase = increase;
         }
       }
-      //   std::cout << "Best comm " << best_comm << " N2C " << comm << std::endl;
-      insertNodeInComm(node, node_i, communities[best_comm], best_comm, best_nblinks, node_to_community);
-      //     std::cout << "After Best comm " << best_comm << " N2C " << node_to_community[node_i] << std::endl;
+    //  std::cout << "\tBest comm " << best_comm << " N2C " << comm << std::endl;
+      if (checkNodeHasTrack(node, communities[best_comm].getGraph())) {
+        communities[best_comm].setTrackIndex(communities[best_comm].getGraph().getTrackToTracksterEdge().first);
+      }
+      NodeInComm(node, tracksters, node_i, communities[best_comm], best_comm, best_nblinks, node_to_community);
+         //  std::cout << "\tAfter Best comm " << best_comm << " N2C " << node_to_community[node_i] << std::endl;
       if (best_comm != comm)
         node_move++;
 
@@ -272,9 +376,9 @@ bool one_level(const TICLGraph &graph,
         total_tot += c.getTotalWeight();
         total_in += c.getInternalWeight();
       }
-      new_mod = modularity(graph, communities);
-      //     std::cout << "New mod " << new_mod << " Cur Mod " << cur_mod << " diff " << std::abs(new_mod - cur_mod)
-      //             << " Node moved " << node_move << std::endl;
+      new_mod = modularity(graph, tracksters, tracks, communities);
+        //   std::cout << "New mod " << new_mod << " Cur Mod " << cur_mod << " diff " << std::abs(new_mod - cur_mod)
+                //   << " Node moved " << node_move << std::endl;
       if (std::abs(new_mod - cur_mod) > 10e-5) {
         modImprov = true;
       }
@@ -283,34 +387,36 @@ bool one_level(const TICLGraph &graph,
       improvement = true;
     }
     auto s = improvement == true ? "True" : "False";
-    //   std::cout << "Iterations " << iterations << " Node move " << node_move << " improvement " << s << std::endl;
+     //  std::cout << "Iterations " << iterations << " Node move " << node_move << " improvement " << s << std::endl;
     iterations++;
   }
   return improvement;
 }
 
 std::vector<Community> louvain(const TICLGraph &graph,
+                               const std::vector<Trackster> &tracksters,
+                               const std::vector<reco::Track> &tracks,
                                std::unordered_map<uint32_t, uint32_t> &trackster_to_node,
                                std::vector<Community> &communities,
                                std::unordered_map<uint32_t, uint32_t> &node_to_community) {
   auto improvement = true;
-//  auto mod = modularity(graph, communities);
+  //  auto mod = modularity(graph, communities);
   //float new_mod;
- // int level = 0;
+  // int level = 0;
   while (improvement) {
     improvement = false;
-    improvement = one_level(graph, communities, trackster_to_node, node_to_community);
-//    new_mod = modularity(graph, communities);
-//    std::cout << "Modularity increased from " << mod << " To " << new_mod << std::endl;
- //   mod = new_mod;
-//    level++;
+    improvement = one_level(graph, tracksters, tracks, communities, trackster_to_node, node_to_community);
+    //    new_mod = modularity(graph, communities);
+    //    std::cout << "Modularity increased from " << mod << " To " << new_mod << std::endl;
+    //   mod = new_mod;
+    //    level++;
   }
-//  std::cout << "Level " << level << std::endl;
+  //  std::cout << "Level " << level << std::endl;
   return communities;
 }
 
 void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &graphsFromTrack,
-                                           //   const std::vector<TICLGraph> &graphFromTracksters,
+                                              //   const std::vector<TICLGraph> &graphFromTracksters,
                                               const edm::Handle<std::vector<reco::Track>> tkH,
                                               const edm::ValueMap<float> &tkTime,
                                               const edm::ValueMap<float> &tkTimeErr,
@@ -323,7 +429,7 @@ void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &grap
                                               std::vector<TICLCandidate> &candidates,
                                               std::vector<TICLCandidate> &chargedCandidatesFromTracks,
                                               const EnergyRegressionAndIDModel &model) {
-  //std::cout << "LOUVAIN ALGO " << std::endl;
+  // std::cout << "LOUVAIN ALGO " << std::endl;
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
 
@@ -347,23 +453,27 @@ void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &grap
   if (LinkingAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
     LogDebug("LinkingAlgoByLouvainAlgo") << "------- Geometric Linking ------- \n";
 
-  //std::cout << "Graphs from tracks " << graphsFromTrack.size() << std::endl;
-  //std::cout << "Starting Louvain method on all the graphs from tracks " << std::endl;
+  // std::cout << "Graphs from tracks " << graphsFromTrack.size() << std::endl;
+  // std::cout << "Starting Louvain method on all the graphs from tracks " << std::endl;
 
   std::vector<std::vector<std::vector<uint32_t>>> g_communities;
   auto g_i = 0;
 
   auto graphs = graphsFromTrack;
-//  std::copy(std::begin(graphFromTracksters), std::end(graphFromTracksters), std::back_inserter(graphs));
+  //  std::copy(std::begin(graphFromTracksters), std::end(graphFromTracksters), std::back_er(graphs));
 
   std::vector<std::vector<bool>> chargedCommunities;
   for (auto const &g : graphs) {
     //initialize communities, one community for each node
+    // std::cout << "############## Graph " << g.getTrackToTracksterEdge().first << std::endl;
     std::vector<Community> communities;
+    auto const &trackToTrackster = g.getTrackToTracksterEdge();
     for (size_t i = 0; i != g.size(); i++) {
-      const float initial_weight = g.getNode(i).getWeightedDegree();
+      auto const &node = g.getNode(i);
+      const float initial_weight = node.getWeightedDegree();
+      auto trackIndex = static_cast<int>(node.getId()) == trackToTrackster.second ? trackToTrackster.first : -1;
       std::vector<uint32_t> n = {{static_cast<uint32_t>(i)}};
-      communities.emplace_back(g, n, 0., 0.);
+      communities.emplace_back(g, n, 0., 0., trackIndex);
     }
     //create map between node and community
     auto node_to_community = map_node_to_community(communities);
@@ -371,7 +481,7 @@ void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &grap
     auto trackster_to_node = map_trackster_to_node(g);
     //start louvain algorithm on graph g
     if (g.size() > 1) {
-      louvain(g, trackster_to_node, communities, node_to_community);
+      louvain(g, tracksters, tracks, trackster_to_node, communities, node_to_community);
     }
     std::vector<std::vector<uint32_t>> r_communities;
     std::vector<bool> chargedCommunitiesInGraph;
@@ -380,6 +490,7 @@ void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &grap
     // Iterate over all the nodes and assign each node to its corresponding community
     for (auto const &[node, community] : node_to_community) {
       // Check if the community vector exists, otherwise create it
+						// std::cout << "Community " << community << "  has track " << communities[community].getTrackIndex() << std::endl;
       if (community >= r_communities.size()) {
         r_communities.resize(community + 1);
         chargedCommunitiesInGraph.resize(community + 1);
@@ -395,23 +506,24 @@ void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &grap
     chargedCommunities.push_back(chargedCommunitiesInGraph);
     g_communities.push_back(r_communities);
     g_i++;
+		// std::cout << "################# END GRAPH ############################ " << std::endl;
   }
 
   //build trackster merged and ticl candidates
   auto i_c = 0;
   for (auto const &g_c : g_communities) {
-//    std::cout << "Printing community for graph " << i_c << std::endl;
+       //  std::cout << "Printing community for graph " << i_c << std::endl;
     auto i_cc = 0;
-  //  std::cout << "Community size " <<  g_c.size() << std::endl;
-     for (auto const &c : g_c) {
-    //  std::cout << "Community " << i_cc << std::endl;
+    //  std::cout << "Community size " <<  g_c.size() << std::endl; 
+    for (auto const &c : g_c) {
+      //  std::cout << "Community " << i_cc << std::endl;
       if (c.size() > 0) {
         Trackster outTrackster;
         auto updatedSize = outTrackster.vertices().size();
         TICLCandidate candidate;
         for (auto const &n : c) {
-    //      std::cout << "\t"
-      //              << " Node " << n << std::endl;
+              //  std::cout << "\t"
+                      //  << " Node " << n << std::endl;
           auto trackster_id = graphs[i_c].getNode(n).getId();
 
           auto const &thisTrackster = tracksters[trackster_id];
@@ -441,8 +553,8 @@ void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &grap
   assignPCAtoTracksters(
       resultTrackstersMerged, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z());
   model.energyRegressionAndID(layerClusters, resultTrackstersMerged);
-//  std::cout << " CLUE3D Trackster " << tracksters.size() << " Tracksters Merged " << resultTrackstersMerged.size()
-            //<< std::endl;
+    // std::cout << " CLUE3D Trackster " << tracksters.size() << " Tracksters Merged " << resultTrackstersMerged.size()
+//  << std::endl;
 }  // linkTracksters
 
 void LinkingAlgoByLouvainAlgo::fillPSetDescription(edm::ParameterSetDescription &desc) {

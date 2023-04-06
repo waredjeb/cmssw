@@ -1644,16 +1644,21 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   node_linked_inners.resize(tracksters.size());
   node_linked_outers.resize(tracksters.size());
 	int i_g = 0;
+//  std::cout << "DUMPEEEEER " << std::endl;
   for (auto const& g : graph) {
-    for (size_t i = 0; i < g.size(); i++) {
-      const auto& node = g.getNode((int)i);
+	//	std::cout << "Graph " << i_g << std::endl;
+		int iNode = 0;
+		for(auto const& node : g.getNodes()){
       const auto& t_id = node.getId();
+		//	std::cout << "Node " << iNode << " Trackster " << t_id << std::endl;
       node_linked_inners[t_id].push_back(t_id);
       node_linked_outers[t_id].push_back(i_g);
       for (auto const& [neigh, weight] : node.getWeightedEdges()) {
+			//	std::cout << "Neigh " << neigh << " Weight " << weight << " grpah " << i_g << std::endl;
         node_linked_inners[t_id].push_back(neigh);
         node_linked_outers[t_id].push_back(i_g);
       }
+			iNode++;
     }
     i_g++;
   }

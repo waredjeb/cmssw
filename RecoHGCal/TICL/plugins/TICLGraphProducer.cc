@@ -387,13 +387,13 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   }
 
 for (size_t ig = 0; ig < graphs->size(); ++ig) {
-  //std::cout << "@@@@ Track Graph @@@@ " << ig << std::endl;
+ // std::cout << "@@@@ Track Graph @@@@ " << ig << std::endl;
   for (size_t in = 0; in < (*graphs)[ig].size(); ++in) {
     auto nod = (*graphs)[ig].getNode(in);
-    //  std::cout << "\t Node " << in << " Trackster " << nod.getId() << " Mask " << mask_tracksters_for_node[nod.getId()] << std::endl;
+   //  std::cout << "\t Node " << in << " Trackster " << nod.getId() << " Mask " << mask_tracksters_for_node[nod.getId()] << std::endl;
     auto edges = nod.getWeightedEdges();
     for (auto const &edge : edges) {
-      //   std::cout << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
+        // std::cout << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
     }
   }
 }
@@ -424,13 +424,13 @@ for (size_t ig = 0; ig < graphs->size(); ++ig) {
     }
   }
   for (size_t ig = 0; ig < tracksterGraphs->size(); ++ig) {
-       //std::cout << "#### Tracksters Graph #### " << ig << std::endl;
+     //  std::cout << "#### Tracksters Graph #### " << ig << std::endl;
     for (size_t in = 0; in < (*tracksterGraphs)[ig].size(); ++in) {
       auto nod = (*tracksterGraphs)[ig].getNode(in);
-        //std::cout << "\t Node " << in << " Trackster " << nod.getId() << std::endl;
+      // std::cout << "\t Node " << in << " Trackster " << nod.getId() << std::endl;
       auto edges = nod.getWeightedEdges();
       for (auto const &edge : edges) {
-             //std::cout << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
+           //  std::cout << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
       }
     }
   }

@@ -19,7 +19,11 @@ from RecoHGCal.TICL.tracksterSelectionTf_cfi import *
 
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
-ticlTrackstersMerge = _trackstersMergeProducer.clone()
+ticlTrackstersMerge = _trackstersMergeProducer.clone(
+  linkingPSet = dict(
+		type = "LinkingAlgoByLouvainAlgo"
+	)
+)
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
 
 ticlGraph = _ticlGraphProducer.clone()
