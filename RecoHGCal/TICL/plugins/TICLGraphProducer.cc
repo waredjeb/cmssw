@@ -454,9 +454,9 @@ void TICLGraphProducer::fillDescriptions(edm::ConfigurationDescriptions &descrip
   desc.add<std::string>("cutTk",
                         "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
                         "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");
-  desc.add<double>("trackSep", 10.f);
-  desc.add<double>("tracksterSep", 10.f);
-  desc.add<double>("deltaEtaPhi", 0.05);
+  desc.add<double>("trackSep", 15.f);
+  desc.add<double>("tracksterSep", 15.f);
+  desc.add<double>("deltaEtaPhi", 0.2);
   descriptions.add("ticlGraphProducer", desc);
 }
 
