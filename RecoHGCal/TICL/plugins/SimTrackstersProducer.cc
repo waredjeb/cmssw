@@ -64,7 +64,9 @@ public:
                     const edm::ProductID seed,
                     const Trackster::IterationIndex iter,
                     std::vector<float>& output_mask,
-                    std::vector<Trackster>& result, const bool add=false);
+                    std::vector<Trackster>& result,
+                    int& loop_index,
+                    const bool add = false);
 
 private:
   std::string detector_;
@@ -175,11 +177,13 @@ void SimTrackstersProducer::addTrackster(
     const edm::ProductID seed,
     const Trackster::IterationIndex iter,
     std::vector<float>& output_mask,
-    std::vector<Trackster>& result, const bool add) {
+    std::vector<Trackster>& result,
+    int& loop_index,
+    const bool add) {
   Trackster tmpTrackster;
   if (lcVec.empty()) {
     result[index] = tmpTrackster;
-//std::cout << "empty" << std::endl;
+    //std::cout << "empty" << std::endl;
     return;
   }
 
@@ -200,11 +204,12 @@ void SimTrackstersProducer::addTrackster(
   tmpTrackster.setRegressedEnergy(energy);
   tmpTrackster.setIteration(iter);
   tmpTrackster.setSeed(seed, index);
-if(add){
-  result[index] = tmpTrackster;
-} else {
-  result.push_back(tmpTrackster);
-}
+  if (add) {
+    result[index] = tmpTrackster;
+    loop_index += 1;
+  } else {
+    result.push_back(tmpTrackster);
+  }
 }
 
 void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
@@ -253,6 +258,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto num_caloparticles = caloparticles.size();
   result_fromCP->resize(num_caloparticles);
   std::map<uint, uint> SimClusterToCaloParticleMap;
+  int loop_index = 0;
   for (const auto& [key, lcVec] : caloParticlesToRecoColl) {
     auto const& cp = *(key);
     auto cpIndex = &cp - &caloparticles[0];
@@ -281,7 +287,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                    key.id(),
                    ticl::Trackster::SIM,
                    *output_mask,
-                   *result);
+                   *result,
+                   loop_index);
     } else {
       for (const auto& scRef : cp.simClusters()) {
         const auto& it = simClustersToRecoColl.find(scRef);
@@ -302,7 +309,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                      scRef.id(),
                      ticl::Trackster::SIM,
                      *output_mask,
-                     *result);
+                     *result,
+                     loop_index);
 
         if (result->empty())
           continue;
@@ -326,11 +334,13 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                  key.id(),
                  ticl::Trackster::SIM_CP,
                  *output_mask_fromCP,
-                 *result_fromCP, true);
+                 *result_fromCP,
+                 loop_index,
+                 true);
 
     if (result_fromCP->empty())
       continue;
-    const auto index = result_fromCP->size() - 1;
+    const auto index = loop_index - 1;
     if (cpToSc_SimTrackstersMap->find(index) == cpToSc_SimTrackstersMap->end()) {
       (*cpToSc_SimTrackstersMap)[index] = scSimTracksterIdx;
     }
@@ -366,8 +376,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   // Creating the map from TrackingParticle to SimTrackstersFromCP
   auto& simTrackstersFromCP = *result_fromCP;
   for (unsigned int i = 0; i < simTrackstersFromCP.size(); ++i) {
-if (simTrackstersFromCP[i].vertices().size() == 0)
-   continue;
+    if (simTrackstersFromCP[i].vertices().size() == 0)
+      continue;
     const auto& simTrack = caloparticles[simTrackstersFromCP[i].seedIndex()].g4Tracks()[0];
     UniqueSimTrackId simTkIds(simTrack.trackId(), simTrack.eventId());
     auto bestAssociatedRecoTrack = simTrackToRecoTrack(simTkIds);
@@ -409,25 +419,25 @@ if (simTrackstersFromCP[i].vertices().size() == 0)
 
       auto& cand = (*result_ticlCandidates)[cp_index];
       cand.addTrackster(edm::Ptr<Trackster>(simTracksters_h, i));
-    if (trackIndex != -1 and (trackIndex < 0 or trackIndex >= (long int)recoTracks.size())) {
-      //std::cout << "ERRORE trackIndex != -1 !! -> " << trackIndex << std::endl;
-    }
+      if (trackIndex != -1 and (trackIndex < 0 or trackIndex >= (long int)recoTracks.size())) {
+        //std::cout << "ERRORE trackIndex != -1 !! -> " << trackIndex << std::endl;
+      }
       cand.setTime((*result_fromCP)[cp_index].time());
       cand.setTimeError(0);
-      if (trackIndex != -1 && caloparticles[cp_index].charge() != 0) 
+      if (trackIndex != -1 && caloparticles[cp_index].charge() != 0)
         cand.setTrackPtr(edm::Ptr<reco::Track>(recoTracks_h, trackIndex));
       toKeep.push_back(cp_index);
-    }else{
-  toRemove.push_back(cp_index);
+    } else {
+      toRemove.push_back(cp_index);
     }
   }
-  
-    auto isHad = [](int pdgId) {
-      pdgId = std::abs(pdgId);
-      if (pdgId == 111)
-        return false;
-      return (pdgId > 100 and pdgId < 900) or (pdgId > 1000 and pdgId < 9000);
-    };
+
+  auto isHad = [](int pdgId) {
+    pdgId = std::abs(pdgId);
+    if (pdgId == 111)
+      return false;
+    return (pdgId > 100 and pdgId < 900) or (pdgId > 1000 and pdgId < 9000);
+  };
 
   for (size_t i = 0; i < result_ticlCandidates->size(); ++i) {
     auto cp_index = (*result_fromCP)[i].seedIndex();
@@ -450,11 +460,11 @@ if (simTrackstersFromCP[i].vertices().size() == 0)
     }
     if (cand.trackPtr().isNonnull() and charge != 0) {
       auto const& track = cand.trackPtr().get();
-if(std::abs(pdgId)==13){
-      cand.setPdgId(pdgId);
-}else{
-      cand.setPdgId((isHad(pdgId) ? 211 : 11) * charge);
-}
+      if (std::abs(pdgId) == 13) {
+        cand.setPdgId(pdgId);
+      } else {
+        cand.setPdgId((isHad(pdgId) ? 211 : 11) * charge);
+      }
       cand.setCharge(charge);
       math::XYZTLorentzVector p4(regressedEnergy * track->momentum().unit().x(),
                                  regressedEnergy * track->momentum().unit().y(),
@@ -465,8 +475,8 @@ if(std::abs(pdgId)==13){
       cand.setPdgId(isHad(pdgId) ? 130 : 22);
       cand.setCharge(0);
 
-    auto particleType = tracksterParticleTypeFromPdgId(cand.pdgId(), 1);
-    cand.setIdProbability(particleType, 1.f);
+      auto particleType = tracksterParticleTypeFromPdgId(cand.pdgId(), 1);
+      cand.setIdProbability(particleType, 1.f);
 
       const auto& simTracksterFromCP = (*result_fromCP)[i];
       float regressedEnergy = simTracksterFromCP.regressed_energy();
@@ -479,41 +489,41 @@ if(std::abs(pdgId)==13){
   }
   for (size_t i = 0; i < result_ticlCandidates->size(); ++i) {
     auto const& cand = (*result_ticlCandidates)[i];
-//    std::cout << "--- candidate " << i << " ---" << std::endl;
-//    std::cout << "charge = " << cand.charge() << "\npdgId = " << cand.pdgId() << "\nntk = " << cand.tracksters().size()
-//              << "\nraw energy = " << cand.rawEnergy() << std::endl;
+    //    std::cout << "--- candidate " << i << " ---" << std::endl;
+    //    std::cout << "charge = " << cand.charge() << "\npdgId = " << cand.pdgId() << "\nntk = " << cand.tracksters().size()
+    //              << "\nraw energy = " << cand.rawEnergy() << std::endl;
     if (cand.trackPtr().get() == nullptr) {
-//      std::cout << "track = -1" << std::endl;
+      //      std::cout << "track = -1" << std::endl;
     } else {
       auto track_idx = cand.trackPtr().get() - (edm::Ptr<reco::Track>(recoTracks_h, 0)).get();
-  //    std::cout << "track = " << track_idx << std::endl;
+      //    std::cout << "track = " << track_idx << std::endl;
     }
     auto tracksters = cand.tracksters();
-   // std::cout << " Tracksters Energies: "; 
+    // std::cout << " Tracksters Energies: ";
     for (auto const& t_ptr : tracksters) {
-     // std::cout << t_ptr->raw_energy(); 
+      // std::cout << t_ptr->raw_energy();
     }
-   // std::cout << std::endl;
+    // std::cout << std::endl;
     auto cp_index = (*result_fromCP)[i].seedIndex();
-if (cp_index < 0)
-  continue;
-   // std::cout << "CP Size " << caloparticles.size() << " CP INDEX " << cp_index << std::endl;
+    if (cp_index < 0)
+      continue;
+    // std::cout << "CP Size " << caloparticles.size() << " CP INDEX " << cp_index << std::endl;
     const auto& cp = caloparticles[cp_index];
-   // std::cout << "CP charge = " << cp.charge() << "\nCP pdgId = " << cp.pdgId() << "\nCP eta = " << cp.eta()
-     //         << "\nCP phi = " << cp.phi() << "\nCP energy = " << cp.energy() << std::endl;
+    // std::cout << "CP charge = " << cp.charge() << "\nCP pdgId = " << cp.pdgId() << "\nCP eta = " << cp.eta()
+    //         << "\nCP phi = " << cp.phi() << "\nCP energy = " << cp.energy() << std::endl;
   }
 
-  std::vector<int> all_nums(result_fromCP->size()); // vector containing all caloparticles indexes
-  std::iota(all_nums.begin(), all_nums.end(), 0); // fill the vector with consecutive numbers starting from 0
+  std::vector<int> all_nums(result_fromCP->size());  // vector containing all caloparticles indexes
+  std::iota(all_nums.begin(), all_nums.end(), 0);    // fill the vector with consecutive numbers starting from 0
 
   std::set_difference(all_nums.begin(), all_nums.end(), toKeep.begin(), toKeep.end(), std::back_inserter(toRemove));
-  std::sort(toRemove.begin(), toRemove.end(), [](int x, int y) { return x > y; });  
-  for(auto const& r : toRemove){
+  std::sort(toRemove.begin(), toRemove.end(), [](int x, int y) { return x > y; });
+  for (auto const& r : toRemove) {
     //std::cout << "removing candidate " << r << std::endl;
     result_fromCP->erase(result_fromCP->begin() + r);
     result_ticlCandidates->erase(result_ticlCandidates->begin() + r);
   }
-//  std::cout << "CP Size " << caloparticles.size() << "ResultCP " << result_fromCP->size() << " TICLCandidate " << result_ticlCandidates->size() << std::endl;
+  //  std::cout << "CP Size " << caloparticles.size() << "ResultCP " << result_fromCP->size() << " TICLCandidate " << result_ticlCandidates->size() << std::endl;
   evt.put(std::move(result_ticlCandidates));
   evt.put(std::move(output_mask));
   evt.put(std::move(result_fromCP), "fromCPs");
