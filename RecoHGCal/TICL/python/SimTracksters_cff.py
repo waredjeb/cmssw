@@ -15,7 +15,7 @@ from SimGeneral.TrackingAnalysis.simHitTPAssociation_cfi import simHitTPAssocPro
 filteredLayerClustersSimTracksters = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSize",
     algo_number = 8,
-    min_cluster_size = 0, # inclusive
+    min_cluster_size = 2, # inclusive
     iteration_label = "ticlSimTracksters"
 )
 
