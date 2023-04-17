@@ -252,9 +252,15 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph
   // propagated point collections
   // elements in the propagated points collecions are used
   // to look for potential linkages in the appropriate tiles
+//  std::vector<float> delta_etas =
+//								 {0.08000194, 0.0888295 , 0.0994608 , 0.11253006, 0.12901762,
+//					       0.15052604, 0.17987287, 0.22253404, 0.290855 };
   std::vector<float> delta_etas =
-								 {0.08000194, 0.0888295 , 0.0994608 , 0.11253006, 0.12901762,
-					       0.15052604, 0.17987287, 0.22253404, 0.290855 };
+								 {0.03, 0.03, 0.03, 0.03, 0.03,
+					       0.03, 0.03, 0.03, 0.03};
+  std::vector<float> delta_etasTkLayer1 =
+								 {0.02, 0.02, 0.02, 0.02, 0.02,
+					       0.02, 0.02, 0.02, 0.02};
   std::vector<float> eta_bins =
 	{1.50, 1.61800577, 1.70683526, 1.80629607, 1.91882612,
 					       2.04784375, 2.19836978, 2.37824266, 2.60077669, 2.8916317};
@@ -366,7 +372,7 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph
 
   std::vector<std::vector<unsigned>> tsNearTk(tracks.size());
   findTrackstersInWindow(
-      trackPColl, tracksterPropTiles, tsAllProp, delta_etas, eta_bins, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
+      trackPColl, tracksterPropTiles, tsAllProp, delta_etasTkLayer1, eta_bins, del_tk_ts_layer1_, tracksters.size(), tsNearTk);
 
   // step 4: tracks -> all tracksters, at lastLayerEE
 
