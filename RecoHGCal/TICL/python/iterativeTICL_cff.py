@@ -20,9 +20,9 @@ from RecoHGCal.TICL.tracksterSelectionTf_cfi import *
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
 ticlTrackstersMerge = _trackstersMergeProducer.clone(
-  linkingPSet = dict(
-		type = "LinkingAlgoByLouvainAlgo"
-	)
+#  linkingPSet = dict(
+#		type = "LinkingAlgoByLouvainAlgo"
+#	)
 )
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
 
@@ -34,7 +34,8 @@ pfTICL = _pfTICLProducer.clone(
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(
-    ticlCLUE3DHighStepTask
+    ticlCLUE3DHighStepTask,
+		ticlMIPStepTask, 
 )
 
 from Configuration.ProcessModifiers.clue3D_cff import clue3D
