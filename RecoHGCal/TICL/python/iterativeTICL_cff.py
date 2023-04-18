@@ -34,8 +34,8 @@ pfTICL = _pfTICLProducer.clone(
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(
-    ticlCLUE3DHighStepTask,
-		ticlMIPStepTask, 
+    ticlCLUE3DHighStepTask
+		#ticlMIPStepTask, 
 )
 
 from Configuration.ProcessModifiers.clue3D_cff import clue3D
