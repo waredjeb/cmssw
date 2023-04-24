@@ -172,7 +172,7 @@ float updateNode(Node &node,
   auto dotProduct = [](const Vector &v1, const Vector &v2) {
     return std::abs(v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z());
   };
-  float score = -1.f;
+  float score = -100.f;
   mask_tracksters_for_node[t1] = 1;
   //std::cout << tabs << "Masking " << t1 << std::endl;
   // std::cout << tabs << "Update node " << t1 << " with " << t2 << " distance " << distance  << " th " << sep_th << std::endl;
@@ -250,7 +250,7 @@ void buildGraph(std::vector<Node> &nodes,
                                     trackster_to_node,
                                     tabs);
             //            std::cout << tabs << "Updating node " << score << std::endl;
-            if (score >= 0) {
+            if (score != -100.f) {
               //             std::cout << tabs << "Creating new node " << t_i << std::endl;
               Node newNode(t_i, 1);
 
