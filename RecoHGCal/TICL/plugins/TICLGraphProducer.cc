@@ -136,7 +136,7 @@ bool areTimeCompatible(const Trackster &trackster,
     timeCompatible = true;
 	}
   else {
-    timeCompatible = (std::abs(tsT - tsT2) < 2. * sqrt(tsTErr * tsTErr + tsTErr2 * tsTErr2));
+    timeCompatible = (std::abs(tsT - tsT2) < 3. * sqrt(tsTErr * tsTErr + tsTErr2 * tsTErr2));
   }
   return timeCompatible;
 }
