@@ -176,14 +176,15 @@ float updateNode(Node &node,
   mask_tracksters_for_node[t1] = 1;
   //std::cout << tabs << "Masking " << t1 << std::endl;
   // std::cout << tabs << "Update node " << t1 << " with " << t2 << " distance " << distance  << " th " << sep_th << std::endl;
-  if (distance < sep_th && mask_tracksters_for_edge[t2] == 0) {
+  auto const &dir1 = trackster1.eigenvectors(0);
+  auto const &dir2 = trackster2.eigenvectors(0);
+  auto dot = std::abs(std::acos(dotProduct(dir1, dir2)));
+  if (distance < sep_th && mask_tracksters_for_edge[t2] == 0 && dot < 0.35) {
     //std::cout << "Trackster 1 " << trackster1.barycenter() << " Trackster 2 " << trackster2.barycenter() << std::endl;
-    auto const &dir1 = trackster1.eigenvectors(0);
-    auto const &dir2 = trackster2.eigenvectors(0);
-    auto dot = dotProduct(dir1, dir2);
-		auto timeCompatible = areTimeCompatible(trackster1, trackster2) ? 1 : -1;
+//		auto timeCompatible = areTimeCompatible(trackster1, trackster2) ? 1 : -1;
 		
-    score = timeCompatible * (1 - (distance / sep_th + (1 - dot)) / 2);
+    //score = (1 - (distance / sep_th + (1 - dot)) / 2);
+    score = (1 - (distance / sep_th + dot / 0.35)) / 2;
 
     // std::cout << "Adding edge between " << t1 << " and " << t2 << " with score " << score << std::endl;
     node.addEdge(t2, score);
@@ -401,7 +402,7 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
                      trackster_sep_,
                      delta_etaphi_,
                      mask_tracksters_for_node,
-                     mask_tracksters_for_edge,
+										 mask_tracksters_for_edge,
                      trackster_to_node,
                      tabs);
           mask_tracksters_for_node[bestTracksterId] = 1;

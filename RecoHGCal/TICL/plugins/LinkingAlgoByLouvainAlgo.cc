@@ -400,7 +400,7 @@ std::vector<Community> louvain(const TICLGraph &graph,
                                std::vector<Community> &communities,
                                std::unordered_map<uint32_t, uint32_t> &node_to_community) {
   auto improvement = true;
-  //  auto mod = modularity(graph, communities);
+//  auto mod = modularity(graph, communities);
   //float new_mod;
   // int level = 0;
   while (improvement) {
@@ -661,4 +661,46 @@ void LinkingAlgoByLouvainAlgo::fillPSetDescription(edm::ParameterSetDescription 
       std::cout << "Node " << node << " Comm " << comm << std::endl;
     }
   
+  //build trackster merged and ticl candidates
+  auto i_c = 0;
+  for (auto const &g_c : g_communities) {
+       //  std::cout << "Printing community for graph " << i_c << std::endl;
+    auto i_cc = 0;
+    //  std::cout << "Community size " <<  g_c.size() << std::endl; 
+    for (auto const &c : g_c) {
+      //  std::cout << "Community " << i_cc << std::endl;
+      if (c.size() > 0) {
+        Trackster outTrackster;
+				std::vector<uint32_t> clue3d_tracksters_in_candidate;
+        auto updatedSize = outTrackster.vertices().size();
+        TICLCandidate candidate;
+        for (auto const &n : c) {
+              //  std::cout << "\t"
+                      //  << " Node " << n << std::endl;
+          auto trackster_id = graphs[i_c].getNode(n).getId();
+
+          auto const &thisTrackster = tracksters[trackster_id];
+          updatedSize += thisTrackster.vertices().size();
+          outTrackster.vertices().reserve(updatedSize);
+          outTrackster.vertex_multiplicity().reserve(updatedSize);
+          std::copy(std::begin(thisTrackster.vertices()),
+                    std::end(thisTrackster.vertices()),
+                    std::back_inserter(outTrackster.vertices()));
+          std::copy(std::begin(thisTrackster.vertex_multiplicity()),
+                    std::end(thisTrackster.vertex_multiplicity()),
+                    std::back_inserter(outTrackster.vertex_multiplicity()));
+          candidate.addTrackster(edm::Ptr<Trackster>(tsH, trackster_id));
+          if (chargedCommunities[i_c][i_cc]) {
+            auto trackToTracksterEdge = graphs[i_c].getTrackToTracksterEdge();
+            candidate.setTrackPtr(edm::Ptr<reco::Track>(tkH, trackToTracksterEdge.first));
+          }
+        }
+        candidates.push_back(candidate);
+        resultTrackstersMerged.push_back(outTrackster);
+      }
+      i_cc++;
+    }
+    i_c++;
+  }
+
   */
