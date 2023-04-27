@@ -184,8 +184,7 @@ float updateNode(Node &node,
 //		auto timeCompatible = areTimeCompatible(trackster1, trackster2) ? 1 : -1;
 		
     //score = (1 - (distance / sep_th + (1 - dot)) / 2);
-    score = (1 - (distance / sep_th + dot / 0.35)) / 2;
-
+    score = (1 - (distance / sep_th + dot / 0.35) /2 );
     // std::cout << "Adding edge between " << t1 << " and " << t2 << " with score " << score << std::endl;
     node.addEdge(t2, score);
     auto otherNode = std::find_if(nodes.begin(), nodes.end(), [=](Node &n) { return n.getId() == t2; });
