@@ -179,12 +179,12 @@ float updateNode(Node &node,
   auto const &dir1 = trackster1.eigenvectors(0);
   auto const &dir2 = trackster2.eigenvectors(0);
   auto dot = std::abs(std::acos(dotProduct(dir1, dir2)));
-  if (distance < sep_th && mask_tracksters_for_edge[t2] == 0 && dot < 0.35) {
+  if (distance < sep_th && mask_tracksters_for_edge[t2] == 0 && dot < 0.174) {
     //std::cout << "Trackster 1 " << trackster1.barycenter() << " Trackster 2 " << trackster2.barycenter() << std::endl;
 //		auto timeCompatible = areTimeCompatible(trackster1, trackster2) ? 1 : -1;
 		
     //score = (1 - (distance / sep_th + (1 - dot)) / 2);
-    score = (1 - (distance / sep_th + dot / 0.35) /2 );
+    score = (1 - (distance / sep_th + dot / 0.174) /2 );
     // std::cout << "Adding edge between " << t1 << " and " << t2 << " with score " << score << std::endl;
     node.addEdge(t2, score);
     auto otherNode = std::find_if(nodes.begin(), nodes.end(), [=](Node &n) { return n.getId() == t2; });
