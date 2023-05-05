@@ -152,7 +152,7 @@ float separation(const Trackster &t1, const Trackster &t2) {
   r2 = r2overz2 * bary1.z();
   r1 = r1OverZ1 * bary1.z();
   auto delta_phi = reco::deltaPhi(bary1.phi(), bary2.phi());
-  //std::cout << "r1 " << r1 << " r2 " << r2 << " z1 " << bary1.z() << " deltaPhi " << delta_phi << std::endl;
+  //// << "r1 " << r1 << " r2 " << r2 << " z1 " << bary1.z() << " deltaPhi " << delta_phi << std::endl;
   return std::sqrt((r1 - r2) * (r1 - r2) + r2 * r2 * delta_phi * delta_phi);
 }
 
@@ -174,18 +174,18 @@ float updateNode(Node &node,
   };
   float score = -100.f;
   mask_tracksters_for_node[t1] = 1;
-  //std::cout << tabs << "Masking " << t1 << std::endl;
-  // std::cout << tabs << "Update node " << t1 << " with " << t2 << " distance " << distance  << " th " << sep_th << std::endl;
+  // << tabs << "Masking " << t1 << std::endl;
+   // << tabs << "Update node " << t1 << " with " << t2 << " distance " << distance  << " th " << sep_th << std::endl;
   auto const &dir1 = trackster1.eigenvectors(0);
   auto const &dir2 = trackster2.eigenvectors(0);
   auto dot = std::abs(std::acos(dotProduct(dir1, dir2)));
   if (distance < sep_th && mask_tracksters_for_edge[t2] == 0 && dot < 0.174) {
-    //std::cout << "Trackster 1 " << trackster1.barycenter() << " Trackster 2 " << trackster2.barycenter() << std::endl;
+   // << "Trackster 1 " << trackster1.barycenter() << " Trackster 2 " << trackster2.barycenter() << std::endl;
 //		auto timeCompatible = areTimeCompatible(trackster1, trackster2) ? 1 : -1;
 		
     //score = (1 - (distance / sep_th + (1 - dot)) / 2);
     score = (1 - (distance / sep_th + dot / 0.174) /2 );
-    // std::cout << "Adding edge between " << t1 << " and " << t2 << " with score " << score << std::endl;
+     // << "Adding edge between " << t1 << " and " << t2 << " with score " << score << std::endl;
     node.addEdge(t2, score);
     auto otherNode = std::find_if(nodes.begin(), nodes.end(), [=](Node &n) { return n.getId() == t2; });
     bool found = false;
@@ -219,14 +219,15 @@ void buildGraph(std::vector<Node> &nodes,
                 std::string &tabs) {
   assert(node.getId() == tracksterId);
   if (mask_tracksters_for_node[tracksterId] == 0) {
-    //    std::cout << "Starting building graph for node " << node.getId() << std::endl;
+        // << "Starting building graph for node " << node.getId() << std::endl;
     auto const &trackster = tracksters[tracksterId];
     auto const &barycenter = trackster.barycenter();
     int sideZ = barycenter.eta() > 0;
     auto const &tile = trackster_tiles[sideZ];
+		// << "Trackster " << tracksterId << " Barycenter " << barycenter << " eta-phi " << barycenter.eta() << " " << barycenter.phi() << std::endl;
     auto tracksterRoverZ =
         std::sqrt(barycenter.x() * barycenter.x() + barycenter.y() * barycenter.y()) / std::abs(barycenter.z());
-
+    // << "Delta " << delta << std::endl;
     double eta_min = std::max(abs(barycenter.eta()) - delta, (double)TileConstants::minEta);
     double eta_max = std::min(abs(barycenter.eta()) + delta, (double)TileConstants::maxEta);
 
@@ -236,7 +237,7 @@ void buildGraph(std::vector<Node> &nodes,
       for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
         const auto &in_tile = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
         for (const unsigned &t_i : in_tile) {
-          //std::cout << tabs << "Node " << tracksterId <<  " in Tile " << t_i <<  " LastNode " << lastNode.getId() << std::endl;
+          // << tabs << "Node " << tracksterId <<  " in Tile " << t_i <<  " LastNode " << lastNode.getId() << std::endl;
           if (t_i != tracksterId &&
               ((t_i != lastNode.getId() && lastNode.isTrackster() == 1) || lastNode.isTrackster() != 1)) {  //
             //update graph!
@@ -249,12 +250,12 @@ void buildGraph(std::vector<Node> &nodes,
                                     mask_tracksters_for_edge,
                                     trackster_to_node,
                                     tabs);
-            //            std::cout << tabs << "Updating node " << score << std::endl;
+                        // << tabs << "Updating node " << score << std::endl;
             if (score != -100.f) {
-              //             std::cout << tabs << "Creating new node " << t_i << std::endl;
+                           // << tabs << "Creating new node " << t_i << std::endl;
               Node newNode(t_i, 1);
 
-              //           std::cout << tabs << "Adding edge between " <<  t_i << " and " << tracksterId << " with score " << score << std::endl;
+                         // << tabs << "Adding edge between " <<  t_i << " and " << tracksterId << " with score " << score << std::endl;
               newNode.addEdge(tracksterId, score);
               tabs += "\t";
               buildGraph(nodes,
@@ -274,22 +275,23 @@ void buildGraph(std::vector<Node> &nodes,
         }
       }
     }
-    //    std::cout << "Ending graph for node " << node.getId() << std::endl;
+        // << "Ending graph for node " << node.getId() << std::endl;
     tabs.pop_back();
     nodes.push_back(node);
-    //   std::cout << "Node status : " ;
+       // << "Node status : " ;
     for (auto const &nn : nodes) {
-      //   std::cout << nn.getId() << " ";
+         // << nn.getId() << " ";
     }
-    // std::cout << "\n";
+     // << "\n";
   }
 }
 
 void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
-  //  std::cout << "TICL GRAPH! " << std::endl;
+  //  // << "TICL GRAPH! " << std::endl;
   edm::Handle<std::vector<Trackster>> trackstersclue3d_h;
   evt.getByToken(tracksters_clue3d_token_, trackstersclue3d_h);
   auto trackstersclue3d = *trackstersclue3d_h;
+	// << "TICLGraph CLUE3D input " << trackstersclue3d.size() << std::endl;
 
   auto const &tracks = evt.get(tracks_token_);
 
@@ -323,7 +325,7 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   std::vector<Node> trackNodes;
   trackNodes.reserve(tracks.size());
   auto graphs = std::make_unique<std::vector<TICLGraph>>();
-  //std::cout << "Number of Tracks " << tracks.size() << " Number of Trackster " << trackstersclue3d.size() << std::endl;
+  //// << "Number of Tracks " << tracks.size() << " Number of Trackster " << trackstersclue3d.size() << std::endl;
   //loop over tracks. For each track create a TICLGraph.
   for (size_t i_track = 0; i_track < tracks.size(); ++i_track) {
     std::vector<std::pair<uint32_t, float>> scores;  //store trackster id and scores. Needed to find best trackster
@@ -331,7 +333,7 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
     if (cutTk_(track)) {
       Node trackNode(i_track, 0);
       int iSide = int(track.outerEta() > 0);
-      //      std::cout << " iSide " << iSide << std::endl;
+      //      // << " iSide " << iSide << std::endl;
       auto tile = tiles[iSide];
       const auto &fts = trajectoryStateTransform::outerFreeState((track), bFieldProd);
       const auto &tsos = prop.propagate(fts, firstDisk_[iSide]->surface());
@@ -354,7 +356,6 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
         for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
           for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
             const auto &in_tile = tile[tile.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
-
             for (const unsigned &t_i : in_tile) {
               if (mask_tracksters_for_node[t_i] == 0) {
                 auto const &trackster = trackstersclue3d[t_i];
@@ -415,19 +416,19 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   }
 
   for (size_t ig = 0; ig < graphs->size(); ++ig) {
-    // std::cout << "@@@@ Track Graph @@@@ " << ig << std::endl;
+     // << "@@@@ Track Graph @@@@ " << ig << std::endl;
     for (size_t in = 0; in < (*graphs)[ig].size(); ++in) {
       auto nod = (*graphs)[ig].getNode(in);
-      //  std::cout << "\t Node " << in << " Trackster " << nod.getId() << " Mask " << mask_tracksters_for_node[nod.getId()] << std::endl;
+        // << "\t Node " << in << " Trackster " << nod.getId() << " Mask " << mask_tracksters_for_node[nod.getId()] << std::endl;
       auto edges = nod.getWeightedEdges();
       for (auto const &edge : edges) {
-        // std::cout << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
+         // << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
       }
     }
   }
 
   auto tracksterGraphs = std::make_unique<std::vector<TICLGraph>>();
-  //std::cout << "#################### BUILDING TRACKSTER NODES ####################" << std::endl;
+  // << "#################### BUILDING TRACKSTER NODES ####################" << std::endl;
   for (size_t i = 0; i < mask_tracksters_for_node.size(); ++i) {
     if (mask_tracksters_for_node[i] == 0) {
       std::vector<Node> tracksterNodes;
@@ -452,13 +453,13 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
     }
   }
   for (size_t ig = 0; ig < tracksterGraphs->size(); ++ig) {
-    //  std::cout << "#### Tracksters Graph #### " << ig << std::endl;
+      // << "#### Tracksters Graph #### " << ig << std::endl;
     for (size_t in = 0; in < (*tracksterGraphs)[ig].size(); ++in) {
       auto nod = (*tracksterGraphs)[ig].getNode(in);
-      // std::cout << "\t Node " << in << " Trackster " << nod.getId() << std::endl;
+       // << "\t Node " << in << " Trackster " << nod.getId() << std::endl;
       auto edges = nod.getWeightedEdges();
       for (auto const &edge : edges) {
-        //  std::cout << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
+          // << "\t\t" << " Trackster " << edge.first << " Score " << edge.second << std::endl;
       }
     }
   }

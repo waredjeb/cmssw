@@ -50,6 +50,21 @@ namespace ticl {
                                 std::vector<TICLCandidate> &,
                                 const EnergyRegressionAndIDModel &) = 0 ;
 
+    virtual void linkTrackstersOrphan(const std::vector<TICLGraph>& trackGraphs,
+           //                     const std::vector<TICLGraph>& tracksterGraphs,
+                                const edm::Handle<std::vector<reco::Track>>,
+                                const edm::ValueMap<float> &,
+                                const edm::ValueMap<float> &,
+                                const edm::ValueMap<float> &,
+                                const std::vector<reco::Muon> &,
+                                const edm::OrphanHandle<std::vector<Trackster>>,
+                                const std::vector<reco::CaloCluster> &layerClusters,
+                                const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                                std::vector<Trackster> &tracksterMergeCollectionResult,
+                                std::vector<TICLCandidate> &,
+                                std::vector<TICLCandidate> &,
+                                const EnergyRegressionAndIDModel &) = 0 ;
+
 
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
 

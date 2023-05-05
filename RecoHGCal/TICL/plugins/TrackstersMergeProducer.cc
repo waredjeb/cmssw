@@ -291,7 +291,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   // Linking
   auto separations2 = std::make_unique<std::vector<float>>();
   auto separations2_ET = std::make_unique<std::vector<float>>();
-
+	// << "Linking algo input " << trackstersclue3d_h->size () << std::endl; 
   linkingAlgo_->linkTracksters(graphs,
 //                               graphsFromTrackster,
                                track_h,
@@ -338,7 +338,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 #endif
   }
   //filling the TICLCandidates information
-  //  ////std::cout << "MergedTracksters " << resultTrackstersMerged->size() << " Candidate number " << resultCandidates->size() << std::endl;
+  //  ////// << "MergedTracksters " << resultTrackstersMerged->size() << " Candidate number " << resultCandidates->size() << std::endl;
   assert(resultTrackstersMerged->size() == resultCandidates->size());
 
   auto isHad = [](const Trackster &tracksterMerge) {
@@ -390,7 +390,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   // Compute timing
   resultCandidates->insert(resultCandidates->end(), resultFromTracks->begin(), resultFromTracks->end());
   assignTimeToCandidates(*resultCandidates);
-
+	// << "Result TrackstersMerged Final " << resultTrackstersMerged->size() << std::endl;
   evt.put(std::move(resultTrackstersMerged));
   evt.put(std::move(resultCandidates));
 }

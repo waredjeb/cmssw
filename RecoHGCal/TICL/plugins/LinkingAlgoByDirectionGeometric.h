@@ -49,6 +49,22 @@ namespace ticl {
                                 const EnergyRegressionAndIDModel &
                                 ) override;
 
+    void linkTrackstersOrphan(const std::vector<TICLGraph>& trackGraphs,
+           //                     const std::vector<TICLGraph>& tracksterGraphs,
+                                const edm::Handle<std::vector<reco::Track>>,
+                                const edm::ValueMap<float> &,
+                                const edm::ValueMap<float> &,
+                                const edm::ValueMap<float> &,
+                                const std::vector<reco::Muon> &,
+                                const edm::OrphanHandle<std::vector<Trackster>>,
+                                const std::vector<reco::CaloCluster> &layerClusters,
+                                const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                                std::vector<Trackster> &tracksterMergeCollectionResult,
+                                std::vector<TICLCandidate> &,
+                                std::vector<TICLCandidate> &,
+                                const EnergyRegressionAndIDModel &
+                                ) override;
+
     static void fillPSetDescription(edm::ParameterSetDescription &desc);
 
   private:
@@ -77,10 +93,16 @@ namespace ticl {
                                  const float &tkTime,
                                  const float &tkTimeErr,
                                  const float &tkTimeQual);
-
     void recordTrackster(const unsigned ts,  // trackster index
                          const std::vector<Trackster> &tracksters,         
                          const edm::Handle<std::vector<Trackster>> tsH,
+                         std::vector<unsigned> &ts_mask,
+                         float &energy_in_candidate,
+                         TICLCandidate &candidate);
+
+    void recordTrackster(const unsigned ts,  // trackster index
+                         const std::vector<Trackster> &tracksters,         
+                         const edm::OrphanHandle<std::vector<Trackster>> tsH,
                          std::vector<unsigned> &ts_mask,
                          float &energy_in_candidate,
                          TICLCandidate &candidate);

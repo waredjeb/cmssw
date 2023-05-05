@@ -414,6 +414,147 @@ std::vector<Community> louvain(const TICLGraph &graph,
   //  std::cout << "Level " << level << std::endl;
   return communities;
 }
+void LinkingAlgoByLouvainAlgo::linkTrackstersOrphan(const std::vector<TICLGraph> &graphsFromTrack,
+                                              //   const std::vector<TICLGraph> &graphFromTracksters,
+                                              const edm::Handle<std::vector<reco::Track>> tkH,
+                                              const edm::ValueMap<float> &tkTime,
+                                              const edm::ValueMap<float> &tkTimeErr,
+                                              const edm::ValueMap<float> &tkTimeQual,
+                                              const std::vector<reco::Muon> &muons,
+                                              const edm::OrphanHandle<std::vector<Trackster>> tsH,
+                                              const std::vector<reco::CaloCluster> &layerClusters,
+                                              const edm::ValueMap<std::pair<float, float>> &layerClustersTimes,
+                                              std::vector<Trackster> &resultTrackstersMerged,
+                                              std::vector<TICLCandidate> &candidates,
+                                              std::vector<TICLCandidate> &chargedCandidatesFromTracks,
+                                              const EnergyRegressionAndIDModel &model) {
+  // std::cout << "LOUVAIN ALGO " << std::endl;
+  const auto &tracks = *tkH;
+  const auto &tracksters = *tsH;
+
+  auto bFieldProd = bfield_.product();
+  const Propagator &prop = (*propagator_);
+  //needed to keep track of trackster indices when building TICLCandidate
+  std::vector<std::vector<unsigned>> tracksterMergeSmallCollectionIndices;
+  std::vector<std::vector<unsigned>> tracksterMergeCollectionIndices;
+  //needed to keep track of trackster indices when building TICLCandidate
+  std::vector<Trackster> tracksterMergeSmallCollection;
+  std::vector<Trackster> tracksterMergeCollection;
+  //after cleaning needed to keep track of trackster indices when building TICLCandidate
+  std::vector<Trackster> resultTrackstersSmallMerged;  //after cleaning.
+  std::vector<std::vector<unsigned>> resultTrackstersSmallMergedIndices;
+  std::vector<std::vector<unsigned>> resultTrackstersMergedIndices;
+
+  std::array<TICLLayerTile, 2> tracksterPropTiles = {};       // all Tracksters
+  std::array<TICLLayerTile, 2> tracksterSmallPropTiles = {};  // all Tracksters
+  std::array<TICLLayerTile, 2> tracksPropTiles = {};          // all Tracks
+
+  if (LinkingAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
+    LogDebug("LinkingAlgoByLouvainAlgo") << "------- Geometric Linking ------- \n";
+
+  // std::cout << "Graphs from tracks " << graphsFromTrack.size() << std::endl;
+  // std::cout << "Starting Louvain method on all the graphs from tracks " << std::endl;
+
+  std::vector<std::vector<std::vector<uint32_t>>> g_communities;
+  auto g_i = 0;
+
+  auto graphs = graphsFromTrack;
+  //  std::copy(std::begin(graphFromTracksters), std::end(graphFromTracksters), std::back_er(graphs));
+
+  std::vector<std::vector<bool>> chargedCommunities;
+  for (auto const &g : graphs) {
+    //initialize communities, one community for each node
+    // std::cout << "############## Graph " << g.getTrackToTracksterEdge().first << std::endl;
+    std::vector<Community> communities;
+    auto const &trackToTrackster = g.getTrackToTracksterEdge();
+    for (size_t i = 0; i != g.size(); i++) {
+      auto const &node = g.getNode(i);
+      const float initial_weight = node.getWeightedDegree();
+      auto trackIndex = static_cast<int>(node.getId()) == trackToTrackster.second ? trackToTrackster.first : -1;
+      std::vector<uint32_t> n = {{static_cast<uint32_t>(i)}};
+      communities.emplace_back(g, n, 0., 0., trackIndex);
+    }
+    //create map between node and community
+    auto node_to_community = map_node_to_community(communities);
+    //create map between trackster id and node id
+    auto trackster_to_node = map_trackster_to_node(g);
+    //start louvain algorithm on graph g
+    if (g.size() > 1) {
+      louvain(g, tracksters, tracks, trackster_to_node, communities, node_to_community);
+    }
+    std::vector<std::vector<uint32_t>> r_communities;
+    std::vector<bool> chargedCommunitiesInGraph;
+
+    //collect nodes for each community
+    // Iterate over all the nodes and assign each node to its corresponding community
+    for (auto const &[node, community] : node_to_community) {
+      // Check if the community vector exists, otherwise create it
+						// std::cout << "Community " << community << "  has track " << communities[community].getTrackIndex() << std::endl;
+      if (community >= r_communities.size()) {
+        r_communities.resize(community + 1);
+        chargedCommunitiesInGraph.resize(community + 1);
+      }
+      // Add the node to its corresponding community
+      r_communities[community].push_back(node);
+      if (static_cast<int>(node) == g.getTrackToTracksterEdge().second) {
+        chargedCommunitiesInGraph.push_back(true);
+      } else {
+        chargedCommunitiesInGraph.push_back(false);
+      }
+    }
+    chargedCommunities.push_back(chargedCommunitiesInGraph);
+    g_communities.push_back(r_communities);
+    g_i++;
+		// std::cout << "################# END GRAPH ############################ " << std::endl;
+  }
+
+  //build trackster merged and ticl candidates
+  auto i_c = 0;
+  for (auto const &g_c : g_communities) {
+       //  std::cout << "Printing community for graph " << i_c << std::endl;
+    auto i_cc = 0;
+    //  std::cout << "Community size " <<  g_c.size() << std::endl; 
+    for (auto const &c : g_c) {
+      //  std::cout << "Community " << i_cc << std::endl;
+      if (c.size() > 0) {
+        Trackster outTrackster;
+        auto updatedSize = outTrackster.vertices().size();
+        TICLCandidate candidate;
+        for (auto const &n : c) {
+              //  std::cout << "\t"
+                      //  << " Node " << n << std::endl;
+          auto trackster_id = graphs[i_c].getNode(n).getId();
+
+          auto const &thisTrackster = tracksters[trackster_id];
+          updatedSize += thisTrackster.vertices().size();
+          outTrackster.vertices().reserve(updatedSize);
+          outTrackster.vertex_multiplicity().reserve(updatedSize);
+          std::copy(std::begin(thisTrackster.vertices()),
+                    std::end(thisTrackster.vertices()),
+                    std::back_inserter(outTrackster.vertices()));
+          std::copy(std::begin(thisTrackster.vertex_multiplicity()),
+                    std::end(thisTrackster.vertex_multiplicity()),
+                    std::back_inserter(outTrackster.vertex_multiplicity()));
+          candidate.addTrackster(edm::Ptr<Trackster>(tsH, trackster_id));
+          if (chargedCommunities[i_c][i_cc]) {
+            auto trackToTracksterEdge = graphs[i_c].getTrackToTracksterEdge();
+            candidate.setTrackPtr(edm::Ptr<reco::Track>(tkH, trackToTracksterEdge.first));
+          }
+        }
+        candidates.push_back(candidate);
+        resultTrackstersMerged.push_back(outTrackster);
+      }
+      i_cc++;
+    }
+    i_c++;
+  }
+
+  assignPCAtoTracksters(
+      resultTrackstersMerged, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z());
+  model.energyRegressionAndID(layerClusters, resultTrackstersMerged);
+    // std::cout << " CLUE3D Trackster " << tracksters.size() << " Tracksters Merged " << resultTrackstersMerged.size()
+//  << std::endl;
+}  // linkTracksters
 
 void LinkingAlgoByLouvainAlgo::linkTracksters(const std::vector<TICLGraph> &graphsFromTrack,
                                               //   const std::vector<TICLGraph> &graphFromTracksters,
