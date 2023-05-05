@@ -7,7 +7,7 @@
  * the handles of Tracksters, LayerClusters and SimTracksters collections and return an
  * AssociationMap (oneToManyWithQuality)
  *
- *  \author Leonardo Cristella
+ *  \authors Leonardo Cristella, Wahid Redjeb, Felice Pantaleo
  */
 
 #include "DataFormats/Common/interface/Handle.h"
@@ -23,7 +23,7 @@ namespace hgcal {
       edm::OneToManyWithQualityGeneric<ticl::TracksterCollection, ticl::TracksterCollection, std::pair<float, float>>>
       SimToRecoCollectionSimTracksters;
   typedef edm::AssociationMap<
-      edm::OneToManyWithQualityGeneric<ticl::TracksterCollection, ticl::TracksterCollection, float>>
+      edm::OneToManyWithQualityGeneric<ticl::TracksterCollection, ticl::TracksterCollection, std::pair<float, float>>>
       RecoToSimCollectionSimTracksters;
 
   class TracksterToSimTracksterAssociatorBaseImpl {
