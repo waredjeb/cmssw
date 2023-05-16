@@ -159,7 +159,7 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
   auto algoType = linkingPSet.getParameter<std::string>("type");
   linkingAlgo_ = LinkingAlgoFactory::get()->create(algoType, linkingPSet);
   produces<std::vector<Trackster>>();
-  produces<std::vector<Trackster>>("CLUE3D");
+//  produces<std::vector<Trackster>>("CLUE3D");
   produces<std::vector<float>>();  // Mask to be applied at the next iteration
 }
 
@@ -307,26 +307,26 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   auto resultFromTracks = std::make_unique<std::vector<TICLCandidate>>();
   auto graphs = std::make_unique<std::vector<TICLGraph>>();
 	// << "Result CLUE3D " << result->size() << std::endl;
-  edm::OrphanHandle<std::vector<Trackster>> trackstersclue3d_h = evt.put(std::move(result), "CLUE3D");
-  linkingAlgo_->linkTrackstersOrphan(*graphs,
+//  edm::OrphanHandle<std::vector<Trackster>> trackstersclue3d_h = evt.put(std::move(result), "CLUE3D");
+//  linkingAlgo_->linkTrackstersOrphan(*graphs,
 //                               graphsFromTrackster,
-                               track_h,
-                               trackTime,
-                               trackTimeErr,
-                               trackTimeQual,
-                               muons,
-                               trackstersclue3d_h,
-                               layerClusters,
-                               layerClustersTimes,
-                               *resultTrackstersMerged,
-                               *resultCandidates,
-                               *resultFromTracks,
-                               *model);
+//                               track_h,
+//                               trackTime,
+//                               trackTimeErr,
+//                               trackTimeQual,
+//                               muons,
+//                               trackstersclue3d_h,
+//                               layerClusters,
+//                               layerClustersTimes,
+//                               *resultTrackstersMerged,
+//                               *resultCandidates,
+//                               *resultFromTracks,
+//                               *model);
  
-  ticl::assignPCAtoTracksters(*resultTrackstersMerged,
-                              layerClusters,
-                              layerClustersTimes,
-                              rhtools_.getPositionLayer(rhtools_.lastLayerEE(false), false).z());
+//  ticl::assignPCAtoTracksters(*resultTrackstersMerged,
+//                              layerClusters,
+//                              layerClustersTimes,
+//                              rhtools_.getPositionLayer(rhtools_.lastLayerEE(false), false).z());
   // << "Size CLUE3D End " << resultTrackstersMerged->size() << std::endl;	
 	for(auto const& t : *resultTrackstersMerged){
 		// << "Size Tracksters " <<  t.vertices().size() << std::endl; 
@@ -334,6 +334,6 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 	}
 	
 
-  evt.put(std::move(resultTrackstersMerged));
+  evt.put(std::move(result));
   evt.put(std::move(output_mask));
 }

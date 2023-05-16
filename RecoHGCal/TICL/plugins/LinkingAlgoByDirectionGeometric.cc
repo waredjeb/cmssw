@@ -10,6 +10,7 @@
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 
 #include "RecoParticleFlow/PFProducer/interface/PFMuonAlgo.h"
+#include "TrackstersPCA.h"
 
 using namespace ticl;
 
@@ -978,6 +979,8 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const std::vector<TICLGraph
       resultTrackstersMerged.push_back(outTrackster);
     }
   }
+  assignPCAtoTracksters(
+      resultTrackstersMerged, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z());
   model.energyRegressionAndID(layerClusters, resultTrackstersMerged);
 
 }  // linkTracksters

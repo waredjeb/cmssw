@@ -365,6 +365,7 @@ private:
 
   // from TICLGraph
   std::vector<std::vector<uint32_t>> node_linked_inners;
+  std::vector<std::vector<float>> node_linked_scores;
   std::vector<std::vector<uint32_t>> node_linked_outers;
   std::vector<bool> isRootTrackster;
 
@@ -692,6 +693,7 @@ void TICLDumper::clearVariables() {
   stsCP_trackster_vertices_multiplicity.clear();
 
   node_linked_inners.clear();
+  node_linked_scores.clear();
   node_linked_outers.clear();
   isRootTrackster.clear();
 
@@ -1129,6 +1131,7 @@ void TICLDumper::beginJob() {
   simtrackstersCP_tree_->Branch("vertices_multiplicity", &stsCP_trackster_vertices_multiplicity);  //NEW
 
   graph_tree_->Branch("linked_inners", &node_linked_inners);
+  graph_tree_->Branch("linked_scores", &node_linked_scores);
   graph_tree_->Branch("linked_outers", &node_linked_outers);
   graph_tree_->Branch("isRootTrackster", &isRootTrackster);
 
@@ -1901,6 +1904,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   }
 
   node_linked_inners.resize(tracksters.size());
+  node_linked_scores.resize(tracksters.size());
   node_linked_outers.resize(tracksters.size());
 	int i_g = 0;
 //  std::cout << "DUMPEEEEER " << std::endl;
@@ -1911,10 +1915,12 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       const auto& t_id = node.getId();
 		//	std::cout << "Node " << iNode << " Trackster " << t_id << std::endl;
       node_linked_inners[t_id].push_back(t_id);
+      node_linked_scores[t_id].push_back(0.);
       node_linked_outers[t_id].push_back(i_g);
       for (auto const& [neigh, weight] : node.getWeightedEdges()) {
 			//	std::cout << "Neigh " << neigh << " Weight " << weight << " grpah " << i_g << std::endl;
         node_linked_inners[t_id].push_back(neigh);
+        node_linked_scores[t_id].push_back(weight);
         node_linked_outers[t_id].push_back(i_g);
       }
 			iNode++;
