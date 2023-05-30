@@ -1,4 +1,4 @@
-TMPDIR=test/tmp
+TMPDIR=/eos/user/w/wredjeb/HGCAL/TICLv4Linking/
 RELVALCMD=${CMSSW_BASE}/src/Validation/RecoParticleFlow/test/run_relval.sh
 DQM_MC=DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO
 
@@ -82,7 +82,7 @@ QCDPU_plots:
 	rm -Rf plots
 	python3 test/compare.py \
 		--sample FlatQCD_PU25ns:${TMPDIR}/QCDPU/${DQM_MC}.root:${TMPDIR}/QCDPU/${DQM_MC}.root \
-		--doResponsePlots --doOffsetPlots --doMETPlots --doPFCandPlots
+		--doResponsePlots   --doPFCandPlots
 
 NuGunPU_plots:
 	rm -Rf plots

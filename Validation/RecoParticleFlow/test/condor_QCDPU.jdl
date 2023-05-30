@@ -17,20 +17,21 @@ RequestCpus = 8
 +JobFlavour = "tomorrow"
 
 #choose job environment using singularity
-+RunAsOwner = True
-+SleepSlot = True
-+InteractiveUser = true
-+SingularityImage = "/cvmfs/singularity.opensciencegrid.org/bbockelm/cms:rhel7"
-+SingularityBindCVMFS = True
-run_as_owner = True
+#+RunAsOwner = True
+#+SleepSlot = True
+#+InteractiveUser = true
+#+SingularityImage = "/cvmfs/singularity.opensciencegrid.org/bbockelm/cms:rhel7"
+#+SingularityBindCVMFS = True
+#run_as_owner = True
 
 use_x509userproxy = True
-x509userproxy = $ENV(X509_USER_PROXY)
+x509userproxy = $X509_USER_PROXY
 
 #transfer section
 transfer_output_files = QCDPU/step3.log,QCDPU/step3_inMINIAODSIM.root
-transfer_output_remaps = "step3.log=/eos/cms/store/group/phys_pf/PFVal/QCDPU/step3.$(Cluster).$(Process).log;step3_inMINIAODSIM.root=/eos/cms/store/group/phys_pf/PFVal/QCDPU/step3_inMINIAODSIM.$(Cluster).$(Process).root"
+transfer_output_remaps = "step3.log=/eos/user/w/wredjeb/HGCAL/TICLv4Linking/QCDPU/step3.$(Cluster).$(Process).log;step3_inMINIAODSIM.root=/eos/user/w/wredjeb/HGCAL/TICLv4Linking/QCDPU/step3_inMINIAODSIM.$(Cluster).$(Process).root"
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 
-Queue 50
+Queue 18
+

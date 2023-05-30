@@ -51,8 +51,30 @@ namespace ticl {
           : ev(eV), es(eS), layerClusters(lC), mask(mS), layerClustersTime(lT), tiles(tL), regions(rG), tfSession(tS) {}
     };
 
+    struct Outputs {
+      std::vector<Trackster>& result;
+      std::vector<int>& tracksterSeeds;
+      std::vector<float>& clustersLocalDensity;
+      std::vector<float>& clustersRadius;
+      std::vector<unsigned int>& clustersSize;
+      std::vector<unsigned int>& clustersType;
+
+      Outputs(std::vector<Trackster>& r,
+              std::vector<int>& s,
+              std::vector<float>& cLD,
+              std::vector<float>& cR,
+              std::vector<unsigned int>& cS,
+              std::vector<unsigned int>& cT)
+          : result(r),
+            tracksterSeeds(s),
+            clustersLocalDensity(cLD),
+            clustersRadius(cR),
+            clustersSize(cS),
+            clustersType(cT) {}
+    };
+
     virtual void makeTracksters(const Inputs& input,
-                                std::vector<Trackster>& result,
+                                Outputs& output,
                                 std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) = 0;
 
   protected:
