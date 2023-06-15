@@ -43,6 +43,7 @@
 #include <map>
 #include <iterator>
 #include <algorithm>
+#include <numeric>
 
 using namespace ticl;
 
@@ -52,6 +53,12 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
   void produce(edm::Event&, const edm::EventSetup&) override;
+  void makePUTrackster(const std::vector<float>& inputClusterMask,
+                       std::vector<float>& output_mask,
+                       std::vector<Trackster>& result,
+                    	 const edm::ProductID seed,
+                       int loop_index);
+
   void addTrackster(const int index,
                     const std::vector<std::pair<edm::Ref<reco::CaloClusterCollection>, std::pair<float, float>>>& lcVec,
                     const std::vector<float>& inputClusterMask,
@@ -63,7 +70,9 @@ public:
                     const edm::ProductID seed,
                     const Trackster::IterationIndex iter,
                     std::vector<float>& output_mask,
-                    std::vector<Trackster>& result);
+                    std::vector<Trackster>& result,
+                    int& loop_index,
+                    const bool add = false);
 
 private:
   std::string detector_;
@@ -89,6 +98,12 @@ private:
   const edm::EDGetTokenT<reco::SimToRecoCollection> associatormapStRsToken_;
   const edm::EDGetTokenT<reco::RecoToSimCollection> associatormapRtSsToken_;
   const edm::EDGetTokenT<SimTrackToTPMap> associationSimTrackToTPToken_;
+
+  //timing of RecoTracks from MTD
+  const edm::EDGetTokenT<edm::ValueMap<float>> MTDTimeToken_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> MTDTimeErrorToken_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> tmtdToken_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> sigmatmtdToken_;
 };
 DEFINE_FWK_MODULE(SimTrackstersProducer);
 
@@ -108,18 +123,23 @@ SimTrackstersProducer::SimTrackstersProducer(const edm::ParameterSet& ps)
       fractionCut_(ps.getParameter<double>("fractionCut")),
       trackingParticleToken_(
           consumes<std::vector<TrackingParticle>>(ps.getParameter<edm::InputTag>("trackingParticles"))),
-      simVerticesToken_(
-          consumes<std::vector<SimVertex>>(ps.getParameter<edm::InputTag>("simVertices"))),
+      simVerticesToken_(consumes<std::vector<SimVertex>>(ps.getParameter<edm::InputTag>("simVertices"))),
       recoTracksToken_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("recoTracks"))),
       cutTk_(ps.getParameter<std::string>("cutTk")),
       associatormapStRsToken_(consumes(ps.getParameter<edm::InputTag>("tpToTrack"))),
-      associationSimTrackToTPToken_(consumes(ps.getParameter<edm::InputTag>("simTrackToTPMap"))) {
+      associationSimTrackToTPToken_(consumes(ps.getParameter<edm::InputTag>("simTrackToTPMap"))),
+      MTDTimeToken_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("trackTimeValueMap"))),
+      MTDTimeErrorToken_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("trackTimeErrorMap"))),
+      tmtdToken_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("tmtd"))),
+      sigmatmtdToken_(consumes<edm::ValueMap<float>>(ps.getParameter<edm::InputTag>("sigmatmtd"))) {
   produces<TracksterCollection>();
   produces<std::vector<float>>();
   produces<TracksterCollection>("fromCPs");
+	produces<TracksterCollection>("PU");
   produces<std::vector<float>>("fromCPs");
   produces<std::map<uint, std::vector<uint>>>();
   produces<std::vector<TICLCandidate>>();
+
 }
 
 void SimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -144,10 +164,29 @@ void SimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   desc.add<edm::InputTag>("simVertices", edm::InputTag("g4SimHits"));
 
   desc.add<edm::InputTag>("simTrackToTPMap", edm::InputTag("simHitTPAssocProducer", "simTrackToTP"));
-
+  desc.add<edm::InputTag>("trackTimeValueMap", edm::InputTag("tofPID:t0"));
+  desc.add<edm::InputTag>("trackTimeErrorMap", edm::InputTag("tofPID:sigmat0"));
+  desc.add<edm::InputTag>("tmtd", edm::InputTag("trackExtenderWithMTD:generalTracktmtd"));
+  desc.add<edm::InputTag>("sigmatmtd", edm::InputTag("trackExtenderWithMTD:generalTracksigmatmtd"));
   desc.add<double>("fractionCut", 0.);
 
   descriptions.addWithDefaultLabel(desc);
+}
+void SimTrackstersProducer::makePUTrackster(const std::vector<float>& inputClusterMask,
+                                            std::vector<float>& output_mask,
+                                            std::vector<Trackster>& result,
+    																				const edm::ProductID seed,
+                                            int loop_index) {
+  Trackster tmpTrackster;
+  for (size_t i = 0; i < output_mask.size(); i++) {
+    const float remaining_fraction = output_mask[i];
+    if (remaining_fraction > 0.) {
+      tmpTrackster.vertices().push_back(i);
+      tmpTrackster.vertex_multiplicity().push_back(1./remaining_fraction);
+    }
+  }
+	tmpTrackster.setSeed(seed, 0);
+	result.push_back(tmpTrackster); 
 }
 
 void SimTrackstersProducer::addTrackster(
@@ -162,11 +201,15 @@ void SimTrackstersProducer::addTrackster(
     const edm::ProductID seed,
     const Trackster::IterationIndex iter,
     std::vector<float>& output_mask,
-    std::vector<Trackster>& result) {
-  if (lcVec.empty())
-    return;
-
+    std::vector<Trackster>& result,
+    int& loop_index,
+    const bool add) {
   Trackster tmpTrackster;
+  if (lcVec.empty()) {
+    result[index] = tmpTrackster;
+    return;
+  }
+
   tmpTrackster.vertices().reserve(lcVec.size());
   tmpTrackster.vertex_multiplicity().reserve(lcVec.size());
   for (auto const& [lc, energyScorePair] : lcVec) {
@@ -181,16 +224,22 @@ void SimTrackstersProducer::addTrackster(
   }
 
   tmpTrackster.setIdProbability(tracksterParticleTypeFromPdgId(pdgId, charge), 1.f);
+  tmpTrackster.setRegressedEnergy(energy);
   tmpTrackster.setIteration(iter);
   tmpTrackster.setSeed(seed, index);
-  tmpTrackster.setTimeAndError(time, 0.f);
-  result.emplace_back(tmpTrackster);
+  if (add) {
+    result[index] = tmpTrackster;
+    loop_index += 1;
+  } else {
+    result.push_back(tmpTrackster);
+  }
 }
 
 void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   auto result = std::make_unique<TracksterCollection>();
   auto output_mask = std::make_unique<std::vector<float>>();
   auto result_fromCP = std::make_unique<TracksterCollection>();
+  auto resultPU = std::make_unique<TracksterCollection>();
   auto output_mask_fromCP = std::make_unique<std::vector<float>>();
   auto cpToSc_SimTrackstersMap = std::make_unique<std::map<uint, std::vector<uint>>>();
   auto result_ticlCandidates = std::make_unique<std::vector<TICLCandidate>>();
@@ -218,13 +267,22 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto& simTrackToTPMap = evt.get(associationSimTrackToTPToken_);
   const auto& recoTracks = *recoTracks_h;
 
+  edm::Handle<edm::ValueMap<float>> MTDTime_h, MTDTimeError_h;
+  evt.getByToken(MTDTimeToken_, MTDTime_h);
+  evt.getByToken(MTDTimeErrorToken_, MTDTimeError_h);
+
+  edm::Handle<edm::ValueMap<float>> tMtd_h, tMtdError_h;
+  evt.getByToken(tmtdToken_, tMtd_h);
+  evt.getByToken(sigmatmtdToken_, tMtdError_h);
+
   const auto& geom = es.getData(geom_token_);
   rhtools_.setGeometry(geom);
   const auto num_simclusters = simclusters.size();
   result->reserve(num_simclusters);  // Conservative size, will call shrink_to_fit later
   const auto num_caloparticles = caloparticles.size();
-  result_fromCP->reserve(num_caloparticles);
+  result_fromCP->resize(num_caloparticles);
   std::map<uint, uint> SimClusterToCaloParticleMap;
+  int loop_index = 0;
   for (const auto& [key, lcVec] : caloParticlesToRecoColl) {
     auto const& cp = *(key);
     auto cpIndex = &cp - &caloparticles[0];
@@ -233,6 +291,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
       auto const scIndex = &sc - &simclusters[0];
       SimClusterToCaloParticleMap[scIndex] = cpIndex;
     }
+
     auto regr_energy = cp.energy();
     std::vector<uint> scSimTracksterIdx;
     scSimTracksterIdx.reserve(cp.simClusters().size());
@@ -252,7 +311,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                    key.id(),
                    ticl::Trackster::SIM,
                    *output_mask,
-                   *result);
+                   *result,
+                   loop_index);
     } else {
       for (const auto& scRef : cp.simClusters()) {
         const auto& it = simClustersToRecoColl.find(scRef);
@@ -273,7 +333,8 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                      scRef.id(),
                      ticl::Trackster::SIM,
                      *output_mask,
-                     *result);
+                     *result,
+                     loop_index);
 
         if (result->empty())
           continue;
@@ -283,7 +344,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
         }
       }
       scSimTracksterIdx.shrink_to_fit();
-    } 
+    }
     float time = simVertices[cp.g4Tracks()[0].vertIndex()].position().t();
     // Create a Trackster from any CP
     addTrackster(cpIndex,
@@ -297,11 +358,13 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                  key.id(),
                  ticl::Trackster::SIM_CP,
                  *output_mask_fromCP,
-                 *result_fromCP);
+                 *result_fromCP,
+                 loop_index,
+                 true);
 
     if (result_fromCP->empty())
       continue;
-    const auto index = result_fromCP->size() - 1;
+    const auto index = loop_index - 1;
     if (cpToSc_SimTrackstersMap->find(index) == cpToSc_SimTrackstersMap->end()) {
       (*cpToSc_SimTrackstersMap)[index] = scSimTracksterIdx;
     }
@@ -309,122 +372,176 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   // TODO: remove time computation from PCA calculation and
   //       store time from boundary position in simTracksters
   ticl::assignPCAtoTracksters(
-      *result, layerClusters, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
+      *result, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
   result->shrink_to_fit();
   ticl::assignPCAtoTracksters(
-      *result_fromCP, layerClusters, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
-  result_fromCP->shrink_to_fit();
+      *result_fromCP, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
 
-  auto simTrackToRecoTrack = [&](UniqueSimTrackId simTkId) -> std::pair<int, float> {
-    int trackIdx = -1;
-    float quality = 0.f;
-    auto ipos = simTrackToTPMap.mapping.find(simTkId);
-    if (ipos != simTrackToTPMap.mapping.end()) {
-      auto jpos = TPtoRecoTrackMap.find((ipos->second));
-      if (jpos != TPtoRecoTrackMap.end()) {
-        auto& associatedRecoTracks = jpos->val;
-        if (!associatedRecoTracks.empty()) {
-          // associated reco tracks are sorted by decreasing quality
-          if (associatedRecoTracks[0].second > 0.75f) {
-            trackIdx = &(*associatedRecoTracks[0].first) - &recoTracks[0];
-            quality = associatedRecoTracks[0].second;
+  makePUTrackster(inputClusterMask, *output_mask, *resultPU, caloParticles_h.id(),  0);
+  
+    auto simTrackToRecoTrack = [&](UniqueSimTrackId simTkId) -> std::pair<int, float> {
+      int trackIdx = -1;
+      float quality = 0.f;
+      auto ipos = simTrackToTPMap.mapping.find(simTkId);
+      if (ipos != simTrackToTPMap.mapping.end()) {
+        auto jpos = TPtoRecoTrackMap.find((ipos->second));
+        if (jpos != TPtoRecoTrackMap.end()) {
+          auto& associatedRecoTracks = jpos->val;
+          if (!associatedRecoTracks.empty()) {
+            // associated reco tracks are sorted by decreasing quality
+            if (associatedRecoTracks[0].second > 0.75f) {
+              trackIdx = &(*associatedRecoTracks[0].first) - &recoTracks[0];
+              quality = associatedRecoTracks[0].second;
+            }
           }
         }
       }
-    }
-    return {trackIdx, quality};
-  };
+      return {trackIdx, quality};
+    };
 
-  // Creating the map from TrackingParticle to SimTrackstersFromCP
-  auto& simTrackstersFromCP = *result_fromCP;
-  for (unsigned int i = 0; i < simTrackstersFromCP.size(); ++i) {
-    const auto& simTrack = caloparticles[simTrackstersFromCP[i].seedIndex()].g4Tracks()[0];
-    UniqueSimTrackId simTkIds(simTrack.trackId(), simTrack.eventId());
-    auto bestAssociatedRecoTrack = simTrackToRecoTrack(simTkIds);
-    if (bestAssociatedRecoTrack.first != -1 and bestAssociatedRecoTrack.second > 0.75f) {
-      auto trackIndex = bestAssociatedRecoTrack.first;
-      simTrackstersFromCP[i].setTrackIdx(trackIndex);
+    // Creating the map from TrackingParticle to SimTrackstersFromCP
+    auto& simTrackstersFromCP = *result_fromCP;
+    for (unsigned int i = 0; i < simTrackstersFromCP.size(); ++i) {
+      if (simTrackstersFromCP[i].vertices().size() == 0)
+        continue;
+      const auto& simTrack = caloparticles[simTrackstersFromCP[i].seedIndex()].g4Tracks()[0];
+      UniqueSimTrackId simTkIds(simTrack.trackId(), simTrack.eventId());
+      auto bestAssociatedRecoTrack = simTrackToRecoTrack(simTkIds);
+      if (bestAssociatedRecoTrack.first != -1 and bestAssociatedRecoTrack.second > 0.75f) {
+        auto trackIndex = bestAssociatedRecoTrack.first;
+        simTrackstersFromCP[i].setTrackIdx(trackIndex);
+      }
     }
+
+    auto& simTracksters = *result;
+    // Creating the map from TrackingParticle to SimTrackster
+    std::unordered_map<unsigned int, std::vector<unsigned int>> TPtoSimTracksterMap;
+    for (unsigned int i = 0; i < simTracksters.size(); ++i) {
+      const auto& simTrack = (simTracksters[i].seedID() == caloParticles_h.id())
+                                 ? caloparticles[simTracksters[i].seedIndex()].g4Tracks()[0]
+                                 : simclusters[simTracksters[i].seedIndex()].g4Tracks()[0];
+      UniqueSimTrackId simTkIds(simTrack.trackId(), simTrack.eventId());
+      auto bestAssociatedRecoTrack = simTrackToRecoTrack(simTkIds);
+      if (bestAssociatedRecoTrack.first != -1 and bestAssociatedRecoTrack.second > 0.75f) {
+        auto trackIndex = bestAssociatedRecoTrack.first;
+        simTracksters[i].setTrackIdx(trackIndex);
+        //reco::TrackRef trackref(ticl_cand.trackPtr().id(), int(ticl_cand.trackPtr().key()), &evt.productGetter());
+      }
+    }
+
+    edm::OrphanHandle<std::vector<Trackster>> simTracksters_h = evt.put(std::move(result));
+
+    result_ticlCandidates->resize(result_fromCP->size());
+    std::vector<int> toKeep;
+    std::vector<int> toRemove;
+    for (size_t i = 0; i < simTracksters_h->size(); ++i) {
+      const auto& simTrackster = (*simTracksters_h)[i];
+      int cp_index = (simTrackster.seedID() == caloParticles_h.id())
+                         ? simTrackster.seedIndex()
+                         : SimClusterToCaloParticleMap[simTrackster.seedIndex()];
+      auto const& tCP = (*result_fromCP)[cp_index];
+      if (tCP.vertices().size() > 0) {
+        auto trackIndex = tCP.trackIdx();
+
+        auto& cand = (*result_ticlCandidates)[cp_index];
+        cand.addTrackster(edm::Ptr<Trackster>(simTracksters_h, i));
+        if (trackIndex != -1 and (trackIndex < 0 or trackIndex >= (long int)recoTracks.size())) {
+        }
+        cand.setTime((*result_fromCP)[cp_index].time());
+        cand.setTimeError(0);
+        if (trackIndex != -1 && caloparticles[cp_index].charge() != 0)
+          cand.setTrackPtr(edm::Ptr<reco::Track>(recoTracks_h, trackIndex));
+        toKeep.push_back(cp_index);
+      } else {
+        toRemove.push_back(cp_index);
+      }
+    }
+
+    auto isHad = [](int pdgId) {
+      pdgId = std::abs(pdgId);
+      if (pdgId == 111)
+        return false;
+      return (pdgId > 100 and pdgId < 900) or (pdgId > 1000 and pdgId < 9000);
+    };
+
+    for (size_t i = 0; i < result_ticlCandidates->size(); ++i) {
+      auto cp_index = (*result_fromCP)[i].seedIndex();
+      if (cp_index < 0)
+        continue;
+      auto& cand = (*result_ticlCandidates)[i];
+      const auto& cp = caloparticles[cp_index];
+      float rawEnergy = 0.f;
+      float regressedEnergy = 0.f;
+
+      for (const auto& trackster : cand.tracksters()) {
+        rawEnergy += trackster->raw_energy();
+        regressedEnergy += trackster->regressed_energy();
+      }
+      cand.setRawEnergy(rawEnergy);
+
+      auto pdgId = cp.pdgId();
+      auto charge = cp.charge();
+      if (cand.trackPtr().isNonnull() and charge == 0) {
+      }
+      if (cand.trackPtr().isNonnull() and charge != 0) {
+        auto const& track = cand.trackPtr().get();
+        if (std::abs(pdgId) == 13) {
+          cand.setPdgId(pdgId);
+        } else {
+          cand.setPdgId((isHad(pdgId) ? 211 : 11) * charge);
+        }
+        cand.setCharge(charge);
+        math::XYZTLorentzVector p4(regressedEnergy * track->momentum().unit().x(),
+                                   regressedEnergy * track->momentum().unit().y(),
+                                   regressedEnergy * track->momentum().unit().z(),
+                                   regressedEnergy);
+        cand.setP4(p4);
+      } else {  // neutral candidates
+        cand.setPdgId(isHad(pdgId) ? 130 : 22);
+        cand.setCharge(0);
+
+        auto particleType = tracksterParticleTypeFromPdgId(cand.pdgId(), 1);
+        cand.setIdProbability(particleType, 1.f);
+
+        const auto& simTracksterFromCP = (*result_fromCP)[i];
+        float regressedEnergy = simTracksterFromCP.regressed_energy();
+        math::XYZTLorentzVector p4(regressedEnergy * simTracksterFromCP.barycenter().unit().x(),
+                                   regressedEnergy * simTracksterFromCP.barycenter().unit().y(),
+                                   regressedEnergy * simTracksterFromCP.barycenter().unit().z(),
+                                   regressedEnergy);
+        cand.setP4(p4);
+      }
+    }
+    for (size_t i = 0; i < result_ticlCandidates->size(); ++i) {
+      auto const& cand = (*result_ticlCandidates)[i];
+      //              << "\nraw energy = " << cand.rawEnergy() << std::endl;
+      if (cand.trackPtr().get() == nullptr) {
+      } else {
+        auto track_idx = cand.trackPtr().get() - (edm::Ptr<reco::Track>(recoTracks_h, 0)).get();
+      }
+      auto tracksters = cand.tracksters();
+      for (auto const& t_ptr : tracksters) {
+      }
+      auto cp_index = (*result_fromCP)[i].seedIndex();
+      if (cp_index < 0)
+        continue;
+      const auto& cp = caloparticles[cp_index];
+      //         << "\nCP phi = " << cp.phi() << "\nCP energy = " << cp.energy() << std::endl;
+    }
+
+    std::vector<int> all_nums(result_fromCP->size());  // vector containing all caloparticles indexes
+    std::iota(all_nums.begin(), all_nums.end(), 0);    // fill the vector with consecutive numbers starting from 0
+
+    std::set_difference(all_nums.begin(), all_nums.end(), toKeep.begin(), toKeep.end(), std::back_inserter(toRemove));
+    std::sort(toRemove.begin(), toRemove.end(), [](int x, int y) { return x > y; });
+    for (auto const& r : toRemove) {
+      result_fromCP->erase(result_fromCP->begin() + r);
+      result_ticlCandidates->erase(result_ticlCandidates->begin() + r);
+    }
+    evt.put(std::move(result_ticlCandidates));
+    evt.put(std::move(output_mask));
+    evt.put(std::move(result_fromCP), "fromCPs");
+    evt.put(std::move(resultPU), "PU");
+    evt.put(std::move(output_mask_fromCP), "fromCPs");
+    evt.put(std::move(cpToSc_SimTrackstersMap));
   }
-
-  auto& simTracksters = *result;
-  // Creating the map from TrackingParticle to SimTrackster
-  std::unordered_map<unsigned int, std::vector<unsigned int>> TPtoSimTracksterMap;
-  for (unsigned int i = 0; i < simTracksters.size(); ++i) {
-    const auto& simTrack = (simTracksters[i].seedID() == caloParticles_h.id())
-                               ? caloparticles[simTracksters[i].seedIndex()].g4Tracks()[0]
-                               : simclusters[simTracksters[i].seedIndex()].g4Tracks()[0];
-    UniqueSimTrackId simTkIds(simTrack.trackId(), simTrack.eventId());
-    auto bestAssociatedRecoTrack = simTrackToRecoTrack(simTkIds);
-    if (bestAssociatedRecoTrack.first != -1 and bestAssociatedRecoTrack.second > 0.75f) {
-      auto trackIndex = bestAssociatedRecoTrack.first;
-      simTracksters[i].setTrackIdx(trackIndex);
-    }
-  }
-
-  edm::OrphanHandle<std::vector<Trackster>> simTracksters_h = evt.put(std::move(result));
-
-
-  result_ticlCandidates->resize(caloparticles.size());
-  for (size_t i =0; i< simTracksters_h->size(); ++i )
-  {
-    const auto& simTrackster = (*simTracksters_h)[i];
-    int cp_index = (simTrackster.seedID() == caloParticles_h.id())
-                               ? simTrackster.seedIndex()
-                               : SimClusterToCaloParticleMap[simTrackster.seedIndex()];
-    auto& cand = (*result_ticlCandidates)[cp_index];
-    cand.addTrackster(edm::Ptr<Trackster>(simTracksters_h, i));
-    auto trackIndex = (*result_fromCP)[cp_index].trackIdx();
-    cand.setTime((*result_fromCP)[cp_index].time());
-    cand.setTimeError(0);
-
-    if(trackIndex != -1)
-      cand.setTrackPtr(edm::Ptr<reco::Track>(recoTracks_h, trackIndex));
-  }
-
-
-  for(size_t i = 0; i< result_ticlCandidates->size(); ++i)
-  {
-    auto& cand = (*result_ticlCandidates)[i];
-    const auto& cp = caloparticles[i];
-    auto const particleType = tracksterParticleTypeFromPdgId(cp.pdgId(), 1);
-    cand.setIdProbability(particleType, 1.f);
-    cand.setPdgId(cp.pdgId());
-    cand.setCharge(cp.charge());
-    float rawEnergy = 0.f;
-    float regressedEnergy = 0.f;
-    for (const auto& trackster : cand.tracksters()) {
-      rawEnergy += trackster->raw_energy();
-      regressedEnergy += trackster->regressed_energy();
-    }
-    cand.setRawEnergy(rawEnergy);
-
-    if(!cand.trackPtr().isNull())
-    {
-      auto track = cand.trackPtr();
-      math::XYZTLorentzVector p4(regressedEnergy * track->momentum().unit().x(),
-                                       regressedEnergy * track->momentum().unit().y(),
-                                       regressedEnergy * track->momentum().unit().z(),
-                                       regressedEnergy);
-      cand.setP4(p4);
-    }
-    else
-    {
-      const auto& simTracksterFromCP = (*result_fromCP)[i];
-      float regressedEnergy = simTracksterFromCP.regressed_energy();
-      math::XYZTLorentzVector p4(regressedEnergy * simTracksterFromCP.barycenter().unit().x(),
-                                 regressedEnergy * simTracksterFromCP.barycenter().unit().y(),
-                                 regressedEnergy * simTracksterFromCP.barycenter().unit().z(),
-                                 regressedEnergy);
-      cand.setP4(p4);
-
-    }
-
-  }
-
-  evt.put(std::move(result_ticlCandidates));
-  evt.put(std::move(output_mask));
-  evt.put(std::move(result_fromCP), "fromCPs");
-  evt.put(std::move(output_mask_fromCP), "fromCPs");
-  evt.put(std::move(cpToSc_SimTrackstersMap));
-}
