@@ -39,6 +39,7 @@ def customiseTICLFromReco(process):
                                                 process.layerClusterSimClusterAssociationProducer,
                                                 process.simTsAssocByEnergyScoreProducer,  process.simTracksterHitLCAssociatorByEnergyScoreProducer, process.tracksterSimTracksterAssociationLinking, process.tracksterSimTracksterAssociationPR, process.tracksterSimTracksterAssociationLinkingbyCLUE3D, process.tracksterSimTracksterAssociationPRbyCLUE3D
                                                )
+
     process.TICL_Validator = cms.Task(process.hgcalValidator)
     process.TICL_Validation = cms.Path(process.TICL_ValidationProducers,
                                        process.TICL_Validator
