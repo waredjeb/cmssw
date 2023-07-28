@@ -25,9 +25,10 @@ using namespace std;
 CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset) : BaseFlatGunProducer(pset) {
   ParameterSet pgun_params = pset.getParameter<ParameterSet>("PGunParameters");
   fControlledByEta = pgun_params.getParameter<bool>("ControlledByEta");
-  fEnMax = pgun_params.getParameter<double>("EnMax");
-  fEnMin = pgun_params.getParameter<double>("EnMin");
-  fMaxEnSpread = pgun_params.getParameter<bool>("MaxEnSpread");
+  fVarMin = pgun_params.getParameter<double>("VarMin");
+  fVarMax = pgun_params.getParameter<double>("VarMax");
+  fMaxVarSpread = pgun_params.getParameter<bool>("MaxVarSpread");
+  fIsVarPt = pgun_params.getParameter<bool>("IsVarPt");
   if (fControlledByEta) {
     fEtaMax = pgun_params.getParameter<double>("MaxEta");
     fEtaMin = pgun_params.getParameter<double>("MinEta");
@@ -45,6 +46,8 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fPhiMin = pgun_params.getParameter<double>("MinPhi");
   fPhiMax = pgun_params.getParameter<double>("MaxPhi");
   fPointing = pgun_params.getParameter<bool>("Pointing");
+  if (fIsVarPt && !fPointing)
+    LogError("CloseByParticleGunProducer") << " Can't generate non pointing FlatPt samples; please switch fIsVarPt to False or set fPointing to True";
   fOverlapping = pgun_params.getParameter<bool>("Overlapping");
   fRandomShoot = pgun_params.getParameter<bool>("RandomShoot");
   fNParticles = pgun_params.getParameter<int>("NParticles");
@@ -119,12 +122,14 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
   double fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
   double fR;
   double fT;
+  double fEta;
 
   if (!fControlledByEta) {
     fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
+    fEta = asinh(fZ / fR);
   } else {
-    double fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
-    fR = (fZ / sinh(fEta));
+    fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
+    fR = (fZ / sinh(fEta)); //also needed for barrel?
   }
 
   if (fUseDeltaT) {
@@ -144,33 +149,47 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     } else
       phi += fDelta / fR;
 
-    double fEn;
-    if (numParticles > 1 && fMaxEnSpread)
-      fEn = fEnMin + ip * (fEnMax - fEnMin) / (numParticles - 1);
-    else
-      fEn = CLHEP::RandFlat::shoot(engine, fEnMin, fEnMax);
-
     int partIdx = CLHEP::RandFlat::shoot(engine, 0, fPartIDs.size());
     int PartID = fPartIDs[partIdx];
     const HepPDT::ParticleData* PData = fPDGTable->particle(HepPDT::ParticleID(abs(PartID)));
     double mass = PData->mass().value();
-    double mom2 = fEn * fEn - mass * mass;
-    double mom = 0.;
-    if (mom2 > 0.) {
-      mom = sqrt(mom2);
-    }
-    double px = 0.;
-    double py = 0.;
-    double pz = mom;
-    double energy = fEn;
 
+    double mom2, mom, px, py, pz;
+    double energy;
+
+    
+    double fVar;
+    if (numParticles > 1 && fMaxVarSpread)
+      fVar = fVarMin + ip * (fVarMax - fVarMin) / (numParticles - 1);
+    else
+      fVar = CLHEP::RandFlat::shoot(engine, fVarMin, fVarMax);
+    
+    if (!fIsVarPt) {
+      mom2 = fVar * fVar - mass * mass;
+      mom = 0.;
+      if (mom2 > 0.)
+	mom = sqrt(mom2);
+      px = 0.;
+      py = 0.;
+      pz = mom;
+      energy = fVar;
+    } else {
+      double theta = 2. * atan(exp(-fEta));
+      mom = fVar / sin(theta);
+      px = fVar * cos(phi);
+      py = fVar * sin(phi);
+      pz = mom * cos(theta);
+      double energy2 = mom * mom + mass * mass;
+      energy = sqrt(energy2);
+    } 
+    
     // Compute Vertex Position
     double x = fR * cos(phi);
     double y = fR * sin(phi);
     
     HepMC::FourVector p(px, py, pz, energy);
     // If we are requested to be pointing to (0,0,0), correct the momentum direction
-    if (fPointing) {
+    if (fPointing && !fIsVarPt) {
       math::XYZVector direction(x, y, fZ);
       math::XYZVector momentum = direction.unit() * mom;
       p.setX(momentum.x());
@@ -193,6 +212,7 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(x * cm, y * cm, fZ * cm, timeOffset));
 
     HepMC::GenParticle* Part = new HepMC::GenParticle(p, PartID, 1);
+    std::cout << Part->momentum().e() << " " << std::sqrt(std::pow(Part->momentum().px(), 2) + std::pow(Part->momentum().py(),2)) << " " << Part->momentum().eta() << " " << Part->momentum().phi() << std::endl;
     Part->suggest_barcode(barcode);
     barcode++;
 
