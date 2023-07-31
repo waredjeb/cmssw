@@ -129,7 +129,7 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     fEta = asinh(fZ / fR);
   } else {
     fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
-    fR = (fZ / sinh(fEta)); //also needed for barrel?
+    fR = (fZ / sinh(fEta)); 
   }
 
   if (fUseDeltaT) {
