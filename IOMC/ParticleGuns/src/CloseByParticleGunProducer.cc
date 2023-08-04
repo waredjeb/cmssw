@@ -1,4 +1,5 @@
 #include <ostream>
+#include <cmath>
 
 #include "IOMC/ParticleGuns/interface/CloseByParticleGunProducer.h"
 
@@ -49,12 +50,57 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fNParticles = pgun_params.getParameter<int>("NParticles");
   fPartIDs = pgun_params.getParameter<vector<int> >("PartID");
 
+  // set dt between particles
+  fUseDeltaT = pgun_params.getParameter<bool>("UseDeltaT");
+  fTMax = pgun_params.getParameter<double>("TMax");
+  fTMin = pgun_params.getParameter<double>("TMin");
+  fOffsetFirst = pgun_params.getParameter<double>("OffsetFirst");
+
   produces<HepMCProduct>("unsmeared");
   produces<GenEventInfoProduct>();
 }
 
 CloseByParticleGunProducer::~CloseByParticleGunProducer() {
   // no need to cleanup GenEvent memory - done in HepMCProduct
+}
+
+void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& descriptions) {
+  edm::ParameterSetDescription desc;
+  desc.add<bool>("AddAntiParticle", false);
+  {
+    edm::ParameterSetDescription psd0;
+    psd0.add<bool>("ControlledByEta", false);
+    psd0.add<double>("Delta", 10);
+    psd0.add<double>("EnMax", 200.0);
+    psd0.add<double>("EnMin", 25.0);
+    psd0.add<bool>("MaxEnSpread", false);
+    psd0.add<double>("MaxEta", 2.7);
+    psd0.add<double>("MaxPhi", 3.14159265359);
+    psd0.add<double>("MinEta", 1.7);
+    psd0.add<double>("MinPhi", -3.14159265359);
+    psd0.add<int>("NParticles", 2);
+    psd0.add<bool>("Overlapping", false);
+    psd0.add<std::vector<int>>("PartID", {
+      22,
+    });
+    psd0.add<bool>("Pointing", true);
+    psd0.add<double>("RMax", 120);
+    psd0.add<double>("RMin", 60);
+    psd0.add<bool>("RandomShoot", false);
+    psd0.add<double>("ZMax", 321);
+    psd0.add<double>("ZMin", 320);
+    psd0.add<bool>("UseDeltaT", true);
+    psd0.add<double>("TMin", 0.05);
+    psd0.add<double>("TMax", 0.05);
+    psd0.add<double>("OffsetFirst", 0.);
+    desc.add<edm::ParameterSetDescription>("PGunParameters", psd0);
+  }
+  desc.addUntracked<int>("Verbosity", 0);
+  desc.addUntracked<unsigned int>("firstRun", 1);
+  desc.add<std::string>("psethack", "random particles in phi and r windows");
+  descriptions.add("CloseByParticleGunProducer", desc);
+  // or use the following to generate the label from the module's C++ type
+  // descriptions.addWithDefaultLabel(desc);
 }
 
 void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
@@ -72,12 +118,19 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
   double phi = CLHEP::RandFlat::shoot(engine, fPhiMin, fPhiMax);
   double fZ = CLHEP::RandFlat::shoot(engine, fZMin, fZMax);
   double fR;
+  double fT;
 
   if (!fControlledByEta) {
     fR = CLHEP::RandFlat::shoot(engine, fRMin, fRMax);
   } else {
     double fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
     fR = (fZ / sinh(fEta));
+  }
+
+  if (fUseDeltaT) {
+    fT = CLHEP::RandFlat::shoot(engine, fTMin, fTMax);
+  } else { 
+    fT = 0.;
   }
 
   double tmpPhi = phi;
@@ -114,10 +167,7 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     // Compute Vertex Position
     double x = fR * cos(phi);
     double y = fR * sin(phi);
-    constexpr double c = 2.99792458e+1;  // cm/ns
-    double timeOffset = sqrt(x * x + y * y + fZ * fZ) / c * ns * c_light;
-    HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(x * cm, y * cm, fZ * cm, timeOffset));
-
+    
     HepMC::FourVector p(px, py, pz, energy);
     // If we are requested to be pointing to (0,0,0), correct the momentum direction
     if (fPointing) {
@@ -127,6 +177,21 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
       p.setY(momentum.y());
       p.setZ(momentum.z());
     }
+
+    // compute correct path considering magnetic field 
+    const double v = p.pz() / p.e() * c_light / cm;
+    const double radius = sqrt(p.px() * p.px() + p.py() * p.py()) * 87.78f;  // cm (1 GeV track has 1 GeV/c / (e * 3.8T) ~ 87 cm radius in a 3.8T field)
+    const double arc = 2 * asin(sqrt(x * x + y * y) / (2 * radius)) * radius;
+    const double path = PData->charge() ? sqrt(arc * arc + fZ * fZ) : sqrt(x * x + y * y + fZ * fZ); 
+    // if not pointing this doesn't mean a lot, keep the old way
+    const double TimePath = fPointing ? (path / v) : (sqrt(x * x + y * y + fZ * fZ) / v); 
+    double timeOffset = fOffsetFirst + (TimePath + ip * fT) * ns * c_light;
+    // ns = 1, cm = 10, c_light is in mm/ns
+
+    // std::cout << "shot particle from (" << x << ", " << y << ", " << fZ << "), with energy " << energy << ", at time " << TimePath << std::endl;
+   
+    HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(x * cm, y * cm, fZ * cm, timeOffset));
+
     HepMC::GenParticle* Part = new HepMC::GenParticle(p, PartID, 1);
     Part->suggest_barcode(barcode);
     barcode++;
