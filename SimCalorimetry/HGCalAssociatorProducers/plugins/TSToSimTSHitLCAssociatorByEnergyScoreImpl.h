@@ -55,17 +55,19 @@ public:
                                        const edm::Handle<CaloParticleCollection> &cPCH,
                                        const edm::Handle<ticl::TracksterCollection> &sTCH) const;
 
-  hgcal::RecoToSimCollectionSimTracksters associateRecoToSim(const edm::Handle<ticl::TracksterCollection> &tCH,
-                                                             const edm::Handle<reco::CaloClusterCollection> &lCCH,
-                                                             const edm::Handle<SimClusterCollection> &sCCH,
-                                                             const edm::Handle<CaloParticleCollection> &cPCH,
-                                                             const edm::Handle<ticl::TracksterCollection> &sTCH) const;
+  hgcal::RecoToSimCollectionSimTracksters associateRecoToSim(
+      const edm::Handle<ticl::TracksterCollection> &tCH,
+      const edm::Handle<reco::CaloClusterCollection> &lCCH,
+      const edm::Handle<SimClusterCollection> &sCCH,
+      const edm::Handle<CaloParticleCollection> &cPCH,
+      const edm::Handle<ticl::TracksterCollection> &sTCH) const override;
 
-  hgcal::SimToRecoCollectionSimTracksters associateSimToReco(const edm::Handle<ticl::TracksterCollection> &tCH,
-                                                             const edm::Handle<reco::CaloClusterCollection> &lCCH,
-                                                             const edm::Handle<SimClusterCollection> &sCCH,
-                                                             const edm::Handle<CaloParticleCollection> &cPCH,
-                                                             const edm::Handle<ticl::TracksterCollection> &sTCH) const;
+  hgcal::SimToRecoCollectionSimTracksters associateSimToReco(
+      const edm::Handle<ticl::TracksterCollection> &tCH,
+      const edm::Handle<reco::CaloClusterCollection> &lCCH,
+      const edm::Handle<SimClusterCollection> &sCCH,
+      const edm::Handle<CaloParticleCollection> &cPCH,
+      const edm::Handle<ticl::TracksterCollection> &sTCH) const override;
 
 private:
   const bool hardScatterOnly_;
