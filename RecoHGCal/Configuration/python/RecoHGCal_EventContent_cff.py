@@ -22,6 +22,7 @@ TICL_RECO = cms.PSet(
       ['keep *_pfTICL_*_*'] +
       ['keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*'] + 
       ['keep *_tracksterSimTracksterAssociationLinking_*_*' ,'keep *_tracksterSimTracksterAssociationPR_*_*'] +
+      ['keep *_tracksterSimTracksterAssociationLinkingPU_*_*' ,'keep *_tracksterSimTracksterAssociationPRPU_*_*'] +
       ['keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*'] 
       )
     )
@@ -55,6 +56,11 @@ def customiseHGCalOnlyEventContent(process):
                                             'keep *_layerClusterSimTracksterAssociationProducer_*_*',
                                             'keep *_tracksterSimTracksterAssociationLinking_*_*',
                                             'keep *_tracksterSimTracksterAssociationPR_*_*', 
+<<<<<<< HEAD
+=======
+                                            'keep *_tracksterSimTracksterAssociationLinkingPU_*_*',
+                                            'keep *_tracksterSimTracksterAssociationPRPU_*_*', 
+>>>>>>> ticlv5_dataformats_associators
                                             'keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*',
                                             'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*', 
                                             ])

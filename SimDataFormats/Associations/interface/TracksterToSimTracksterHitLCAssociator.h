@@ -9,8 +9,6 @@
 
 #include "SimDataFormats/Associations/interface/TracksterToSimTracksterHitLCAssociatorBaseImpl.h"
 
-// forward declarations
-
 namespace hgcal {
 
   class TracksterToSimTracksterHitLCAssociator {
@@ -19,13 +17,10 @@ namespace hgcal {
     TracksterToSimTracksterHitLCAssociator() = default;
     TracksterToSimTracksterHitLCAssociator(TracksterToSimTracksterHitLCAssociator &&) = default;
     TracksterToSimTracksterHitLCAssociator &operator=(TracksterToSimTracksterHitLCAssociator &&) = default;
-    TracksterToSimTracksterHitLCAssociator(const TracksterToSimTracksterHitLCAssociator &) = delete;  // stop default
-    const TracksterToSimTracksterHitLCAssociator &operator=(const TracksterToSimTracksterHitLCAssociator &) =
-        delete;  // stop default
+    TracksterToSimTracksterHitLCAssociator(const TracksterToSimTracksterHitLCAssociator &) = delete;
+    const TracksterToSimTracksterHitLCAssociator &operator=(const TracksterToSimTracksterHitLCAssociator &) = delete;
 
     ~TracksterToSimTracksterHitLCAssociator() = default;
-
-    // ---------- const member functions ---------------------
 
     hgcal::association_t makeConnections(const edm::Handle<ticl::TracksterCollection> &tCH,
                                          const edm::Handle<reco::CaloClusterCollection> &lCCH,
@@ -55,7 +50,6 @@ namespace hgcal {
     }
 
   private:
-    // ---------- member data --------------------------------
     std::unique_ptr<TracksterToSimTracksterHitLCAssociatorBaseImpl> m_impl;
   };
 }  // namespace hgcal

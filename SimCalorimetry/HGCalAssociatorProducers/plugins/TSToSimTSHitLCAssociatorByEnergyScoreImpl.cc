@@ -1,10 +1,8 @@
 #include <cfloat>
 
 #include "TSToSimTSHitLCAssociatorByEnergyScoreImpl.h"
-
+#include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-
-#include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 
 TSToSimTSHitLCAssociatorByEnergyScoreImpl::TSToSimTSHitLCAssociatorByEnergyScoreImpl(
     edm::EDProductGetter const& productGetter,

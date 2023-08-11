@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <variant>
 
 #include <memory>  // unique_ptr
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -48,7 +49,6 @@
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
-#include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
 #include "SimDataFormats/Associations/interface/TracksterToSimTracksterHitLCAssociator.h"
 #include "RecoHGCal/TICL/interface/commons.h"
 
@@ -96,13 +96,12 @@ private:
   const edm::EDGetTokenT<std::vector<double>> hgcaltracks_py_token_;
   const edm::EDGetTokenT<std::vector<double>> hgcaltracks_pz_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_merged_token_;
-  const edm::EDGetTokenT<std::vector<float>> layerClustersLocalDensity_token_;
-  const edm::EDGetTokenT<std::vector<float>> layerClustersRadius_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<int>> tracksterSeeds_token_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_SC_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_CP_token_;
+  const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_PU_token_;
   const edm::EDGetTokenT<std::vector<TICLCandidate>> simTICLCandidate_token_;
   const edm::EDGetTokenT<hgcal::RecoToSimCollectionSimTracksters> tsRecoToSimSC_token_;
   const edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> tsSimToRecoSC_token_;
@@ -112,6 +111,8 @@ private:
   const edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> MergeSimToRecoSC_token_;
   const edm::EDGetTokenT<hgcal::RecoToSimCollectionSimTracksters> MergeRecoToSimCP_token_;
   const edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> MergeSimToRecoCP_token_;
+  const edm::EDGetTokenT<hgcal::RecoToSimCollectionSimTracksters> MergeRecoToSimPU_token_;
+  const edm::EDGetTokenT<hgcal::SimToRecoCollectionSimTracksters> MergeSimToRecoPU_token_;
   const edm::EDGetTokenT<std::vector<SimCluster>> simclusters_token_;
   const edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
 
@@ -188,6 +189,7 @@ private:
   std::vector<float> stsSC_trackster_time;
   std::vector<float> stsSC_trackster_timeError;
   std::vector<float> stsSC_trackster_regressed_energy;
+  std::vector<float> stsSC_trackster_regressed_pt;
   std::vector<float> stsSC_trackster_raw_energy;
   std::vector<float> stsSC_trackster_raw_em_energy;
   std::vector<float> stsSC_trackster_raw_pt;
@@ -239,6 +241,7 @@ private:
   std::vector<float> stsCP_trackster_time;
   std::vector<float> stsCP_trackster_timeError;
   std::vector<float> stsCP_trackster_regressed_energy;
+  std::vector<float> stsCP_trackster_regressed_pt;
   std::vector<float> stsCP_trackster_raw_energy;
   std::vector<float> stsCP_trackster_raw_em_energy;
   std::vector<float> stsCP_trackster_raw_pt;
@@ -382,6 +385,13 @@ private:
   std::vector<std::vector<float>> MergeTracksters_simToReco_CP_score;
   std::vector<std::vector<float>> MergeTracksters_simToReco_CP_sharedE;
 
+  std::vector<std::vector<uint32_t>> MergeTracksters_recoToSim_PU;
+  std::vector<std::vector<float>> MergeTracksters_recoToSim_PU_score;
+  std::vector<std::vector<float>> MergeTracksters_recoToSim_PU_sharedE;
+  std::vector<std::vector<uint32_t>> MergeTracksters_simToReco_PU;
+  std::vector<std::vector<float>> MergeTracksters_simToReco_PU_score;
+  std::vector<std::vector<float>> MergeTracksters_simToReco_PU_sharedE;
+
   std::vector<uint32_t> cluster_seedID;
   std::vector<float> cluster_energy;
   std::vector<float> cluster_correctedEnergy;
@@ -395,8 +405,6 @@ private:
   std::vector<int> cluster_type;
   std::vector<float> cluster_time;
   std::vector<float> cluster_timeErr;
-  std::vector<float> cluster_ld;
-  std::vector<float> cluster_radius;
   std::vector<uint32_t> cluster_number_of_hits;
 
   std::vector<unsigned int> track_id;
@@ -470,6 +478,7 @@ void TICLDumper::clearVariables() {
   stsSC_trackster_time.clear();
   stsSC_trackster_timeError.clear();
   stsSC_trackster_regressed_energy.clear();
+  stsSC_trackster_regressed_pt.clear();
   stsSC_trackster_raw_energy.clear();
   stsSC_trackster_raw_em_energy.clear();
   stsSC_trackster_raw_pt.clear();
@@ -522,6 +531,7 @@ void TICLDumper::clearVariables() {
   stsCP_trackster_time.clear();
   stsCP_trackster_timeError.clear();
   stsCP_trackster_regressed_energy.clear();
+  stsCP_trackster_regressed_pt.clear();
   stsCP_trackster_raw_energy.clear();
   stsCP_trackster_raw_em_energy.clear();
   stsCP_trackster_raw_pt.clear();
@@ -664,6 +674,13 @@ void TICLDumper::clearVariables() {
   MergeTracksters_simToReco_CP_score.clear();
   MergeTracksters_simToReco_CP_sharedE.clear();
 
+  MergeTracksters_recoToSim_PU.clear();
+  MergeTracksters_recoToSim_PU_score.clear();
+  MergeTracksters_recoToSim_PU_sharedE.clear();
+  MergeTracksters_simToReco_PU.clear();
+  MergeTracksters_simToReco_PU_score.clear();
+  MergeTracksters_simToReco_PU_sharedE.clear();
+
   nsimTrackstersSC = 0;
 
   cluster_seedID.clear();
@@ -679,8 +696,6 @@ void TICLDumper::clearVariables() {
   cluster_type.clear();
   cluster_time.clear();
   cluster_timeErr.clear();
-  cluster_ld.clear();
-  cluster_radius.clear();
   cluster_number_of_hits.clear();
 
   track_id.clear();
@@ -720,6 +735,8 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersSC"))),
       simTracksters_CP_token_(
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersCP"))),
+      simTracksters_PU_token_(
+          consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersPU"))),
       simTICLCandidate_token_(
           consumes<std::vector<TICLCandidate>>(ps.getParameter<edm::InputTag>("simTICLCandidates"))),
       tsRecoToSimSC_token_(
@@ -738,6 +755,10 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
           ps.getParameter<edm::InputTag>("MergerecoToSimAssociatorCP"))),
       MergeSimToRecoCP_token_(consumes<hgcal::SimToRecoCollectionSimTracksters>(
           ps.getParameter<edm::InputTag>("MergesimToRecoAssociatorCP"))),
+      MergeRecoToSimPU_token_(consumes<hgcal::RecoToSimCollectionSimTracksters>(
+          ps.getParameter<edm::InputTag>("MergerecoToSimAssociatorPU"))),
+      MergeSimToRecoPU_token_(consumes<hgcal::SimToRecoCollectionSimTracksters>(
+          ps.getParameter<edm::InputTag>("MergesimToRecoAssociatorPU"))),
       simclusters_token_(consumes(ps.getParameter<edm::InputTag>("simclusters"))),
       caloparticles_token_(consumes(ps.getParameter<edm::InputTag>("caloparticles"))),
       geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
@@ -791,8 +812,8 @@ void TICLDumper::beginJob() {
     trackster_tree_->Branch("barycenter_x", &trackster_barycenter_x);
     trackster_tree_->Branch("barycenter_y", &trackster_barycenter_y);
     trackster_tree_->Branch("barycenter_z", &trackster_barycenter_z);
-    trackster_tree_->Branch("trackster_barycenter_eta", &trackster_barycenter_eta);
-    trackster_tree_->Branch("trackster_barycenter_phi", &trackster_barycenter_phi);
+    trackster_tree_->Branch("barycenter_eta", &trackster_barycenter_eta);
+    trackster_tree_->Branch("barycenter_phi", &trackster_barycenter_phi);
     trackster_tree_->Branch("EV1", &trackster_EV1);
     trackster_tree_->Branch("EV2", &trackster_EV2);
     trackster_tree_->Branch("EV3", &trackster_EV3);
@@ -829,8 +850,6 @@ void TICLDumper::beginJob() {
     cluster_tree_->Branch("cluster_type", &cluster_type);
     cluster_tree_->Branch("cluster_time", &cluster_time);
     cluster_tree_->Branch("cluster_timeErr", &cluster_timeErr);
-    cluster_tree_->Branch("cluster_local_density", &cluster_ld);
-    cluster_tree_->Branch("cluster_radius", &cluster_radius);
     cluster_tree_->Branch("cluster_number_of_hits", &cluster_number_of_hits);
   }
   if (saveTICLCandidate_) {
@@ -851,7 +870,6 @@ void TICLDumper::beginJob() {
   if (saveTrackstersMerged_) {
     tracksters_merged_tree_ = fs->make<TTree>("trackstersMerged", "TICL tracksters merged");
     tracksters_merged_tree_->Branch("event", &ev_event_);
-    tracksters_merged_tree_->Branch("NTracksters", &tracksters_merged_ntracksters_);
     tracksters_merged_tree_->Branch("time", &tracksters_merged_time);
     tracksters_merged_tree_->Branch("timeError", &tracksters_merged_timeError);
     tracksters_merged_tree_->Branch("regressed_energy", &tracksters_merged_regressed_energy);
@@ -916,6 +934,13 @@ void TICLDumper::beginJob() {
     associations_tree_->Branch("Mergetracksters_simToReco_CP", &MergeTracksters_simToReco_CP);
     associations_tree_->Branch("Mergetracksters_simToReco_CP_score", &MergeTracksters_simToReco_CP_score);
     associations_tree_->Branch("Mergetracksters_simToReco_CP_sharedE", &MergeTracksters_simToReco_CP_sharedE);
+
+    associations_tree_->Branch("Mergetracksters_recoToSim_PU", &MergeTracksters_recoToSim_PU);
+    associations_tree_->Branch("Mergetracksters_recoToSim_PU_score", &MergeTracksters_recoToSim_PU_score);
+    associations_tree_->Branch("Mergetracksters_recoToSim_PU_sharedE", &MergeTracksters_recoToSim_PU_sharedE);
+    associations_tree_->Branch("Mergetracksters_simToReco_PU", &MergeTracksters_simToReco_PU);
+    associations_tree_->Branch("Mergetracksters_simToReco_PU_score", &MergeTracksters_simToReco_PU_score);
+    associations_tree_->Branch("Mergetracksters_simToReco_PU_sharedE", &MergeTracksters_simToReco_PU_sharedE);
   }
 
   if (saveSimTrackstersSC_) {
@@ -925,6 +950,7 @@ void TICLDumper::beginJob() {
     simtrackstersSC_tree_->Branch("time", &stsSC_trackster_time);
     simtrackstersSC_tree_->Branch("timeError", &stsSC_trackster_timeError);
     simtrackstersSC_tree_->Branch("regressed_energy", &stsSC_trackster_regressed_energy);
+    simtrackstersSC_tree_->Branch("regressed_pt", &stsSC_trackster_regressed_pt);
     simtrackstersSC_tree_->Branch("raw_energy", &stsSC_trackster_raw_energy);
     simtrackstersSC_tree_->Branch("raw_em_energy", &stsSC_trackster_raw_em_energy);
     simtrackstersSC_tree_->Branch("raw_pt", &stsSC_trackster_raw_pt);
@@ -932,8 +958,8 @@ void TICLDumper::beginJob() {
     simtrackstersSC_tree_->Branch("barycenter_x", &stsSC_trackster_barycenter_x);
     simtrackstersSC_tree_->Branch("barycenter_y", &stsSC_trackster_barycenter_y);
     simtrackstersSC_tree_->Branch("barycenter_z", &stsSC_trackster_barycenter_z);
-    simtrackstersSC_tree_->Branch("trackster_barycenter_eta", &stsSC_trackster_barycenter_eta);
-    simtrackstersSC_tree_->Branch("trackster_barycenter_phi", &stsSC_trackster_barycenter_phi);
+    simtrackstersSC_tree_->Branch("barycenter_eta", &stsSC_trackster_barycenter_eta);
+    simtrackstersSC_tree_->Branch("barycenter_phi", &stsSC_trackster_barycenter_phi);
     simtrackstersSC_tree_->Branch("EV1", &stsSC_trackster_EV1);
     simtrackstersSC_tree_->Branch("EV2", &stsSC_trackster_EV2);
     simtrackstersSC_tree_->Branch("EV3", &stsSC_trackster_EV3);
@@ -983,6 +1009,7 @@ void TICLDumper::beginJob() {
     simtrackstersCP_tree_->Branch("time", &stsCP_trackster_time);
     simtrackstersCP_tree_->Branch("timeError", &stsCP_trackster_timeError);
     simtrackstersCP_tree_->Branch("regressed_energy", &stsCP_trackster_regressed_energy);
+    simtrackstersCP_tree_->Branch("regressed_pt", &stsCP_trackster_regressed_pt);
     simtrackstersCP_tree_->Branch("raw_energy", &stsCP_trackster_raw_energy);
     simtrackstersCP_tree_->Branch("raw_em_energy", &stsCP_trackster_raw_em_energy);
     simtrackstersCP_tree_->Branch("raw_pt", &stsCP_trackster_raw_pt);
@@ -990,8 +1017,8 @@ void TICLDumper::beginJob() {
     simtrackstersCP_tree_->Branch("barycenter_x", &stsCP_trackster_barycenter_x);
     simtrackstersCP_tree_->Branch("barycenter_y", &stsCP_trackster_barycenter_y);
     simtrackstersCP_tree_->Branch("barycenter_z", &stsCP_trackster_barycenter_z);
-    simtrackstersCP_tree_->Branch("trackster_barycenter_eta", &stsCP_trackster_barycenter_eta);
-    simtrackstersCP_tree_->Branch("trackster_barycenter_phi", &stsCP_trackster_barycenter_phi);
+    simtrackstersCP_tree_->Branch("barycenter_eta", &stsCP_trackster_barycenter_eta);
+    simtrackstersCP_tree_->Branch("barycenter_phi", &stsCP_trackster_barycenter_phi);
     simtrackstersCP_tree_->Branch("pdgID", &stsCP_pdgID);
     simtrackstersCP_tree_->Branch("trackIdx", &stsCP_trackIdx);
     simtrackstersCP_tree_->Branch("trackTime", &stsCP_trackTime);
@@ -1038,10 +1065,10 @@ void TICLDumper::beginJob() {
     tracks_tree_ = fs->make<TTree>("tracks", "Tracks");
     tracks_tree_->Branch("event", &ev_event_);
     tracks_tree_->Branch("track_id", &track_id);
-  		tracks_tree_->Branch("track_hgcal_pt", &track_hgcal_pt);
-  		tracks_tree_->Branch("track_pt", &track_pt);
-  		tracks_tree_->Branch("track_missing_outer_hits", &track_missing_outer_hits);
-  		tracks_tree_->Branch("track_quality", &track_quality);
+    tracks_tree_->Branch("track_hgcal_pt", &track_hgcal_pt);
+    tracks_tree_->Branch("track_pt", &track_pt);
+    tracks_tree_->Branch("track_missing_outer_hits", &track_missing_outer_hits);
+    tracks_tree_->Branch("track_quality", &track_quality);
     tracks_tree_->Branch("track_charge", &track_charge);
     tracks_tree_->Branch("track_time", &track_time);
     tracks_tree_->Branch("track_time_quality", &track_time_quality);
@@ -1067,7 +1094,6 @@ void TICLDumper::beginJob() {
     simTICLCandidate_tree->Branch("simTICLCandidate_charge", &simTICLCandidate_charge);
     simTICLCandidate_tree->Branch("simTICLCandidate_track_in_candidate", &simTICLCandidate_track_in_candidate);
   }
-
 }
 
 void TICLDumper::buildLayers() {
@@ -1163,6 +1189,11 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   event.getByToken(simTracksters_CP_token_, simTrackstersCP_h);
   const auto& simTrackstersCP = *simTrackstersCP_h;
 
+  // simTracksters from PU
+  edm::Handle<std::vector<ticl::Trackster>> simTrackstersPU_h;
+  event.getByToken(simTracksters_PU_token_, simTrackstersPU_h);
+  const auto& simTrackstersPU = *simTrackstersPU_h;
+
   edm::Handle<std::vector<TICLCandidate>> simTICLCandidates_h;
   event.getByToken(simTICLCandidate_token_, simTICLCandidates_h);
   const auto& simTICLCandidates = *simTICLCandidates_h;
@@ -1206,6 +1237,16 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   event.getByToken(MergeSimToRecoCP_token_, mergetsSimToRecoCP_h);
   auto const& MergetsSimToRecoCPMap = *mergetsSimToRecoCP_h;
 
+  // trackster reco to sim PU
+  edm::Handle<hgcal::RecoToSimCollectionSimTracksters> mergetsRecoToSimPU_h;
+  event.getByToken(MergeRecoToSimPU_token_, mergetsRecoToSimPU_h);
+  auto const& MergetsRecoSimPUMap = *mergetsRecoToSimPU_h;
+
+  // sim simTrackster PU to reco trackster
+  edm::Handle<hgcal::SimToRecoCollectionSimTracksters> mergetsSimToRecoPU_h;
+  event.getByToken(MergeSimToRecoPU_token_, mergetsSimToRecoPU_h);
+  auto const& MergetsSimToRecoPUMap = *mergetsSimToRecoPU_h;
+
   edm::Handle<std::vector<CaloParticle>> caloparticles_h;
   event.getByToken(caloparticles_token_, caloparticles_h);
   const auto& caloparticles = *caloparticles_h;
@@ -1215,7 +1256,6 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   ntracksters_ = tracksters.size();
   nclusters_ = clusters.size();
 
-  int t_id = 0;
   for (auto trackster_iterator = tracksters.begin(); trackster_iterator != tracksters.end(); ++trackster_iterator) {
     //per-trackster analysis
     trackster_time.push_back(trackster_iterator->time());
@@ -1282,11 +1322,10 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       vertices_multiplicity.push_back(multiplicity);
     }
     trackster_vertices_multiplicity.push_back(vertices_multiplicity);
-    t_id += 1;
   }
 
   stsSC_ntracksters_ = simTrackstersSC.size();
-
+  using CaloObjectVariant = std::variant<CaloParticle, SimCluster>;
   for (auto trackster_iterator = simTrackstersSC.begin(); trackster_iterator != simTrackstersSC.end();
        ++trackster_iterator) {
     //per-trackster analysis
@@ -1312,9 +1351,17 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     stsSC_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsSC_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     stsSC_pdgID.push_back(simclusters[trackster_iterator->seedIndex()].pdgId());
-    auto simTrack = trackster_iterator->seedID() == caloparticles_h.id()
-                        ? caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0]
-                        : simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
+
+    CaloObjectVariant caloObj;
+    if (trackster_iterator->seedID() == caloparticles_h.id()) {
+      caloObj = caloparticles[trackster_iterator->seedIndex()];
+    } else {
+      caloObj = simclusters[trackster_iterator->seedIndex()];
+    }
+
+    auto const& simTrack = std::visit([](auto&& obj) { return obj.g4Tracks()[0]; }, caloObj);
+    auto const& caloPt = std::visit([](auto&& obj) { return obj.pt(); }, caloObj);
+    stsSC_trackster_regressed_pt.push_back(caloPt);
     if (simTrack.crossedBoundary()) {
       stsSC_boundaryX.push_back(simTrack.getPositionAtBoundary().x());
       stsSC_boundaryY.push_back(simTrack.getPositionAtBoundary().y());
@@ -1448,9 +1495,17 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     stsCP_trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
     stsCP_trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
     stsCP_pdgID.push_back(caloparticles[trackster_iterator->seedIndex()].pdgId());
-    auto simTrack = trackster_iterator->seedID() == caloparticles_h.id()
-                        ? caloparticles[trackster_iterator->seedIndex()].g4Tracks()[0]
-                        : simclusters[trackster_iterator->seedIndex()].g4Tracks()[0];
+    CaloObjectVariant caloObj;
+    if (trackster_iterator->seedID() == caloparticles_h.id()) {
+      caloObj = caloparticles[trackster_iterator->seedIndex()];
+    } else {
+      caloObj = simclusters[trackster_iterator->seedIndex()];
+    }
+
+    auto const& simTrack = std::visit([](auto&& obj) { return obj.g4Tracks()[0]; }, caloObj);
+    auto const& caloPt = std::visit([](auto&& obj) { return obj.pt(); }, caloObj);
+    stsCP_trackster_regressed_pt.push_back(caloPt);
+
     if (simTrack.crossedBoundary()) {
       stsCP_boundaryX.push_back(simTrack.getPositionAtBoundary().x());
       stsCP_boundaryY.push_back(simTrack.getPositionAtBoundary().y());
@@ -1560,7 +1615,6 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   simTICLCandidate_track_in_candidate.resize(simTICLCandidates.size(), -1);
   for (size_t i = 0; i < simTICLCandidates.size(); ++i) {
     auto const& cand = simTICLCandidates[i];
-    //auto const& cp = caloparticles[simTrackstersCP[i].seedIndex()];
 
     simTICLCandidate_raw_energy.push_back(cand.rawEnergy());
     simTICLCandidate_regressed_energy.push_back(cand.p4().energy());
@@ -1634,7 +1688,6 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     cluster_layer_id.push_back(layerId);
     uint32_t number_of_hits = cluster_iterator->hitsAndFractions().size();
     cluster_number_of_hits.push_back(number_of_hits);
-    cluster_type.push_back(ticl::returnIndex(lc_seed, rhtools_));
     cluster_timeErr.push_back(layerClustersTimes.get(c_id).second);
     cluster_time.push_back(layerClustersTimes.get(c_id).first);
     c_id += 1;
@@ -1877,6 +1930,26 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
     }
   }
 
+  // Tackster reco->sim associations
+  MergeTracksters_recoToSim_PU.resize(trackstersmerged.size());
+  MergeTracksters_recoToSim_PU_score.resize(trackstersmerged.size());
+  MergeTracksters_recoToSim_PU_sharedE.resize(trackstersmerged.size());
+  for (size_t i = 0; i < trackstersmerged.size(); ++i) {
+    const edm::Ref<ticl::TracksterCollection> tsRef(tracksters_merged_h, i);
+
+    // CLUE3D -> STS-PU
+    const auto stsPU_iter = MergetsRecoSimPUMap.find(tsRef);
+    if (stsPU_iter != MergetsRecoSimPUMap.end()) {
+      const auto& stsPUassociated = stsPU_iter->val;
+      for (auto& sts : stsPUassociated) {
+        auto sts_id = (sts.first).get() - (edm::Ref<ticl::TracksterCollection>(simTrackstersPU_h, 0)).get();
+        MergeTracksters_recoToSim_PU[i].push_back(sts_id);
+        MergeTracksters_recoToSim_PU_score[i].push_back(sts.second.second);
+        MergeTracksters_recoToSim_PU_sharedE[i].push_back(sts.second.first);
+      }
+    }
+  }
+
   // SimTracksters
   nsimTrackstersCP = simTrackstersCP.size();
   MergeTracksters_simToReco_CP.resize(nsimTrackstersCP);
@@ -1885,7 +1958,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   for (size_t i = 0; i < nsimTrackstersCP; ++i) {
     const edm::Ref<ticl::TracksterCollection> stsCPRef(simTrackstersCP_h, i);
 
-    // STS-CP -> CLUE3D
+    // STS-CP -> TrackstersMerge
     const auto ts_iter = MergetsSimToRecoCPMap.find(stsCPRef);
     if (ts_iter != MergetsSimToRecoCPMap.end()) {
       const auto& tsAssociated = ts_iter->val;
@@ -1894,6 +1967,27 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
         MergeTracksters_simToReco_CP[i].push_back(ts_idx);
         MergeTracksters_simToReco_CP_score[i].push_back(ts.second.second);
         MergeTracksters_simToReco_CP_sharedE[i].push_back(ts.second.first);
+      }
+    }
+  }
+
+  // SimTracksters
+  auto nsimTrackstersPU = simTrackstersPU.size();
+  MergeTracksters_simToReco_PU.resize(nsimTrackstersPU);
+  MergeTracksters_simToReco_PU_score.resize(nsimTrackstersPU);
+  MergeTracksters_simToReco_PU_sharedE.resize(nsimTrackstersPU);
+  for (size_t i = 0; i < nsimTrackstersPU; ++i) {
+    const edm::Ref<ticl::TracksterCollection> stsPURef(simTrackstersPU_h, i);
+
+    // STS-PU -> Tracksters Merge
+    const auto ts_iter = MergetsSimToRecoPUMap.find(stsPURef);
+    if (ts_iter != MergetsSimToRecoPUMap.end()) {
+      const auto& tsAssociated = ts_iter->val;
+      for (auto& ts : tsAssociated) {
+        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_merged_h, 0)).get();
+        MergeTracksters_simToReco_PU[i].push_back(ts_idx);
+        MergeTracksters_simToReco_PU_score[i].push_back(ts.second.second);
+        MergeTracksters_simToReco_PU_sharedE[i].push_back(ts.second.first);
       }
     }
   }
@@ -1965,6 +2059,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<edm::InputTag>("trackstersmerged", edm::InputTag("ticlTrackstersMerge"));
   desc.add<edm::InputTag>("simtrackstersSC", edm::InputTag("ticlSimTracksters"));
   desc.add<edm::InputTag>("simtrackstersCP", edm::InputTag("ticlSimTracksters", "fromCPs"));
+  desc.add<edm::InputTag>("simtrackstersPU", edm::InputTag("ticlSimTracksters", "PU"));
   desc.add<edm::InputTag>("simTICLCandidates", edm::InputTag("ticlSimTracksters"));
   desc.add<edm::InputTag>("recoToSimAssociatorSC",
                           edm::InputTag("tracksterSimTracksterAssociationPRbyCLUE3D", "recoToSim"));
@@ -1982,6 +2077,10 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
                           edm::InputTag("tracksterSimTracksterAssociationLinking", "recoToSim"));
   desc.add<edm::InputTag>("MergesimToRecoAssociatorCP",
                           edm::InputTag("tracksterSimTracksterAssociationLinking", "simToReco"));
+  desc.add<edm::InputTag>("MergerecoToSimAssociatorPU",
+                          edm::InputTag("tracksterSimTracksterAssociationLinkingPU", "recoToSim"));
+  desc.add<edm::InputTag>("MergesimToRecoAssociatorPU",
+                          edm::InputTag("tracksterSimTracksterAssociationLinkingPU", "simToReco"));
   desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<std::string>("detector", "HGCAL");

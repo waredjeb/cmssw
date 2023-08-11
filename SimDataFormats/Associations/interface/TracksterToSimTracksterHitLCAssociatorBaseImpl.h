@@ -23,9 +23,6 @@ namespace hgcal {
       edm::OneToManyWithQualityGeneric<ticl::TracksterCollection, ticl::TracksterCollection, std::pair<float, float>>>
       SimToRecoCollectionSimTracksters;
   typedef SimToRecoCollectionSimTracksters RecoToSimCollectionSimTracksters;
-  //  typedef edm::AssociationMap<
-  //      edm::OneToManyWithQualityGeneric<ticl::TracksterCollection, ticl::TracksterCollection, std::pair<float,float>>>
-  //      RecoToSimCollectionSimTracksters;
 
   class TracksterToSimTracksterHitLCAssociatorBaseImpl {
   public:

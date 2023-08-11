@@ -13,7 +13,7 @@ from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
 # Automatic addition of the customisation function from RecoHGCal.Configuration.RecoHGCal_EventContent_cff
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseHGCalOnlyEventContent
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore_cfi import simTracksterAssociatorByEnergyScore as simTsAssocByEnergyScoreProducer
-from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU
 
 
 def customiseTICLFromReco(process):
@@ -37,7 +37,14 @@ def customiseTICLFromReco(process):
                                                 process.layerClusterCaloParticleAssociationProducer,
                                                 process.scAssocByEnergyScoreProducer,
                                                 process.layerClusterSimClusterAssociationProducer,
-                                                process.simTsAssocByEnergyScoreProducer,  process.simTracksterHitLCAssociatorByEnergyScoreProducer, process.tracksterSimTracksterAssociationLinking, process.tracksterSimTracksterAssociationPR, process.tracksterSimTracksterAssociationLinkingbyCLUE3D, process.tracksterSimTracksterAssociationPRbyCLUE3D
+                                                process.simTsAssocByEnergyScoreProducer,
+                                                process.simTracksterHitLCAssociatorByEnergyScoreProducer,
+                                                process.tracksterSimTracksterAssociationLinking,
+                                                process.tracksterSimTracksterAssociationPR,
+                                                process.tracksterSimTracksterAssociationLinkingbyCLUE3D,
+                                                process.tracksterSimTracksterAssociationPRbyCLUE3D,
+                                                process.tracksterSimTracksterAssociationLinkingPU,
+                                                process.tracksterSimTracksterAssociationPRPU
                                                 )
 
     process.TICL_Validator = cms.Task(process.hgcalValidator)
@@ -76,5 +83,5 @@ def customiseTICLForDumper(process):
                                        fileName=cms.string("histo.root")
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
-    process.FEVTDEBUGHLToutput + process.ticlDumper)
+        process.FEVTDEBUGHLToutput + process.ticlDumper)
     return process

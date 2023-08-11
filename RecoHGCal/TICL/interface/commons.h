@@ -56,7 +56,7 @@ namespace ticl {
   // verbosity levels for ticl algorithms
   enum VerbosityLevel { None = 0, Basic, Advanced, Expert, Guru };
 
-  inline int returnIndex(DetId& lc_seed, const hgcal::RecHitTools& rhtools_) {
+  inline int returnClusterType(DetId& lc_seed, const hgcal::RecHitTools& rhtools_) {
     auto layer_number = rhtools_.getLayerWithOffset(lc_seed);
     auto thickness = rhtools_.getSiThickIndex(lc_seed);
     auto isEELayer = (layer_number <= rhtools_.lastLayerEE(false));
@@ -74,7 +74,7 @@ namespace ticl {
       } else if (thickness == 2) {
         return CE_E_300;
       }
-    } else if (!isEELayer) {
+    } else {
       if (isFine) {
         if (thickness == 0) {
           return CE_H_120_F;

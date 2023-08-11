@@ -26,10 +26,6 @@
 
 #include "FWCore/Utilities/interface/EDGetToken.h"
 
-//
-// class decleration
-//
-
 class TSToSimTSHitLCAssociatorEDProducer : public edm::global::EDProducer<> {
 public:
   explicit TSToSimTSHitLCAssociatorEDProducer(const edm::ParameterSet &);
@@ -64,15 +60,9 @@ TSToSimTSHitLCAssociatorEDProducer::TSToSimTSHitLCAssociatorEDProducer(const edm
 
 TSToSimTSHitLCAssociatorEDProducer::~TSToSimTSHitLCAssociatorEDProducer() {}
 
-//
-// member functions
-//
-
-// ------------ method called to produce the data  ------------
 void TSToSimTSHitLCAssociatorEDProducer::produce(edm::StreamID,
                                                  edm::Event &iEvent,
                                                  const edm::EventSetup &iSetup) const {
-  // std::cout << "Produce " << std::endl;
   using namespace edm;
 
   edm::Handle<hgcal::TracksterToSimTracksterHitLCAssociator> theAssociator;
@@ -95,7 +85,6 @@ void TSToSimTSHitLCAssociatorEDProducer::produce(edm::StreamID,
 
   // associate TS and SimTS
   LogTrace("AssociatorValidator") << "Calling associateRecoToSim method\n";
-  //  const auto links = theAssociator->makeConnections(TSCollection, LCCollection, SCCollection, CPCollection, SimTSCollection);
 
   hgcal::RecoToSimCollectionSimTracksters recSimColl =
       theAssociator->associateRecoToSim(TSCollection, LCCollection, SCCollection, CPCollection, SimTSCollection);
@@ -111,5 +100,4 @@ void TSToSimTSHitLCAssociatorEDProducer::produce(edm::StreamID,
   iEvent.put(std::move(str), "simToReco");
 }
 
-// define this as a plug-in
 DEFINE_FWK_MODULE(TSToSimTSHitLCAssociatorEDProducer);
