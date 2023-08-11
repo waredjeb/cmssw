@@ -73,10 +73,11 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
   {
     edm::ParameterSetDescription psd0;
     psd0.add<bool>("ControlledByEta", false);
+    psd0.add<bool>("IsVarPt", false);
     psd0.add<double>("Delta", 10);
-    psd0.add<double>("EnMax", 200.0);
-    psd0.add<double>("EnMin", 25.0);
-    psd0.add<bool>("MaxEnSpread", false);
+    psd0.add<double>("VarMin", 200.0);
+    psd0.add<double>("VarMax", 25.0);
+    psd0.add<bool>("MaxVarSpread", false);
     psd0.add<double>("MaxEta", 2.7);
     psd0.add<double>("MaxPhi", 3.14159265359);
     psd0.add<double>("MinEta", 1.7);
@@ -207,12 +208,10 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     double timeOffset = fOffsetFirst + (TimePath + ip * fT) * ns * c_light;
     // ns = 1, cm = 10, c_light is in mm/ns
 
-    // std::cout << "shot particle from (" << x << ", " << y << ", " << fZ << "), with energy " << energy << ", at time " << TimePath << std::endl;
    
     HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(x * cm, y * cm, fZ * cm, timeOffset));
 
     HepMC::GenParticle* Part = new HepMC::GenParticle(p, PartID, 1);
-    std::cout << Part->momentum().e() << " " << std::sqrt(std::pow(Part->momentum().px(), 2) + std::pow(Part->momentum().py(),2)) << " " << Part->momentum().eta() << " " << Part->momentum().phi() << std::endl;
     Part->suggest_barcode(barcode);
     barcode++;
 

@@ -76,5 +76,5 @@ def customiseTICLForDumper(process):
                                        fileName=cms.string("histo.root")
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
-        process.FEVTDEBUGHLToutput + process.ticlDumper)
+    process.FEVTDEBUGHLToutput + process.ticlDumper)
     return process
