@@ -47,11 +47,12 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fPhiMax = pgun_params.getParameter<double>("MaxPhi");
   fPointing = pgun_params.getParameter<bool>("Pointing");
   if (fIsVarPt && !fPointing)
-    LogError("CloseByParticleGunProducer") << " Can't generate non pointing FlatPt samples; please switch fIsVarPt to False or set fPointing to True";
+    LogError("CloseByParticleGunProducer")
+        << " Can't generate non pointing FlatPt samples; please switch fIsVarPt to False or set fPointing to True";
   fOverlapping = pgun_params.getParameter<bool>("Overlapping");
   fRandomShoot = pgun_params.getParameter<bool>("RandomShoot");
   fNParticles = pgun_params.getParameter<int>("NParticles");
-  fPartIDs = pgun_params.getParameter<vector<int> >("PartID");
+  fPartIDs = pgun_params.getParameter<vector<int>>("PartID");
 
   // set dt between particles
   fUseDeltaT = pgun_params.getParameter<bool>("UseDeltaT");
@@ -84,9 +85,10 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
     psd0.add<double>("MinPhi", -3.14159265359);
     psd0.add<int>("NParticles", 2);
     psd0.add<bool>("Overlapping", false);
-    psd0.add<std::vector<int>>("PartID", {
-      22,
-    });
+    psd0.add<std::vector<int>>("PartID",
+                               {
+                                   22,
+                               });
     psd0.add<bool>("Pointing", true);
     psd0.add<double>("RMax", 120);
     psd0.add<double>("RMin", 60);
@@ -130,12 +132,12 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     fEta = asinh(fZ / fR);
   } else {
     fEta = CLHEP::RandFlat::shoot(engine, fEtaMin, fEtaMax);
-    fR = (fZ / sinh(fEta)); 
+    fR = (fZ / sinh(fEta));
   }
 
   if (fUseDeltaT) {
     fT = CLHEP::RandFlat::shoot(engine, fTMin, fTMax);
-  } else { 
+  } else {
     fT = 0.;
   }
 
@@ -158,18 +160,17 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
     double mom2, mom, px, py, pz;
     double energy;
 
-    
     double fVar;
     if (numParticles > 1 && fMaxVarSpread)
       fVar = fVarMin + ip * (fVarMax - fVarMin) / (numParticles - 1);
     else
       fVar = CLHEP::RandFlat::shoot(engine, fVarMin, fVarMax);
-    
+
     if (!fIsVarPt) {
       mom2 = fVar * fVar - mass * mass;
       mom = 0.;
       if (mom2 > 0.)
-	mom = sqrt(mom2);
+        mom = sqrt(mom2);
       px = 0.;
       py = 0.;
       pz = mom;
@@ -182,12 +183,12 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
       pz = mom * cos(theta);
       double energy2 = mom * mom + mass * mass;
       energy = sqrt(energy2);
-    } 
-    
+    }
+
     // Compute Vertex Position
     double x = fR * cos(phi);
     double y = fR * sin(phi);
-    
+
     HepMC::FourVector p(px, py, pz, energy);
     // If we are requested to be pointing to (0,0,0), correct the momentum direction
     if (fPointing && !fIsVarPt) {
@@ -198,17 +199,17 @@ void CloseByParticleGunProducer::produce(Event& e, const EventSetup& es) {
       p.setZ(momentum.z());
     }
 
-    // compute correct path considering magnetic field 
+    // compute correct path considering magnetic field
     const double v = p.pz() / p.e() * c_light / cm;
-    const double radius = sqrt(p.px() * p.px() + p.py() * p.py()) * 87.78f;  // cm (1 GeV track has 1 GeV/c / (e * 3.8T) ~ 87 cm radius in a 3.8T field)
+    const double radius = sqrt(p.px() * p.px() + p.py() * p.py()) *
+                          87.78f;  // cm (1 GeV track has 1 GeV/c / (e * 3.8T) ~ 87 cm radius in a 3.8T field)
     const double arc = 2 * asin(sqrt(x * x + y * y) / (2 * radius)) * radius;
-    const double path = PData->charge() ? sqrt(arc * arc + fZ * fZ) : sqrt(x * x + y * y + fZ * fZ); 
+    const double path = PData->charge() ? sqrt(arc * arc + fZ * fZ) : sqrt(x * x + y * y + fZ * fZ);
     // if not pointing this doesn't mean a lot, keep the old way
-    const double TimePath = fPointing ? (path / v) : (sqrt(x * x + y * y + fZ * fZ) / v); 
+    const double TimePath = fPointing ? (path / v) : (sqrt(x * x + y * y + fZ * fZ) / v);
     double timeOffset = fOffsetFirst + (TimePath + ip * fT) * ns * c_light;
     // ns = 1, cm = 10, c_light is in mm/ns
 
-   
     HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(x * cm, y * cm, fZ * cm, timeOffset));
 
     HepMC::GenParticle* Part = new HepMC::GenParticle(p, PartID, 1);

@@ -56,11 +56,8 @@ def customiseHGCalOnlyEventContent(process):
                                             'keep *_layerClusterSimTracksterAssociationProducer_*_*',
                                             'keep *_tracksterSimTracksterAssociationLinking_*_*',
                                             'keep *_tracksterSimTracksterAssociationPR_*_*', 
-<<<<<<< HEAD
-=======
                                             'keep *_tracksterSimTracksterAssociationLinkingPU_*_*',
                                             'keep *_tracksterSimTracksterAssociationPRPU_*_*', 
->>>>>>> ticlv5_dataformats_associators
                                             'keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*',
                                             'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*', 
                                             ])
