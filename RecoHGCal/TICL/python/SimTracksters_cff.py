@@ -9,7 +9,7 @@ from RecoHGCal.TICL.filteredLayerClustersProducer_cfi import filteredLayerCluste
 
 filteredLayerClustersSimTracksters = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSize",
-    min_cluster_size = 0, # inclusive
+    min_cluster_size = 2, # inclusive
     iteration_label = "ticlSimTracksters"
 )
 

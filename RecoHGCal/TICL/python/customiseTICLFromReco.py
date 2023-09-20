@@ -3,17 +3,19 @@ from RecoHGCal.TICL.iterativeTICL_cff import *
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci
 from RecoLocalCalo.HGCalRecProducers.hgcalMergeLayerClusters_cfi import hgcalMergeLayerClusters
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
+from RecoHGCal.TICL.ticlGraphAnalyzer_cfi import ticlGraphAnalyzer
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cfi import *
 from RecoLocalCalo.HGCalRecProducers.hgcalRecHitMapProducer_cfi import hgcalRecHitMapProducer
 
 # Load DNN ESSource
 from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
-
+from RecoHGCal.TICL.ticlGraphProducer_cfi import ticlGraphProducer as _ticlGraphProducer
+from RecoHGCal.TICL.SimTracksters_cff import *
 # Automatic addition of the customisation function from RecoHGCal.Configuration.RecoHGCal_EventContent_cff
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseHGCalOnlyEventContent
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore_cfi import simTracksterAssociatorByEnergyScore as simTsAssocByEnergyScoreProducer
-from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU,tracksterSimTracksterAssociationLinkingbyCLUE3DPU,tracksterSimTracksterAssociationPRbyCLUE3DPU 
 
 
 def customiseTICLFromReco(process):
@@ -26,11 +28,14 @@ def customiseTICLFromReco(process):
                                               process.hgcalMergeLayerClusters)
 
 # Reconstruction
+
     process.TICL = cms.Path(process.hgcalLayerClustersTask,
                             process.TFESSource,
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
-                            process.ticlTracksterMergeTask)
+                            process.ticlGraphTask,
+                            process.ticlTracksterMergeTask,
+                            process.ticlSimTrackstersTask)
 # Validation
     process.TICL_ValidationProducers = cms.Task(process.hgcalRecHitMapProducer,
                                                 process.lcAssocByEnergyScoreProducer,
@@ -44,7 +49,9 @@ def customiseTICLFromReco(process):
                                                 process.tracksterSimTracksterAssociationLinkingbyCLUE3D,
                                                 process.tracksterSimTracksterAssociationPRbyCLUE3D,
                                                 process.tracksterSimTracksterAssociationLinkingPU,
-                                                process.tracksterSimTracksterAssociationPRPU
+                                                process.tracksterSimTracksterAssociationPRPU,
+                                                process.tracksterSimTracksterAssociationLinkingbyCLUE3DPU,
+                                                process.tracksterSimTracksterAssociationPRbyCLUE3DPU 
                                                 )
 
     process.TICL_Validator = cms.Task(process.hgcalValidator)
@@ -79,9 +86,14 @@ def customiseTICLForDumper(process):
         saveTracks=True,
         saveAssociations=True,
     )
+    process.ticlGraphAnalyzer = ticlGraphAnalyzer.clone(
+    )
+    process.ticlGraphAnalyzerCone = ticlGraphAnalyzer.clone(
+            ticlGraph = 'ticlGraph:cone' 
+    )
     process.TFileService = cms.Service("TFileService",
                                        fileName=cms.string("histo.root")
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
-        process.FEVTDEBUGHLToutput + process.ticlDumper)
+    process.FEVTDEBUGHLToutput + process.ticlDumper + process.ticlGraphAnalyzer + process.ticlGraphAnalyzerCone)
     return process
