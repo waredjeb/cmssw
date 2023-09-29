@@ -13,7 +13,7 @@ from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
 # Automatic addition of the customisation function from RecoHGCal.Configuration.RecoHGCal_EventContent_cff
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseHGCalOnlyEventContent
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore_cfi import simTracksterAssociatorByEnergyScore as simTsAssocByEnergyScoreProducer
-from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU,tracksterSimTracksterAssociationLinkingbyCLUE3DPU, tracksterSimTracksterAssociationPRbyCLUE3DPU
 
 
 def customiseTICLFromReco(process):
@@ -44,7 +44,9 @@ def customiseTICLFromReco(process):
                                                 process.tracksterSimTracksterAssociationLinkingbyCLUE3D,
                                                 process.tracksterSimTracksterAssociationPRbyCLUE3D,
                                                 process.tracksterSimTracksterAssociationLinkingPU,
-                                                process.tracksterSimTracksterAssociationPRPU
+                                                process.tracksterSimTracksterAssociationPRPU,
+                                                process.tracksterSimTracksterAssociationLinkingbyCLUE3DPU,
+                                                process.tracksterSimTracksterAssociationPRbyCLUE3DPU
                                                 )
 
     process.TICL_Validator = cms.Task(process.hgcalValidator)
