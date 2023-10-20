@@ -1,25 +1,25 @@
 import FWCore.ParameterSet.Config as cms
 
 HGVHistoProducerAlgoBlock = cms.PSet(
-    minEta = cms.double(-4.5),
-    maxEta = cms.double(4.5),
-    nintEta = cms.int32(100),
-    useFabsEta = cms.bool(False),
+    minEta = cms.double(1.4),
+    maxEta = cms.double(3.0),
+    nintEta = cms.int32(30),
+    useFabsEta = cms.bool(True),
 
     #parameters for energy
     minEne  = cms.double(0.),
     maxEne  = cms.double(500.),
-    nintEne = cms.int32(250),
+    nintEne = cms.int32(60),
 
     #parameters for pt
     minPt  = cms.double(0.),
     maxPt  = cms.double(100.),
-    nintPt = cms.int32(100),
+    nintPt = cms.int32(30),
 
     #parameters for phi
     minPhi  = cms.double(-3.2),
     maxPhi  = cms.double(3.2),
-    nintPhi = cms.int32(80),
+    nintPhi = cms.int32(30),
 
     #parameters for counting mixed hits clusters
     minMixedHitsSimCluster = cms.double(0.),

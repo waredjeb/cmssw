@@ -226,6 +226,7 @@ void LinkingAlgoByDirectionGeometric::buildLayers() {
 }
 
 void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
+                                                     const edm::Handle<std::vector<reco::CaloCluster>> layerClustersH,
                                                      const edm::ValueMap<float> &tkTime,
                                                      const edm::ValueMap<float> &tkTimeErr,
                                                      const edm::ValueMap<float> &tkTimeQual,

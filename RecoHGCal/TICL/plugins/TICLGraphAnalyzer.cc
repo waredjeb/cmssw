@@ -135,8 +135,8 @@ TICLGraphAnalyzer::TICLGraphAnalyzer(const edm::ParameterSet& ps)
           consumes<hgcal::RecoToSimCollectionSimTracksters>(ps.getParameter<edm::InputTag>("recoToSimAssociatorCP"))),
       tsSimToRecoCP_token_(
           consumes<hgcal::SimToRecoCollectionSimTracksters>(ps.getParameter<edm::InputTag>("simToRecoAssociatorCP"))),
-      tsRecoToSimPU_token_(consumes<hgcal::RecoToSimCollectionSimTracksters>(
-          ps.getParameter<edm::InputTag>("recoToSimAssociatorPU"))),
+      tsRecoToSimPU_token_(
+          consumes<hgcal::RecoToSimCollectionSimTracksters>(ps.getParameter<edm::InputTag>("recoToSimAssociatorPU"))),
       caloparticles_token_(consumes(ps.getParameter<edm::InputTag>("caloparticles"))){};
 
 TICLGraphAnalyzer::~TICLGraphAnalyzer() { clearVariables(); };
@@ -171,7 +171,6 @@ void TICLGraphAnalyzer::beginJob() {
   graph_tree->Branch("totMerged", &totMerged);
   graph_tree->Branch("totComponents", &totComponents);
 }
-
 
 void TICLGraphAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& setup) {
   ev_event_ += 1;
@@ -209,20 +208,18 @@ void TICLGraphAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& 
   edm::Handle<hgcal::RecoToSimCollectionSimTracksters> tsRecoToSimPU_h;
   event.getByToken(tsRecoToSimPU_token_, tsRecoToSimPU_h);
   auto const& tsRecoSimPUMap = *tsRecoToSimPU_h;
-  
+
   edm::Handle<std::vector<CaloParticle>> caloparticles_h;
   event.getByToken(caloparticles_token_, caloparticles_h);
   const auto& caloparticles = *caloparticles_h;
 
   auto totNumberOfEdgesEv = 0;
-  
-    for(auto const& node : ticlGraph.getNodes()){
-        totNumberOfEdgesEv += node.getNeighbours().size();
-    }
-  
+
+  for (auto const& node : ticlGraph.getNodes()) {
+    totNumberOfEdgesEv += node.getNeighbours().size();
+  }
 
   totNumberOfEdges.push_back(totNumberOfEdgesEv);
-
 
   auto const connectedComponents = ticlGraph.getConnectedComponents();
   int iComp = 0;
@@ -263,8 +260,8 @@ void TICLGraphAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& 
                 if (rtsPU_iter != tsRecoSimPUMap.end()) {
                   int iLoop = 0;
                   for (auto const& rtsPU : rtsPU_iter->val) {
-//                    std::cout << " iLoop " << iLoop << " Trackster energy " << tracksters[iReco].raw_energy()
-//                              << " rtsPU.second.first " << rtsPU.second.first << std::endl;
+                    //                    std::cout << " iLoop " << iLoop << " Trackster energy " << tracksters[iReco].raw_energy()
+                    //                              << " rtsPU.second.first " << rtsPU.second.first << std::endl;
                     iLoop += 1;
                     sumContamination += rtsPU.second.first;
                   }
@@ -273,8 +270,8 @@ void TICLGraphAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& 
             }
           }
           auto const fraction = sumComponent / simTrackster.raw_energy();
- //         std::cout << "CP energy " << simTrackster.regressed_energy() << " SumEnergy " << sumEnergy << " sumComp "
-   //                 << sumComponent << " sumContamination " << sumContamination << std::endl;
+          //         std::cout << "CP energy " << simTrackster.regressed_energy() << " SumEnergy " << sumEnergy << " sumComp "
+          //                 << sumComponent << " sumContamination " << sumContamination << std::endl;
           if (sumComponent / simTrackster.raw_energy() >= 0.7 and !matched) {
             num_eff_energy.push_back(simTrackster.regressed_energy());
             num_eff_eta.push_back(cp.eta());

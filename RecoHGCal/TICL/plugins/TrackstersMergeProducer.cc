@@ -31,6 +31,7 @@
 #include "RecoHGCal/TICL/plugins/LinkingAlgoBase.h"
 #include "RecoHGCal/TICL/plugins/LinkingAlgoFactory.h"
 #include "RecoHGCal/TICL/plugins/LinkingAlgoByDirectionGeometric.h"
+#include "RecoHGCal/TICL/plugins/LinkingAlgoByGraph.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
@@ -256,9 +257,12 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
 
   edm::Handle<std::vector<reco::Track>> track_h;
   evt.getByToken(tracks_token_, track_h);
-  const auto &tracks = *track_h;
 
-  const auto &layerClusters = evt.get(clusters_token_);
+  edm::Handle<std::vector<reco::CaloCluster>> layerClusters_h;
+  evt.getByToken(clusters_token_, layerClusters_h);
+
+  const auto &layerClusters = *layerClusters_h;
+  const auto &tracks = *track_h;
   const auto &layerClustersTimes = evt.get(clustersTime_token_);
   const auto &muons = evt.get(muons_token_);
   const auto &trackTime = evt.get(tracks_time_token_);
@@ -266,8 +270,15 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   const auto &trackTimeQual = evt.get(tracks_time_quality_token_);
 
   // Linking
-  linkingAlgo_->linkTracksters(
-      track_h, trackTime, trackTimeErr, trackTimeQual, muons, trackstersclue3d_h, *resultCandidates, *resultFromTracks);
+  linkingAlgo_->linkTracksters(track_h,
+                               layerClusters_h,
+                               trackTime,
+                               trackTimeErr,
+                               trackTimeQual,
+                               muons,
+                               trackstersclue3d_h,
+                               *resultCandidates,
+                               *resultFromTracks);
 
   // Print debug info
   LogDebug("TrackstersMergeProducer") << "Results from the linking step : " << std::endl

@@ -5,6 +5,7 @@ from RecoLocalCalo.HGCalRecProducers.hgcalMergeLayerClusters_cfi import hgcalMer
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
 from RecoHGCal.TICL.ticlGraphAnalyzer_cfi import ticlGraphAnalyzer
 # Validation
+from Validation.HGCalValidation.HGVHistoProducerAlgoBlock_cfi import *
 from Validation.HGCalValidation.HGCalValidator_cfi import *
 from RecoLocalCalo.HGCalRecProducers.hgcalRecHitMapProducer_cfi import hgcalRecHitMapProducer
 
@@ -12,6 +13,7 @@ from RecoLocalCalo.HGCalRecProducers.hgcalRecHitMapProducer_cfi import hgcalRecH
 from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
 from RecoHGCal.TICL.ticlGraphProducer_cfi import ticlGraphProducer as _ticlGraphProducer
 from RecoHGCal.TICL.SimTracksters_cff import *
+from RecoHGCal.TICL.simpleValidation_cfi import *
 # Automatic addition of the customisation function from RecoHGCal.Configuration.RecoHGCal_EventContent_cff
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseHGCalOnlyEventContent
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore_cfi import simTracksterAssociatorByEnergyScore as simTsAssocByEnergyScoreProducer
@@ -33,7 +35,7 @@ def customiseTICLFromReco(process):
                             process.TFESSource,
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
-                            process.ticlGraphTask,
+#                            process.ticlGraphTask,
                             process.ticlTracksterMergeTask,
                             process.ticlSimTrackstersTask)
 # Validation
@@ -50,10 +52,9 @@ def customiseTICLFromReco(process):
                                                 process.tracksterSimTracksterAssociationPRbyCLUE3D,
                                                 process.tracksterSimTracksterAssociationLinkingPU,
                                                 process.tracksterSimTracksterAssociationPRPU,
-                                                process.tracksterSimTracksterAssociationLinkingbyCLUE3DPU,
-                                                process.tracksterSimTracksterAssociationPRbyCLUE3DPU 
+  #                                              process.tracksterSimTracksterAssociationLinkingbyCLUE3DPU,
+   #                                             process.tracksterSimTracksterAssociationPRbyCLUE3DPU 
                                                 )
-
     process.TICL_Validator = cms.Task(process.hgcalValidator)
     process.TICL_Validation = cms.Path(process.TICL_ValidationProducers,
                                        process.TICL_Validator
@@ -74,6 +75,8 @@ def customiseTICLFromReco(process):
 
 
 def customiseTICLForDumper(process):
+    
+    process.simpleValidation = simpleValidation.clone()
 
     process.ticlDumper = ticlDumper.clone(
         saveLCs=True,
@@ -95,5 +98,13 @@ def customiseTICLForDumper(process):
                                        fileName=cms.string("histo.root")
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
-    process.FEVTDEBUGHLToutput + process.ticlDumper + process.ticlGraphAnalyzer + process.ticlGraphAnalyzerCone)
+    process.FEVTDEBUGHLToutput + process.simpleValidation + process.ticlDumper)
+    #process.FEVTDEBUGHLToutput + process.ticlDumper + process.ticlGraphAnalyzer + process.ticlGraphAnalyzerCone)
+    return process
+
+def customiseTICLForValidationPlot(process):
+    
+    process.simpleValidation = simpleValidation.clone()
+    process.FEVTDEBUGHLToutput = cms.EndPath(process.simpleValidation)
+
     return process

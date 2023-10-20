@@ -21,7 +21,10 @@ ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
 ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
 ticlGraph = _ticlGraphProducer.clone(
-        wind = 0.1 
+        wind = 0.15594,
+        angle1 = 0.43633,
+        angle2 = 0.43633,
+        maxConeHeight = 114
         )
 ticlGraphTask = cms.Task(ticlGraph)
 

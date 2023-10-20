@@ -10,6 +10,7 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
@@ -33,6 +34,7 @@ namespace ticl {
                             const edm::ESHandle<Propagator> propH) = 0;
 
     virtual void linkTracksters(const edm::Handle<std::vector<reco::Track>> tkH,
+                                const edm::Handle<std::vector<reco::CaloCluster>> layerClustersH,
                                 const edm::ValueMap<float>& tkTime,
                                 const edm::ValueMap<float>& tkTimeErr,
                                 const edm::ValueMap<float>& tkTimeQual,

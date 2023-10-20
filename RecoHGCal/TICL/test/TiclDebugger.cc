@@ -50,12 +50,14 @@ private:
   void endJob() override;
 
   const edm::InputTag trackstersMerge_;
+  const edm::InputTag simTracksters_;
   const edm::InputTag tracks_;
   const edm::InputTag caloParticles_;
   const edm::InputTag layerClusters_;
   hgcal::RecHitTools rhtools_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   edm::EDGetTokenT<std::vector<ticl::Trackster>> trackstersMergeToken_;
+  edm::EDGetTokenT<std::vector<ticl::Trackster>> simTrackstersToken_;
   edm::EDGetTokenT<std::vector<reco::Track>> tracksToken_;
   edm::EDGetTokenT<std::vector<CaloParticle>> caloParticlesToken_;
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> layerClustersToken_;
@@ -63,12 +65,14 @@ private:
 
 TiclDebugger::TiclDebugger(const edm::ParameterSet& iConfig)
     : trackstersMerge_(iConfig.getParameter<edm::InputTag>("trackstersMerge")),
+      simTracksters_(iConfig.getParameter<edm::InputTag>("simTracksters")),
       tracks_(iConfig.getParameter<edm::InputTag>("tracks")),
       caloParticles_(iConfig.getParameter<edm::InputTag>("caloParticles")),
       layerClusters_(iConfig.getParameter<edm::InputTag>("layerClusters")),
       caloGeometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()) {
   edm::ConsumesCollector&& iC = consumesCollector();
   trackstersMergeToken_ = iC.consumes<std::vector<ticl::Trackster>>(trackstersMerge_);
+  simTrackstersToken_= iC.consumes<std::vector<ticl::Trackster>>(simTracksters_);
   tracksToken_ = iC.consumes<std::vector<reco::Track>>(tracks_);
   caloParticlesToken_ = iC.consumes<std::vector<CaloParticle>>(caloParticles_);
   layerClustersToken_ = iC.consumes<std::vector<reco::CaloCluster>>(layerClusters_);
@@ -84,11 +88,17 @@ void TiclDebugger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   using std::iota;
   using std::sort;
 
-  edm::Handle<std::vector<ticl::Trackster>> trackstersMergeH;
+  edm::Handle<std::vector<ticl::Trackster>> simTrackstersH;
+  iEvent.getByToken(simTrackstersToken_,  simTrackstersH);
+  auto const& simTracksters = *simTrackstersH.product();
+  std::cout << "SimTracksters " << simTracksters.size() << std::endl;
 
+  edm::Handle<std::vector<ticl::Trackster>> trackstersMergeH;
   iEvent.getByToken(trackstersMergeToken_, trackstersMergeH);
   auto const& tracksters = *trackstersMergeH.product();
+
   std::vector<int> sorted_tracksters_idx(tracksters.size());
+
   iota(begin(sorted_tracksters_idx), end(sorted_tracksters_idx), 0);
   sort(begin(sorted_tracksters_idx), end(sorted_tracksters_idx), [&tracksters](int i, int j) {
     return tracksters[i].raw_energy() > tracksters[j].raw_energy();
@@ -101,10 +111,11 @@ void TiclDebugger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::Handle<std::vector<reco::Track>> tracksH;
   iEvent.getByToken(tracksToken_, tracksH);
   const auto& tracks = *tracksH.product();
-
+  
   edm::Handle<std::vector<CaloParticle>> caloParticlesH;
   iEvent.getByToken(caloParticlesToken_, caloParticlesH);
   auto const& caloParticles = *caloParticlesH.product();
+  std::cout << "caloParticles " << caloParticles.size() << std::endl;
   std::vector<std::pair<int, float>> bestCPMatches;
 
   auto bestCaloParticleMatches = [&](const ticl::Trackster& t) -> void {
@@ -223,6 +234,7 @@ void TiclDebugger::endJob() {}
 void TiclDebugger::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("trackstersMerge", edm::InputTag("ticlTrackstersMerge"));
+  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters", "fromCPs"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("caloParticles", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));

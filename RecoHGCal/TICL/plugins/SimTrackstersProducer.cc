@@ -216,9 +216,9 @@ void SimTrackstersProducer::addTrackster(
   tmpTrackster.setRegressedEnergy(energy);
   tmpTrackster.setIteration(iter);
   tmpTrackster.setSeed(seed, index);
-//  if(!add && tmpTrackster.vertices().empty()){
-//    return;
-//  }
+  //  if(!add && tmpTrackster.vertices().empty()){
+  //    return;
+  //  }
   if (add) {
     result[index] = tmpTrackster;
     loop_index += 1;
@@ -263,7 +263,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto num_simclusters = simclusters.size();
   result->reserve(num_simclusters);  // Conservative size, will call shrink_to_fit later
   const auto num_caloparticles = caloparticles.size();
- result_fromCP->resize(num_caloparticles);
+  result_fromCP->resize(num_caloparticles);
   std::map<uint, uint> SimClusterToCaloParticleMap;
   int loop_index = 0;
 
@@ -369,7 +369,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
       *result_fromCP, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z());
 
   makePUTrackster(inputClusterMask, *output_mask, *resultPU, caloParticles_h.id(), 0);
-  
+
   auto simTrackToRecoTrack = [&](UniqueSimTrackId simTkId) -> std::pair<int, float> {
     int trackIdx = -1;
     float quality = 0.f;
@@ -459,8 +459,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
         cand.setTrackPtr(edm::Ptr<reco::Track>(recoTracks_h, trackIndex));
 
       toKeep.push_back(cp_index);
-    } 
-    
+    }
   }
 
   auto isHad = [](int pdgId) {
