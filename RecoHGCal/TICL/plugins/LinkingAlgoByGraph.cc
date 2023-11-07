@@ -21,8 +21,9 @@ LinkingAlgoByGraph::LinkingAlgoByGraph(const edm::ParameterSet &conf)
     : LinkingAlgoBase(conf),
       timing_quality_threshold_(conf.getParameter<double>("track_time_quality_threshold")),
       del_(conf.getParameter<double>("wind")),
-      angle_first_cone_(conf.getParameter<double>("angle1")),
-      angle_second_cone_(conf.getParameter<double>("angle2")),
+      angle_first_cone_(conf.getParameter<double>("angle0")),
+      angle_second_cone_(conf.getParameter<double>("angle1")),
+      angle_third_cone_(conf.getParameter<double>("angle2")),
       max_height_cone_(conf.getParameter<double>("maxConeHeight")),
       cutTk_(conf.getParameter<std::string>("cutTk")) {}
 
@@ -197,15 +198,17 @@ void LinkingAlgoByGraph::linkTracksters(const edm::Handle<std::vector<reco::Trac
                           const Vector &direction,
                           const float halfAngle,
                           const float maxHeight,
-                          const Vector &testPoint) {
+                          const Vector &testPoint,
+                          std::string str = "") -> bool {
+  
     Vector toCheck = testPoint - origin;
     auto projection = toCheck.Dot(direction.Unit());
-
+    auto const angle = ROOT::Math::VectorUtil::Angle(direction, toCheck);
+    LogDebug("LinkingAlgoByGraph") << str << "Origin " << origin << " TestPoint " << testPoint <<  " projection " << projection << " maxHeight " << maxHeight << " Angle " << angle << " halfAngle " << halfAngle << std::endl; 
     if (projection < 0.f || projection > maxHeight) {
       return false;
     }
-
-    auto const angle = ROOT::Math::VectorUtil::Angle(direction, toCheck);
+     
 
     return angle < halfAngle;
   };
@@ -222,17 +225,8 @@ void LinkingAlgoByGraph::linkTracksters(const edm::Handle<std::vector<reco::Trac
     }
   }
 
-  //  LogDebug("LinkingAlgoByGraph") << "First Trackster " << tracksters[0].raw_energy() << " Last Tracksters "
-  //            << tracksters[tracksters.size() - 1].raw_energy() << std::endl;
-  //  auto const argTrackstersInd = argSortTrackster(tracksters);
-  //  LogDebug("LinkingAlgoByGraph") << "After sorting " << std::endl;
-  //  LogDebug("LinkingAlgoByGraph") << "Firt index " << argTrackstersInd[0] << " Final Index " << argTrackstersInd[tracksters.size() - 1]
-  //            << std::endl;
-  //  LogDebug("LinkingAlgoByGraph") << "First Trackster " << tracksters[argTrackstersInd[0]].raw_energy() << " Last Tracksters "
-  //            << tracksters[argTrackstersInd[tracksters.size() - 1]].raw_energy() << std::endl;
-
   //actual trackster-trackster linking
-auto pcaQuality = [](const Trackster &trackster) -> float {
+  auto pcaQuality = [](const Trackster &trackster) -> float {
     auto const &eigenvalues = trackster.eigenvalues();
     auto const e0 = eigenvalues[0];
     auto const e1 = eigenvalues[1];
@@ -241,17 +235,16 @@ auto pcaQuality = [](const Trackster &trackster) -> float {
     auto const normalized_e0 = e0 / sum;
     auto const normalized_e1 = e1 / sum;
     auto const normalized_e2 = e2 / sum;
-    LogDebug("LinkingAlgoByGraph") << "Normalized E0 " << normalized_e0 << " Normalized E1 " << normalized_e1 << " Normalized E2 " << normalized_e2 << std::endl;
-
-    return std::abs(normalized_e0 / std::sqrt(normalized_e1 * normalized_e1 + normalized_e2 * normalized_e2));
-};
-  const float halfAngle1 = angle_first_cone_;
-  const float halfAngle2 = angle_second_cone_;
+    return normalized_e0; 
+  };
+  const float halfAngle0 = angle_first_cone_;
+  const float halfAngle1 = angle_second_cone_;
+  const float halfAngle2 = angle_third_cone_;
   const float maxHeightCone = max_height_cone_;
 
   std::vector<int> maskReceivedLink(tracksters.size(), 1);
   std::vector<int> isRootTracksters(tracksters.size(), 1);
-  
+
   std::vector<Node> allNodes;
   for (size_t it = 0; it < tracksters.size(); ++it) {
     allNodes.emplace_back(it);
@@ -262,16 +255,16 @@ auto pcaQuality = [](const Trackster &trackster) -> float {
     isHadron(trackster);
 
     auto pcaQ = pcaQuality(trackster);
-    LogDebug("LinkingAlgoByGraph") << "Trackster energy " << trackster.raw_energy() << " Num verties " << trackster.vertices().size()
-              << " PCA Quality " << pcaQ << std::endl;
+    LogDebug("LinkingAlgoByGraph") << "DEBUG Trackster " << it  <<  " energy " << trackster.raw_energy() << " Num verties "
+                                   << trackster.vertices().size() << " PCA Quality " << pcaQ << std::endl; 
 
-    if (pcaQ >= 3.f && trackster.vertices().size() > 5) {
+    if (pcaQ >= 0.975f && trackster.vertices().size() > 5) {
       auto const skeletons = returnSkeletons(trackster);
+      LogDebug("LinkingAlgoByGraph") << "Trackster " << it  <<  " energy " << trackster.raw_energy() << " Num verties "
+                                   << trackster.vertices().size() << " PCA Quality " << pcaQ << " Skeletons " << skeletons[0] <<  std::endl;
       auto const &eigenVec = trackster.eigenvectors(0);
       auto const eigenVal = trackster.eigenvalues()[0];
       auto const &directionOrigin = eigenVec * eigenVal;
-
-      LogDebug("LinkingAlgoByGraph") << "Skeletons : (" << skeletons[0] << ", " << skeletons[1] << " , " << skeletons[2] << ")" << std::endl;
 
       auto const bary = trackster.barycenter();
       float eta_min = std::max(abs(bary.eta()) - del_, TileConstants::minEta);
@@ -288,28 +281,52 @@ auto pcaQuality = [](const Trackster &trackster) -> float {
           for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
             auto &neighbours = tracksterTilePos[tracksterTilePos.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
             for (auto n : neighbours) {
-              if(maskReceivedLink[n] == 0)
+              if (maskReceivedLink[n] == 0)
                 continue;
               auto const &trackster_out = tracksters[n];
               auto const &skeletons_out = returnSkeletons(trackster_out);
               auto const skeletonDist2 = (skeletons[2] - skeletons_out[0]).Mag2();
               auto const pcaQOuter = pcaQuality(trackster_out);
-//              auto const dotProd  = ((skeletons[0]-skeletons[2]).Unit()).Dot((skeletons_out[0] - skeletons_out[2]).Unit());
-              bool dotProd = (pcaQOuter >= 3.f && trackster_out.vertices().size() > 5) ?
-                            ((skeletons[0]-skeletons[2]).Unit()).Dot((skeletons_out[0] - skeletons_out[2]).Unit()) >= 0.97 : true;
-              LogDebug("LinkingAlgoByGraph") << " Skeletons in " << skeletons[2]  << " Skeletons out " << skeletons_out[0] << " Distance2 " << skeletonDist2 << " dot prod " << dotProd << std::endl;
+              //              auto const dotProd  = ((skeletons[0]-skeletons[2]).Unit()).Dot((skeletons_out[0] - skeletons_out[2]).Unit());
+              bool isGoodPCA = (pcaQOuter >= 3.f) && (trackster_out.vertices().size() > 5);
+              auto const maxHeightSmallCone = std::sqrt((skeletons[2] - skeletons[0]).Mag2());
+              bool isInSmallCone = isPointInCone(skeletons[0], directionOrigin, halfAngle0, maxHeightSmallCone, skeletons_out[0], "Small Cone" );
+              bool isInCone = isPointInCone(skeletons[1], directionOrigin, halfAngle1, maxHeightCone, skeletons_out[0], "BigCone ");
+              bool isInLastCone = isPointInCone(skeletons[2], directionOrigin, halfAngle2, maxHeightCone, skeletons_out[0], "LastCone");
+              bool dotProd =
+                      isGoodPCA 
+                      ? ((skeletons[0] - skeletons[2]).Unit()).Dot((skeletons_out[0] - skeletons_out[2]).Unit()) >= 0.97
+                      : true;
 
-              if((isPointInCone(skeletons[2], directionOrigin, halfAngle2, maxHeightCone, skeletons_out[0]))  
-                  && skeletonDist2 <= 2500.f 
-                  && dotProd){
-//                (isPointInCone(skeletons[0], directionOrigin, halfAngle2, maxHeightCone, skeletons_out[0]))
-//              
-                LogDebug("LinkingAlgoByGraph") << "Trackster " << it << " Linked with Trackster " << n << std::endl;
-                LogDebug("LinkingAlgoByGraph") << "\tSkeleton origin " << skeletons[2] << " Skeleton out " << skeletons_out[0] << std::endl;
+              LogDebug("LinkingAlgoByGraph") <<  "\tTrying to Link Trackster " << n << " energy " << tracksters[n].raw_energy() << " LCs " << tracksters[n].vertices().size() << " skeletons " << skeletons_out[0] << " Dist " << skeletonDist2 << " dot Prod " << ((skeletons[0] - skeletons[2]).Unit()).Dot((skeletons_out[0] - skeletons_out[2]).Unit()) << " isGoodDotProd " << dotProd << " isPointInBigCone " << isInCone << " isPointInSmallCone " << isInSmallCone << " isPointInLastCone " << isInLastCone << std::endl; 
+              if(isInLastCone && dotProd){
+                LogDebug("LinkingAlgoByGraph") << "\t==== LINK: Trackster " << it << " Linked with Trackster " << n << " LCs " << tracksters[n].vertices().size() << std::endl;
+                LogDebug("LinkingAlgoByGraph")
+                    << "\t\tSkeleton origin " << skeletons[2] << " Skeleton out " << skeletons_out[0] << std::endl;
                 maskReceivedLink[n] = 0;
                 allNodes[it].addNeighbour(n);
-//                allNodes[n].addNeighbour(it);
                 isRootTracksters[n] = 0;
+              }
+              if (isInCone &&
+                  skeletonDist2 <= 2500.f && dotProd) {
+                LogDebug("LinkingAlgoByGraph") << "\t==== LINK: Trackster " << it << " Linked with Trackster " << n << " LCs " << tracksters[n].vertices().size() << std::endl;
+                LogDebug("LinkingAlgoByGraph")
+                    << "\t\tSkeleton origin " << skeletons[2] << " Skeleton out " << skeletons_out[0] << std::endl;
+                maskReceivedLink[n] = 0;
+                allNodes[it].addNeighbour(n);
+                isRootTracksters[n] = 0;
+                continue;
+              } 
+              if
+                ( isInSmallCone && !isGoodPCA) {
+                  maskReceivedLink[n] = 0;
+                  allNodes[it].addNeighbour(n);
+                  isRootTracksters[n] = 0;
+                  LogDebug("LinkingAlgoByGraph")
+                      << "\t==== LINK: Trackster " << it << " Linked with Trackster in small cone " << n << std::endl;
+                  LogDebug("LinkingAlgoByGraph")
+                      << "\t\tSkeleton origin " << skeletons[0] << " Skeleton out " << skeletons_out[0] << std::endl;
+                  continue;
               }
             }
           }
@@ -318,32 +335,36 @@ auto pcaQuality = [](const Trackster &trackster) -> float {
     }
   }
 
-  for(auto const& node : allNodes){
-    if(isRootTracksters[node.getId()]){
-      LogDebug("LinkingAlgoByGraph") << "ISROOT " << " Node " << node.getId() << " position " << tracksters[node.getId()].barycenter() << " energy " << tracksters[node.getId()].raw_energy() << std::endl;
-    }
-    else{
-      LogDebug("LinkingAlgoByGraph") << "Node " << node.getId() << " position " << tracksters[node.getId()].barycenter() << " energy " << tracksters[node.getId()].raw_energy() << std::endl;
+  LogDebug("LinkingAlgoByGraph") <<"****************  FINAL GRAPH **********************" << std::endl;
+  for (auto const &node : allNodes) {
+    if (isRootTracksters[node.getId()]) {
+      LogDebug("LinkingAlgoByGraph") << "ISROOT "
+                                     << " Node " << node.getId() << " position "
+                                     << tracksters[node.getId()].barycenter() << " energy "
+                                     << tracksters[node.getId()].raw_energy() << std::endl;
+    } else {
+      LogDebug("LinkingAlgoByGraph") << "Node " << node.getId() << " position " << tracksters[node.getId()].barycenter()
+                                     << " energy " << tracksters[node.getId()].raw_energy() << std::endl;
     }
   }
-  
-  
+  LogDebug("LinkingAlgoByGraph") <<"********************************************************" << std::endl;
 
   TICLGraph graph(allNodes, isRootTracksters);
-  
+
   int ic = 0;
-  auto const& components = graph.findSubComponents();
-  for(auto const& comp : components){
-      LogDebug("LinkingAlgoByGraph") << "Component " << ic <<  " Node: " ;
-      TICLCandidate candidate;
-      for(auto const& node : comp){
-        LogDebug("LinkingAlgoByGraph") << node << " ";
-        candidate.addTrackster(edm::Ptr<Trackster>(tsH, node));
-      }
-      resultLinked.push_back(candidate);
-      LogDebug("LinkingAlgoByGraph") << "\n";
-      ++ic;
-   } 
+  auto const &components = graph.findSubComponents();
+  for (auto const &comp : components) {
+    LogDebug("LinkingAlgoByGraph") << "Component " << ic << " Node: ";
+    TICLCandidate candidate;
+    for (auto const &node : comp) {
+      LogDebug("LinkingAlgoByGraph") << node << " ";
+      candidate.addTrackster(edm::Ptr<Trackster>(tsH, node));
+    }
+    resultLinked.push_back(candidate);
+    LogDebug("LinkingAlgoByGraph") << "\n";
+    ++ic;
+  }
+  LogDebug("LinkingAlgoByGraph") << "resultLinked " << resultLinked.size() << std::endl;
 }  // linkTracksters
 
 void LinkingAlgoByGraph::fillPSetDescription(edm::ParameterSetDescription &desc) {
@@ -356,8 +377,9 @@ void LinkingAlgoByGraph::fillPSetDescription(edm::ParameterSetDescription &desc)
   desc.add<double>("delta_ts_had_had", 0.03);
   desc.add<double>("track_time_quality_threshold", 0.5);
   desc.add<double>("wind", 0.7);
-  desc.add<double>("angle1", 0.523599);
-  desc.add<double>("angle2", 0.349066);
+  desc.add<double>("angle0", 0.523599);
+  desc.add<double>("angle1", 0.349006);
+  desc.add<double>("angle2", 0.174532);
   desc.add<double>("maxConeHeight", 500.);
   LinkingAlgoBase::fillPSetDescription(desc);
 }

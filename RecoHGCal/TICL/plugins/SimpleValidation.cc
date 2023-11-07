@@ -79,6 +79,16 @@ private:
   std::vector<float> num_eff_energy;
   std::vector<float> num_eff_pt;
 
+  std::vector<float> num_eff0p7_eta;
+  std::vector<float> num_eff0p7_phi;
+  std::vector<float> num_eff0p7_energy;
+  std::vector<float> num_eff0p7_pt;
+
+  std::vector<float> num_eff0p7Corrected_eta;
+  std::vector<float> num_eff0p7Corrected_phi;
+  std::vector<float> num_eff0p7Corrected_energy;
+  std::vector<float> num_eff0p7Corrected_pt;
+
   std::vector<float> num_pur_eta;
   std::vector<float> num_pur_phi;
   std::vector<float> num_pur_energy;
@@ -118,7 +128,6 @@ private:
   std::vector<float> den_fake_reco_phi;
   std::vector<float> den_fake_reco_energy;
   std::vector<float> den_fake_reco_pt;
-
 
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_CP_token_;
@@ -206,14 +215,16 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
     if (sts_iter != tsRecoSimCPMap.end()) {
       const auto& stsAssociated = sts_iter->val;
       for (auto const& sts : stsAssociated) {
-        if (sts.second.first > 0.01) {
+        if (sts.second.first > 0.0f) {
           den_fake_reco_pt.push_back(tracksters[iReco].raw_pt());
           den_fake_reco_eta.push_back(tracksters[iReco].barycenter().eta());
           den_fake_reco_phi.push_back(tracksters[iReco].barycenter().phi());
           den_fake_reco_energy.push_back(tracksters[iReco].raw_energy());
           //				auto sts_idx = (sts.first).get() - (edm::Ref<ticl::TracksterCollection>(simTrackstersCP_h, 0)).get();
-          if (sts.second.second <= 0.2) {
+          if (sts.second.second <= 0.6) { // scoreR2S <= 0.6
             stsInTrackster[iReco] += 1;
+            // 1 - (numTracksterMatchati / totReco)
+            // (totReco - numTracksterMatchati) / toReco
           }
         }
       }
@@ -226,18 +237,21 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
       num_fake_eta.push_back(tracksters[iReco].barycenter().eta());
       num_fake_phi.push_back(tracksters[iReco].barycenter().phi());
       num_fake_energy.push_back(tracksters[iReco].raw_energy());
-    }
-    else if(stsInTrackster[iReco] > 1) {
-      num_dup_pt.push_back(tracksters[iReco].raw_pt());
-      num_dup_eta.push_back(tracksters[iReco].barycenter().eta());
-      num_dup_phi.push_back(tracksters[iReco].barycenter().phi());
-      num_dup_energy.push_back(tracksters[iReco].raw_energy());
+    } else if (stsInTrackster[iReco] > 1) {
+      num_merge_pt.push_back(tracksters[iReco].raw_pt());
+      num_merge_eta.push_back(tracksters[iReco].barycenter().eta());
+      num_merge_phi.push_back(tracksters[iReco].barycenter().phi());
+      num_merge_energy.push_back(tracksters[iReco].raw_energy());
     }
   }
 
   for (size_t iSim = 0; iSim != simTrackstersCP.size(); iSim++) {
+    auto sharedEnergyTot = 0.;
     bool matchedPur = false;
     bool matchedEff = false;
+    bool matchedEff0p7 = false;
+    bool matchedEff0p7Corrected = false;
+    
     den_sim_pt.push_back(simTrackstersCP[iSim].raw_pt());
     den_sim_eta.push_back(simTrackstersCP[iSim].barycenter().eta());
     den_sim_phi.push_back(simTrackstersCP[iSim].barycenter().phi());
@@ -248,6 +262,9 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
     auto const ts_iter = tsSimToRecoCPMap.find(stsCPRef);
     if (ts_iter != tsSimToRecoCPMap.end()) {
       const auto& tsAssociated = ts_iter->val;
+      for (auto const& ts : tsAssociated) {
+        sharedEnergyTot += ts.second.first;
+      }
       for (auto const& ts : tsAssociated) {
         auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_handle, 0)).get();
         auto const& recoRef = edm::Ref<ticl::TracksterCollection>(tracksters_handle, ts_idx);
@@ -284,6 +301,20 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
               }
             }
           }
+          if (ts.second.first / simTrackstersCP[iSim].raw_energy() >= 0.7 and !matchedEff0p7) {
+            //energy eff
+            num_eff0p7_pt.push_back(simTrackstersCP[iSim].raw_pt());
+            num_eff0p7_eta.push_back(simTrackstersCP[iSim].barycenter().eta());
+            num_eff0p7_phi.push_back(simTrackstersCP[iSim].barycenter().phi());
+            num_eff0p7_energy.push_back(simTrackstersCP[iSim].raw_energy());
+            matchedEff0p7 = true;
+          }
+        }
+        if(ts.second.first / sharedEnergyTot >= 0.7 and !matchedEff0p7Corrected){
+          num_eff0p7Corrected_pt.push_back(simTrackstersCP[iSim].raw_pt());
+          num_eff0p7Corrected_eta.push_back(simTrackstersCP[iSim].barycenter().eta());
+          num_eff0p7Corrected_phi.push_back(simTrackstersCP[iSim].barycenter().phi());
+          num_eff0p7Corrected_energy.push_back(simTrackstersCP[iSim].raw_energy());
         }
       }
     }
@@ -307,6 +338,16 @@ void SimpleValidation::beginJob() {
   output_tree_->Branch("num_eff_energy", &num_eff_energy);
   output_tree_->Branch("num_eff_pt", &num_eff_pt);
 
+  output_tree_->Branch("num_eff0p7_eta", &num_eff0p7_eta);
+  output_tree_->Branch("num_eff0p7_phi", &num_eff0p7_phi);
+  output_tree_->Branch("num_eff0p7_energy", &num_eff0p7_energy);
+  output_tree_->Branch("num_eff0p7_pt", &num_eff0p7_pt);
+
+  output_tree_->Branch("num_eff0p7Corrected_eta", &num_eff0p7Corrected_eta);
+  output_tree_->Branch("num_eff0p7Corrected_phi", &num_eff0p7Corrected_phi);
+  output_tree_->Branch("num_eff0p7Corrected_energy", &num_eff0p7Corrected_energy);
+  output_tree_->Branch("num_eff0p7Corrected_pt", &num_eff0p7Corrected_pt);
+
   output_tree_->Branch("num_pur_eta", &num_pur_eta);
   output_tree_->Branch("num_pur_phi", &num_pur_phi);
   output_tree_->Branch("num_pur_energy", &num_pur_energy);
@@ -316,6 +357,11 @@ void SimpleValidation::beginJob() {
   output_tree_->Branch("num_fake_phi", &num_fake_phi);
   output_tree_->Branch("num_fake_energy", &num_fake_energy);
   output_tree_->Branch("num_fake_pt", &num_fake_pt);
+
+  output_tree_->Branch("num_merge_eta", &num_merge_eta);
+  output_tree_->Branch("num_merge_phi", &num_merge_phi);
+  output_tree_->Branch("num_merge_energy", &num_merge_energy);
+  output_tree_->Branch("num_merge_pt", &num_merge_pt);
 
   output_tree_->Branch("num_dup_eta", &num_dup_eta);
   output_tree_->Branch("num_dup_phi", &num_dup_phi);
@@ -344,7 +390,7 @@ void SimpleValidation::beginJob() {
 
   int binsEta = 10;
   int binsEnergy = 20;
-/*
+  /*
   num_eff_eta = fs->make<TH1F>("num_eff_eta", "num_eff_eta", binsEta, -3.0, 3.0);
   num_eff_phi = fs->make<TH1F>("num_eff_phi", "num_eff_phi", binsEta, -3.14, 3.14);
   num_eff_energy = fs->make<TH1F>("num_eff_energy", "num_eff_energy", binsEnergy, 0.f, 300.f);

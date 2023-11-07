@@ -409,7 +409,6 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   // Compute timing
   resultCandidates->insert(resultCandidates->end(), resultFromTracks->begin(), resultFromTracks->end());
   assignTimeToCandidates(*resultCandidates);
-
   evt.put(std::move(resultTrackstersMerged));
   evt.put(std::move(resultCandidates));
 }
@@ -592,7 +591,7 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   edm::ParameterSetDescription desc;
 
   edm::ParameterSetDescription linkingDesc;
-  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByDirectionGeometric", true));
+  linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByGraph", true));
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
 
   desc.add<edm::InputTag>("trackstersclue3d", edm::InputTag("ticlTrackstersCLUE3DHigh"));

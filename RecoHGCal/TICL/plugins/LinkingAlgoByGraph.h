@@ -63,6 +63,7 @@ namespace ticl {
     const float del_;
     const float angle_first_cone_;
     const float angle_second_cone_;
+    const float angle_third_cone_;
     const float max_height_cone_;
 
     const StringCutObjectSelector<reco::Track> cutTk_;
