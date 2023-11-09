@@ -81,7 +81,8 @@ private:
 
   std::unique_ptr<LinkingAlgoBase> linkingAlgo_;
 
-  const edm::EDGetTokenT<std::vector<Trackster>> tracksters_clue3d_token_;
+  const edm::EDGetTokenT<std::vector<Trackster>> tracksters_clue3dEM_token_;
+  const edm::EDGetTokenT<std::vector<Trackster>> tracksters_clue3dHAD_token_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
@@ -138,7 +139,8 @@ private:
 };
 
 TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
-    : tracksters_clue3d_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3d"))),
+   : tracksters_clue3dEM_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3dEM"))),
+     tracksters_clue3dHAD_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3dHAD"))),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
@@ -253,8 +255,13 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   auto resultFromTracks = std::make_unique<std::vector<TICLCandidate>>();
   tfSession_ = es.getData(tfDnnToken_).getSession();
 
-  edm::Handle<std::vector<Trackster>> trackstersclue3d_h;
-  evt.getByToken(tracksters_clue3d_token_, trackstersclue3d_h);
+  edm::Handle<std::vector<Trackster>> trackstersclue3dEM_h;
+  evt.getByToken(tracksters_clue3dEM_token_, trackstersclue3dEM_h);
+  auto const& trackstersCLUE3DEM = *trackstersclue3dEM_h;
+
+  edm::Handle<std::vector<Trackster>> trackstersclue3dHAD_h;
+  evt.getByToken(tracksters_clue3dHAD_token_, trackstersclue3dHAD_h);
+  auto const& trackstersCLUE3DHAD = *trackstersclue3dEM_h;
 
   edm::Handle<std::vector<reco::Track>> track_h;
   evt.getByToken(tracks_token_, track_h);
@@ -278,7 +285,8 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
                                trackTimeErr_h,
                                trackTimeQual_h,
                                muons,
-                               trackstersclue3d_h,
+                               trackstersCLUE3DEM,
+                               trackstersCLUE3DHAD,
                                useMTDTiming_,
                                *resultCandidates,
                                *resultFromTracks);
@@ -596,7 +604,8 @@ void TrackstersMergeProducer::fillDescriptions(edm::ConfigurationDescriptions &d
   linkingDesc.addNode(edm::PluginDescription<LinkingAlgoFactory>("type", "LinkingAlgoByDirectionGeometric", true));
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
 
-  desc.add<edm::InputTag>("trackstersclue3d", edm::InputTag("ticlTrackstersCLUE3DHigh"));
+  desc.add<edm::InputTag>("trackstersclue3dEM", edm::InputTag("ticlTrackstersCLUE3DHighEM"));
+  desc.add<edm::InputTag>("trackstersclue3dHAD", edm::InputTag("ticlTrackstersCLUE3DHighHAD"));
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
