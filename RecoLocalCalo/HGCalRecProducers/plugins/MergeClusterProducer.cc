@@ -8,9 +8,17 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/ParameterSet/interface/PluginDescription.h"
 
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 #include "DataFormats/Common/interface/ValueMap.h"
+
+#include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
+#include "SimCalorimetry/HGCalAssociatorProducers/interface/AssociatorTools.h"
+#include "PreliminaryClusterFilterBase.h"
+#include "PreliminaryClusterFilterFactory.h"
+#include "PreliminaryClusterFilterByCP.h"
+
 
 class MergeClusterProducer : public edm::stream::EDProducer<> {
 public:
@@ -41,11 +49,14 @@ private:
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> EEclusters_token_;
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> HSiclusters_token_;
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> HSciclusters_token_;
+  edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
 
   std::string timeClname_;
+  std::string clusterFilter_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTimeEE_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTimeHSi_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTimeHSci_token_;
+  std::unique_ptr<const ticl::PreliminaryClusterFilterBase> theFilter_; 
 
   /**
    * @brief method merge three vectors of reco::CaloCluster to one
@@ -66,10 +77,11 @@ private:
    * @param[in] vm Value map with values
    * @param[out] to vector to will be copy value map
   */
-  void addTo(std::vector<std::pair<float, float>> &to, const edm::ValueMap<std::pair<float, float>> &vm) {
+  void addTo(std::vector<std::pair<float, float>> &to, const edm::ValueMap<std::pair<float, float>> &vm, const std::vector<float>& layerClusterMask) {
     size_t size = vm.size();
     for (size_t i = 0; i < size; ++i) {
-      to.push_back(vm.get(i));
+      if(layerClusterMask[i] == 1.f)
+        to.push_back(vm.get(i));
     }
   }
   /**
@@ -79,17 +91,17 @@ private:
    * @param[in] size of all 3 value maps
    * @param[out] times vector of merged time vectors
   */
-  void mergeTime(edm::Event &evt, size_t size, std::vector<std::pair<float, float>> &times) {
+  void mergeTime(edm::Event &evt, size_t size, std::vector<std::pair<float, float>> &times, const std::vector<float>& layerClusterMask) {
     edm::Handle<edm::ValueMap<std::pair<float, float>>> EE, HSi, HSci;
     // get values from all three part of detectors
     evt.getByToken(clustersTimeEE_token_, EE);
     evt.getByToken(clustersTimeHSi_token_, HSi);
     evt.getByToken(clustersTimeHSci_token_, HSci);
 
-    times.reserve(size);
-    addTo(times, *EE);
-    addTo(times, *HSi);
-    addTo(times, *HSci);
+    times.reserve(layerClusterMask.size());
+    addTo(times, *EE, layerClusterMask);
+    addTo(times, *HSi, layerClusterMask);
+    addTo(times, *HSci, layerClusterMask);
   }
   /**
    * @brief get info form event and then call merge
@@ -128,6 +140,9 @@ MergeClusterProducer::MergeClusterProducer(const edm::ParameterSet &ps)
   EEclusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClustersEE"));
   HSiclusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClustersHSi"));
   HSciclusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClustersHSci"));
+  caloparticles_token_ = consumes<std::vector<CaloParticle>>(ps.getParameter<edm::InputTag>("caloparticles"));
+  clusterFilter_ = ps.getParameter<std::string>("clusterFilter");
+  theFilter_ = PreliminaryClusterFilterFactory::get()->create(clusterFilter_, ps);
 
   produces<std::vector<float>>("InitialLayerClustersMask");
   produces<std::vector<reco::BasicCluster>>();
@@ -143,7 +158,10 @@ void MergeClusterProducer::fillDescriptions(edm::ConfigurationDescriptions &desc
   desc.add<edm::InputTag>("layerClustersEE", edm::InputTag("hgcalLayerClustersEE"));
   desc.add<edm::InputTag>("layerClustersHSi", edm::InputTag("hgcalLayerClustersHSi"));
   desc.add<edm::InputTag>("layerClustersHSci", edm::InputTag("hgcalLayerClustersHSci"));
-
+  desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix","MergedCaloTruth"));
+  desc.add<std::string>("clusterFilter", "PreliminaryClusterFilterByCP");
+  desc.add<double>("deltaEta", 0.3);
+  desc.add<double>("deltaPhi", 1.57);
   //time
   desc.add<edm::InputTag>("time_layerclustersEE", edm::InputTag("hgcalLayerClustersEE", "timeLayerCluster"));
   desc.add<edm::InputTag>("time_layerclustersHSi", edm::InputTag("hgcalLayerClustersHSi", "timeLayerCluster"));
@@ -156,19 +174,36 @@ void MergeClusterProducer::fillDescriptions(edm::ConfigurationDescriptions &desc
 void MergeClusterProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   //merge clusters
   std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
+  auto clustersFiltered =  std::make_unique<std::vector<reco::BasicCluster>>();
+  auto const& caloParticles = evt.get(caloparticles_token_);
+  std::vector<size_t> caloParticleIndices;
+  removeCPFromPU(caloParticles, caloParticleIndices, true);
+  std::cout << "Size of CaloParticle " << caloParticles.size() << std::endl;
+
   createMerge(evt, EEclusters_token_, HSiclusters_token_, HSciclusters_token_, *clusters);
+
+  std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>(clusters->size(), 0.f));
+  theFilter_->filter(*clusters, *layerClustersMask, caloParticles, caloParticleIndices); 
+  std::cout << "Size of all LCs " << clusters->size() << std::endl;
+
+  for(size_t i = 0; i < layerClustersMask->size(); i++){
+    if((*layerClustersMask)[i] == 1.f){
+      clustersFiltered->push_back((*clusters)[i]);
+    }
+  }
   //put new clusters to event
-  auto clusterHandle = evt.put(std::move(clusters));
+  std::cout << "Size of filtered LCs " << clustersFiltered->size() << std::endl;
+  auto clusterHandle = evt.put(std::move(clustersFiltered));
 
   //create layer cluster mask
-  std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-  layerClustersMask->resize(clusterHandle->size(), 1.0);
+  std::unique_ptr<std::vector<float>> layerClustersMaskFiltered(new std::vector<float>);
+  layerClustersMaskFiltered->resize(clusterHandle->size(), 1.0);
   //put it into event
-  evt.put(std::move(layerClustersMask), "InitialLayerClustersMask");
+  evt.put(std::move(layerClustersMaskFiltered), "InitialLayerClustersMask");
 
   //time
   std::vector<std::pair<float, float>> times;
-  mergeTime(evt, clusterHandle->size(), times);
+  mergeTime(evt, clusterHandle->size(), times, *layerClustersMask);
 
   auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
   edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
