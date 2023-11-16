@@ -6,27 +6,30 @@ from RecoHGCal.TICL.filteredLayerClustersProducer_cfi import filteredLayerCluste
 
 # CLUSTER FILTERING/MASKING
 
-filteredLayerClustersCLUE3DLow = _filteredLayerClustersProducer.clone(
+filteredLayerClustersCLUE3DEM = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSize",
     min_cluster_size = 2, # inclusive
-    LayerClustersInputMask = 'ticlTrackstersCLUE3DHigh',
-    iteration_label = "CLUE3DLow"
+    iteration_label = "CLUE3DEM",
+    algo_number = [6] # hgcal_em only
 )
 
 # PATTERN RECOGNITION
 
-ticlTrackstersCLUE3DLow = _trackstersProducer.clone(
-    filtered_mask = "filteredLayerClustersCLUE3DLow:CLUE3DLow",
+ticlTrackstersCLUE3DEM = _trackstersProducer.clone(
+    filtered_mask = "filteredLayerClustersCLUE3DEM:CLUE3DEM",
     seeding_regions = "ticlSeedingGlobal",
-    itername = "CLUE3DLow",
+    itername = "CLUE3DEM",
     patternRecognitionBy = "CLUE3D",
     pluginPatternRecognitionByCLUE3D = dict (
-        criticalDensity = 2.,
-        criticalEtaPhiDistance = 0.025
+        criticalDensity = [0.6, 0.6, 0.6],
+        criticalEtaPhiDistance = [0.025, 0.025, 0.025],
+        kernelDensityFactor = [0.2, 0.2, 0.2],
+        algo_verbosity = 0
     )
+
 )
 
-ticlCLUE3DLowStepTask = cms.Task(ticlSeedingGlobal
-    ,filteredLayerClustersCLUE3DLow
-    ,ticlTrackstersCLUE3DLow)
+ticlCLUE3DEMStepTask = cms.Task(ticlSeedingGlobal
+    ,filteredLayerClustersCLUE3DEM
+    ,ticlTrackstersCLUE3DEM)
 
