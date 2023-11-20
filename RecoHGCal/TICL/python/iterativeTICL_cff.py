@@ -2,12 +2,13 @@ import FWCore.ParameterSet.Config as cms
 
 from RecoHGCal.TICL.FastJetStep_cff import *
 from RecoHGCal.TICL.CLUE3DHighStep_cff import *
-from RecoHGCal.TICL.CLUE3DLowStep_cff import *
 from RecoHGCal.TICL.MIPStep_cff import *
 from RecoHGCal.TICL.TrkEMStep_cff import *
 from RecoHGCal.TICL.TrkStep_cff import *
 from RecoHGCal.TICL.EMStep_cff import *
 from RecoHGCal.TICL.HADStep_cff import *
+from RecoHGCal.TICL.CLUE3DEM_cff import *
+from RecoHGCal.TICL.CLUE3DHAD_cff import *
 
 from RecoHGCal.TICL.ticlLayerTileProducer_cfi import ticlLayerTileProducer
 from RecoHGCal.TICL.pfTICLProducer_cfi import pfTICLProducer as _pfTICLProducer
@@ -24,11 +25,11 @@ pfTICL = _pfTICLProducer.clone()
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(
+    ticlCLUE3DEMStepTask,
+    ticlCLUE3DHADStepTask,
     ticlCLUE3DHighStepTask
 )
 
-from Configuration.ProcessModifiers.clue3D_cff import clue3D
-clue3D.toModify(ticlIterationsTask, func=lambda x : x.add(ticlCLUE3DHighStepTask,ticlCLUE3DLowStepTask))
 
 from Configuration.ProcessModifiers.fastJetTICL_cff import fastJetTICL
 fastJetTICL.toModify(ticlIterationsTask, func=lambda x : x.add(ticlFastJetStepTask))
@@ -72,3 +73,4 @@ iterHFNoseTICLTask = cms.Task(ticlLayerTileHFNoseTask
     ,ticlHFNoseHADStepTask
     ,ticlHFNoseMIPStepTask
 )
+

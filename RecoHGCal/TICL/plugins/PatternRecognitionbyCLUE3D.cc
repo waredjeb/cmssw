@@ -37,6 +37,8 @@ PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::Paramet
       criticalZDistanceLyr_(conf.getParameter<std::vector<int>>("criticalZDistanceLyr")),
       outlierMultiplier_(conf.getParameter<std::vector<double>>("outlierMultiplier")),
       minNumLayerCluster_(conf.getParameter<std::vector<int>>("minNumLayerCluster")),
+      doPidCut_(conf.getParameter<bool>("doPidCut")),
+      cutHadProb_(conf.getParameter<double>("cutHadProb")),
       eidInputName_(conf.getParameter<std::string>("eid_input_name")),
       eidOutputNameEnergy_(conf.getParameter<std::string>("eid_output_name_energy")),
       eidOutputNameId_(conf.getParameter<std::string>("eid_output_name_id")),
@@ -326,6 +328,17 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
                       return static_cast<int>(v.vertices().size()) < minNumLayerCluster_.at(tracksterSeedAlgoId_.at(tracksterIndex++)); 
                       }),
       result.end());
+  energyRegressionAndID(input.layerClusters, input.tfSession, result);
+  if(doPidCut_){
+  result.erase(
+      std::remove_if(std::begin(result),
+                     std::end(result),
+                     [&](auto const &v) { 
+                      auto const& hadProb = v.id_probability(ticl::Trackster::ParticleType::charged_hadron) + v.id_probability(ticl::Trackster::ParticleType::neutral_hadron);
+                      return hadProb >= cutHadProb_;
+                      }),
+      result.end());
+  }
   result.shrink_to_fit();
 
   ticl::assignPCAtoTracksters(result,
@@ -334,13 +347,15 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
                               rhtools_.getPositionLayer(rhtools_.lastLayerEE(false), false).z());
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, result);
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
     for (auto const &t : result) {
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Barycenter: " << t.barycenter();
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "LCs: " << t.vertices().size();
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Energy: " << t.raw_energy();
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Regressed: " << t.regressed_energy();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " Barycenter: " << t.barycenter();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " LCs: " << t.vertices().size();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " Energy: " << t.raw_energy();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " Regressed: " << t.regressed_energy() << std::endl;
+      for(auto const& idP : t.id_probabilities()){
+        edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "IDP " << idP << std::endl;
+      }
     }
   }
 
@@ -845,7 +860,7 @@ int PatternRecognitionbyCLUE3D<TILES>::findAndAssignTracksters(
 
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDescription &iDesc) {
-  iDesc.add<int>("algo_verbosity", 0);
+  iDesc.add<int>("algo_verbosity", 3);
   iDesc.add<std::vector<double>>("criticalDensity", {4,4,4})->setComment("in GeV");
   iDesc.add<std::vector<double>>("criticalSelfDensity", {0.15,0.15,0.15} /* roughly 1/(densitySiblingLayers+1) */)
       ->setComment("Minimum ratio of self_energy/local_density to become a seed.");
@@ -880,6 +895,8 @@ void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDes
   iDesc.add<std::vector<double>>("outlierMultiplier", {2,2,2})
       ->setComment("Minimal distance in transverse space from nearestHigher to become an outlier");
   iDesc.add<std::vector<int>>("minNumLayerCluster", {2,2,2})->setComment("Not Inclusive");
+  iDesc.add<bool>("doPidCut", false);
+  iDesc.add<double>("cutHadProb", 0.5);
   iDesc.add<std::string>("eid_input_name", "input");
   iDesc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
   iDesc.add<std::string>("eid_output_name_id", "output/id_probabilities");
