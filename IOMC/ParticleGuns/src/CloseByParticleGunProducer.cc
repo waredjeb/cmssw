@@ -31,7 +31,7 @@ CloseByParticleGunProducer::CloseByParticleGunProducer(const ParameterSet& pset)
   fVarMax = pgun_params.getParameter<double>("VarMax");
   fMaxVarSpread = pgun_params.getParameter<bool>("MaxVarSpread");
   fIsVarPt = pgun_params.getParameter<bool>("IsVarPt");
-  if (fIsVarPt && fEnMin < 1)
+  if (fIsVarPt && fVarMin < 1)
     LogError("CloseByParticleGunProducer") << " Please choose a minimum energy greater than 1 GeV, otherwise time "
                                               "information may be invalid or not reliable";
   if (fControlledByEta) {
