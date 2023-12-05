@@ -81,10 +81,11 @@ void CloseByParticleGunProducer::fillDescriptions(ConfigurationDescriptions& des
   {
     edm::ParameterSetDescription psd0;
     psd0.add<bool>("ControlledByEta", false);
+    psd0.add<bool>("isVarPt", false);
     psd0.add<double>("Delta", 10);
-    psd0.add<double>("EnMax", 200.0);
-    psd0.add<double>("EnMin", 25.0);
-    psd0.add<bool>("MaxEnSpread", false);
+    psd0.add<double>("VarMax", 200.0);
+    psd0.add<double>("VarMin", 25.0);
+    psd0.add<bool>("MaxVarSpread", false);
     psd0.add<double>("MaxEta", 2.7);
     psd0.add<double>("MaxPhi", 3.14159265359);
     psd0.add<double>("MinEta", 1.7);
