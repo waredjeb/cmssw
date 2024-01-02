@@ -348,13 +348,15 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
                               rhtools_.getPositionLayer(rhtools_.lastLayerEE(false), false).z());
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, result);
   if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
     for (auto const &t : result) {
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Barycenter: " << t.barycenter();
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "LCs: " << t.vertices().size();
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Energy: " << t.raw_energy();
-      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Regressed: " << t.regressed_energy();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " Barycenter: " << t.barycenter();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " LCs: " << t.vertices().size();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " Energy: " << t.raw_energy();
+      edm::LogVerbatim("PatternRecognitionbyCLUE3D") << " Regressed: " << t.regressed_energy() << std::endl;
+      for(auto const& idP : t.id_probabilities()){
+        edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "IDP " << idP << std::endl;
+      }
     }
   }
 
@@ -864,6 +866,8 @@ void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDes
   iDesc.add<int>("algo_verbosity", 0);
   iDesc.add<std::vector<double>>("criticalDensity", {4, 4, 4})->setComment("in GeV");
   iDesc.add<std::vector<double>>("criticalSelfDensity", {0.15, 0.15, 0.15} /* roughly 1/(densitySiblingLayers+1) */)
+  iDesc.add<std::vector<double>>("criticalDensity", {4,4,4})->setComment("in GeV");
+  iDesc.add<std::vector<double>>("criticalSelfDensity", {0.15,0.15,0.15} /* roughly 1/(densitySiblingLayers+1) */)
       ->setComment("Minimum ratio of self_energy/local_density to become a seed.");
   iDesc.add<std::vector<int>>("densitySiblingLayers", {3, 3, 3})
       ->setComment(

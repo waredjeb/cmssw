@@ -25,7 +25,9 @@ ticlTrackstersCLUE3DHAD = _trackstersProducer.clone(
         criticalDensity = [0.6, 0.6, 0.6],
         criticalEtaPhiDistance = [0.025, 0.025, 0.025],
         kernelDensityFactor = [0.2, 0.2, 0.2],
-        algo_verbosity = 0
+        algo_verbosity = 0,
+        doPidCut = False, 
+        cutHadProb = 0.5 
     )
 
 )
