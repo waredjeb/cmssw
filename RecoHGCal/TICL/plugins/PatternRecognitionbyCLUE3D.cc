@@ -865,10 +865,7 @@ template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDescription &iDesc) {
   iDesc.add<int>("algo_verbosity", 0);
   iDesc.add<std::vector<double>>("criticalDensity", {4, 4, 4})->setComment("in GeV");
-  iDesc.add<std::vector<double>>("criticalSelfDensity", {0.15, 0.15, 0.15} /* roughly 1/(densitySiblingLayers+1) */)
-  iDesc.add<std::vector<double>>("criticalDensity", {4,4,4})->setComment("in GeV");
-  iDesc.add<std::vector<double>>("criticalSelfDensity", {0.15,0.15,0.15} /* roughly 1/(densitySiblingLayers+1) */)
-      ->setComment("Minimum ratio of self_energy/local_density to become a seed.");
+  iDesc.add<std::vector<double>>("criticalSelfDensity", {0.15, 0.15, 0.15})->setComment("Minimum ratio of self_energy/local_density to become a seed."); /* roughly 1/(densitySiblingLayers+1) */
   iDesc.add<std::vector<int>>("densitySiblingLayers", {3, 3, 3})
       ->setComment(
           "inclusive, layers to consider while computing local density and searching for nearestHigher higher");
