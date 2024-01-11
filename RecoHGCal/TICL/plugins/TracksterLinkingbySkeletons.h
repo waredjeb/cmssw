@@ -50,7 +50,7 @@ namespace ticl {
       iDesc.add<double>("angle2", 1.174532);
       iDesc.add<double>("maxConeHeight", 500.);
       iDesc.add<double>("pcaQuality", 0.97);
-      iDesc.add<unsigned int>("pcaQualityLCSize", 5);
+      iDesc.add<unsigned int>("pcaQualityLCSize", 10);
       iDesc.add<double>("dotProdCut", 0.975);
       iDesc.add<double>("maxDistSkeletonsSq", 2500.);
       TracksterLinkingAlgoBase::fillPSetDescription(iDesc);
