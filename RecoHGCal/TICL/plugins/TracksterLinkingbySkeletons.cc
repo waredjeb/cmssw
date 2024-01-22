@@ -23,7 +23,10 @@ TracksterLinkingbySkeletons::TracksterLinkingbySkeletons(const edm::ParameterSet
       pcaQLCSize_(conf.getParameter<unsigned int>("pcaQualityLCSize")),
       dotCut_(conf.getParameter<double>("dotProdCut")),
       maxDistSkeletonsSq_(conf.getParameter<double>("maxDistSkeletonsSq")),
-      max_height_cone_(conf.getParameter<double>("maxConeHeight")) {}
+      max_height_cone_(conf.getParameter<double>("maxConeHeight")), 
+      angle_first_cone_scaling_(conf.getParameter<double>("angle0_scaling")),
+      angle_second_cone_scaling_(conf.getParameter<double>("angle1_scaling")),
+      angle_third_cone_scaling_(conf.getParameter<double>("angle2_scaling")) {}
 
 void TracksterLinkingbySkeletons::buildLayers() {
   // build disks at HGCal front & EM-Had interface for track propagation
@@ -207,10 +210,11 @@ void TracksterLinkingbySkeletons::linkTracksters(
 
   for (size_t id_t = 0; id_t < tracksters.size(); ++id_t) {
     auto t = tracksters[id_t];
-    if (t.barycenter().eta() > 0.) {
-      tracksterTilePos.fill(t.barycenter().eta(), t.barycenter().phi(), id_t);
-    } else if (t.barycenter().eta() < 0.) {
-      tracksterTileNeg.fill(t.barycenter().eta(), t.barycenter().phi(), id_t);
+    auto const t_eta = t.barycenter().eta();
+    if (t_eta > 0.) {
+      tracksterTilePos.fill(t_eta, t.barycenter().phi(), id_t);
+    } else if (t_eta < 0.) {
+      tracksterTileNeg.fill(t_eta, t.barycenter().phi(), id_t);
     }
   }
 
@@ -226,10 +230,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
     auto const normalized_e2 = e2 / sum;
     return normalized_e0;
   };
-
-  const float halfAngle0 = angle_first_cone_;
-  const float halfAngle1 = angle_second_cone_;
-  const float halfAngle2 = angle_third_cone_;
+  
   const float maxHeightCone = max_height_cone_;
 
   std::vector<int> maskReceivedLink(tracksters.size(), 1);
@@ -242,7 +243,11 @@ void TracksterLinkingbySkeletons::linkTracksters(
 
   for (size_t it = 0; it < tracksters.size(); ++it) {
     auto const &trackster = tracksters[it];
+    auto const t_eta = trackster.barycenter().eta();
     isHadron(trackster);
+    const float halfAngle0 = std::clamp(angle_first_cone_ - angle_first_cone_scaling_ * (std::abs(t_eta) - 1.5f),0.1f,angle_first_cone_);
+    const float halfAngle1 = std::clamp(angle_second_cone_ - angle_second_cone_scaling_ * (std::abs(t_eta) - 1.5f),0.1f, angle_second_cone_);
+    const float halfAngle2 = std::clamp(angle_third_cone_ - angle_third_cone_scaling_ * (std::abs(t_eta) - 1.5f),0.1f, angle_third_cone_scaling_);
 
     auto pcaQ = pcaQuality(trackster);
     LogDebug("TracksterLinkingbySkeletons")

@@ -48,6 +48,9 @@ namespace ticl {
       iDesc.add<double>("angle0", 1.523599);
       iDesc.add<double>("angle1", 1.349006);
       iDesc.add<double>("angle2", 1.174532);
+      iDesc.add<double>("angle0_scaling", 0.0 );
+      iDesc.add<double>("angle1_scaling", 0.0 );
+      iDesc.add<double>("angle2_scaling", 0.0 );
       iDesc.add<double>("maxConeHeight", 500.);
       iDesc.add<double>("pcaQuality", 0.97);
       iDesc.add<unsigned int>("pcaQualityLCSize", 10);
@@ -73,6 +76,9 @@ namespace ticl {
     float dotCut_;
     float maxDistSkeletonsSq_;
     float max_height_cone_;
+    float angle_first_cone_scaling_;
+    float angle_second_cone_scaling_;
+    float angle_third_cone_scaling_;
     const HGCalDDDConstants* hgcons_;
 
     std::unique_ptr<GeomDet> firstDisk_[2];
