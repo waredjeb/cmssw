@@ -19,7 +19,7 @@ import Validation.RecoTrack.plotting.html as html
 from Validation.HGCalValidation.HGCalValidator_cfi import hgcalValidator
 from Validation.HGCalValidation.PostProcessorHGCAL_cfi import lcToCP_linking, simDict, tsToCP_linking, tsToSTS_patternRec, variables
 
-hgcVal_dqm = "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/"
+hgcVal_dqm = "DQMData/Run 9/HGCAL/Run summary/HGCalValidator/"
 #The number of layers per endcap in the current default geometry scenario. 
 geometryscenario = 47
 
@@ -1664,6 +1664,7 @@ for val in simDict:
 
     for v in variables:
         kwargs = _common_metric_logx if v in ["energy","pt"] else _common_metric
+        print(v, val, variables, simDict)
         _effplots.extend([Plot("effic_"+v+simDict[val], xtitle = variables[v][0]+variables[v][1], **kwargs)])
         _purityplots.extend([Plot("purity_"+v+simDict[val], xtitle = variables[v][0]+variables[v][1], **kwargs)])
         _dupplots.extend([Plot("duplicate_"+v+simDict[val], xtitle = variables[v][0]+variables[v][1], **kwargs)])

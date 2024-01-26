@@ -23,11 +23,27 @@ from Validation.HGCalValidation.HGCalValidator_cff import hgcalValidatorv5
 
 def customiseForTICLv5(process, enableDumper = False):
 
+    process.ticlSeedingGlobal = ticlSeedingGlobal.copy()
+    process.filteredLayerClustersCLUE3DEM = filteredLayerClustersCLUE3DEM.copy()
+    process.ticlTrackstersCLUE3DEM = ticlTrackstersCLUE3DEM.copy()
+
+    process.ticlCLUE3DEMStepTask = cms.Task(process.ticlSeedingGlobal
+        ,process.filteredLayerClustersCLUE3DEM
+        ,process.ticlTrackstersCLUE3DEM)
+
+    process.filteredLayerClustersCLUE3DHAD = filteredLayerClustersCLUE3DHAD.copy()
+    process.ticlTrackstersCLUE3DHAD = ticlTrackstersCLUE3DHAD.copy()
+
+    process.ticlCLUE3DHADStepTask = cms.Task(process.ticlSeedingGlobal
+        ,process.filteredLayerClustersCLUE3DHAD
+        ,process.ticlTrackstersCLUE3DHAD)
+
+
     process.ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
     process.ticlIterationsTask = cms.Task(
-        ticlCLUE3DEMStepTask,
-        ticlCLUE3DHADStepTask,
+        process.ticlCLUE3DEMStepTask,
+        process.ticlCLUE3DHADStepTask,
     )
 
     process.ticlTracksterLinks = _tracksterLinksProducer.clone()
@@ -35,6 +51,8 @@ def customiseForTICLv5(process, enableDumper = False):
 
     process.ticlCandidate = _ticlCandidateProducer.clone()
     process.ticlCandidateTask = cms.Task(process.ticlCandidate)
+
+    process.pfTICL.ticlCandidateSrc = cms.InputTag('ticlCandidate')
 
     process.tracksterSimTracksterAssociationLinkingbyCLUE3DEM = _tracksterSimTracksterAssociationLinkingbyCLUE3D.clone(
         label_tst = cms.InputTag("ticlTrackstersCLUE3DEM")
@@ -61,8 +79,9 @@ def customiseForTICLv5(process, enableDumper = False):
                                      process.ticlIterationsTask,
                                      process.ticlTracksterLinksTask,
                                      process.ticlCandidateTask)
+
     process.particleFlowClusterHGCal.initialClusteringStep.tracksterSrc = "ticlCandidate"
-    process.globalrecoTask.remove(process.ticlTrackstersMerge)
+    process.globalrecoTask.add(process.ticlIterationsTask, process.ticlTracksterLinksTask, process.ticlCandidateTask)
 
     process.tracksterSimTracksterAssociationLinking.label_tst = cms.InputTag("ticlCandidate")
     process.tracksterSimTracksterAssociationPR.label_tst = cms.InputTag("ticlCandidate")
@@ -90,6 +109,7 @@ def customiseForTICLv5(process, enableDumper = False):
     process.hgcalValidation = cms.Sequence(process.hgcalSimHitValidationEE+process.hgcalSimHitValidationHEF+process.hgcalSimHitValidationHEB+process.hgcalDigiValidationEE+process.hgcalDigiValidationHEF+process.hgcalDigiValidationHEB+process.hgcalRecHitValidationEE+process.hgcalRecHitValidationHEF+process.hgcalRecHitValidationHEB+process.hgcalHitValidationSequence+process.hgcalValidatorSequence+process.hgcalTiclPFValidation+process.hgcalPFJetValidation)
     process.globalValidationHGCal = cms.Sequence(process.hgcalValidation)
     process.validation_step9 = cms.EndPath(process.globalValidationHGCal)
+
     if(enableDumper):
         process.ticlDumper = ticlDumper.clone(
             saveLCs=True,
@@ -102,7 +122,7 @@ def customiseForTICLv5(process, enableDumper = False):
             saveTracks=True,
             saveAssociations=True,
             trackstersclue3d = cms.InputTag('mergedTrackstersProducer'),
-            ticlcandidates = cms.InputTag("ticlCandidate"),
+    #        ticlcandidates = cms.InputTag("ticlCandidate"),
             trackstersmerged = cms.InputTag("ticlCandidate")
         )
         process.TFileService = cms.Service("TFileService",

@@ -26,7 +26,7 @@ def customiseTICLFromReco(process):
                                               process.hgcalMergeLayerClusters)
 
 # Reconstruction
-    process.TICL = cms.Path(process.hgcalLayerClustersTask,
+    process.TICL = cms.Path(#process.hgcalLayerClustersTask,
                             process.TFESSource,
                             process.ticlLayerTileTask,
                             process.ticlIterationsTask,
@@ -46,13 +46,27 @@ def customiseTICLFromReco(process):
                                                 process.tracksterSimTracksterAssociationLinkingPU,
                                                 process.tracksterSimTracksterAssociationPRPU
                                                 )
+    process.ticlDumper = ticlDumper.clone(
+        saveLCs=True,
+        saveCLUE3DTracksters=True,
+        saveTrackstersMerged=True,
+        saveSimTrackstersSC=True,
+        saveSimTrackstersCP=True,
+        saveTICLCandidate=True,
+        saveSimTICLCandidate=True,
+        saveTracks=True,
+        saveAssociations=True,
+    )
+    process.TFileService = cms.Service("TFileService",
+                                       fileName=cms.string("histo.root")
+                                       )
 
     process.TICL_Validator = cms.Task(process.hgcalValidator)
-    process.TICL_Validation = cms.Path(process.TICL_ValidationProducers,
-                                       process.TICL_Validator
+    process.TICL_Validation = cms.Path(process.TICL_ValidationProducers
+                                       #process.TICL_Validator
                                        )
 # Path and EndPath definitions
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput + process.ticlDumper)
     process.DQMoutput_step = cms.EndPath(process.DQMoutput)
 
 # Schedule definition
