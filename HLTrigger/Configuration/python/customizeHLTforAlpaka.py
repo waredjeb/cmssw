@@ -30,8 +30,8 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
             firstValid = cms.vuint32(1)
             )
 
-    process.hltHBHERecHitToSoA = cms.EDProducer("HCALRecHitsSoAProducer",
-            src = cms.InputTag("hltHbheReco"),
+    process.hltHBHERecHitToSoA = cms.EDProducer("HCALRecHitSoAProducer@alpaka",
+            src = cms.InputTag("hltHbhereco"),
             synchronise = cms.untracked.bool(False)
             )
 
@@ -48,7 +48,7 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
             usePFThresholdsFromDB = cms.bool(True)
             )
     '''
-    process.hltPFRecHitSoAProducerHCAL = cms.EDProducer("PFRechitSoAProducerHCAL",
+    process.hltPFRecHitSoAProducerHCAL = cms.EDProducer("PFRecHitSoAProducerHCAL@alpaka",
             producers = cms.VPSet(
                 cms.PSet(
                     src = cms.InputTag("hltHBHERecHitToSoA"),
@@ -62,6 +62,47 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
     process.hltLegacyPFRecHitProducer = cms.EDProducer("LegacyPFRecHitProducer",
             src = cms.InputTag("hltPFRecHitSoAProducerHCAL")
             )
+    process.particleFlowRecHitHF = cms.EDProducer("PFRecHitProducer",
+    
+        navigator = cms.PSet(
+            name = cms.string("PFRecHitHCALDenseIdNavigator"),
+            hcalEnums = cms.vint32(4)
+        ),
+        producers = cms.VPSet(
+               cms.PSet(
+                 name = cms.string("PFHFRecHitCreator"),
+                 src  = cms.InputTag("hltHfreco",""),
+                 EMDepthCorrection = cms.double(22.),
+                 HADDepthCorrection = cms.double(25.),
+                 thresh_HF = cms.double(0.4),
+                 ShortFibre_Cut = cms.double(60.),
+                 LongFibre_Fraction = cms.double(0.10),
+                 LongFibre_Cut = cms.double(120.),
+                 ShortFibre_Fraction = cms.double(0.01),
+                 HFCalib29 = cms.double(1.07),
+                 qualityTests = cms.VPSet(
+                      cms.PSet(
+                          name = cms.string("PFRecHitQTestHCALChannel"),
+                          maxSeverities      = cms.vint32(11,9,9,9),
+                          cleaningThresholds = cms.vdouble(0.0,120.,60.,0.),
+                          flags              = cms.vstring('Standard','HFLong','HFShort','HFSignalAsymmetry'),
+                      ),
+                      cms.PSet(
+                          name = cms.string("PFRecHitQTestHCALThresholdVsDepth"),
+                          usePFThresholdsFromDB = cms.bool(False),
+                          cuts = cms.VPSet(
+                                 cms.PSet(
+                                     depth = cms.vint32(1,2),
+                                     threshold = cms.vdouble(1.2,1.8),
+                                     detectorEnum = cms.int32(4))
+                          )
+                      )
+    
+              )
+        )
+      )
+
+)
 
     #Is there an easier way to do this?
     '''
@@ -174,7 +215,7 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
             ),
             )
     '''
-    process.hltPFClusterSoAProducer = cms.EDProducer("PFClusterSoAProducer",
+    process.hltPFClusterSoAProducer = cms.EDProducer("PFClusterSoAProducer@alpaka",
             pfRecHits = cms.InputTag("hltPFRecHitSoAProducerHCAL"),
             topology = cms.ESInputTag("pfRecHitHCALTopologyESProducer:"),
             pfClusterParams = cms.ESInputTag("pfClusterParamsESProducer:"),
@@ -200,22 +241,38 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
             )
 
     #Define the task (I assume the name has to be the same as the default task)
-    process.pfClusteringHBHEHFTask = cms.ConditionalTask(
-            process.hltPFRecHitHCALParamsRecordSource,      #HBHE RecHit and Cluster replaced with the following:
-            process.hltPFRecHitHCALTopologyRecordSource,
-            process.hltPFClusterParamsRecordSource,
-            process.hltHBHERecHitToSoA,
-            process.pfRecHitHCALParamsESProducer,
-            process.pfRecHitHCALTopologyESProducer,
-            process.hltPFRecHitSoAProducerHCAL,
-            process.hltLegacyPFRecHitProducer,
-            process.pfClusterParamsESProducer,
-            process.hltPFClusterSoAProducer,
-            process.hltLegacyPFClusterProducer,
-            process.hltParticleFlowClusterHCAL,
-            process.particleFlowRecHitHF,                           #HF remains unchanged
+    process.HLTPFHcalRecHits = cms.Sequence(
+            process.hltHBHERecHitToSoA+
+            process.hltPFRecHitSoAProducerHCAL+
+            process.hltLegacyPFRecHitProducer+
+            process.particleFlowRecHitHF                           #HF remains unchanged
+            )
+
+    process.HLTPFHcalClustering = cms.Sequence(
+            process.HLTPFHcalRecHits+
+            process.hltPFClusterSoAProducer+
+            process.hltLegacyPFClusterProducer+
+            process.hltParticleFlowClusterHCAL+
             process.particleFlowClusterHF
             )
+    #some Sequences contain all the modules of process.HLTPFHcalClustering Sequence instead of the Sequence itself
+    #find these Sequences and replace the modules with the Sequence
+    def replaceItemsInSequence(process, listProcess, mod):
+        for sequence, items in process.sequences.items():
+            containsAll = True 
+            for l in listProcess:
+                if(not items.contains(l)):
+                    containsAll = False
+            if(containsAll):
+                for l in listProcess:
+                    if(l != listProcess[-1]):
+                        items.remove(l)
+                    else:
+                        #if last modules, replace it with the Sequence
+                        items.replace(l, mod)
+
+    listProcess = [process.hltParticleFlowRecHitHBHE, process.hltParticleFlowRecHitHF, process.hltParticleFlowClusterHBHE,process.hltParticleFlowClusterHCAL,process.hltParticleFlowClusterHF]
+    replaceItemsInSequence(process, listProcess, process.HLTPFHcalClustering)
 
     return process
 
