@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
 
 
 ## PF HLT in Alpaka
@@ -62,8 +63,8 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
     process.hltLegacyPFRecHitProducer = cms.EDProducer("LegacyPFRecHitProducer",
             src = cms.InputTag("hltPFRecHitSoAProducerHCAL")
             )
+
     process.particleFlowRecHitHF = cms.EDProducer("PFRecHitProducer",
-    
         navigator = cms.PSet(
             name = cms.string("PFRecHitHCALDenseIdNavigator"),
             hcalEnums = cms.vint32(4)
@@ -97,12 +98,10 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
                                      detectorEnum = cms.int32(4))
                           )
                       )
-    
               )
         )
       )
-
-)
+    )
 
     #Is there an easier way to do this?
     '''
@@ -257,25 +256,27 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
             )
     #some Sequences contain all the modules of process.HLTPFHcalClustering Sequence instead of the Sequence itself
     #find these Sequences and replace the modules with the Sequence
-    def replaceItemsInSequence(process, listProcess, mod):
-        for sequence, items in process.sequences.items():
-            containsAll = True 
-            for l in listProcess:
-                if(not items.contains(l)):
-                    containsAll = False
-            if(containsAll):
-                for l in listProcess:
-                    if(l != listProcess[-1]):
-                        items.remove(l)
-                    else:
-                        #if last modules, replace it with the Sequence
-                        items.replace(l, mod)
+    def replaceItemsInSequence(process, itemsToReplace, replacingSequence):
+       for sequence, items in process.sequences.items():
+           containsAll = all(item in items for item in itemsToReplace)
+           if containsAll:
+               for item in itemsToReplace:
+                   if item != items[-1]:  # Check if it's the last item
+                       items.remove(item)
+                   else:
+                       # If the last item, replace it with the Sequence
+                       items[items.index(item)] = replacingSequence
 
-    listProcess = [process.hltParticleFlowRecHitHBHE, process.hltParticleFlowRecHitHF, process.hltParticleFlowClusterHBHE,process.hltParticleFlowClusterHCAL,process.hltParticleFlowClusterHF]
-    replaceItemsInSequence(process, listProcess, process.HLTPFHcalClustering)
+    itemsList = [process.hltParticleFlowRecHitHBHE, process.hltParticleFlowRecHitHF, process.hltParticleFlowClusterHBHE,process.hltParticleFlowClusterHCAL,process.hltParticleFlowClusterHF]
+    replaceItemsInSequence(process, itemsList, process.HLTPFHcalClustering)
+
+    if hasattr(process, 'hltOutputDQMGPUvsCPU'):
+        process.hltOutputDQMGPUvsCPU.outputCommands.extend([
+        	'keep *_hltParticleFlowClusterHCAL_*_*',
+        	'keep *_hltLegacyPFClusterProducer_*_*',
+        ])
 
     return process
-
 
 ## Pixel HLT in Alpaka
 def customizeHLTforDQMGPUvsCPUPixel(process):
