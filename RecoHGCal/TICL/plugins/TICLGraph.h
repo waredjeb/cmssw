@@ -10,11 +10,19 @@ public:
   Node() = default;
   Node(unsigned index, bool isTrackster = true) : index_(index), isTrackster_(isTrackster), alreadyVisited_{false} {};
 
-  inline void addNeighbour(unsigned int trackster_id) { neighboursId_.push_back(trackster_id); }
+  inline void addOuterNeighbour(unsigned int trackster_id) { outerNeighboursId_.push_back(trackster_id); }
+  inline void addInnerNeighbour(unsigned int trackster_id) { innerNeighboursId_.push_back(trackster_id); }
 
   inline const unsigned int getId() const { return index_; }
-  std::vector<unsigned int> getNeighbours() const { return neighboursId_; }
+  const std::vector<unsigned int>& getOuterNeighbours() const { return outerNeighboursId_; }
+  const std::vector<unsigned int>& getInnerNeighbours() const { return innerNeighboursId_; }
   void findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>& subComponent, std::string tabs);
+
+
+  inline bool isInnerNeighbour(const unsigned int tid){
+   auto findInner = std::find(innerNeighboursId_.begin(), innerNeighboursId_.end(), tid);
+   return findInner != innerNeighboursId_.end();
+  }
 
   ~Node() = default;
 
@@ -22,7 +30,8 @@ private:
   unsigned index_;
   bool isTrackster_;
 
-  std::vector<unsigned int> neighboursId_;
+  std::vector<unsigned int> outerNeighboursId_;
+  std::vector<unsigned int> innerNeighboursId_;
   bool alreadyVisited_;
 
   //bool areCompatible(const std::vector<Node>& graph, const unsigned int& outerNode) { return true; };
@@ -40,7 +49,7 @@ public:
   inline const std::vector<Node>& getNodes() const { return nodes_; }
   inline const Node& getNode(int i) const { return nodes_[i]; }
 
-  std::vector<std::vector<unsigned int>> findSubComponents();
+  std::vector<std::vector<unsigned int>>& findSubComponents();
 
   ~TICLGraph() = default;
 
@@ -48,7 +57,7 @@ public:
                 std::unordered_set<unsigned int>& visited,
                 std::vector<unsigned int>& component) const;
 
-  std::vector<std::vector<unsigned int>> getConnectedComponents() const;
+  std::vector<std::vector<unsigned int>>& getConnectedComponents() const;
 
 private:
   std::vector<Node> nodes_;

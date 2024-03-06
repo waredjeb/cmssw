@@ -109,11 +109,11 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps)
   auto linkingPSet = ps.getParameter<edm::ParameterSet>("linkingPSet");
   auto algoType = linkingPSet.getParameter<std::string>("type");
 
-  if (algoType == "Skeletons") {
+//  if (algoType == "Skeletons") {
     std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
     hdc_token_ = esConsumes<HGCalDDDConstants, IdealGeometryRecord, edm::Transition::BeginRun>(
         edm::ESInputTag("", detectorName_));
-  }
+//  }
 
   linkingAlgo_ = TracksterLinkingPluginFactory::get()->create(algoType, linkingPSet, consumesCollector());
 }
@@ -242,6 +242,7 @@ void TracksterLinksProducer::printTrackstersDebug(const std::vector<Trackster> &
 void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
   edm::ParameterSetDescription linkingDesc;
+  //linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Passthrough", true));
   linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Skeletons", true));
 
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);

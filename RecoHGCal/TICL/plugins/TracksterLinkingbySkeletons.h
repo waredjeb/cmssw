@@ -17,6 +17,7 @@
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "TrackingTools/GeomPropagators/interface/Propagator.h"
+#include <array>
 
 namespace ticl {
 
@@ -24,18 +25,23 @@ namespace ticl {
   public:
     TracksterLinkingbySkeletons(const edm::ParameterSet& conf, edm::ConsumesCollector iC);
 
-    virtual ~TracksterLinkingbySkeletons() {}
+    ~TracksterLinkingbySkeletons() override {}
 
     void linkTracksters(const Inputs& input,
                         std::vector<Trackster>& resultTracksters,
                         std::vector<std::vector<unsigned int>>& linkedResultTracksters,
                         std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) override;
 
-    float findSkeletonPoints(float percentage,
-                             const float trackster_energy,
-                             const std::vector<unsigned int> vertices,
-                             const hgcal::RecHitTools& rhtools,
-                             const std::vector<reco::CaloCluster>& layerClusters);
+    std::array<ticl::Vector, 3> findSkeletonNodes(const ticl::Trackster& trackster,
+                                                  float lower_percentage,
+                                                  float upper_percentage,
+                                                  const std::vector<reco::CaloCluster>& layerClusters,
+                                                  const hgcal::RecHitTools& rhtools);
+
+    bool areCompatible(const ticl::Trackster& myTrackster,
+                       const ticl::Trackster& otherTrackster,
+                       const std::array<ticl::Vector, 3>& mySkeleton,
+                       const std::array<ticl::Vector, 3>& otherSkeleton);
 
     void initialize(const HGCalDDDConstants* hgcons,
                     const hgcal::RecHitTools rhtools,
@@ -45,17 +51,14 @@ namespace ticl {
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
       iDesc.add<double>("track_time_quality_threshold", 0.5);
       iDesc.add<double>("wind", 1.5);
-      iDesc.add<double>("angle0", 1.523599);
-      iDesc.add<double>("angle1", 1.349006);
-      iDesc.add<double>("angle2", 1.174532);
-      iDesc.add<double>("angle0_scaling", 0.0 );
-      iDesc.add<double>("angle1_scaling", 0.0 );
-      iDesc.add<double>("angle2_scaling", 0.0 );
-      iDesc.add<double>("maxConeHeight", 500.);
-      iDesc.add<double>("pcaQuality", 0.97);
-      iDesc.add<unsigned int>("pcaQualityLCSize", 10);
-      iDesc.add<double>("dotProdCut", 0.975);
-      iDesc.add<double>("maxDistSkeletonsSq", 2500.);
+      iDesc.add<unsigned int>("min_num_lcs", 7);
+      iDesc.add<double>("min_trackster_energy", 5.);
+      iDesc.add<double>("pca_quality_th", 0.9);
+      iDesc.add<double>("alignement_projective_th", 3);
+      iDesc.add<double>("dot_prod_th", 0.97);
+      iDesc.add<double>("min_distance_z", 10.);
+      iDesc.add<double>("max_distance_closest_points", 50);
+      iDesc.add<double>("max_z_distance_closest_ponts", 20.);
       TracksterLinkingAlgoBase::fillPSetDescription(iDesc);
     }
 
@@ -68,17 +71,15 @@ namespace ticl {
 
     float timing_quality_threshold_;
     float del_;
-    float angle_first_cone_;
-    float angle_second_cone_;
-    float angle_third_cone_;
-    float pcaQ_;
-    unsigned int pcaQLCSize_;
-    float dotCut_;
-    float maxDistSkeletonsSq_;
-    float max_height_cone_;
-    float angle_first_cone_scaling_;
-    float angle_second_cone_scaling_;
-    float angle_third_cone_scaling_;
+    unsigned int min_num_lcs_;
+    float min_trackster_energy_;
+    float pca_quality_th_;
+    float alignement_projective_th_;
+    float dot_prod_th_;
+    float min_distance_z_;
+    float max_distance_closest_points_;
+    float max_z_distance_closest_ponts_;
+
     const HGCalDDDConstants* hgcons_;
 
     std::unique_ptr<GeomDet> firstDisk_[2];

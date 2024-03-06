@@ -7,14 +7,14 @@ void Node::findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>
     LogDebug("TICLGraph") << tabs << " Visiting node " << index_ << std::endl;
     alreadyVisited_ = true;
     subComponent.push_back(index_);
-    for (auto const& neighbour : neighboursId_) {
+    for (auto const& neighbour : outerNeighboursId_) {
       LogDebug("TICLGraph") << tabs << " Trying to visit " << neighbour << std::endl;
       graph[neighbour].findSubComponents(graph, subComponent, tabs);
     }
   }
 }
 
-std::vector<std::vector<unsigned int>> TICLGraph::findSubComponents() {
+std::vector<std::vector<unsigned int>>& TICLGraph::findSubComponents() {
   std::vector<std::vector<unsigned int>> components;
   for (auto const& node : nodes_) {
     auto const id = node.getId();
@@ -35,14 +35,14 @@ void TICLGraph::dfsForCC(unsigned int nodeIndex,
   visited.insert(nodeIndex);
   component.push_back(nodeIndex);
 
-  for (auto const& neighbourIndex : nodes_[nodeIndex].getNeighbours()) {
+  for (auto const& neighbourIndex : nodes_[nodeIndex].getOuterNeighbours()) {
     if (visited.find(neighbourIndex) == visited.end()) {
       dfsForCC(neighbourIndex, visited, component);
     }
   }
 }
 
-std::vector<std::vector<unsigned int>> TICLGraph::getConnectedComponents() const {
+std::vector<std::vector<unsigned int>>& TICLGraph::getConnectedComponents() const {
   std::unordered_set<unsigned int> visited;
   std::vector<std::vector<unsigned int>> components;
 
