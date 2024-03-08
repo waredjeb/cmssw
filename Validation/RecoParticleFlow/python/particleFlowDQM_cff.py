@@ -120,5 +120,38 @@ PFCandAnalyzerDQM = cms.EDProducer("PFCandidateAnalyzerDQM",
     pdgStrs = cms.vstring( default.pdgIDDict.values() )
 )
 
+# PFCandidates
+PFCandAnalyzerHLTDQM = cms.EDProducer("PFCandidateAnalyzerHLTDQM",
+    PFCandType = cms.InputTag("hltParticleFlow"),
+    etabins = cms.vdouble( default.etaBinsOffset ),
+    pdgKeys = cms.vuint32( default.pdgIDDict.keys() ),
+    pdgStrs = cms.vstring( default.pdgIDDict.values() )
+)
 
 #----- ----- ----- ----- ----- ----- ----- -----
+vjetResponseDirHLT = [jetResponseDir + "hltAK4PFJet/JEC/",
+                   jetResponseDir + "hltAK4PFJet/noJEC/"]
+
+pfJetAnalyzerHLTDQM = cms.EDProducer("PFJetAnalyzerHLTDQM",
+    #match these reco-jets to the gen-jets and compute jet response
+    recoJetCollection = cms.InputTag('hltAK4PFJets'),
+    genJetCollection = cms.InputTag('ak4GenJets'),
+    jetDeltaR = cms.double(0.2),
+
+    # turn gen jets on or off
+    genJetsOn = cms.bool(True),
+    recoJetsOn = cms.bool(True),
+    responsePlots = cms.VPSet(createResponsePlots(ptbins, etabins)),
+    genJetPlots = cms.VPSet(createGenJetPlots(ptbins, etabins)),
+    recoJetPlots = cms.VPSet(createRecoJetPlots(ptbins, etabins)),
+)
+
+pfJetHLTDQMPostProcessor = cms.EDProducer("PFJetDQMPostProcessor",
+
+    jetResponseDir = cms.vstring( vjetResponseDirHLT ),
+    genjetDir = cms.string( genjetDir ),
+    offsetDir = cms.string( offsetDir ),
+    ptBins = cms.vdouble( ptbins ),
+    etaBins = cms.vdouble( etabins ),
+    recoPtCut = cms.double(10. )
+)
