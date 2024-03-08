@@ -109,7 +109,7 @@ def parse_args():
     # This needs to be also changed whenever changing binning
     if args.doResponsePlots:
         # Needs to add extra folders here if the DQM files have other folders of histograms
-        JetFolderDirs = ["JetResponse/slimmedJets/JEC", "JetResponse/slimmedJets/noJEC", "JetResponse/slimmedJetsPuppi/JEC", "JetResponse/slimmedJetsPuppi/noJEC"]
+        JetFolderDirs = ["JetResponse/hltAK4PFJets/JEC", "JetResponse/hltAK4PFJets/noJEC"]#, "JetResponse/slimmedJetsPuppi/JEC", "JetResponse/slimmedJetsPuppi/noJEC"]
 
         for JetFolderDir in JetFolderDirs:
             plots += [(JetFolderDir, "efficiency_pt", ["efficiency_eta05", "efficiency_eta13",
@@ -187,9 +187,9 @@ def doMETPlots(files, plots):
 # does PFCandidate Plots
 def doPFCandPlots(files, plots):
     #we are going to hard code the end part of the histogram names because there's only 4
-    hist_list = ["Charge", "Eta", "Phi", "Log10Pt", "PtLow","PtMid", "PtHigh"]
+    hist_list = ["Charge", "Eta", "Phi", "Log10Pt", "PtLow","PtMid", "PtHigh", "ECALEnergyLow","ECALEnergyMid","ECALEnergyHigh", "HCALEnergyLow","HCALEnergyMid","HCALEnergyHigh", "HOEnergy", "PSEnergy"]
     f = ROOT.TFile(files[0])
-    d = f.Get("DQMData/Run 1/ParticleFlow/Run summary/PackedCandidates")
+    d = f.Get("DQMData/Run 1/ParticleFlow/Run summary/PFCandidate")
     #get the name of the folders, which can use to complete plot name as well probably
     PFFolderNames = []
 
@@ -227,9 +227,10 @@ def addPlots(plotter, folder, name, section, histograms, opts, Offset=False):
             plot.setProperties(legendDy=0.24)
             plot.setProperties(legendDx=0.05)
         plotter.append("JetMET" + section, folders, PlotFolder(*plots, loopSubFolders=False, page="JetMET", section=section))
-    if "PackedCandidates" in folder:
+    print(folder)
+    if "PFCandidate" in folder:
         for h in histograms:
-            if ("PtMid" in h or "PtHigh" in h):
+            if ("PtMid" in h or "PtHigh" or "Energy" in h):
                 plots = [PlotGroup(h, [Plot(h, ymin = pow(10,-1), ylog = True)])]
             else:
                 plots = [PlotGroup(h, [Plot(h, **opts)])]
@@ -238,7 +239,7 @@ def addPlots(plotter, folder, name, section, histograms, opts, Offset=False):
             plot.setProperties(legendDh=0.01)
             plot.setProperties(legendDy=0.24)
             plot.setProperties(legendDx=0.05)
-        plotter.append("ParticleFlow/PackedCandidates/" + section, folders, PlotFolder(*plots, loopSubFolders=False, page="PackedCandidates", section= section))
+        plotter.append("ParticleFlow/PFCandidate/" + section, folders, PlotFolder(*plots, loopSubFolders=False, page="PFCandidate", section= section))
 
 
 def main():
@@ -290,7 +291,7 @@ def main():
         #fullfolder =  "DQMData/Run 1/ParticleFlow/Run summary/{0}".format(folder)
         fullJetFolder = "DQMData/Run 1/ParticleFlow/Run summary/{0}".format(folder)
         fullMETFolder = "DQMData/Run 1/JetMET/Run summary/{0}".format(folder)
-        fullPFCandFolder = "DQMData/Run 1/ParticleFlow/Run summary/PackedCandidates/{0}".format(folder)
+        fullPFCandFolder = "DQMData/Run 1/ParticleFlow/Run summary/PFCandidate/{0}".format(folder)
         print("Booking histogram group {0}={1} from folder {2}".format(name, histograms, folder))
         if "Offset/" in folder:
             opts = {'xtitle':'Default', 'ytitle':'Default'}
@@ -356,3 +357,4 @@ def addLine(name, oldLines) :
 
 if __name__ == "__main__":
     main()
+
