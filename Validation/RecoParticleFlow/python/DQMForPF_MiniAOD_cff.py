@@ -14,27 +14,27 @@ from Validation.RecoParticleFlow.particleFlowDQM_cff import pfJetHLTDQMPostProce
 from Validation.RecoMET.METRelValForDQM_cff import *
 from Validation.RecoJets.JetValidation_cff import *
 
-pfClusterBuilder = cms.PSet(                                                                                                                                                                                                                                                                                                                  
-    algoName = cms.string('Basic2DGenericPFlowClusterizer'),                                                                                                                                                                                                                                                               
-    allCellsPositionCalc = cms.PSet(                                                                                                                                                                                                                                                                                       
-        algoName = cms.string('Basic2DGenericPFlowPositionCalc'),                                                                                                                                                                                                                                                          
-        logWeightDenominatorByDetector = cms.VPSet(                                                                                                                                                                                                                                                                        
-            cms.PSet(                                                                                                                                                                                                                                                                                                      
-                depths = cms.vint32(1, 2, 3, 4),                                                                                                                                                                                                                                                                           
-                detector = cms.string('HCAL_BARREL1'),                                                                                                                                                                                                                                                                     
-                logWeightDenominator = cms.vdouble(0.4, 0.3, 0.3, 0.3)                                                                                                                                                                                                                                                     
-            ),                                                                                                                                                                                                                                                                                                             
-            cms.PSet(                                                                                                                                                                                                                                                                                                      
-                depths = cms.vint32(                                                                                                                                                                                                                                                                                       
-                    1, 2, 3, 4, 5,                                                                                                                                                                                                                                                                                         
-                    6, 7                                                                                                                                                                                                                                                                                                   
-                ),                                                                                                                                                                                                                                                                                                         
-                detector = cms.string('HCAL_ENDCAP'),                                                                                                                                                                                                                                                                      
-                logWeightDenominator = cms.vdouble(                                                                                                                                                                                                                                                                        
-                    0.1, 0.2, 0.2, 0.2, 0.2,                                                                                                                                                                                                                                                                               
-                    0.2, 0.2                                                                                                                                                                                                                                                                                               
-                )                                                                                                                                                                                                                                                                                                          
-            )                                                                                                                                                                                                                                                                                                              
+pfClusterBuilder = cms.PSet(
+    algoName = cms.string('Basic2DGenericPFlowClusterizer'),
+    allCellsPositionCalc = cms.PSet(
+        algoName = cms.string('Basic2DGenericPFlowPositionCalc'),
+        logWeightDenominatorByDetector = cms.VPSet(
+            cms.PSet(
+                depths = cms.vint32(1, 2, 3, 4),
+                detector = cms.string('HCAL_BARREL1'),
+                logWeightDenominator = cms.vdouble(0.4, 0.3, 0.3, 0.3)
+            ),
+            cms.PSet(
+                depths = cms.vint32(
+                    1, 2, 3, 4, 5,
+                    6, 7
+                ),
+                detector = cms.string('HCAL_ENDCAP'),
+                logWeightDenominator = cms.vdouble(
+                    0.1, 0.2, 0.2, 0.2, 0.2,
+                    0.2, 0.2
+                )
+            )
         ),
         minAllowedNormalization = cms.double(1e-09),
         minFractionInCalc = cms.double(1e-09),
@@ -131,23 +131,23 @@ hltParticleFlowClusterHBHECPUOnly = cms.EDProducer("LegacyPFClusterProducer",
     PFRecHitsLabelIn = cms.InputTag("hltParticleFlowRecHitHBHESoACPUSerial")
 )
 
-HLTpfClusterHBHEAlpakaComparisonGPUvsCPU= DQMEDAnalyzer("PFCaloGPUComparison",
-                                                    pfClusterToken_ref = cms.untracked.InputTag('hltParticleFlowClusterHBHESoA'),
-                                                    pfClusterToken_target = cms.untracked.InputTag('hltParticleFlowClusterHBHESoACPUSerial'),
-                                                    pfRecHitsToken_ref = cms.untracked.InputTag('hltParticleFlowRecHitHBHESoA'),
-                                                    pfRecHitsToken_target = cms.untracked.InputTag('hltParticleFlowRecHitHBHESoACPUSerial'),
-                                                    pfCaloGPUCompDir = cms.untracked.string("pfClusterHBHEAlpakaV"),
-                                                    GPU = cms.untracked.string("GPUAlpaka"),
-                                                    CPU = cms.untracked.string("CPUAlpaka")
-                                                    )
-
-#HLTpfClusterHBHEAlpakaComparisonGPUvsCPU= DQMEDAnalyzer("PFCaloGPUComparisonTask",
-#                                                    pfClusterToken_ref = cms.untracked.InputTag('hltParticleFlowClusterHCAL'),
-#                                                    pfClusterToken_target = cms.untracked.InputTag('hltParticleFlowClusterHCALCPUOnly'),
+#HLTpfClusterHBHEAlpakaComparisonGPUvsCPU= DQMEDAnalyzer("PFCaloGPUComparison",
+#                                                    pfClusterToken_ref = cms.untracked.InputTag('hltParticleFlowClusterHBHESoA'),
+#                                                    pfClusterToken_target = cms.untracked.InputTag('hltParticleFlowClusterHBHESoACPUSerial'),
+#                                                    pfRecHitsToken_ref = cms.untracked.InputTag('hltParticleFlowRecHitHBHESoA'),
+#                                                    pfRecHitsToken_target = cms.untracked.InputTag('hltParticleFlowRecHitHBHESoACPUSerial'),
 #                                                    pfCaloGPUCompDir = cms.untracked.string("pfClusterHBHEAlpakaV"),
 #                                                    GPU = cms.untracked.string("GPUAlpaka"),
 #                                                    CPU = cms.untracked.string("CPUAlpaka")
-#)
+#                                                    )
+
+HLTpfClusterHBHEAlpakaComparisonGPUvsCPU= DQMEDAnalyzer("PFCaloGPUComparisonTask",
+                                                    pfClusterToken_ref = cms.untracked.InputTag('hltParticleFlowClusterHCAL'),
+                                                    pfClusterToken_target = cms.untracked.InputTag('hltParticleFlowClusterHCALCPUOnly'),
+                                                    pfCaloGPUCompDir = cms.untracked.string("pfClusterHBHEAlpakaV"),
+                                                    GPU = cms.untracked.string("GPUAlpaka"),
+                                                    CPU = cms.untracked.string("CPUAlpaka")
+)
 
 DQMOfflinePF = cms.Sequence(
   pfJetAnalyzerDQM +
@@ -173,7 +173,7 @@ DQMHLTPF = cms.Sequence(
 #    PFCandAnalyzerHLTDQM+
 #    hltParticleFlowClusterHBHE+
 #    hltParticleFlowClusterHBHE+
-#    hltParticleFlowClusterHBHECPUOnly+
+    hltParticleFlowClusterHBHECPUOnly+
     HLTpfClusterHBHEAlpakaComparisonGPUvsCPU
     #HLTpfClusterHBHEAlpakaComparisonCPUvsLegacy+
     #HLTpfClusterHBHEAlpakaComparisonGPUvsLegacy
