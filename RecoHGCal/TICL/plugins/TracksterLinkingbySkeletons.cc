@@ -54,7 +54,9 @@ TracksterLinkingbySkeletons::TracksterLinkingbySkeletons(const edm::ParameterSet
       dot_prod_th_(conf.getParameter<double>("dot_prod_th")),
       min_distance_z_(conf.getParameter<double>("min_distance_z")),
       max_distance_closest_points_(conf.getParameter<double>("max_distance_closest_points")),
-      max_z_distance_closest_ponts_(conf.getParameter<double>("max_z_distance_closest_ponts"))
+      max_z_distance_closest_ponts_(conf.getParameter<double>("max_z_distance_closest_ponts")),
+      cylinder_radius(conf.getParameter<double>("cylinder_radius"))
+
       {}
       
 
@@ -159,6 +161,17 @@ std::array<ticl::Vector, 3> TracksterLinkingbySkeletons::findSkeletonNodes(
   return skeleton;
 }
 
+
+bool isPointInCylinder(const std::array<ticl::Vector, 3> &mySkeleton, const std::array<ticl::Vector, 3> &otherSkeleton, const float radius){
+    const auto& center = mySkeleton[1];
+    const auto& pointToCheck = otherSkeleton[0];
+    const auto distance_xy = std::sqrt((pointToCheck.x() - center.x())*(pointToCheck.x() - center.x()) + (pointToCheck.y() - center.y())*(pointToCheck.y() - center.y()));
+    LogDebug("TracksterLinkingbySkeletons") << " Distance XY " << distance_xy << " Z0 " << mySkeleton[0].z() << " zCheck " << pointToCheck.z() << " Z1 " << mySkeleton[2].z() << std::endl;
+    bool isWithinZ = std::abs(pointToCheck.z()) >= std::abs(mySkeleton[0].z()) and std::abs(pointToCheck.z()) <= std::abs(mySkeleton[2].z());
+    return (distance_xy <= radius) && isWithinZ;
+}
+
+
 bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackster,
                                                 const ticl::Trackster &otherTrackster,
                                                 const std::array<ticl::Vector, 3> &mySkeleton,
@@ -236,13 +249,18 @@ bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackst
         LogDebug("TracksterLinkingbySkeletons") << "\t\t Distance between closest points " << d << " TH " << 10.f << " Z Distance " << minDistance_z << " TH " << max_distance_closest_points_ << std::endl;
         if(d < max_distance_closest_points_ and minDistance_z < max_z_distance_closest_ponts_){
           LogDebug("TracksterLinkingbySkeletons") << "\t\t\t Linked! " << d << std::endl;
+          return true;
         }
         else{
           LogDebug("TracksterLinkingbySkeletons") << "Distance between closest point " << d << " Distance in z " << max_z_distance_closest_ponts_ << std::endl;
+          bool isInCylinder = isPointInCylinder(mySkeleton, otherSkeleton, cylinder_radius);
+          LogDebug("TracksterLinkingbySkeletons") << "Two Points are in Cylinder  " << isInCylinder << std::endl; 
+          if(isInCylinder){
+            LogDebug("TracksterLinkingbySkeletons") << " LINK With Cylinder " << std::endl;
+          }
+          return isInCylinder;
         }
-
-
-        return d < max_distance_closest_points_ and minDistance_z < max_z_distance_closest_ponts_;
+        //return d < max_distance_closest_points_ and minDistance_z < max_z_distance_closest_ponts_;
       }
     }
   }
