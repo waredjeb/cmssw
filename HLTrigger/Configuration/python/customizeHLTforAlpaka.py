@@ -8,11 +8,11 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
     '''Customization to introduce Particle Flow Reconstruction in Alpaka
     '''
     ## failsafe for fake menus
-    if not hasattr(process, 'hltParticleFlowClusterHBHE'):
-        return process
+    #if not hasattr(process, 'hltParticleFlowClusterHBHE'):
+    #    return process
 
-    for prod in producers_by_type(process, 'HCALRecHitSoAProducer@alpaka'):
-        return process
+    #for prod in producers_by_type(process, 'HCALRecHitSoAProducer@alpaka'):
+    #    return process
 
     process.hltESSPFRecHitHCALParamsRecord = cms.ESSource('EmptyESSource',
         recordName = cms.string('PFRecHitHCALParamsRecord'),
@@ -249,8 +249,10 @@ def customizeHLTforAlpakaParticleFlowClustering(process):
         if hasattr(process, hltOutModMatch):
             outMod = getattr(process, hltOutModMatch)
             outMod.outputCommands.extend([
-                'keep *_hltParticleFlowClusterHBHESoA_*_*',
+                'keep *_hltParticleFlowRecHitHBHE_*_*',
+                'keep *_hltParticleFlowRecHitHBHESoACPUSerial_*_*',
                 'keep *_hltParticleFlowClusterHBHESoACPUSerial_*_*',
+                'keep *_hltParticleFlowClusterHCAL_*_*',
             ])
 
     # Add PF sequences to DQM_*HcalReconstruction_v Path
