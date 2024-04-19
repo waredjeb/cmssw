@@ -1,6 +1,8 @@
 
 <lcgdict>
-  <class name="ticl::Trackster" ClassVersion="10">
+  <class name="ticl::Trackster" ClassVersion="12">
+    <version ClassVersion="12" checksum="2111726404"/>
+    <version ClassVersion="11" checksum="2995118904"/>
     <version ClassVersion="10" checksum="556627704"/>
     <version ClassVersion="9" checksum="1001808235"/>
     <version ClassVersion="8" checksum="749412802"/>
@@ -13,6 +15,8 @@
   <class name="std::vector<ticl::Trackster>" />
   <class name="edm::Wrapper<ticl::Trackster>" />
   <class name="edm::Wrapper<std::vector<ticl::Trackster> >" />
+  <class name="std::vector<std::vector<unsigned int>>" />
+  <class name="edm::Wrapper<std::vector<std::vector<unsigned int>>>" />
 
   <class name="ticl::TICLLayerTile" persistent="false">
     <field name="tile_" transient="true"/>
@@ -49,10 +53,19 @@
   <class name="edm::Wrapper<TICLSeedingRegion>" />
   <class name="edm::Wrapper<std::vector<TICLSeedingRegion> >" />
 
-  <class name="TICLCandidate" ClassVersion="3">
+  <class name="TICLCandidate" ClassVersion="5">
+   <version ClassVersion="5" checksum="2260471800"/>
+   <version ClassVersion="4" checksum="3155265136"/>
    <version ClassVersion="3" checksum="450468662"/>
   </class>
   <class name="std::vector<TICLCandidate>" />
   <class name="edm::Wrapper<TICLCandidate>" />
   <class name="edm::Wrapper<std::vector<TICLCandidate> >" />
+
+  <class name="MtdSoA"/>
+  <class name="MtdSoA::View"/>
+
+  <class name="MtdHostCollection"/>
+  <class name="edm::Wrapper<MtdHostCollection>" splitLevel="0"/>
+
 </lcgdict>
