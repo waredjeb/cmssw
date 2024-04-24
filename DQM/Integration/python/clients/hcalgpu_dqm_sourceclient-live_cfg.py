@@ -100,6 +100,7 @@ cmssw			= os.getenv("CMSSW_VERSION").split("_")
 #	New Style
 #-------------------------------------
 process.load('DQM.HcalTasks.hcalGPUComparisonTask_cfi')
+process.load('DQM.HcalTasks.pfHcalGPUComparisonTask_cfi')
 process.load('DQM.HcalTasks.HcalOnlineHarvesting_cfi')
 process.load('DQM.HcalTasks.HcalQualityTests_cfi')
 
@@ -117,7 +118,8 @@ process.hcalGPUComparisonTask.runkeyName = runTypeName
 #	Hcal DQM Tasks/Clients Sequences Definition
 #-------------------------------------
 process.tasksPath = cms.Path(
-		process.hcalGPUComparisonTask
+        process.hcalGPUComparisonTask+
+        process.pfHcalGPUComparisonTask
 )
 
 #-------------------------------------
