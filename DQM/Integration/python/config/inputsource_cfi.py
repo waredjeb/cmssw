@@ -104,9 +104,9 @@ if not options.inputFiles:
 
     # stream label
     if runType.getRunType() == runType.hi_run:
-        streamLabel = 'streamHIDQM'
+        streamLabel = 'streamHIDQMGPUvsCPU'
     else:
-        streamLabel = 'streamDQM'
+        streamLabel = 'streamDQMGPUvsCPU'
 
     source = cms.Source("DQMStreamerReader",
         runNumber = cms.untracked.uint32(options.runNumber),
@@ -115,7 +115,7 @@ if not options.inputFiles:
         streamLabel = cms.untracked.string(streamLabel),
         scanOnce = cms.untracked.bool(options.scanOnce),
         datafnPosition = cms.untracked.uint32(options.datafnPosition),
-        minEventsPerLumi = cms.untracked.int32(1),
+        minEventsPerLumi = cms.untracked.int32(10),
         delayMillis = cms.untracked.uint32(500),
         nextLumiTimeoutMillis = cms.untracked.int32(nextLumiTimeoutMillis),
         skipFirstLumis = cms.untracked.bool(options.skipFirstLumis),

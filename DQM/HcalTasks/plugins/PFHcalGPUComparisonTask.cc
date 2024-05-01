@@ -89,7 +89,7 @@ PFHcalGPUComparisonTask::PFHcalGPUComparisonTask(edm::ParameterSet const& conf)
           conf.getUntrackedParameter<edm::InputTag>("pfClusterToken_ref"))},
       pfClusterTok_target_{
           consumes<reco::PFClusterCollection>(conf.getUntrackedParameter<edm::InputTag>("pfClusterToken_target"))},
-      pfCaloGPUCompDir_{conf.getUntrackedParameter<std::string>("pfCaloGPUCompDir")} {}
+      pfCaloGPUCompDir_{conf.getUntrackedParameter<std::string>("name")} {}
 
 /* virtual */ void PFHcalGPUComparisonTask::bookHistograms(DQMStore::IBooker& ibooker,
                                                          edm::Run const& r,
