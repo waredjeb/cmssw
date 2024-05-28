@@ -65,9 +65,7 @@ process.dqmSaverPB.runNumber = options.runNumber
 process = customise(process)
 process.DQMStore.verbose = 0
 if not unitTest and not useFileInput :
-  print('here')
   if not options.BeamSplashRun :
-    print('here2')
     process.source.minEventsPerLumi = 100
 
 #-------------------------------------
@@ -122,9 +120,8 @@ process.hcalGPUComparisonTask.runkeyName = runTypeName
 #	Hcal DQM Tasks/Clients Sequences Definition
 #-------------------------------------
 process.tasksPath = cms.Path(
-		process.hcalGPUComparisonTask
-
-#        process.pfHcalGPUComparisonTask
+		process.hcalGPUComparisonTask+
+        process.pfHcalGPUComparisonTask
 )
 
 #-------------------------------------

@@ -106,28 +106,36 @@ PFHcalGPUComparisonTask::PFHcalGPUComparisonTask(edm::ParameterSet const& conf)
   ibooker.setCurrentFolder("ParticleFlow/" + pfCaloGPUCompDir_);
 
   histo = "pfCluster_Multiplicity_GPUvsCPU";
-  pfCluster_Multiplicity_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 2000, 100, 0, 2000);
+  const char* histoAxis = "pfCluster_Multiplicity_GPUvsCPU;Multiplicity GPU;Multiplicity GPU";
+  pfCluster_Multiplicity_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 1000, 0, 1000, 1000, 0, 1000);
 
   histo = "pfCluster_Energy_GPUvsCPU";
-  pfCluster_Energy_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 500, 100, 0, 500);
+  histoAxis = "pfCluster_Energy_GPUvsCPU;Energy CPU [GeV];Energy GPU [GeV]";
+  pfCluster_Energy_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 500, 0, 500, 500, 0, 500);
 
   histo = "pfCluster_RecHitMultiplicity_GPUvsCPU";
-  pfCluster_RecHitMultiplicity_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 100, 100, 0, 100);
+  histoAxis = "pfCluster_RecHitMultiplicity_GPUvsCPU;RecHit Multiplicity CPU;RecHit Multiplicity GPU";
+  pfCluster_RecHitMultiplicity_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 100, 0, 100, 100, 0, 100);
 
   histo = "pfCluster_Layer_GPUvsCPU";
-  pfCluster_Layer_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 100, 100, 0, 100);
+  histoAxis = "pfCluster_Layer_GPUvsCPU;Cluster Layer CPU;Cluster Layer GPU";
+  pfCluster_Layer_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 4, 0, 3, 4, 0, 3);
 
   histo = "pfCluster_Depth_GPUvsCPU";
-  pfCluster_Depth_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 100, 100, 0, 100);
+  histoAxis = "pfCluster_Depth_GPUvsCPU;Cluster Depth CPU;Cluster Depth GPU";
+  pfCluster_Depth_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 8, 0, 7, 8, 0, 7);
 
   histo = "pfCluster_Eta_GPUvsCPU";
-  pfCluster_Eta_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 100, 100, 0, 100);
+  histoAxis = "pfCluster_Eta_GPUvsCPU;Cluster #eta CPU;Cluster #eta GPU";
+  pfCluster_Eta_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 100, -5.f, 5.f, 100, -5.f, 5.f);
 
   histo = "pfCluster_Phi_GPUvsCPU";
-  pfCluster_Phi_GPUvsCPU_ = ibooker.book2D(histo, histo, 100, 0, 100, 100, 0, 100);
+  histoAxis = "pfCluster_Phi_GPUvsCPU;Cluster #phi CPU;Cluster #phi GPU";
+  pfCluster_Phi_GPUvsCPU_ = ibooker.book2D(histo, histoAxis, 100, -M_PI, M_PI, 100, -M_PI, M_PI);
 
   histo = "pfCluster_DuplicateMatches_GPUvsCPU";
-  pfCluster_DuplicateMatches_GPUvsCPU_ = ibooker.book1D(histo, histo, 100, 0., 1000);
+  histoAxis = "pfCluster_Duplicates_GPUvsCPU;Cluster Duplicates CPU;Cluster Duplicates GPU";
+  pfCluster_DuplicateMatches_GPUvsCPU_ = ibooker.book1D(histo, histoAxis, 100, 0., 1000);
 }
 
 /* virtual */ void PFHcalGPUComparisonTask::_resetMonitors(hcaldqm::UpdateFreq uf) { DQTask::_resetMonitors(uf); }
@@ -192,57 +200,6 @@ PFHcalGPUComparisonTask::PFHcalGPUComparisonTask(edm::ParameterSet const& conf)
                                                    (float)pfClusters_target->at(j).recHitFractions().size());
     }
   }
-
-  //std::map<HcalDetId, double> mRecHitEnergy;
-
-  //for (HBHERecHitCollection::const_iterator it = chbhe_ref->begin(); it != chbhe_ref->end(); ++it) {
-  //  double energy = it->energy();
-
-  //  //	Explicit check on the DetIds present in the Collection
-  //  HcalDetId did = it->id();
-
-  //  if (mRecHitEnergy.find(did) == mRecHitEnergy.end())
-  //    mRecHitEnergy.insert(std::make_pair(did, energy));
-  //  else
-  //    edm::LogError("PFHcalGPUComparisonTask") << "Duplicate Rechit from the same HcalDetId";
-  //  ;
-  //}
-
-  //for (HBHERecHitCollection::const_iterator it = chbhe_target->begin(); it != chbhe_target->end(); ++it) {
-  //  double energy = it->energy();
-  //  HcalDetId did = it->id();
-
-  //  if (mRecHitEnergy.find(did) != mRecHitEnergy.end()) {
-  //    energyGPUvsCPU_subdet_.fill(did, mRecHitEnergy[did], energy);
-
-  //    if (mRecHitEnergy[did] != 0.) {
-  //      energyDiffGPUCPU_subdet_.fill(did, (energy - mRecHitEnergy[did]) / mRecHitEnergy[did]);
-  //      if (energy > 0.1)
-  //        energyDiffGPUCPU_depth_.fill(did, (energy - mRecHitEnergy[did]) / mRecHitEnergy[did]);
-  //    } else if (mRecHitEnergy[did] == 0. && energy == 0.) {
-  //      energyDiffGPUCPU_subdet_.fill(did, 0.);
-  //      if (energy > 0.1)
-  //        energyDiffGPUCPU_depth_.fill(did, 0.);
-  //    } else {
-  //      energyDiffGPUCPU_subdet_.fill(did, -1.);
-  //      if (energy > 0.1)
-  //        energyDiffGPUCPU_depth_.fill(did, -1.);
-  //    }
-
-  //    mRecHitEnergy.erase(did);
-  //  } else {
-  //    if (energy > 2.)
-  //      edm::LogError("PFHcalGPUComparisonTask")
-  //          << "Energetic GPU Rechit exist, but not reconstructed by CPU. DetId = " << did;
-  //  }
-  //}
-  //if (!mRecHitEnergy.empty()) {
-  //  for (auto const& rhpair : mRecHitEnergy) {
-  //    if (rhpair.second > 2.)
-  //      edm::LogError("PFHcalGPUComparisonTask")
-  //          << "Energetic CPU Rechit exist, but not reconstructed by GPU. DetId = " << rhpair.first;
-  //  }
-  //}
 }
 
 std::shared_ptr<hcaldqm::Cache> PFHcalGPUComparisonTask::globalBeginLuminosityBlock(edm::LuminosityBlock const& lb,
