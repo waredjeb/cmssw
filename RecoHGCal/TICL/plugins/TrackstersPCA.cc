@@ -36,7 +36,9 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
     trackster.setRawEmPt(0.f);
 
     size_t N = trackster.vertices().size();
-    assert(N > 0);
+    if(N == 0){
+      continue;
+    }
     float weight = 1.f / N;
     float weights2_sum = 0.f;
 
@@ -54,7 +56,6 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
         barycenter[j] += point[j];
     }
     float raw_energy = trackster.raw_energy();
-    assert(raw_energy > 0.f);
     float inv_raw_energy = 1.f / raw_energy;
     if (energyWeight)
       barycenter *= inv_raw_energy;
