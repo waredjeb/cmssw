@@ -32,7 +32,8 @@ public:
       : HGCalClusteringAlgoBase(
             (HGCalClusteringAlgoBase::VerbosityLevel)ps.getUntrackedParameter<unsigned int>("verbosity", 3),
             reco::CaloCluster::undefined),
-        vecDeltas_(ps.getParameter<std::vector<double>>("deltac")),
+        vecDeltasC_(ps.getParameter<std::vector<double>>("deltac")),
+        vecDeltasO_(ps.getParameter<std::vector<double>>("deltao")),
         kappa_(ps.getParameter<double>("kappa")),
         ecut_(ps.getParameter<double>("ecut")),
         dependSensor_(ps.getParameter<bool>("dependSensor")),
@@ -89,6 +90,13 @@ public:
                                        1.3,
                                        0.0315,  // for scintillator
                                    });
+    iDesc.add<std::vector<double>>("deltao",
+                                   {
+                                       2.6, //CE_E-LD
+                                       2.6, //CE_E-HD
+                                       2.6, //CE_H-LD
+                                       2.6, //CE_H-HD
+                                   });
     iDesc.add<bool>("dependSensor", true);
     iDesc.add<double>("ecut", 3.0);
     iDesc.add<double>("kappa", 9.0);
@@ -119,7 +127,8 @@ public:
 
 private:
   // The two parameters used to identify clusters
-  std::vector<double> vecDeltas_;
+  std::vector<double> vecDeltasC_;
+  std::vector<double> vecDeltasO_;
   double kappa_;
 
   // The hit energy cutoff
@@ -147,8 +156,6 @@ private:
   // initialization bool
   bool initialized_;
 
-  float outlierDeltaFactor_ = 2.f;
-
   struct CellsOnLayer {
     std::vector<DetId> detid;
     std::vector<float> dim1;
@@ -161,6 +168,7 @@ private:
     std::vector<int> nearestHigher;
     std::vector<int> clusterIndex;
     std::vector<float> sigmaNoise;
+    std::vector<int> cellType;
     std::vector<std::vector<int>> followers;
     std::vector<bool> isSeed;
     float layerDim3 = std::numeric_limits<float>::infinity();
@@ -175,6 +183,7 @@ private:
       nearestHigher.clear();
       clusterIndex.clear();
       sigmaNoise.clear();
+      cellType.clear();
       followers.clear();
       isSeed.clear();
     }
@@ -189,6 +198,7 @@ private:
       nearestHigher.shrink_to_fit();
       clusterIndex.shrink_to_fit();
       sigmaNoise.shrink_to_fit();
+      cellType.shrink_to_fit();
       followers.shrink_to_fit();
       isSeed.shrink_to_fit();
     }
@@ -213,8 +223,8 @@ private:
                              const unsigned int layerId,
                              float delta,
                              HGCalScintillatorStrategy strategy);
-  void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, float delta);
-  int findAndAssignClusters(const unsigned int layerId, float delta);
+  void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, const std::vector<double>& deltas_o);
+  int findAndAssignClusters(const unsigned int layerId, const float delta_c, const std::vector<double>& deltas_o);
 };
 
 // explicit template instantiation
