@@ -93,6 +93,20 @@ namespace hgcal {
     int geometryType_;
     int bhMaxIphi_;
   };
+
+    enum CellType {
+      CE_E_120 = 0,
+      CE_E_200 = 1,
+      CE_E_300 = 2,
+      CE_H_120_F = 3,
+      CE_H_200_F = 4,
+      CE_H_300_F = 5,
+      CE_H_120_C = 6,
+      CE_H_200_C = 7,
+      CE_H_300_C = 8,
+      CE_H_SCINT = 9,
+      EnumSize = 10
+    };
 }  // namespace hgcal
 
 #endif

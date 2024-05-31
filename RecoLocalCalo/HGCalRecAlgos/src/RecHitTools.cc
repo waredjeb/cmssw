@@ -63,17 +63,6 @@ namespace {
     return ddd;
   }
 
-  enum CellType {
-    CE_E_120 = 0,
-    CE_E_200 = 1,
-    CE_E_300 = 2,
-    CE_H_120 = 3,
-    CE_H_200 = 4,
-    CE_H_300 = 5,
-    CE_H_SCINT = 6,
-    EnumSize = 7
-  };
-
 }  // namespace
 
 void RecHitTools::setGeometry(const CaloGeometry& geom) {
@@ -449,6 +438,10 @@ int RecHitTools::getCellType(const DetId& id) const {
   auto isNose = geomNose ? true : false;
   auto isEELayer = (layer_number <= lastLayerEE(isNose));
   auto isScint = isScintillator(id);
+  HGCalDetId hid(id);
+  auto geom = getSubdetectorGeometry(hid);
+  auto ddd = get_ddd(geom, hid);
+  const int waferType = ddd->waferTypeT(hid.waferType());
   int layerType = -1;
 
   if (isScint) {
@@ -463,12 +456,22 @@ int RecHitTools::getCellType(const DetId& id) const {
       layerType = CE_E_300;
     }
   } else {
-    if (thickness == 0) {
-      layerType = CE_H_120;
-    } else if (thickness == 1) {
-      layerType = CE_H_200;
-    } else if (thickness == 2) {
-      layerType = CE_H_300;
+    if (waferType == 1) {
+      if (thickness == 0) {
+        layerType = CE_H_120_F;
+      } else if (thickness == 1) {
+        layerType = CE_H_200_F;
+      } else if (thickness == 2) {
+        layerType = CE_H_300_F;
+      }
+    } else {
+      if (thickness == 0) {
+        layerType = CE_H_120_C;
+      } else if (thickness == 1) {
+        layerType = CE_H_200_C;
+      } else if (thickness == 2) {
+        layerType = CE_H_300_C;
+      }
     }
   }
   assert(layerType != -1);
