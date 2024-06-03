@@ -145,6 +145,26 @@ void PFCandidateAnalyzerHLTDQM::bookHistograms(DQMStore::IBooker& booker, edm::R
     me[pair.second + "HCALEnergyHigh"] = booker.book1D(pair.second + "HCALEnergyHigh", pair.second + "HCALEnergyHigh", 30, 0., 1000.);
     me[pair.second + "HOEnergy"] = booker.book1D(pair.second + "HOEnergy", pair.second + "HOEnergy", 50, 0., 0.1);
     me[pair.second + "PSEnergy"] = booker.book1D(pair.second + "PSEnergy", pair.second + "PSEnergy", 50, 0., 0.1);
+    if(pair.second == "muon"){
+      me["Muon20GeVEta"] = booker.book1D("Muon20GeVEta", "Muon20GeVEta",  20, -3.0, 3.0);
+      me["Muon20GeVLinear10Pt"] = booker.book1D("Muon20GeVLinear10Pt", "Muon20GeVLinear10Pt", 120, 0.05, 50);
+      me["Muon20GeVLog10Pt"] = booker.book1D("Muon20GeVLog10Pt", "Muon20GeVLog10Pt", 120, -2, 4);
+      me["Muon20GeVPhi"] = booker.book1D(
+          "Muon20GeVPhi", "Muon20GeVPhi", nPhiBins, -M_PI - 0.25 * phiBinWidth, +M_PI + 0.75 * phiBinWidth);
+      me["Muon20GeVCharge"] = booker.book1D("Muon20GeVCharge", "Muon20GeVCharge", 3, -1.5, 1.5);
+      me["Muon20GeVPtLow"] = booker.book1D("Muon20GeVPtLow", "Muon20GeVPtLow", 100, 0., 5.);
+      me["Muon20GeVPtMid"] = booker.book1D("Muon20GeVPtMid", "Muon20GeVPtMid", 100, 20., 200.);
+      me["Muon20GeVPtHigh"] = booker.book1D("Muon20GeVPtHigh", "Muon20GeVPtHigh", 100, 20., 1000.);
+      me["Muon20GeVECALEnergyLow"] = booker.book1D("Muon20GeVECALEnergyLow", "Muon20GeVECALEnergyLow", 100, 0., 5.);
+      me["Muon20GeVECALEnergyMid"] = booker.book1D("Muon20GeVECALEnergyMid", "Muon20GeVECALEnergyMid", 50, 0., 100.);
+      me["Muon20GeVECALEnergyHigh"] = booker.book1D("Muon20GeVECALEnergyHigh", "Muon20GeVECALEnergyHigh", 30, 0., 1000.);
+      me["Muon20GeVHCALEnergyLow"] = booker.book1D("Muon20GeVHCALEnergyLow", "Muon20GeVHCALEnergyLow", 100, 0., 5.);
+      me["Muon20GeVHCALEnergyMid"] = booker.book1D("Muon20GeVHCALEnergyMid", "Muon20GeVHCALEnergyMid", 50, 0., 100.);
+      me["Muon20GeVHCALEnergyHigh"] = booker.book1D("Muon20GeVHCALEnergyHigh", "Muon20GeVHCALEnergyHigh", 30, 0., 1000.);
+      me["Muon20GeVHOEnergy"] = booker.book1D("Muon20GeVHOEnergy", "Muon20GeVHOEnergy", 50, 0., 0.1);
+      me["Muon20GeVPSEnergy"] = booker.book1D("Muon20GeVPSEnergy", "Muon20GeVPSEnergy", 50, 0., 0.1);
+
+    }
   }
 }
 
@@ -199,6 +219,24 @@ void PFCandidateAnalyzerHLTDQM::analyze(const edm::Event& iEvent, const edm::Eve
         me[pdgMap[pdgId] + "HCALEnergyHigh"]->Fill(pfHandle->at(i).rawHcalEnergy());
         me[pdgMap[pdgId] + "HOEnergy"]->Fill(pfHandle->at(i).rawHoEnergy()); 
         me[pdgMap[pdgId] + "PSEnergy"]->Fill(pfHandle->at(i).pS1Energy() + pfHandle->at(i).pS2Energy());
+        if(pdgId == 13 and pfHandle->at(i).pt() >= 20.f){
+          me["Muon20GeVLinear10Pt"]->Fill(pfHandle->at(i).pt());
+          me["Muon20GeVLog10Pt"]->Fill(log10(pfHandle->at(i).pt()));
+          me["Muon20GeVEta"]->Fill(pfHandle->at(i).eta());
+          me["Muon20GeVPhi"]->Fill(pfHandle->at(i).phi());
+          me["Muon20GeVCharge"]->Fill(pfHandle->at(i).charge());
+          me["Muon20GeVPtLow"]->Fill(pfHandle->at(i).pt());
+          me["Muon20GeVPtMid"]->Fill(pfHandle->at(i).pt());
+          me["Muon20GeVPtHigh"]->Fill(pfHandle->at(i).pt());
+          me["Muon20GeVECALEnergyLow"]->Fill(pfHandle->at(i).rawEcalEnergy());
+          me["Muon20GeVECALEnergyMid"]->Fill(pfHandle->at(i).rawEcalEnergy());
+          me["Muon20GeVECALEnergyHigh"]->Fill(pfHandle->at(i).rawEcalEnergy());
+          me["Muon20GeVHCALEnergyLow"]->Fill(pfHandle->at(i).rawHcalEnergy());
+          me["Muon20GeVHCALEnergyMid"]->Fill(pfHandle->at(i).rawHcalEnergy());
+          me["Muon20GeVHCALEnergyHigh"]->Fill(pfHandle->at(i).rawHcalEnergy());
+          me["Muon20GeVHOEnergy"]->Fill(pfHandle->at(i).rawHoEnergy()); 
+          me["Muon20GeVPSEnergy"]->Fill(pfHandle->at(i).pS1Energy() + pfHandle->at(i).pS2Energy());
+        }
       }
       else{
         me["UndefinedLog10Pt"]->Fill(log10(pfHandle->at(i).pt()));

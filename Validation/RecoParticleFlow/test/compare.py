@@ -193,7 +193,7 @@ def doMETPlots(files, plots):
 # does PFCandidate Plots
 def doPFCandPlots(files, plots, runNumber):
     #we are going to hard code the end part of the histogram names because there's only 4
-    hist_list = ["Charge", "Eta", "Phi", "Log10Pt", "PtLow","PtMid", "PtHigh", "ECALEnergyLow","ECALEnergyMid","ECALEnergyHigh", "HCALEnergyLow","HCALEnergyMid","HCALEnergyHigh", "HOEnergy", "PSEnergy"]
+    hist_list = ["Charge", "Eta", "Phi", "Log10Pt", "Linear10Pt", "PtLow","PtMid", "PtHigh", "ECALEnergyLow","ECALEnergyMid","ECALEnergyHigh", "HCALEnergyLow","HCALEnergyMid","HCALEnergyHigh", "HOEnergy", "PSEnergy"]
     f = ROOT.TFile(files[0])
     print(runNumber)
     d = f.Get(f"DQMData/Run 999999/ParticleFlow/Run summary/PFCandidate")
@@ -206,6 +206,8 @@ def doPFCandPlots(files, plots, runNumber):
     for PFFolderName in PFFolderNames:
         for hist in hist_list:
             plots += [(PFFolderName, "", [PFFolderName + hist])]
+            if(PFFolderName == "muon"):
+                plots += [(PFFolderName, "", ["Muon20GeV"+ hist])]
 
 
 def addPlots(plotter, folder, name, section, histograms, opts, Offset=False):
