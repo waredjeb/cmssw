@@ -47,6 +47,7 @@
 #include "EventFilter/Utilities/interface/reader.h"
 
 using namespace evf::FastMonState;
+using namespace edm::streamer;
 
 FedRawDataInputSource::FedRawDataInputSource(edm::ParameterSet const& pset, edm::InputSourceDescription const& desc)
     : edm::RawInputSource(pset, desc),
@@ -122,12 +123,12 @@ FedRawDataInputSource::FedRawDataInputSource(edm::ParameterSet const& pset, edm:
   //get handles to DaqDirector and FastMonitoringService because getting them isn't possible in readSupervisor thread
   if (fileListMode_) {
     try {
-      fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::MicroStateService>().operator->());
+      fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::FastMonitoringService>().operator->());
     } catch (cms::Exception const&) {
       edm::LogInfo("FedRawDataInputSource") << "No FastMonitoringService found in the configuration";
     }
   } else {
-    fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::MicroStateService>().operator->());
+    fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::FastMonitoringService>().operator->());
     if (!fms_) {
       throw cms::Exception("FedRawDataInputSource") << "FastMonitoringService not found";
     }

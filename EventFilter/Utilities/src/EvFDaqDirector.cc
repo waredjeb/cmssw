@@ -30,6 +30,7 @@
 //#define DEBUG
 
 using namespace jsoncollector;
+using namespace edm::streamer;
 
 namespace evf {
 
@@ -836,7 +837,7 @@ namespace evf {
                                 bool& setExceptionState) {
     if (previousFileSize_ != 0) {
       if (!fms_) {
-        fms_ = (FastMonitoringService*)(edm::Service<evf::MicroStateService>().operator->());
+        fms_ = (FastMonitoringService*)(edm::Service<evf::FastMonitoringService>().operator->());
       }
       if (fms_)
         fms_->accumulateFileSize(ls, previousFileSize_);
