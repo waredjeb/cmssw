@@ -36,7 +36,7 @@ hgcalPFJetValidation = _hgcalPFJetValidation.clone(BenchmarkLabel = 'PFJetValida
 
 hgcalAssociators = cms.Task(lcAssocByEnergyScoreProducer, layerClusterCaloParticleAssociationProducer,
                             scAssocByEnergyScoreProducer, layerClusterSimClusterAssociationProducer,
-                            lcSimTSAssocByEnergyScoreProducer, layerClusterSimTracksterAssociationProducer,
+                           # lcSimTSAssocByEnergyScoreProducer, layerClusterSimTracksterAssociationProducer,
                             simTsAssocByEnergyScoreProducer,  simTracksterHitLCAssociatorByEnergyScoreProducer,
                             tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR,
                             tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D,

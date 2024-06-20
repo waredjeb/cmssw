@@ -80,7 +80,7 @@ void TSToSimTSAssociatorByEnergyScoreProducer::fillDescriptions(edm::Configurati
                                        {edm::InputTag("HGCalRecHit", "HGCEERecHits"),
                                         edm::InputTag("HGCalRecHit", "HGCHEFRecHits"),
                                         edm::InputTag("HGCalRecHit", "HGCHEBRecHits")});
-  desc.add<bool>("hardScatterOnly", true);
+  desc.add<bool>("hardScatterOnly", false);
 
   cfg.add("simTracksterAssociatorByEnergyScore", desc);
 }
