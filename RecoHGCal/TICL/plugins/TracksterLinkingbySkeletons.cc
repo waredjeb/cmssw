@@ -20,8 +20,7 @@ namespace {
                        const float pca_quality_th) {
     bool isGood = false;
 
-    if (isRoundTrackster(skeleton) or trackster.vertices().size() < min_num_lcs or
-        trackster.raw_energy() < min_trackster_energy) {
+    if (isRoundTrackster(skeleton) or trackster.vertices().size() < min_num_lcs) {
       isGood = false;
     } else {
       auto const &eigenvalues = trackster.eigenvalues();
@@ -354,11 +353,13 @@ void TracksterLinkingbySkeletons::linkTracksters(
     auto const &skeleton = skeletons[t_idx];
 
     auto const bary = trackster.barycenter();
-    float eta_min = std::max(abs(bary.eta()) - del_, TileConstants::minEta);
-    float eta_max = std::min(abs(bary.eta()) + del_, TileConstants::maxEta);
+    auto const R = sqrt((trackster.barycenter().x() * trackster.barycenter().x()) + (trackster.barycenter().y() * trackster.barycenter().y()));
+    auto const& window =  abs(atan(del_ / R)); 
+    float eta_min = std::max(abs(bary.eta()) - window, TileConstants::minEta);
+    float eta_max = std::min(abs(bary.eta()) + window, TileConstants::maxEta);
     int tileIndex = bary.eta() > 0.f;
     const auto &tiles = tracksterTile[tileIndex];
-    std::array<int, 4> search_box = tiles.searchBoxEtaPhi(eta_min, eta_max, bary.phi() - del_, bary.phi() + del_);
+    std::array<int, 4> search_box = tiles.searchBoxEtaPhi(eta_min, eta_max, bary.phi() - window, bary.phi() + window);
     if (search_box[2] > search_box[3]) {
       search_box[3] += TileConstants::nPhiBins;
     }
