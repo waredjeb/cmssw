@@ -60,6 +60,9 @@ TICLv5_FEVT = cms.PSet(
       'keep *_ticlSimTracksters_*_*',
       'keep *_ticlSimTICLCandidates_*_*',
       'keep *_ticlSimTrackstersFromCP_*_*',
+      'keep *_generalTracks_*_*',
+      'keep *_mtdSoA_*_*',
+      'keep *_muon1stStep_*_*'
       )
     )
 
@@ -91,6 +94,7 @@ def customiseHGCalOnlyEventContent(process):
                                             'keep *_tracksterSimTracksterAssociationPRPU_*_*',
                                             'keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*',
                                             'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*',
+                                            'keep *_muon1stStep_*_*'
                                             ])
 
     if hasattr(process, 'FEVTDEBUGEventContent'):

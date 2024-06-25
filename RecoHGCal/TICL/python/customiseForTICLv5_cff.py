@@ -4,6 +4,7 @@ from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseForTICLv5EventContent
 from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinkingbyCLUE3D as _tracksterSimTracksterAssociationLinkingbyCLUE3D
 from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationPRbyCLUE3D  as _tracksterSimTracksterAssociationPRbyCLUE3D
+from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
 
 def customiseTICLv5FromReco(process, enableDumper = False):
     # TensorFlow ESSource
@@ -17,8 +18,8 @@ def customiseTICLv5FromReco(process, enableDumper = False):
 
     process.ticlIterationsTask = cms.Task(
         process.ticlCLUE3DHighStepTask,
-        process.ticlTracksterLinksTask,
-        process.ticlPassthroughStepTask
+        process.ticlPassthroughStepTask,
+        process.ticlTracksterLinksTask
     )
 
     process.mergeTICLTask = cms.Task()
@@ -26,7 +27,7 @@ def customiseTICLv5FromReco(process, enableDumper = False):
     process.iterTICLTask = cms.Path(process.hgcalLayerClustersTask,
                             process.TFESSource,
                             process.ticlLayerTileTask,
-                            process.mtdSoATask,
+ #                           process.mtdSoATask,
                             process.mergeTICLTask,
                             process.ticlIterationsTask,
                             process.ticlCandidateTask,
