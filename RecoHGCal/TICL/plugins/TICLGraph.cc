@@ -31,7 +31,7 @@ std::vector<std::vector<unsigned int>> TICLGraph::findSubComponents() {
   }
   for (auto const& node : nodes_) {
     auto const id = node.getId();
-    if (node.isAlreadyVisited()) {
+    if (node.alreadyVisited()) {
       //LogDebug("TICLGraph") << "DFS Starting From " << id << std::endl;
       std::string tabs = "\t";
       std::vector<unsigned int> tmpSubComponents;

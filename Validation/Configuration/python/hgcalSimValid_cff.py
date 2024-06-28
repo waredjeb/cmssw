@@ -40,7 +40,7 @@ hgcalAssociators = cms.Task(lcAssocByEnergyScoreProducer, layerClusterCaloPartic
                             simTsAssocByEnergyScoreProducer,  simTracksterHitLCAssociatorByEnergyScoreProducer,
                             tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR,
                             tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D,
-                            tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU,
+#                            tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU,
                             SimTauProducer
                             )
 
