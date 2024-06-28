@@ -28,8 +28,39 @@ ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
 ticlTracksterLinks = _tracksterLinksProducer.clone(
     tracksters_collections = cms.VInputTag(
-        'ticlTrackstersCLUE3DHigh',
-        'ticlTrackstersPassthrough'
+        'ticlTrackstersCLUE3DHigh'
+        #'ticlTrackstersPassthrough'
+    ),
+    linkingPSet = cms.PSet(
+      track_time_quality_threshold = cms.double(0.5),
+      wind = cms.double(4),
+      min_num_lcs = cms.uint32(7),
+      min_trackster_energy = cms.double(10),
+      pca_quality_th = cms.double(0.85),
+      dot_prod_th = cms.double(0.97),
+      max_distance_projective_sqr = cms.vdouble(
+        30,
+        60
+      ),
+      min_distance_z = cms.vdouble(
+        30,
+        30
+      ),
+      max_distance_projective_sqr_closest_points = cms.vdouble(
+        30,
+        60
+      ),
+      max_z_distance_closest_points = cms.vdouble(
+        35,
+        35
+      ),
+      cylinder_radius_sqr = cms.vdouble(
+        0,
+        9
+      ),
+      algo_verbosity = cms.int32(0),
+      type = cms.string('Skeletons')
+    
     ),
     regressionAndPid = cms.bool(True)
 )
