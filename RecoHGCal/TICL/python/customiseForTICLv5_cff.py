@@ -2,9 +2,9 @@ import FWCore.ParameterSet.Config as cms
 
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseForTICLv5EventContent
-from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinkingbyCLUE3D as _tracksterSimTracksterAssociationLinkingbyCLUE3D
-from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationPRbyCLUE3D  as _tracksterSimTracksterAssociationPRbyCLUE3D
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterFromCPsAssociationPR as _tracksterSimTracksterFromCPsAssociationPR
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationPR  as _tracksterSimTracksterAssociationPR
 
 def customiseTICLv5FromReco(process, enableDumper = False):
     # TensorFlow ESSource
@@ -33,50 +33,21 @@ def customiseTICLv5FromReco(process, enableDumper = False):
                             process.ticlCandidateTask,
                             process.ticlPFTask)
 
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3DHigh = _tracksterSimTracksterAssociationLinkingbyCLUE3D.clone(
+    process.tracksterSimTracksterFromCPsAssociationPRHigh = _tracksterSimTracksterFromCPsAssociationPR.clone(
         label_tst = cms.InputTag("ticlTrackstersCLUE3DHigh")
         )
-    process.tracksterSimTracksterAssociationPRbyCLUE3DHigh = _tracksterSimTracksterAssociationPRbyCLUE3D.clone(
+    process.tracksterSimTracksterAssociationPRHigh = _tracksterSimTracksterAssociationPR.clone(
         label_tst = cms.InputTag("ticlTrackstersCLUE3DHigh")
         )
-
-    '''for future CLUE3D separate iterations, merge collections and compute scores
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3DEM = _tracksterSimTracksterAssociationLinkingbyCLUE3D.clone(
-        label_tst = cms.InputTag("ticlTrackstersCLUE3DEM")
-        )
-    process.tracksterSimTracksterAssociationPRbyCLUE3DEM = _tracksterSimTracksterAssociationPRbyCLUE3D.clone(
-        label_tst = cms.InputTag("ticlTrackstersCLUE3DEM")
-        )
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3DHAD = _tracksterSimTracksterAssociationLinkingbyCLUE3D.clone(
-        label_tst = cms.InputTag("ticlTrackstersCLUE3DHAD")
-        )
-    process.tracksterSimTracksterAssociationPRbyCLUE3DHAD = _tracksterSimTracksterAssociationPRbyCLUE3D.clone(
-        label_tst = cms.InputTag("ticlTrackstersCLUE3DHAD")
-        )
-
-    process.mergedTrackstersProducer = _mergedTrackstersProducer.clone()
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3D = _tracksterSimTracksterAssociationLinkingbyCLUE3D.clone(
-        label_tst = cms.InputTag("mergedTrackstersProducer")
-        )
-    process.tracksterSimTracksterAssociationPRbyCLUE3D = _tracksterSimTracksterAssociationPRbyCLUE3D.clone(
-        label_tst = cms.InputTag("mergedTrackstersProducer")
-        )
-    '''
 
     process.hgcalAssociators = cms.Task(process.recHitMapProducer, process.lcAssocByEnergyScoreProducer, process.layerClusterCaloParticleAssociationProducer,
                             process.scAssocByEnergyScoreProducer, process.layerClusterSimClusterAssociationProducer,
                             process.lcSimTSAssocByEnergyScoreProducer, process.layerClusterSimTracksterAssociationProducer,
                             process.simTsAssocByEnergyScoreProducer,  process.simTracksterHitLCAssociatorByEnergyScoreProducer,
                             process.tracksterSimTracksterAssociationLinking, process.tracksterSimTracksterAssociationPR,
-                            process.tracksterSimTracksterAssociationLinkingbyCLUE3DHigh, process.tracksterSimTracksterAssociationPRbyCLUE3DHigh,
+                            process.tracksterSimTracksterFromCPsAssociationPR, process.tracksterSimTracksterAssociationPR,
                             process.tracksterSimTracksterAssociationLinkingPU, process.tracksterSimTracksterAssociationPRPU
                             )
-
-    '''for future CLUE3D separate iterations, merge collections and compute scores
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3D, process.tracksterSimTracksterAssociationPRbyCLUE3D,
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3DEM, process.tracksterSimTracksterAssociationPRbyCLUE3DEM,
-    process.tracksterSimTracksterAssociationLinkingbyCLUE3DHAD, process.tracksterSimTracksterAssociationPRbyCLUE3DHAD,
-    '''
 
     if(enableDumper):
         process.ticlDumper = ticlDumper.clone(
