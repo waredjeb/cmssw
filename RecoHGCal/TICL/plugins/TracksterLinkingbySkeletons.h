@@ -50,7 +50,7 @@ namespace ticl {
 
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc) {
       iDesc.add<double>("track_time_quality_threshold", 0.5);
-      iDesc.add<double>("wind", 0.036);
+      iDesc.add<double>("wind", 4.0);
       iDesc.add<unsigned int>("min_num_lcs", 7);
       iDesc.add<double>("min_trackster_energy", 10.);
       iDesc.add<double>("pca_quality_th", 0.85);

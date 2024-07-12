@@ -23,9 +23,7 @@ TICL_RECO = cms.PSet(
       ['keep *_pfTICL_*_*'] +
       ['keep CaloParticles_mix_*_*', 'keep SimClusters_mix_*_*'] +
       ['keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*'] +
-      ['keep *_tracksterSimTracksterAssociationLinking_*_*' ,'keep *_tracksterSimTracksterAssociationPR_*_*'] +
-      ['keep *_tracksterSimTracksterAssociationLinkingPU_*_*' ,'keep *_tracksterSimTracksterAssociationPRPU_*_*'] +
-      ['keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*', 'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*']
+      ['keep *_tracksterSimTracksterAssociation*_*_*' , 'keep *_tracksterSimTracksterFromCPsAssociation*_*_*' ]
       )
     )
 
@@ -33,8 +31,7 @@ TICLv5_RECO = cms.PSet(
     outputCommands = cms.untracked.vstring(
         [
             'drop *_ticlTracksters*_*_*',
-            'keep *_ticlTrackstersCLUE3DEM_*_*',
-            'keep *_ticlTrackstersCLUE3DHAD_*_*',
+            'keep *_ticlTrackstersCLUE3DHigh_*_*',
             'keep *_ticlTracksterLinks_*_*',
             'keep *_ticlCandidate_*_*',
         ]
@@ -60,6 +57,9 @@ TICLv5_FEVT = cms.PSet(
       'keep *_ticlSimTracksters_*_*',
       'keep *_ticlSimTICLCandidates_*_*',
       'keep *_ticlSimTrackstersFromCP_*_*',
+      'keep *_generalTracks_*_*',
+      'keep *_mtdSoA_*_*',
+      'keep *_muon1stStep_*_*'
       )
     )
 
@@ -85,12 +85,8 @@ def customiseHGCalOnlyEventContent(process):
                                             'keep *_layerClusterCaloParticleAssociationProducer_*_*',
                                             'keep *_randomEngineStateProducer_*_*',
                                             'keep *_layerClusterSimTracksterAssociationProducer_*_*',
-                                            'keep *_tracksterSimTracksterAssociationLinking_*_*',
-                                            'keep *_tracksterSimTracksterAssociationPR_*_*',
-                                            'keep *_tracksterSimTracksterAssociationLinkingPU_*_*',
-                                            'keep *_tracksterSimTracksterAssociationPRPU_*_*',
-                                            'keep *_tracksterSimTracksterAssociationLinkingbyCLUE3D_*_*',
-                                            'keep *_tracksterSimTracksterAssociationPRbyCLUE3D_*_*',
+                                            'keep *_tracksterSimTracksterAssociation*_*_*',
+                                            'keep *_tracksterSimTracksterFromCPsAssociation*_*_*',
                                             ])
 
     if hasattr(process, 'FEVTDEBUGEventContent'):

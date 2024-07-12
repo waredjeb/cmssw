@@ -13,7 +13,7 @@ from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
 # Automatic addition of the customisation function from RecoHGCal.Configuration.RecoHGCal_EventContent_cff
 from RecoHGCal.Configuration.RecoHGCal_EventContent_cff import customiseHGCalOnlyEventContent
 from SimCalorimetry.HGCalAssociatorProducers.simTracksterAssociatorByEnergyScore_cfi import simTracksterAssociatorByEnergyScore as simTsAssocByEnergyScoreProducer
-from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterAssociationLinkingbyCLUE3D, tracksterSimTracksterAssociationPRbyCLUE3D, tracksterSimTracksterAssociationLinkingPU, tracksterSimTracksterAssociationPRPU
+from SimCalorimetry.HGCalAssociatorProducers.TSToSimTSAssociation_cfi import tracksterSimTracksterAssociationLinking, tracksterSimTracksterAssociationPR, tracksterSimTracksterFromCPsAssociationPR, tracksterSimTracksterAssociationPR
 
 
 def customiseTICLFromReco(process):
@@ -41,10 +41,8 @@ def customiseTICLFromReco(process):
                                                 process.simTracksterHitLCAssociatorByEnergyScoreProducer,
                                                 process.tracksterSimTracksterAssociationLinking,
                                                 process.tracksterSimTracksterAssociationPR,
-                                                process.tracksterSimTracksterAssociationLinkingbyCLUE3D,
-                                                process.tracksterSimTracksterAssociationPRbyCLUE3D,
-                                                process.tracksterSimTracksterAssociationLinkingPU,
-                                                process.tracksterSimTracksterAssociationPRPU
+                                                process.tracksterSimTracksterFromCPsAssociationPR,
+                                                process.tracksterSimTracksterFromCPsAssociationLinking,
                                                 )
 
     process.TICL_Validator = cms.Task(process.hgcalValidator)
@@ -66,7 +64,7 @@ def customiseTICLFromReco(process):
     return process
 
 
-def customiseTICLForDumper(process):
+def customiseTICLForDumper(process, fileName = 'histo.root' ):
 
     process.ticlDumper = ticlDumper.clone(
         saveLCs=True,
@@ -89,7 +87,7 @@ def customiseTICLForDumper(process):
                      trackstersInCand = cms.InputTag("ticlCandidate"))
 
     process.TFileService = cms.Service("TFileService",
-                                       fileName=cms.string("histo.root")
+                                       fileName=cms.string(fileName)
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
         process.FEVTDEBUGHLToutput + process.ticlDumper)

@@ -25,6 +25,10 @@ namespace ticl {
       return findInner != innerNeighboursId_.end();
     }
 
+   inline const bool alreadyVisited() const {
+      return alreadyVisited_;
+   }
+
     ~Node() = default;
 
   private:
