@@ -20,14 +20,24 @@
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
+#include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
 
 #include "RecoHGCal/TICL/plugins/PatternRecognitionPluginFactory.h"
 
 #include "PhysicsTools/TensorFlow/interface/TfGraphRecord.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
 #include "PhysicsTools/TensorFlow/interface/TfGraphDefWrapper.h"
+<<<<<<< HEAD
 
 using namespace ticl;
+=======
+#include "RecoHGCal/TICL/interface/TracksterInferenceAlgoBase.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
+#include "RecoHGCal/TICL/interface/TracksterInferenceAlgoFactory.h"
+
+using namespace ticl;
+using namespace cms::Ort;
+>>>>>>> 86e9ca4c34c (including the onnx models within ticlv5)
 
 class TrackstersProducer : public edm::stream::EDProducer<> {
 public:
@@ -183,6 +193,14 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
     myAlgo_->makeTracksters(input, *result, seedToTrackstersAssociation);
   }
+<<<<<<< HEAD
+=======
+
+  // Run inference algorithm
+  inferenceAlgo_->inputData(layerClusters, *result);
+  inferenceAlgo_->runInference(*result);
+
+>>>>>>> 86e9ca4c34c (including the onnx models within ticlv5)
   // Now update the global mask and put it into the event
   output_mask->reserve(original_layerclusters_mask.size());
   // Copy over the previous state
