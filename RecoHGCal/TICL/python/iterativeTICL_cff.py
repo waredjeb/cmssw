@@ -82,6 +82,7 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
 
     regressionAndPid = cms.bool(True)
 )
+
 ticlCandidate = _ticlCandidateProducer.clone()
 mtdSoA = _mtdSoAProducer.clone()
 
