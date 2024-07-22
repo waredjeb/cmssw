@@ -129,6 +129,7 @@ SimpleValidation::~SimpleValidation() {
 
 // ------------ method called for each event  ------------
 void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& iSetup) {
+  
   edm::Handle<std::vector<ticl::Trackster>> tracksters_handle;
   event.getByToken(tracksters_token_, tracksters_handle);
   const auto& tracksters = *tracksters_handle;
@@ -166,17 +167,22 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
 
 
   //reco_sim_ratio = tracksters.size() / simTrackstersCP.size();
+  
 
   std::vector<int> stsInTracksterC3D(tracksters.size(), 0);
   std::vector<int> stsInTracksterSignal(tracksters.size(), 0);
   std::vector<size_t> cPIndices;
+  
   //  std::cout << "caloParticles size " << caloParticles.size() << std::endl;
   removeCPFromPU(caloParticles, cPIndices, true);
   total_sim_ += simTrackstersCP.size();
   total_simEff_ += cPIndices.size();
   total_recoCLUE3D_ += tracksters.size(); 
   total_recoMerged_ += trackstersMerged.size(); 
-  //  std::cout << "cpIndices " << cPIndices.size() << std::endl;
+  assert(cPIndices.size() == 1);
+  auto cpFromSignalIndex = cPIndices[0];
+  auto simTSSignal = std::find_if(simTrackstersCP.begin(), simTrackstersCP.end(), [cpFromSignalIndex](const ticl::Trackster simTrackster){ return static_cast<unsigned int>(simTrackster.seedIndex()) == cpFromSignalIndex;});
+  auto simTSIndex = std::distance(simTrackstersCP.begin(), simTSSignal);
   for (size_t iReco = 0; iReco < tracksters.size(); ++iReco) {
     // CLUE3D -> STS-CP
     const auto stsCP_vec = tsRecoSimCPMap.at(iReco);
@@ -187,6 +193,7 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
       }
     }
   }
+  
 
   std::vector<int> stsInTracksterMerged(trackstersMerged.size(), 0);
   std::vector<int> stsInTracksterSignalMerged(trackstersMerged.size(), 0);
@@ -201,129 +208,82 @@ void SimpleValidation::analyze(const edm::Event& event, const edm::EventSetup& i
     }
   }
 
+  
 
   //Merge Rate for TrackstersMerged
  
   for (size_t iReco = 0; iReco != stsInTracksterMerged.size(); iReco++) {
-    if(stsInTracksterMerged[iReco] == 0){
+    auto simToRecoMap = MergetsSimToRecoCPMap[simTSIndex];
+    auto recoIndexMap = std::find_if(simToRecoMap.begin(), simToRecoMap.end(), [iReco](std::pair<unsigned int, std::pair<float,float>>& p1){
+        return p1.first == iReco; 
+        }
+     );
+    auto checkForFake = ((recoIndexMap != simToRecoMap.end()) && recoIndexMap->second.first > 0.f);
+    if(checkForFake and stsInTracksterMerged[iReco] == 0){
       global_fake_ += 1; 
     }
-    if(stsInTracksterMerged[iReco] >= 2){
+    if(checkForFake and stsInTracksterMerged[iReco] >= 2){
       global_merge_ += 1; 
     }
   }
+  
 
   
   for (size_t iSim = 0; iSim != simTrackstersCP.size(); iSim++) {
     bool matchedPur = false;
     bool matchedEff = false;
+  
     auto cpIndex = simTrackstersCP[iSim].seedIndex();
+  
     if (std::find(cPIndices.begin(), cPIndices.end(), cpIndex) == cPIndices.end()) {
       continue;
     }
+  
     auto recoTS_CP_vec = MergetsSimToRecoCPMap[iSim]; 
+    if(recoTS_CP_vec.empty())
+      continue;
     auto maxEL = std::max_element(recoTS_CP_vec.begin(), recoTS_CP_vec.end(), [](std::pair<unsigned int, std::pair<float,float>>& p1, std::pair<unsigned int, std::pair<float,float>>& p2){
         return p1.second.first < p2.second.first;
         }
      );
+  
     auto const maxSharedEnergy = maxEL->first;
+  
     auto const index_maxSharedEnergy = std::distance(recoTS_CP_vec.begin(), maxEL);
+  
     if(maxSharedEnergy / simTrackstersCP[iSim].raw_energy() >= 0.5 and matchedEff == false){
       global_eff_ += 1;
       matchedEff = true;
     }
+  
   }
-
-//  for (size_t iSim = 0; iSim != simTrackstersCP.size(); iSim++) {
-//    bool matchedPur = false;
-//    bool matchedEff = false;
-//    int totMatched = 0;
-//    bool merged = 0;
-//    auto cpIndex = simTrackstersCP[iSim].seedIndex();
-//    if(simTrackstersCP[iSim].raw_energy() >= 50.f){
-//        global_reco_eff_high_energy_den += 1;
-//      }
-//      else{
-//        global_reco_eff_low_energy_den += 1;
-//      }
-//      if(simTrackstersCP[iSim].barycenter().eta() >= 2.2f){
-//        global_reco_eff_high_eta_den += 1;
-//      }
-//      else{
-//        global_reco_eff_low_eta_den += 1;
-//      }
-//      if (std::find(cPIndices.begin(), cPIndices.end(), cpIndex) == cPIndices.end()) {
-//        continue;
-//      }
-//    const edm::Ref<ticl::TracksterCollection> stsCPRef(simTrackstersCP_h, iSim);
-//    auto const ts_iter = tsSimToRecoCPMap.find(stsCPRef);
-//    if (ts_iter != tsSimToRecoCPMap.end()) {
-//      const auto& tsAssociated = ts_iter->val;
-//      for (auto const& ts : tsAssociated) {
-//        auto ts_idx = (ts.first).get() - (edm::Ref<ticl::TracksterCollection>(tracksters_handle, 0)).get();
-//        auto const& recoRef = edm::Ref<ticl::TracksterCollection>(tracksters_handle, ts_idx);
-//        if (ts.second.second <= 0.2 and !matchedPur) {
-//          auto const& pu_iter = tsRecoSimPUMap.find(recoRef);
-//          if (pu_iter != tsRecoSimPUMap.end()) {
-//            auto const& puPair = pu_iter->val[0];
-//            if (puPair.second.first / recoRef->raw_energy() <= 0.1) {
-//              global_ass_pur_ += 1;
-//              matchedPur = true;
-//            }
-//          }
-//        }
-//        if (ts.second.first / simTrackstersCP[iSim].raw_energy() >= 0.5 and !matchedEff) {
-//          // check PU contamination
-//    //      if(tracksters[ts_idx].raw_energy() / simTrackstersCP[iSim].raw_energy() >= 1.0f){
-//    //        global_merge_ += 1;
-//    //      }
-//          auto const& pu_iter = tsRecoSimPUMap.find(recoRef);
-//          if (pu_iter != tsRecoSimPUMap.end()) {
-//            auto const& puPair = pu_iter->val[0];
-//            if (puPair.second.first / recoRef->raw_energy() <= 0.1) {
-//              global_ass_eff_ += 1;
-//              matchedEff = true;
-//              if(simTrackstersCP[iSim].raw_energy() >= 50.f){
-//                global_reco_eff_high_energy_num += 1;
-//              }
-//              else{
-//                global_reco_eff_low_energy_num += 1;
-//              }
-//              if(simTrackstersCP[iSim].barycenter().eta() >= 2.2f){
-//                global_reco_eff_high_eta_num += 1;
-//              }
-//              else{
-//                global_reco_eff_low_eta_num += 1;
-//              }
-//            }
-//          }
-//        }
-//      }
-//    }
-//  }
-//  global_reco_ += tracksters.size();
-//  global_sim_ += simTrackstersCP.size();
+  
+  
 }
 
 // ------------ method called once each job just before starting event loop  ------------
 void SimpleValidation::beginJob() {
   // please remove this method if not needed
+  
   edm::Service<TFileService> fs;
   output_tree_ = fs->make<TTree>("output", "putput params");
 
   output_tree_->Branch("total_recoCLUE3D", &total_recoCLUE3D_);
-  output_tree_->Branch("total_recoMerged", &total_recoMerged);
+  output_tree_->Branch("total_recoMerged", &total_recoMerged_);
   output_tree_->Branch("number_of_fake", &global_fake_);
   output_tree_->Branch("number_of_merge", &global_merge_);
   output_tree_->Branch("number_of_sim", &total_sim_);
   output_tree_->Branch("number_of_sim_eff", &total_simEff_);
   output_tree_->Branch("number_of_eff", &global_eff_);
+  
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void SimpleValidation::endJob() {
   // please remove this method if not needed
+  
   output_tree_->Fill();
+  
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
