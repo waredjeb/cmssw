@@ -398,7 +398,6 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   // j -> layer
   // k -> cluster
   // l -> feature
-
   // set default values per trackster, determine if the cluster energy threshold is passed,
   // and store indices of hard tracksters
   std::vector<int> tracksterIndices;

@@ -16,11 +16,15 @@ namespace ticl {
     void inputData(const std::vector<reco::CaloCluster>& layerClusters, std::vector<Trackster>& tracksters) override;
     void runInference(std::vector<Trackster>& tracksters) override;
 
+    static void fillPSetDescription(edm::ParameterSetDescription& iDesc);
+
   private:
     const cms::Ort::ONNXRuntime* onnxPIDSession_;
     const cms::Ort::ONNXRuntime* onnxEnergySession_;
+    std::string id_modelPath;
+    std::string en_modelPath;
 
-    const std::string eidInputName_;
+    //const std::string eidInputName_;
     const std::string eidOutputNameEnergy_;
     const std::string eidOutputNameId_;
     const float eidMinClusterEnergy_;
@@ -30,8 +34,6 @@ namespace ticl {
 
     hgcal::RecHitTools rhtools_;
     std::vector<std::vector<int64_t>> input_shapes;
-    std::vector<std::string> inputNames;
-    std::vector<std::string> outNames;
     std::vector<int> tracksterIndices;
     std::vector<std::vector<float>> input_Data;
     int batchSize;
