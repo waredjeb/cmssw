@@ -117,9 +117,9 @@ namespace ticl {
   // Method to fill parameter set description for configuration
   void TracksterInferenceByDNN::fillPSetDescription(edm::ParameterSetDescription& iDesc) {
     iDesc.add<int>("algo_verbosity", 0); 
-    iDesc.add<edm::FileInPath>("onnxPIDModelPath", edm::FileInPath("RecoHGCal/TICL/data/tf_models/id_v0.onnx"))
+    iDesc.add<edm::FileInPath>("onnxPIDModelPath", edm::FileInPath("RecoHGCal/TICL/data/onnx_models/id_v0.onnx"))
       ->setComment("Path to ONNX PID model"); 
-    iDesc.add<edm::FileInPath>("onnxEnergyModelPath", edm::FileInPath("RecoHGCal/TICL/data/tf_models/energy_v0.onnx"))
+    iDesc.add<edm::FileInPath>("onnxEnergyModelPath", edm::FileInPath("RecoHGCal/TICL/data/onnx_models/energy_v0.onnx"))
       ->setComment("Path to ONNX Energy model"); 
     iDesc.add<double>("eid_min_cluster_energy", 1.0); 
     iDesc.add<int>("eid_n_layers", 50);
