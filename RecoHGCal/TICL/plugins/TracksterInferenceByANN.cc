@@ -14,7 +14,8 @@ namespace ticl {
     // Prepare data for inference
   }
 
-  void TracksterInferenceByANN::runInference(std::vector<Trackster>& tracksters) {
+  void TracksterInferenceByANN::runInference(std::vector<Trackster>& tracksters, const std::string& mode, const std::string& operation) {
+
     // Run inference using ANN
   }
 }

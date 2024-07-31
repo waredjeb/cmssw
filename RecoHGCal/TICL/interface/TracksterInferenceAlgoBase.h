@@ -28,7 +28,7 @@ namespace ticl {
     virtual ~TracksterInferenceAlgoBase() {}
 
     virtual void inputData(const std::vector<reco::CaloCluster> &layerClusters, std::vector<Trackster>& tracksters) = 0;
-    virtual void runInference(std::vector<Trackster>& tracksters) = 0;
+    virtual void runInference(std::vector<Trackster>& tracksters, const std::string& mode, const std::string& operation) = 0;
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
   protected:
     int algo_verbosity_;

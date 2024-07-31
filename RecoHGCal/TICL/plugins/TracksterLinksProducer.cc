@@ -42,6 +42,7 @@
 #include "Geometry/CommonDetUnit/interface/GeomDet.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "RecoHGCal/TICL/interface/TracksterInferenceAlgoFactory.h"
 
 #include "TrackstersPCA.h"
 
@@ -85,7 +86,8 @@ private:
   const int eidNClusters_;
   static constexpr int eidNFeatures_ = 3;
   tensorflow::Session *eidSession_;
-
+  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_; // Add this line
+  
   std::vector<edm::EDGetTokenT<std::vector<float>>> original_masks_tokens_;
 
   const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
@@ -129,6 +131,11 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("original_masks")) {
     original_masks_tokens_.emplace_back(consumes<std::vector<float>>(tag));
   }
+  // Initialize inference algorithm using the factory
+  std::string inferencePlugin = ps.getParameter<std::string>("inferenceAlgo");
+  edm::ParameterSet inferencePSet = ps.getParameter<edm::ParameterSet>("pluginInferenceAlgo" + inferencePlugin);
+  inferenceAlgo_ = std::unique_ptr<TracksterInferenceAlgoBase>(
+      TracksterInferenceAlgoFactory::get()->create(inferencePlugin, inferencePSet));
 
   // New trackster collection after linking
   produces<std::vector<Trackster>>();
@@ -374,16 +381,15 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     }
   }
 
-  if (regressionAndPid_)
-    energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
-
-  assignPCAtoTracksters(*resultTracksters,
-                        layerClusters,
-                        layerClustersTimes,
-                        rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
-                        rhtools_,
-                        true);
-
+  if (regressionAndPid_){
+    // energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
+    // Run inference algorithm
+    inferenceAlgo_->inputData(layerClusters, *resultTracksters);
+    inferenceAlgo_->runInference(*resultTracksters,"Linking","energyAndPid");//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
+  }
+  
+  assignPCAtoTracksters(
+      *resultTracksters, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(), true);
   evt.put(std::move(linkedResultTracksters));
   evt.put(std::move(resultMask));
   evt.put(std::move(resultTracksters));
@@ -419,6 +425,10 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   edm::ParameterSetDescription desc;
   edm::ParameterSetDescription linkingDesc;
   linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Skeletons", true));
+ // Inference Plugins
+  edm::ParameterSetDescription inferenceDesc;
+  inferenceDesc.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByDNN", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByDNN", inferenceDesc);
 
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
@@ -428,6 +438,7 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<bool>("regressionAndPid", false);
   desc.add<std::string>("tfDnnLabel", "tracksterSelectionTf");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");  
   desc.add<std::string>("eid_input_name", "input");
   desc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
   desc.add<std::string>("eid_output_name_id", "output/id_probabilities");

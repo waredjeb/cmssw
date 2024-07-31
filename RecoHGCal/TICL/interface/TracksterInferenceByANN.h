@@ -11,7 +11,7 @@ namespace ticl {
   public:
     explicit TracksterInferenceByANN(const edm::ParameterSet& conf);
     void inputData(const std::vector<reco::CaloCluster> &layerClusters, std::vector<Trackster>& tracksters) override;
-    void runInference(std::vector<Trackster>& tracksters) override;
+    void runInference(std::vector<Trackster>& tracksters, const std::string& mode, const std::string& operation) override;
 
   private:
     tensorflow::Session* session_;
