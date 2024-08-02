@@ -11,10 +11,11 @@ namespace ticl {
   public:
     explicit TracksterInferenceByANN(const edm::ParameterSet& conf);
     void inputData(const std::vector<reco::CaloCluster> &layerClusters, std::vector<Trackster>& tracksters) override;
-    void runInference(std::vector<Trackster>& tracksters, const std::string& mode, const std::string& operation) override;
+    void runInference(std::vector<Trackster>& tracksters) override;
 
   private:
-    tensorflow::Session* session_;
+    const cms::Ort::ONNXRuntime* onnxPIDSession_;
+    const cms::Ort::ONNXRuntime* onnxEnergySession_;
   };
 }  // namespace ticl
 

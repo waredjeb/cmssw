@@ -385,7 +385,7 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     // energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
     // Run inference algorithm
     inferenceAlgo_->inputData(layerClusters, *resultTracksters);
-    inferenceAlgo_->runInference(*resultTracksters,"Linking","energyAndPid");//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
+    inferenceAlgo_->runInference(*resultTracksters);//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
   }
   
   assignPCAtoTracksters(
