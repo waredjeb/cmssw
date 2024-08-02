@@ -132,5 +132,7 @@ namespace ticl {
     iDesc.add<double>("eid_min_cluster_energy", 1.0); 
     iDesc.add<int>("eid_n_layers", 50);
     iDesc.add<int>("eid_n_clusters", 10); 
+    iDesc.add<int>("doPID", 1);
+    iDesc.add<int>("doRegression", 0);
   }
 }
