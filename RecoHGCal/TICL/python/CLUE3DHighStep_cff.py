@@ -23,8 +23,10 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
         criticalDensity = [0.6, 0.6, 0.6],
         criticalEtaPhiDistance = [0.025, 0.025, 0.025],
         kernelDensityFactor = [0.2, 0.2, 0.2],
-        algo_verbosity = 0
-    )
+        algo_verbosity = 0,
+        doPidCut = True,
+        cutHadProb = 999
+    ),
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
       algo_verbosity = cms.int32(0),
       onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/RecoHGCal-TICL/ticlv5/onnx_models/patternrecognition/id_v0.onnx'),
@@ -47,7 +49,6 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 ticl_v5.toModify(ticlTrackstersCLUE3DHigh.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True))
-#ticl_v5.toModify(ticlTrackstersCLUE3DHigh.pluginPatternRecognitionByCLUE3D, doPidCut = cms.bool(False)#)
 
 ticlCLUE3DHighStepTask = cms.Task(ticlSeedingGlobal
     ,filteredLayerClustersCLUE3DHigh
