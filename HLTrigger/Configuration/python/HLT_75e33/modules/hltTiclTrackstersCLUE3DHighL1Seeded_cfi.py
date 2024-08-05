@@ -12,12 +12,6 @@ hltTiclTrackstersCLUE3DHighL1Seeded = cms.EDProducer("TrackstersProducer",
     patternRecognitionBy = cms.string('CLUE3D'),
     pluginPatternRecognitionByCA = cms.PSet(
         algo_verbosity = cms.int32(0),
-        eid_input_name = cms.string('input'),
-        eid_min_cluster_energy = cms.double(1),
-        eid_n_clusters = cms.int32(10),
-        eid_n_layers = cms.int32(50),
-        eid_output_name_energy = cms.string('output/regressed_energy'),
-        eid_output_name_id = cms.string('output/id_probabilities'),
         energy_em_over_total_threshold = cms.double(-1),
         etaLimitIncreaseWindow = cms.double(2.1),
         filter_on_categories = cms.vint32(0),
@@ -100,34 +94,38 @@ hltTiclTrackstersCLUE3DHighL1Seeded = cms.EDProducer("TrackstersProducer",
       2,
       2
     ),
-    eid_input_name = cms.string('input'),
-    eid_output_name_energy = cms.string('output/regressed_energy'),
-    eid_output_name_id = cms.string('output/id_probabilities'),
-    eid_min_cluster_energy = cms.double(1),
-    eid_n_layers = cms.int32(50),
-    eid_n_clusters = cms.int32(10),
     computeLocalTime = cms.bool(False),
     doPidCut = cms.bool(True),
-    cutHadProb = cms.double(999.),
+    cutHadProb = cms.double(999),
     type = cms.string('CLUE3D')
-
     ),
     pluginPatternRecognitionByFastJet = cms.PSet(
         algo_verbosity = cms.int32(0),
         antikt_radius = cms.double(0.09),
-        eid_input_name = cms.string('input'),
-        eid_min_cluster_energy = cms.double(1),
-        eid_n_clusters = cms.int32(10),
-        eid_n_layers = cms.int32(50),
-        eid_output_name_energy = cms.string('output/regressed_energy'),
-        eid_output_name_id = cms.string('output/id_probabilities'),
         minNumLayerCluster = cms.int32(5),
         type = cms.string('FastJet')
     ),
-    seeding_regions = cms.InputTag("hltTiclSeedingL1"),
-    tfDnnLabel = cms.string('tracksterSelectionTf'),
-    time_layerclusters = cms.InputTag("hltHgcalMergeLayerClustersL1Seeded","timeLayerCluster")
+    pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
+      algo_verbosity = cms.int32(0),
+      onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/RecoHGCal-TICL/ticlv4/onnx_models/energy_id_v0.onnx'),
+      onnxEnergyModelPath = cms.FileInPath('RecoHGCal/TICL/data/RecoHGCal-TICL/ticlv4/onnx_models/energy_id_v0.onnx'),
+      eid_min_cluster_energy = cms.double(1),
+      eid_n_layers = cms.int32(50),
+      eid_n_clusters = cms.int32(10),
+      doPID = cms.int32(0),
+      doRegression = cms.int32(0),
+      type = cms.string('TracksterInferenceByDNN')
+    ),
+    pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
+      algo_verbosity = cms.int32(0),
+      type = cms.string('TracksterInferenceByANN')
+    
+    ),
+    seeding_regions = cms.InputTag("ticlSeedingL1"),
+    time_layerclusters = cms.InputTag("hgcalMergeLayerClustersL1Seeded","timeLayerCluster")
 )
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
-ticl_v5.toModify(hltTiclTrackstersCLUE3DHighL1Seeded.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True), doPidCut = cms.bool(False))
+ticl_v5.toModify(ticlTrackstersCLUE3DHighL1Seeded.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True), doPidCut = cms.bool(False))
+ticl_v5.toModify(ticlTrackstersCLUE3DHighL1Seeded.pluginInferenceAlgoTracksterInferenceByDNN, onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/RecoHGCal-TICL/ticlv5/onnx_models/patternrecognition/id_v0.onnx'))
+ticl_v5.toModify(ticlTrackstersCLUE3DHighL1Seeded.pluginInferenceAlgoTracksterInferenceByDNN, onnxEnergyModelPath = cms.FileInPath('RecoHGCal/TICL/data/RecoHGCal-TICL/ticlv5/onnx_models/patternrecognition/energy_v0.onnx'))
