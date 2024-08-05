@@ -356,25 +356,25 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
   }
 }
 template <typename TILES>
-void PatternRecognitionbyCLUE3D<TILES>::filter(std::vector<Trackster>& output, const std::vector<Trackster>& inTracksters, const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input, std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
+void PatternRecognitionbyCLUE3D<TILES>::filter(std::vector<Trackster> &output,
+                                               const std::vector<Trackster> &inTracksters,
+                                               const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
+                                               std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
+  auto isHAD = [this](const Trackster &t) -> bool {
+    auto const hadProb = t.id_probability(ticl::Trackster::ParticleType::charged_hadron) +
+                         t.id_probability(ticl::Trackster::ParticleType::neutral_hadron);
+    return hadProb >= cutHadProb_;
+  };
 
-   auto isHAD = [this](const Trackster& t) -> bool {
-     auto const hadProb =
-         t.id_probability(ticl::Trackster::ParticleType::charged_hadron) +
-         t.id_probability(ticl::Trackster::ParticleType::neutral_hadron);
-     return hadProb >= cutHadProb_;
-   };
-
-   if(doPidCut_){
-		for(auto const& t : inTracksters){
-			if(!isHAD(t)){
-				output.push_back(t);
-			}
-		}
-   }
-	 else{
-   	output = inTracksters;
-	 }
+  if (doPidCut_) {
+    for (auto const &t : inTracksters) {
+      if (!isHAD(t)) {
+        output.push_back(t);
+      }
+    }
+  } else {
+    output = inTracksters;
+  }
 }
 
 template <typename TILES>
