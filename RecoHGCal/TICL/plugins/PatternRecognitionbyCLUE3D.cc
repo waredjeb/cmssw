@@ -37,6 +37,8 @@ PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::Paramet
       criticalZDistanceLyr_(conf.getParameter<std::vector<int>>("criticalZDistanceLyr")),
       outlierMultiplier_(conf.getParameter<std::vector<double>>("outlierMultiplier")),
       minNumLayerCluster_(conf.getParameter<std::vector<int>>("minNumLayerCluster")),
+      doPidCut_(conf.getParameter<bool>("doPidCut")),
+      cutHadProb_(conf.getParameter<double>("cutHadProb")),
       computeLocalTime_(conf.getParameter<bool>("computeLocalTime")){};
 
 template <typename TILES>
@@ -355,7 +357,24 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
 }
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::filter(std::vector<Trackster>& output, const std::vector<Trackster>& inTracksters, const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input, std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
-   output = inTracksters;
+
+   auto isHAD = [this](const Trackster& t) -> bool {
+     auto const hadProb =
+         t.id_probability(ticl::Trackster::ParticleType::charged_hadron) +
+         t.id_probability(ticl::Trackster::ParticleType::neutral_hadron);
+     return hadProb >= cutHadProb_;
+   };
+
+   if(doPidCut_){
+		for(auto const& t : inTracksters){
+			if(!isHAD(t)){
+				output.push_back(t);
+			}
+		}
+   }
+	 else{
+   	output = inTracksters;
+	 }
 }
 
 template <typename TILES>
@@ -740,12 +759,8 @@ void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDes
   iDesc.add<std::vector<double>>("outlierMultiplier", {2, 2, 2})
       ->setComment("Minimal distance in transverse space from nearestHigher to become an outlier");
   iDesc.add<std::vector<int>>("minNumLayerCluster", {2, 2, 2})->setComment("Not Inclusive");
-  iDesc.add<std::string>("eid_input_name", "input");
-  iDesc.add<std::string>("eid_output_name_energy", "output/regressed_energy");
-  iDesc.add<std::string>("eid_output_name_id", "output/id_probabilities");
-  iDesc.add<double>("eid_min_cluster_energy", 1.);
-  iDesc.add<int>("eid_n_layers", 50);
-  iDesc.add<int>("eid_n_clusters", 10);
+  iDesc.add<bool>("doPidCut", false);
+  iDesc.add<double>("cutHadProb", 0.5);
   iDesc.add<bool>("computeLocalTime", false);
   iDesc.add<bool>("usePCACleaning", false)->setComment("Enable PCA cleaning alorithm");
 }
