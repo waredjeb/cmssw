@@ -117,11 +117,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<edm::InputTag>("seeding_regions", edm::InputTag("ticlSeedingRegionProducer"));
   desc.add<std::string>("patternRecognitionBy", "CA");
   desc.add<std::string>("itername", "unknown");
-<<<<<<< HEAD
-  desc.add<std::string>("tfDnnLabel", "tracksterSelectionTf");
-=======
   desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
->>>>>>> 91094453379 (trying to fix CNN regression and PID)
 
   // CA Plugin
   edm::ParameterSetDescription pluginDesc;
@@ -143,6 +139,22 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   pluginDescPassThrough.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "Passthrough", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByPassthrough", pluginDescPassThrough);
 
+<<<<<<< HEAD
+=======
+  // Inference Plugins
+  edm::ParameterSetDescription inferenceDesc;
+  inferenceDesc.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByDNN", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByDNN", inferenceDesc);
+
+  edm::ParameterSetDescription inferenceDescANN;
+  inferenceDescANN.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByANN", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByANN", inferenceDescANN);
+
+  edm::ParameterSetDescription inferenceDescCNNv4;
+  inferenceDescCNNv4.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
+  
+>>>>>>> 04a329f36e6 (add new plugin for v4 onnx model)
   descriptions.add("trackstersProducer", desc);
 }
 

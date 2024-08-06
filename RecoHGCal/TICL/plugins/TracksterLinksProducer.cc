@@ -279,6 +279,10 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   inferenceDesc.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByDNN", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByDNN", inferenceDesc);
 
+  edm::ParameterSetDescription inferenceDescCNNv4;
+  inferenceDescCNNv4.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
+
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
@@ -288,7 +292,7 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<bool>("regressionAndPid", false);
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
-  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByCNNv4");
   descriptions.add("tracksterLinksProducer", desc);
 }
 

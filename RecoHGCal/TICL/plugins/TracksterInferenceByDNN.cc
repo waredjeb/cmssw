@@ -100,10 +100,12 @@ namespace ticl {
     if (doPID_ and doRegression_) {
       // Run energy model inference
       auto& energyOutputTensor = onnxEnergySession_->run(inputNames, input_Data, input_shapes, output_en, batchSize)[0];
+      std::cout<< "size of energyOutputTensor = " << energyOutputTensor.size() << std::endl;
       if (!output_en.empty()) {
       	for (int i = 0; i < static_cast<int>(batchSize); i++) {
       	  const float energy = energyOutputTensor[i];
       	  tracksters[tracksterIndices[i]].setRegressedEnergy(energy); // Update energy
+	  std::cout << "[INFO] energy = " << energy << std::endl;
       	}
       }
     }
@@ -111,12 +113,17 @@ namespace ticl {
     if(doPID_){
       // Run PID model inference
       auto pidOutput = onnxPIDSession_->run(inputNames, input_Data, input_shapes, output_id, batchSize);
+      std::cout<< "size of pidOutput = " << pidOutput.size() << std::endl;
       auto  pidOutputTensor = pidOutput[0];
       float* probs = pidOutputTensor.data();
       if (!output_id.empty()) {
 	      for (int i = 0; i < batchSize; i++) {
 	        tracksters[tracksterIndices[i]].setProbabilities(probs); // Update probabilities
 	        probs += tracksters[tracksterIndices[i]].id_probabilities().size(); // Move to next set of probabilities
+		const std::array<float, 8> arr = tracksters[tracksterIndices[i]].id_probabilities();
+		std::cout << "[DEBUG] probs from container = ";
+		for (const float& element : arr) { std::cout << element << " "; }
+		std::cout << std::endl;
 	      }
       }
     }
