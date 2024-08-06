@@ -153,6 +153,10 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   inferenceDescANN.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByANN", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByANN", inferenceDescANN);
 
+  edm::ParameterSetDescription inferenceDescCNNv4;
+  inferenceDescCNNv4.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
+  desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
+  
   descriptions.add("trackstersProducer", desc);
 }
 
