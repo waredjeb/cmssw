@@ -95,13 +95,12 @@ namespace ticl {
     std::vector<std::vector<float> > outputTensors;
     outputTensors = onnxSession_->run(inputNames, input_Data, input_shapes, outNames, batchSize);
 
-  
     if (doPID_ and doRegression_) {
       // Run energy model inference
       if (!outNames.empty()) {
       	for (int i = 0; i < static_cast<int>(batchSize); i++) {
-	  const float energy = outputTensors[0][i];
-      	  tracksters[tracksterIndices[i]].setRegressedEnergy(energy); // Update energy
+	         const float energy = outputTensors[0][i];
+      	      tracksters[tracksterIndices[i]].setRegressedEnergy(energy); // Update energy
       	}
       }
     }

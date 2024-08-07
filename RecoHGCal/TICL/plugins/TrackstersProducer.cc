@@ -122,7 +122,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<edm::InputTag>("seeding_regions", edm::InputTag("ticlSeedingRegionProducer"));
   desc.add<std::string>("patternRecognitionBy", "CA");
   desc.add<std::string>("itername", "unknown");
-  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByCNNv4");
 
   // CA Plugin
   edm::ParameterSetDescription pluginDesc;
@@ -207,6 +207,13 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     inferenceAlgo_->inputData(layerClusters, *initialResult);
     inferenceAlgo_->runInference(*initialResult); 
     myAlgo_->filter(*result, *initialResult, input, seedToTrackstersAssociation);
+  }
+  for(auto const& t : *initialResult){
+    std::cout << "initial Raw Energy " << t.raw_energy() << " Regressed Energy " << t.regressed_energy() << std::endl;
+  }
+
+  for(auto const& t : *result){
+    std::cout << "final Raw Energy " << t.raw_energy() << " Regressed Energy " << t.regressed_energy() << std::endl;
   }
 
 

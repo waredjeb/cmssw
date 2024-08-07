@@ -66,7 +66,6 @@ private:
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
 
-  const bool regressionAndPid_;
   std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_; // Add this line
   
   std::vector<edm::EDGetTokenT<std::vector<float>>> original_masks_tokens_;
@@ -86,7 +85,6 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps)
     : clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
-      regressionAndPid_(ps.getParameter<bool>("regressionAndPid")),
       geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       detector_(ps.getParameter<std::string>("detector")),
       propName_(ps.getParameter<std::string>("propagator")),
@@ -210,12 +208,13 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     }
   }
 
-  if (regressionAndPid_){
     // energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
     // Run inference algorithm
     inferenceAlgo_->inputData(layerClusters, *resultTracksters);
     inferenceAlgo_->runInference(*resultTracksters);//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
-  }
+    for(auto const& t : *resultTracksters){
+      std::cout << "Linked Raw Energy " << t.raw_energy() <<  " Regressed " << t.regressed_energy() << std::endl;
+    }
   
   assignPCAtoTracksters(
       *resultTracksters, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(), true);
@@ -269,10 +268,9 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
-  desc.add<bool>("regressionAndPid", false);
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
-  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByCNNv4");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
   descriptions.add("tracksterLinksProducer", desc);
 }
 

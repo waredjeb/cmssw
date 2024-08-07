@@ -19,6 +19,7 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
     seeding_regions = "ticlSeedingGlobal",
     itername = "CLUE3DHigh",
     patternRecognitionBy = "CLUE3D",
+    inferenceAlgo = cms.string('TracksterInferenceByCNNv4'),
     pluginPatternRecognitionByCLUE3D = dict (
         criticalDensity = [0.6, 0.6, 0.6],
         criticalEtaPhiDistance = [0.025, 0.025, 0.025],
@@ -26,6 +27,16 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
         algo_verbosity = 0,
         doPidCut = True,
         cutHadProb = 999
+    ),
+    pluginInferenceAlgoTracksterInferenceByCNNv4 = cms.PSet(
+      algo_verbosity = cms.int32(0),
+      onnxModelPath = cms.FileInPath('RecoHGCal/TICL/data/RecoHGCal-TICL/ticlv4/onnx_models/energy_id_v0.onnx'),
+      eid_min_cluster_energy = cms.double(1),
+      eid_n_layers = cms.int32(50),
+      eid_n_clusters = cms.int32(10),
+      doPID = cms.int32(1),
+      doRegression = cms.int32(1),
+      type = cms.string('TracksterInferenceByCNNv4')
     ),
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
       algo_verbosity = cms.int32(0),
@@ -35,20 +46,19 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
       eid_n_layers = cms.int32(50),
       eid_n_clusters = cms.int32(10),
       doPID = cms.int32(1),
-      doRegression = cms.int32(0),
+      doRegression = cms.int32(1),
       type = cms.string('TracksterInferenceByDNN')
     ),
     pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
       algo_verbosity = cms.int32(0),
       type = cms.string('TracksterInferenceByANN')
     
-    ),
-
-
+    )
 )
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 ticl_v5.toModify(ticlTrackstersCLUE3DHigh.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True))
+ticl_v5.toModify(ticlTrackstersCLUE3DHigh, inferenceAlgo = cms.string("TracksterInferenceByDNN"))
 
 ticlCLUE3DHighStepTask = cms.Task(ticlSeedingGlobal
     ,filteredLayerClustersCLUE3DHigh
