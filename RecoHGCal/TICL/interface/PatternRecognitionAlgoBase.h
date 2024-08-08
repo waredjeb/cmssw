@@ -6,8 +6,6 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
-#include <algorithm>
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"

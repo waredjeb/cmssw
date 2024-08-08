@@ -380,7 +380,6 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
         for (auto const tracksterId : trackstersInTrackIndices[iTrack]) {
           //maskTracksters[tracksterId] = 0;
           outTrackster.mergeTracksters(input.tracksters[tracksterId]);
-//          regr_en += input.tracksters[tracksterId].regressed_energy() > 0.f ? input.tracksters[tracksterId].regressed_energy() : input.tracksters[tracksterId].raw_energy();
           regr_en += input.tracksters[tracksterId].regressed_energy();
           if (input.tracksters[tracksterId].isHadronic())
             isHadron = true;
