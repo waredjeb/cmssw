@@ -182,9 +182,10 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
 }
 
 template <typename TILES>
-void PatternRecognitionbyCA<TILES>::filter(std::vector<Trackster>& output, const std::vector<Trackster>& inTracksters, const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input, std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
-   
-
+void PatternRecognitionbyCA<TILES>::filter(std::vector<Trackster> &output,
+                                           const std::vector<Trackster> &inTracksters,
+                                           const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
+                                           std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
   auto filter_on_pids = [&](const ticl::Trackster &t) -> bool {
     auto cumulative_prob = 0.;
     for (auto index : filter_on_categories_) {
@@ -196,7 +197,7 @@ void PatternRecognitionbyCA<TILES>::filter(std::vector<Trackster>& output, const
   int lcSize = 0;
   std::vector<unsigned int> selectedTrackstersIds;
   for (unsigned i = 0; i < inTracksters.size(); ++i) {
-    auto& t = inTracksters[i];
+    auto &t = inTracksters[i];
     if (!filter_on_pids(t) and t.sigmasPCA()[0] < max_longitudinal_sigmaPCA_) {
       selectedTrackstersIds.push_back(i);
     }
@@ -234,7 +235,6 @@ void PatternRecognitionbyCA<TILES>::filter(std::vector<Trackster>& output, const
       }
     }
   }
-
 }
 template <typename TILES>
 void PatternRecognitionbyCA<TILES>::mergeTrackstersTRK(

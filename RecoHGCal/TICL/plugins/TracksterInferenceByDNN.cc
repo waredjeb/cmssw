@@ -81,7 +81,7 @@ namespace ticl {
         const reco::CaloCluster& cluster = layerClusters[trackster.vertices(k)];
         int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
         if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
-          int index = (i * eidNLayers_ + j) *eidNFeatures_ * eidNClusters_ + seenClusters[j] * eidNFeatures_;
+          int index = (i * eidNLayers_ + j) * eidNFeatures_ * eidNClusters_ + seenClusters[j] * eidNFeatures_;
           input_Data[0][index] =
               static_cast<float>(cluster.energy() / static_cast<float>(trackster.vertex_multiplicity(k)));
           input_Data[0][index + 1] = static_cast<float>(cluster.eta());

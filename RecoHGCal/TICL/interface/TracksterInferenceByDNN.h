@@ -17,6 +17,7 @@ namespace ticl {
     void runInference(std::vector<Trackster>& tracksters) override;
 
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc);
+
   private:
     const cms::Ort::ONNXRuntime* onnxPIDSession_;
     const cms::Ort::ONNXRuntime* onnxEnergySession_;

@@ -8,4 +8,6 @@
 EDM_REGISTER_VALIDATED_PLUGINFACTORY(TracksterInferenceAlgoFactory, "TracksterInferenceAlgoFactory");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterInferenceByDNN, "TracksterInferenceByDNN");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterInferenceByANN, "TracksterInferenceByANN");
-DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterInferenceByCNNv4, "TracksterInferenceByCNNv4");
+DEFINE_EDM_VALIDATED_PLUGIN(TracksterInferenceAlgoFactory,
+                            ticl::TracksterInferenceByCNNv4,
+                            "TracksterInferenceByCNNv4");

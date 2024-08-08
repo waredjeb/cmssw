@@ -66,8 +66,8 @@ private:
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
 
-  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_; // Add this line
-  
+  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;  // Add this line
+
   std::vector<edm::EDGetTokenT<std::vector<float>>> original_masks_tokens_;
 
   const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
@@ -208,14 +208,15 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     }
   }
 
-    // energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
-    // Run inference algorithm
-    inferenceAlgo_->inputData(layerClusters, *resultTracksters);
-    inferenceAlgo_->runInference(*resultTracksters);//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
-    for(auto const& t : *resultTracksters){
-      std::cout << "Linked Raw Energy " << t.raw_energy() <<  " Regressed " << t.regressed_energy() << std::endl;
-    }
-  
+  // energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
+  // Run inference algorithm
+  inferenceAlgo_->inputData(layerClusters, *resultTracksters);
+  inferenceAlgo_->runInference(
+      *resultTracksters);  //option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID"
+  for (auto const &t : *resultTracksters) {
+    std::cout << "Linked Raw Energy " << t.raw_energy() << " Regressed " << t.regressed_energy() << std::endl;
+  }
+
   assignPCAtoTracksters(
       *resultTracksters, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(), true);
 
@@ -253,13 +254,14 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   edm::ParameterSetDescription desc;
   edm::ParameterSetDescription linkingDesc;
   linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Skeletons", true));
- // Inference Plugins
+  // Inference Plugins
   edm::ParameterSetDescription inferenceDesc;
   inferenceDesc.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByDNN", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByDNN", inferenceDesc);
 
   edm::ParameterSetDescription inferenceDescCNNv4;
-  inferenceDescCNNv4.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
+  inferenceDescCNNv4.addNode(
+      edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
 
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);

@@ -5,20 +5,19 @@
 
 namespace ticl {
 
-  TracksterInferenceByANN::TracksterInferenceByANN(const edm::ParameterSet& conf)
-    : TracksterInferenceAlgoBase(conf) {
+  TracksterInferenceByANN::TracksterInferenceByANN(const edm::ParameterSet& conf) : TracksterInferenceAlgoBase(conf) {
     // Load ANN model
   }
 
-  void TracksterInferenceByANN::inputData(const std::vector<reco::CaloCluster> &layerClusters,std::vector<Trackster>& tracksters) {
+  void TracksterInferenceByANN::inputData(const std::vector<reco::CaloCluster>& layerClusters,
+                                          std::vector<Trackster>& tracksters) {
     // Prepare data for inference
   }
 
   void TracksterInferenceByANN::runInference(std::vector<Trackster>& tracksters) {
-
     // Run inference using ANN
   }
-}
+}  // namespace ticl
 
 // Define this as a plug-in
 #include "FWCore/Framework/interface/MakerMacros.h"

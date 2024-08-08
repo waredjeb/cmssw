@@ -9,6 +9,7 @@
 #include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
 #include "RecoHGCal/TICL/interface/TracksterInferenceAlgoBase.h"
 
-typedef edmplugin::PluginFactory<ticl::TracksterInferenceAlgoBase*(const edm::ParameterSet&)> TracksterInferenceAlgoFactory;
+typedef edmplugin::PluginFactory<ticl::TracksterInferenceAlgoBase*(const edm::ParameterSet&)>
+    TracksterInferenceAlgoFactory;
 
 #endif

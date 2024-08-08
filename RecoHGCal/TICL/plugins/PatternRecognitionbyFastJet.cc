@@ -154,8 +154,11 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
 }
 
 template <typename TILES>
-void PatternRecognitionbyFastJet<TILES>::filter(std::vector<Trackster>& output, const std::vector<Trackster>& inTracksters, const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input, std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
-   output = inTracksters;
+void PatternRecognitionbyFastJet<TILES>::filter(std::vector<Trackster> &output,
+                                                const std::vector<Trackster> &inTracksters,
+                                                const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
+                                                std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
+  output = inTracksters;
 }
 
 template <typename TILES>

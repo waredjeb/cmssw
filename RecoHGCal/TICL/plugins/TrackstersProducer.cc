@@ -51,7 +51,7 @@ private:
   bool doNose_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
-  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_; // Add this line
+  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;  // Add this line
 
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
@@ -150,13 +150,15 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByDNN", inferenceDesc);
 
   edm::ParameterSetDescription inferenceDescANN;
-  inferenceDescANN.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByANN", true));
+  inferenceDescANN.addNode(
+      edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByANN", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByANN", inferenceDescANN);
 
   edm::ParameterSetDescription inferenceDescCNNv4;
-  inferenceDescCNNv4.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
+  inferenceDescCNNv4.addNode(
+      edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
-  
+
   descriptions.add("trackstersProducer", desc);
 }
 
@@ -182,19 +184,13 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
   if (doNose_) {
     const auto& layer_clusters_hfnose_tiles = evt.get(layer_clusters_tiles_hfnose_token_);
-    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(evt,
-                                                                                         es,
-                                                                                         layerClusters,
-                                                                                         inputClusterMask,
-                                                                                         layerClustersTimes,
-                                                                                         layer_clusters_hfnose_tiles,
-                                                                                         seeding_regions
-                                                                                         );
+    const typename PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>::Inputs inputHFNose(
+        evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_hfnose_tiles, seeding_regions);
 
     myAlgoHFNose_->makeTracksters(inputHFNose, *initialResult, seedToTrackstersAssociation);
     // Run inference algorithm
     inferenceAlgo_->inputData(layerClusters, *initialResult);
-    inferenceAlgo_->runInference(*initialResult); 
+    inferenceAlgo_->runInference(*initialResult);
     myAlgoHFNose_->filter(*result, *initialResult, inputHFNose, seedToTrackstersAssociation);
 
   } else {
@@ -205,17 +201,16 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     myAlgo_->makeTracksters(input, *initialResult, seedToTrackstersAssociation);
     // Run inference algorithm
     inferenceAlgo_->inputData(layerClusters, *initialResult);
-    inferenceAlgo_->runInference(*initialResult); 
+    inferenceAlgo_->runInference(*initialResult);
     myAlgo_->filter(*result, *initialResult, input, seedToTrackstersAssociation);
   }
-  for(auto const& t : *initialResult){
+  for (auto const& t : *initialResult) {
     std::cout << "initial Raw Energy " << t.raw_energy() << " Regressed Energy " << t.regressed_energy() << std::endl;
   }
 
-  for(auto const& t : *result){
+  for (auto const& t : *result) {
     std::cout << "final Raw Energy " << t.raw_energy() << " Regressed Energy " << t.regressed_energy() << std::endl;
   }
-
 
   // Now update the global mask and put it into the event
   output_mask->reserve(original_layerclusters_mask.size());

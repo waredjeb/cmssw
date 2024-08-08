@@ -11,7 +11,6 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 
-
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
@@ -20,16 +19,17 @@
 #include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
 #include "FWCore/PluginManager/interface/PluginFactory.h"
 
-
 namespace ticl {
   class TracksterInferenceAlgoBase {
   public:
-    explicit TracksterInferenceAlgoBase(const edm::ParameterSet& conf) : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
+    explicit TracksterInferenceAlgoBase(const edm::ParameterSet& conf)
+        : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
     virtual ~TracksterInferenceAlgoBase() {}
 
-    virtual void inputData(const std::vector<reco::CaloCluster> &layerClusters, std::vector<Trackster>& tracksters) = 0;
+    virtual void inputData(const std::vector<reco::CaloCluster>& layerClusters, std::vector<Trackster>& tracksters) = 0;
     virtual void runInference(std::vector<Trackster>& tracksters) = 0;
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
+
   protected:
     int algo_verbosity_;
   };
