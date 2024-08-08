@@ -28,8 +28,8 @@ ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
 ticlTracksterLinks = _tracksterLinksProducer.clone(
     tracksters_collections = cms.VInputTag(
-        'ticlTrackstersCLUE3DHigh'
-#        'ticlTrackstersPassthrough'
+        'ticlTrackstersCLUE3DHigh',
+        'ticlTrackstersPassthrough'
     ),
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
         algo_verbosity = cms.int32(0),

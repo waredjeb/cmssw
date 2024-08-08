@@ -81,10 +81,10 @@ namespace ticl {
         const reco::CaloCluster& cluster = layerClusters[trackster.vertices(k)];
         int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
         if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
-          int index = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j] * eidNFeatures_;
+          int index = (i * eidNLayers_ + j) *eidNFeatures_ * eidNClusters_ + seenClusters[j] * eidNFeatures_;
           input_Data[0][index] =
               static_cast<float>(cluster.energy() / static_cast<float>(trackster.vertex_multiplicity(k)));
-          input_Data[0][index + 1] = static_cast<float>(std::abs(cluster.eta()));
+          input_Data[0][index + 1] = static_cast<float>(cluster.eta());
           input_Data[0][index + 2] = static_cast<float>(cluster.phi());
           seenClusters[j]++;
         }
@@ -108,7 +108,6 @@ namespace ticl {
       if (!output_en.empty()) {
         for (int i = 0; i < static_cast<int>(batchSize); i++) {
           const float energy = energyOutputTensor[i];
-          std::cout << " During Inference " << tracksters[tracksterIndices[i]].raw_energy() << " Regressed " << energy << std::endl;
           tracksters[tracksterIndices[i]].setRegressedEnergy(energy);  // Update energy
         }
       }

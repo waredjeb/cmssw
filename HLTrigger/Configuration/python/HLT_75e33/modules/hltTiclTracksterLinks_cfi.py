@@ -33,7 +33,6 @@ hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
     mightGet = cms.optional.untracked.vstring,
     original_masks = cms.VInputTag("hgcalMergeLayerClusters:InitialLayerClustersMask"),
     propagator = cms.string('PropagatorWithMaterial'),
-    regressionAndPid = cms.bool(True),
     tracksters_collections = cms.VInputTag("ticlTrackstersCLUE3DHigh", "hltTiclTrackstersPassthrough")
 )
 
