@@ -949,7 +949,7 @@ void TICLDumper::beginJob() {
     tracksters_dumperHelpers_[i].initTree(tree, &eventId_);
   }
   if (saveLCs_) {
-    cluster_tree_ = fs->make<TTree>("clusters", "TICL tracksters");
+    cluster_tree_ = fs->make<TTree>("clusters", "TICL 2D clusters");
     cluster_tree_->Branch("event", &eventId_);
     cluster_tree_->Branch("seedID", &cluster_seedID);
     cluster_tree_->Branch("energy", &cluster_energy);

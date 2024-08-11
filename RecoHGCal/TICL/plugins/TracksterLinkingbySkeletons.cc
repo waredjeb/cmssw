@@ -350,18 +350,9 @@ void TracksterLinkingbySkeletons::linkTracksters(
     allNodes.emplace_back(it);
   }
 
-  auto isEMTrackster = [](const ticl::Trackster &trackster) {
-    return trackster.id_probability(Trackster::ParticleType::photon) +
-               trackster.id_probability(Trackster::ParticleType::electron) >=
-           0.5f;
-  };
   // loop over tracksters sorted by energy and link them
   for (auto const &t_idx : sortedTracksters) {
     auto const &trackster = tracksters[t_idx];
-    if (isEMTrackster(trackster)) {
-      maskReceivedLink[t_idx] = 0; //do not allow to receive link
-      continue;  //if EM CLUE3D Trackster, do not try to link further
-    }
     auto const &skeleton = skeletons[t_idx];
 
     auto const bary = trackster.barycenter();
