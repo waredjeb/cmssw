@@ -453,7 +453,7 @@ void TICLCandidateProducer::assignTimeToCandidates(std::vector<TICLCandidate> &r
         const auto timeEHGC = cand.timeError();
         const auto timeMTD = inputTimingView.time0()[trackIndex];
         const auto timeEMTD = inputTimingView.time0Err()[trackIndex];
-
+        /*
         if (useTimingAverage_ && (timeEMTD > 0 && timeEHGC > 0)) {
           // Compute weighted average between HGCAL and MTD timing
           const auto invTimeESqHGC = pow(timeEHGC, -2);
@@ -464,10 +464,14 @@ void TICLCandidateProducer::assignTimeToCandidates(std::vector<TICLCandidate> &r
         } else if (timeEMTD > 0) {
           time = timeMTD;
           timeErr = timeEMTD;
-        }
+        }*/
+        cand.setMTDTime(inputTimingView.time0()[trackIndex], inputTimingView.time0Err()[trackIndex]);
+      } else {
+        cand.setMTDTime(-5., -5.);
       }
-      cand.setTime(time, timeErr);
-      cand.setMTDTime(inputTimingView.time()[trackIndex], inputTimingView.timeErr()[trackIndex]);
+
+    } else {
+      cand.setMTDTime(-10., -10.);
     }
   }
 }

@@ -1440,6 +1440,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
 
+
   desc.add<bool>("saveLCs", true);
   desc.add<bool>("saveTICLCandidate", true);
   desc.add<bool>("saveSimTICLCandidate", true);
