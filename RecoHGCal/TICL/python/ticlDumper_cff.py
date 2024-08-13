@@ -7,6 +7,8 @@ from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import 
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 
 ticlDumper = ticlDumper_.clone(
+    saveSuperclustering = cms.bool(False),
+    saveRecoSuperclusters = cms.bool(False),
     tracksterCollections = [
         cms.PSet(
             treeName=cms.string("trackstersclue3d"),
@@ -71,14 +73,14 @@ ticlDumper = ticlDumper_.clone(
         ),
         cms.PSet(
             branchName=cms.string("tsCLUE3D"),
-            suffix=cms.string("SC"),
+            suffix=cms.string("SC2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationPR2Hits"),
             tracksterCollection=cms.InputTag("ticlTrackstersCLUE3DHigh"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits")
         ),
         cms.PSet(
             branchName=cms.string("tsCLUE3D"),
-            suffix=cms.string("CP"),
+            suffix=cms.string("CP2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterFromCPsAssociationPR2Hits"),
             tracksterCollection=cms.InputTag("ticlTrackstersCLUE3DHigh"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits", "fromCPs")
@@ -86,14 +88,14 @@ ticlDumper = ticlDumper_.clone(
         
         cms.PSet(
             branchName=cms.string("Mergetracksters"),
-            suffix=cms.string("SC"),
+            suffix=cms.string("SC2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationLinking2Hits"),
             tracksterCollection=cms.InputTag("ticlTrackstersMerge"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits")
         ),
         cms.PSet(
             branchName=cms.string("Mergetracksters"),
-            suffix=cms.string("CP"),
+            suffix=cms.string("CP2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterFromCPsAssociationLinking2Hits"),
             tracksterCollection=cms.InputTag("ticlTrackstersMerge"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits", "fromCPs")
@@ -177,14 +179,14 @@ ticl_v5.toModify(ticlDumper,
         ),
         cms.PSet(
             branchName=cms.string("tsCLUE3D"),
-            suffix=cms.string("SC"),
+            suffix=cms.string("SC2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationPR2Hits"),
             tracksterCollection=cms.InputTag("ticlTrackstersCLUE3DHigh"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits")
         ),
         cms.PSet(
             branchName=cms.string("tsCLUE3D"),
-            suffix=cms.string("CP"),
+            suffix=cms.string("CP2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterFromCPsAssociationPR2Hits"),
             tracksterCollection=cms.InputTag("ticlTrackstersCLUE3DHigh"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits", "fromCPs")
@@ -192,14 +194,14 @@ ticl_v5.toModify(ticlDumper,
 
         cms.PSet(
             branchName=cms.string("ticlCandidate"),
-            suffix=cms.string("SC"),
+            suffix=cms.string("SC2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterFromCPsAssociationLinking2Hits"),
             tracksterCollection=cms.InputTag("ticlCandidate"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits", "fromCPs")
         ),
         cms.PSet(
             branchName=cms.string("ticlCandidate"),
-            suffix=cms.string("CP"),
+            suffix=cms.string("CP2Hits"),
             associatorInputTag=cms.InputTag("tracksterSimTracksterAssociationLinking2Hits"),
             tracksterCollection=cms.InputTag("ticlCandidate"),
             simTracksterCollection=cms.InputTag("ticlSimTracksters2Hits")

@@ -609,10 +609,10 @@ private:
   const edm::EDGetTokenT<std::vector<reco::Muon>> muons_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<int>> tracksterSeeds_token_;
-  const edm::EDGetTokenT<std::vector<std::vector<unsigned int>>> superclustering_linkedResultTracksters_token;
-  const edm::EDGetTokenT<reco::SuperClusterCollection> recoSuperClusters_token;
-  const edm::EDGetTokenT<reco::CaloClusterCollection> recoSuperClusters_caloClusters_token;
-  const edm::EDGetTokenT<std::vector<ticl::Trackster>> recoSuperClusters_sourceTracksters_token;
+  edm::EDGetTokenT<std::vector<std::vector<unsigned int>>> superclustering_linkedResultTracksters_token;
+  edm::EDGetTokenT<reco::SuperClusterCollection> recoSuperClusters_token;
+  edm::EDGetTokenT<reco::CaloClusterCollection> recoSuperClusters_caloClusters_token;
+  edm::EDGetTokenT<std::vector<ticl::Trackster>> recoSuperClusters_sourceTracksters_token;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> simTracksters_SC_token_;  // needed for simticlcandidate
   const edm::EDGetTokenT<std::vector<TICLCandidate>> simTICLCandidate_token_;
@@ -869,14 +869,6 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
       muons_token_(consumes<std::vector<reco::Muon>>(ps.getParameter<edm::InputTag>("muons"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
-      superclustering_linkedResultTracksters_token(
-          consumes<std::vector<std::vector<unsigned int>>>(ps.getParameter<edm::InputTag>("superclustering"))),
-      recoSuperClusters_token(
-          consumes<reco::SuperClusterCollection>(ps.getParameter<edm::InputTag>("recoSuperClusters"))),
-      recoSuperClusters_caloClusters_token(
-          consumes<reco::CaloClusterCollection>(ps.getParameter<edm::InputTag>("recoSuperClusters"))),
-      recoSuperClusters_sourceTracksters_token(consumes<std::vector<ticl::Trackster>>(
-          ps.getParameter<edm::InputTag>("recoSuperClusters_sourceTracksterCollection"))),
       caloGeometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       simTracksters_SC_token_(
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersSC"))),
@@ -900,6 +892,16 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
       saveTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveSimTICLCandidate_(ps.getParameter<bool>("saveSimTICLCandidate")),
       saveTracks_(ps.getParameter<bool>("saveTracks")) {
+      if(saveSuperclustering_){
+      superclustering_linkedResultTracksters_token = 
+          consumes<std::vector<std::vector<unsigned int>>>(ps.getParameter<edm::InputTag>("superclustering"));
+      recoSuperClusters_token = 
+          consumes<reco::SuperClusterCollection>(ps.getParameter<edm::InputTag>("recoSuperClusters"));
+      recoSuperClusters_caloClusters_token = 
+          consumes<reco::CaloClusterCollection>(ps.getParameter<edm::InputTag>("recoSuperClusters"));
+      recoSuperClusters_sourceTracksters_token = consumes<std::vector<ticl::Trackster>>(
+          ps.getParameter<edm::InputTag>("recoSuperClusters_sourceTracksterCollection"));
+      }
   std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
   hdc_token_ =
       esConsumes<HGCalDDDConstants, IdealGeometryRecord, edm::Transition::BeginRun>(edm::ESInputTag("", detectorName_));
