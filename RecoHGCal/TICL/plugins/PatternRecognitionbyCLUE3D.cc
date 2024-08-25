@@ -39,8 +39,8 @@ PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::Paramet
       minNumLayerCluster_(conf.getParameter<std::vector<int>>("minNumLayerCluster")),
       doPidCut_(conf.getParameter<bool>("doPidCut")),
       cutHadProb_(conf.getParameter<double>("cutHadProb")),
-      computeLocalTime_(conf.getParameter<bool>("computeLocalTime")){};
-
+      computeLocalTime_(conf.getParameter<bool>("computeLocalTime")),
+      usePCACleaning_(conf.getParameter<bool>("usePCACleaning")){};
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::dumpTiles(const TILES &tiles) const {
   constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;

@@ -237,8 +237,13 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     inferenceAlgo_->runInference(*resultTracksters);//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
   }
   
-  assignPCAtoTracksters(
-      *resultTracksters, layerClusters, layerClustersTimes, rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(), true);
+  assignPCAtoTracksters(*resultTracksters,
+                        layerClusters,
+                        layerClustersTimes,
+                        rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
+                        rhtools_,
+                        true);
+
   evt.put(std::move(linkedResultTracksters));
   evt.put(std::move(resultMask));
   evt.put(std::move(resultTracksters));

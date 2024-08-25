@@ -117,10 +117,10 @@ namespace ticl {
 	      for (int i = 0; i < batchSize; i++) {
 	        tracksters[tracksterIndices[i]].setProbabilities(probs); // Update probabilities
 	        probs += tracksters[tracksterIndices[i]].id_probabilities().size(); // Move to next set of probabilities
+	      }
       }
     }
   }
-
   // Method to fill parameter set description for configuration
   void TracksterInferenceByDNN::fillPSetDescription(edm::ParameterSetDescription& iDesc) {
     iDesc.add<int>("algo_verbosity", 0); 

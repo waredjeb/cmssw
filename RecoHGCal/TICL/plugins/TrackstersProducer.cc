@@ -52,6 +52,7 @@ private:
   bool doNose_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
+  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_; // Add this line
 
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
@@ -139,8 +140,6 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   pluginDescPassThrough.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "Passthrough", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByPassthrough", pluginDescPassThrough);
 
-<<<<<<< HEAD
-=======
   // Inference Plugins
   edm::ParameterSetDescription inferenceDesc;
   inferenceDesc.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByDNN", true));
@@ -154,7 +153,6 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   inferenceDescCNNv4.addNode(edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
   
->>>>>>> 04a329f36e6 (add new plugin for v4 onnx model)
   descriptions.add("trackstersProducer", desc);
 }
 
@@ -206,11 +204,6 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     inferenceAlgo_->runInference(*initialResult); 
     myAlgo_->filter(*result, *initialResult, input, seedToTrackstersAssociation);
   }
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 86e9ca4c34c (including the onnx models within ticlv5)
   // Now update the global mask and put it into the event
   output_mask->reserve(original_layerclusters_mask.size());
   // Copy over the previous state
