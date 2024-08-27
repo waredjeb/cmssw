@@ -2,8 +2,8 @@ import FWCore.ParameterSet.Config as cms
 
 hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
     detector = cms.string('HGCAL'),
-    layer_clusters = cms.InputTag("hgcalMergeLayerClusters"),
-    layer_clustersTime = cms.InputTag("hgcalMergeLayerClusters","timeLayerCluster"),
+    layer_clusters = cms.InputTag("hltHgcalMergeLayerClusters"),
+    layer_clustersTime = cms.InputTag("hltHgcalMergeLayerClusters","timeLayerCluster"),
     linkingPSet = cms.PSet(
         algo_verbosity = cms.int32(0),
         cylinder_radius_sqr = cms.vdouble(9, 9),
@@ -35,7 +35,6 @@ hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
     propagator = cms.string('PropagatorWithMaterial'),
     regressionAndPid = cms.bool(True),
     tracksters_collections = cms.VInputTag("hltTiclTrackstersCLUE3DHigh", "hltTiclTrackstersPassthrough")
-    #tracksters_collections = cms.VInputTag("ticlTrackstersCLUE3DHigh", "hltTiclTrackstersPassthrough")
 )
 
 

@@ -84,6 +84,6 @@ hltTiclTrackstersPassthrough = cms.EDProducer("TrackstersProducer",
       type = cms.string('TracksterInferenceByANN')
     
     ),
-    seeding_regions = cms.InputTag("ticlSeedingGlobal"),
-    time_layerclusters = cms.InputTag("hgcalMergeLayerClusters","timeLayerCluster")
+    seeding_regions = cms.InputTag("hltTiclSeedingGlobal"),
+    time_layerclusters = cms.InputTag("hltHgcalMergeLayerClusters","timeLayerCluster")
 )

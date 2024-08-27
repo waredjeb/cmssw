@@ -96,7 +96,7 @@ hltTiclTrackstersCLUE3DHighL1Seeded = cms.EDProducer("TrackstersProducer",
     ),
     computeLocalTime = cms.bool(False),
     doPidCut = cms.bool(True),
-    cutHadProb = cms.double(999),
+    cutHadProb = cms.double(999.),
     type = cms.string('CLUE3D')
     ),
     pluginPatternRecognitionByFastJet = cms.PSet(

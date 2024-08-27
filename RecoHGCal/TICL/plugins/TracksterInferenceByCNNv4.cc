@@ -72,7 +72,7 @@ namespace ticl {
         const reco::CaloCluster& cluster = layerClusters[trackster.vertices(k)];
         int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
         if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
-          int index = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j] * eidNFeatures_;
+	  auto index = (i * eidNLayers_ + j) * eidNFeatures_ * eidNClusters_ + seenClusters[j] * eidNFeatures_;
           input_Data[0][index] = static_cast<float>(cluster.energy() / static_cast<float>(trackster.vertex_multiplicity(k)));
           input_Data[0][index + 1] = static_cast<float>(std::abs(cluster.eta()));
           input_Data[0][index + 2] = static_cast<float>(cluster.phi());
@@ -83,7 +83,6 @@ namespace ticl {
   }
 
   // Method to run inference and update tracksters
-  //void TracksterInferenceByCNNv4::runInference(std::vector<Trackster>& tracksters) {
   void TracksterInferenceByCNNv4::runInference(std::vector<Trackster>& tracksters) {
 
     if (batchSize == 0) return; // Exit if no batch
@@ -94,8 +93,6 @@ namespace ticl {
 
     std::vector<std::vector<float> > outputTensors;
     outputTensors = onnxSession_->run(inputNames, input_Data, input_shapes, outNames, batchSize);
-
-  
     if (doPID_ and doRegression_) {
       // Run energy model inference
       if (!outNames.empty()) {

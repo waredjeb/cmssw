@@ -72,7 +72,7 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
 
   const bool regressionAndPid_;
-  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_; // Add this line
+  std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;
   
   std::vector<edm::EDGetTokenT<std::vector<float>>> original_masks_tokens_;
 
@@ -231,7 +231,6 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   }
 
   if (regressionAndPid_){
-    // energyRegressionAndID(layerClusters, tfSession_, *resultTracksters);
     // Run inference algorithm
     inferenceAlgo_->inputData(layerClusters, *resultTracksters);
     inferenceAlgo_->runInference(*resultTracksters);//option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID" 
@@ -297,7 +296,7 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<bool>("regressionAndPid", false);
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
-  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByCNNv4");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
   descriptions.add("tracksterLinksProducer", desc);
 }
 

@@ -24,7 +24,6 @@ namespace ticl {
     // Initialize ONNX Runtime sessions for PID and Energy models
     static std::unique_ptr<cms::Ort::ONNXRuntime> onnxPIDRuntimeInstance = std::make_unique<cms::Ort::ONNXRuntime>(id_modelPath_.c_str());
     onnxPIDSession_ = onnxPIDRuntimeInstance.get();
-
     static std::unique_ptr<cms::Ort::ONNXRuntime> onnxEnergyRuntimeInstance = std::make_unique<cms::Ort::ONNXRuntime>(en_modelPath_.c_str());
     onnxEnergySession_ = onnxEnergyRuntimeInstance.get();
 
@@ -76,7 +75,7 @@ namespace ticl {
         const reco::CaloCluster& cluster = layerClusters[trackster.vertices(k)];
         int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
         if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
-          int index = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j] * eidNFeatures_;
+	  auto index = (i * eidNLayers_ + j) * eidNFeatures_ * eidNClusters_ + seenClusters[j] * eidNFeatures_;
           input_Data[0][index] = static_cast<float>(cluster.energy() / static_cast<float>(trackster.vertex_multiplicity(k)));
           input_Data[0][index + 1] = static_cast<float>(std::abs(cluster.eta()));
           input_Data[0][index + 2] = static_cast<float>(cluster.phi());
@@ -87,7 +86,6 @@ namespace ticl {
   }
 
   // Method to run inference and update tracksters
-  //void TracksterInferenceByDNN::runInference(std::vector<Trackster>& tracksters) {
   void TracksterInferenceByDNN::runInference(std::vector<Trackster>& tracksters) {
 
     if (batchSize == 0) return; // Exit if no batch
@@ -96,7 +94,6 @@ namespace ticl {
     std::vector<std::string> inputNames = {"input"};
     std::vector<std::string> output_en  = {"enreg_output"};
     std::vector<std::string> output_id  = {"pid_output"};
-    
     if (doPID_ and doRegression_) {
       // Run energy model inference
       auto& energyOutputTensor = onnxEnergySession_->run(inputNames, input_Data, input_shapes, output_en, batchSize)[0];
@@ -132,6 +129,6 @@ namespace ticl {
     iDesc.add<int>("eid_n_layers", 50);
     iDesc.add<int>("eid_n_clusters", 10); 
     iDesc.add<int>("doPID", 1);
-    iDesc.add<int>("doRegression", 0);
+    iDesc.add<int>("doRegression", 1);
   }
 }

@@ -194,7 +194,7 @@ void PatternRecognitionbyCA<TILES>::filter(std::vector<Trackster>& output, const
     return (cumulative_prob <= pid_threshold_) &&
            (t.raw_em_energy() < energy_em_over_total_threshold_ * t.raw_energy());
   };
-  int lcSize = 0;
+
   std::vector<unsigned int> selectedTrackstersIds;
   for (unsigned i = 0; i < inTracksters.size(); ++i) {
     auto& t = inTracksters[i];
