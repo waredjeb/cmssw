@@ -39,29 +39,47 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
       min_trackster_energy = cms.double(10),
       pca_quality_th = cms.double(0.85),
       dot_prod_th = cms.double(0.97),
-      max_distance_projective_sqr = cms.vdouble(
-        30,
-        40
-      ),
+      lower_boundary = cms.vdouble(
+        20, 
+        10 
+      ),  
+      upper_boundary = cms.vdouble(
+        150,  
+        100
+      ),  
+      upper_distance_projective_sqr = cms.vdouble(
+        30, 
+        60  
+      ),  
+      lower_distance_projective_sqr = cms.vdouble(
+        10, 
+        30  
+      ),  
       min_distance_z = cms.vdouble(
-        30,
-        30
-      ),
-      max_distance_projective_sqr_closest_points = cms.vdouble(
-        30,
-        40
-      ),
+        35, 
+        35  
+      ),  
+      upper_distance_projective_sqr_closest_points = cms.vdouble(
+        10, 
+        30  
+      ),  
+      lower_distance_projective_sqr_closest_points = cms.vdouble(
+        15, 
+        50  
+      ),  
       max_z_distance_closest_points = cms.vdouble(
         35,
         35
       ),
       cylinder_radius_sqr = cms.vdouble(
-        6,
-        9
-      ),
+        9, 
+        15  
+      ),  
       algo_verbosity = cms.int32(0),
       type = cms.string('Skeletons')
-    ),
+    
+    ),  
+
     regressionAndPid = cms.bool(True)
 )
 ticlCandidate = _ticlCandidateProducer.clone()
