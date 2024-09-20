@@ -733,6 +733,8 @@ private:
   std::vector<float> track_hgcal_phi;
   std::vector<float> track_hgcal_pt;
   std::vector<float> track_pt;
+  std::vector<float> track_ptErr;
+
   std::vector<int> track_quality;
   std::vector<int> track_missing_outer_hits;
   std::vector<int> track_missing_inner_hits;
@@ -838,6 +840,8 @@ void TICLDumper::clearVariables() {
   track_hgcal_pt.clear();
   track_quality.clear();
   track_pt.clear();
+  track_ptErr.clear();
+
   track_missing_outer_hits.clear();
   track_missing_inner_hits.clear();
   track_charge.clear();
@@ -1032,6 +1036,8 @@ void TICLDumper::beginJob() {
     tracks_tree_->Branch("track_hgcal_phi", &track_hgcal_phi);
     tracks_tree_->Branch("track_hgcal_pt", &track_hgcal_pt);
     tracks_tree_->Branch("track_pt", &track_pt);
+    tracks_tree_->Branch("track_ptErr", &track_ptErr);
+
     tracks_tree_->Branch("track_missing_outer_hits", &track_missing_outer_hits);
     tracks_tree_->Branch("track_missing_inner_hits", &track_missing_inner_hits);
     tracks_tree_->Branch("track_quality", &track_quality);
@@ -1339,6 +1345,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       track_hgcal_pz.push_back(globalMom.z());
       track_hgcal_pt.push_back(globalMom.perp());
       track_pt.push_back(track.pt());
+      track_ptErr.push_back(track.ptError());
       track_quality.push_back(track.quality(reco::TrackBase::highPurity));
       track_missing_outer_hits.push_back(track.missingOuterHits());
       track_missing_inner_hits.push_back(track.missingInnerHits());

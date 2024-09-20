@@ -36,7 +36,7 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
       track_time_quality_threshold = cms.double(0.5),
       wind = cms.double(0.072),
       min_num_lcs = cms.uint32(15),
-      min_trackster_energy = cms.double(10),
+      min_trackster_energy = cms.double(20),
       pca_quality_th = cms.double(0.85),
       dot_prod_th = cms.double(0.97),
       lower_boundary = cms.vdouble(
@@ -47,24 +47,24 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         150,  
         100
       ),  
+      lower_distance_projective_sqr = cms.vdouble(
+        5, 
+        30  
+      ),  
       upper_distance_projective_sqr = cms.vdouble(
         30, 
         60  
-      ),  
-      lower_distance_projective_sqr = cms.vdouble(
-        10, 
-        30  
       ),  
       min_distance_z = cms.vdouble(
         35, 
         35  
       ),  
-      upper_distance_projective_sqr_closest_points = cms.vdouble(
-        10, 
+      lower_distance_projective_sqr_closest_points = cms.vdouble(
+        5, 
         30  
       ),  
-      lower_distance_projective_sqr_closest_points = cms.vdouble(
-        15, 
+      upper_distance_projective_sqr_closest_points = cms.vdouble(
+        10, 
         50  
       ),  
       max_z_distance_closest_points = cms.vdouble(

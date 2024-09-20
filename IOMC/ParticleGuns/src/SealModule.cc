@@ -6,6 +6,7 @@
 
 #include "IOMC/ParticleGuns/interface/BeamMomentumGunProducer.h"
 #include "IOMC/ParticleGuns/interface/CloseByParticleGunProducer.h"
+#include "IOMC/ParticleGuns/interface/MultiCloseByParticleGunProducer.h"
 #include "IOMC/ParticleGuns/interface/ExpoRandomPtGunProducer.h"
 #include "IOMC/ParticleGuns/interface/ExpoRandomPGunProducer.h"
 #include "IOMC/ParticleGuns/interface/FlatRandomEGunProducer.h"
@@ -61,3 +62,6 @@ using edm::RandomMultiParticlePGunProducer;
 DEFINE_FWK_MODULE(RandomMultiParticlePGunProducer);
 using edm::RandomXiThetaGunProducer;
 DEFINE_FWK_MODULE(RandomXiThetaGunProducer);
+using edm::MultiCloseByParticleGunProducer;
+DEFINE_FWK_MODULE(MultiCloseByParticleGunProducer);
+
