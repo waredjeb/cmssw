@@ -53,14 +53,14 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
       ),  
       lower_distance_projective_sqr = cms.vdouble(
         30, 
-        30  
+        60  
       ),  
       min_distance_z = cms.vdouble(
         35, 
         35  
       ),  
       upper_distance_projective_sqr_closest_points = cms.vdouble(
-        10, 
+        5, 
         30  
       ),  
       lower_distance_projective_sqr_closest_points = cms.vdouble(
