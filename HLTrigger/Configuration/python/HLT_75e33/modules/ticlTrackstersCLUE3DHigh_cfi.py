@@ -1,14 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
-ticlTrackstersCLUE3DHigh = cms.EDProducer("TrackstersProducer",
+ticlTrackstersCLUE3DHigh= cms.EDProducer("TrackstersProducer",
     detector = cms.string('HGCAL'),
-    filtered_mask = cms.InputTag("filteredLayerClustersCLUE3DHigh","CLUE3DHigh"),
+    filtered_mask = cms.InputTag("filteredLayerClustersCLUE3DHighL1Seeded","CLUE3DHigh"),
     itername = cms.string('CLUE3DHigh'),
-    layer_clusters = cms.InputTag("hgcalMergeLayerClusters"),
+    layer_clusters = cms.InputTag("hgcalMergeLayerClustersL1Seeded"),
     layer_clusters_hfnose_tiles = cms.InputTag("ticlLayerTileHFNose"),
-    layer_clusters_tiles = cms.InputTag("ticlLayerTileProducer"),
+    layer_clusters_tiles = cms.InputTag("ticlLayerTileProducerL1Seeded"),
     mightGet = cms.optional.untracked.vstring,
-    original_mask = cms.InputTag("hgcalMergeLayerClusters","InitialLayerClustersMask"),
+    original_mask = cms.InputTag("hgcalMergeLayerClustersL1Seeded","InitialLayerClustersMask"),
     patternRecognitionBy = cms.string('CLUE3D'),
     inferenceAlgo = cms.string('TracksterInferenceByCNNv4'),
     pluginPatternRecognitionByCA = cms.PSet(
@@ -99,6 +99,7 @@ ticlTrackstersCLUE3DHigh = cms.EDProducer("TrackstersProducer",
     doPidCut = cms.bool(True),
     cutHadProb = cms.double(999.),
     type = cms.string('CLUE3D')
+  
     ),
     pluginPatternRecognitionByFastJet = cms.PSet(
         algo_verbosity = cms.int32(0),
@@ -131,15 +132,15 @@ ticlTrackstersCLUE3DHigh = cms.EDProducer("TrackstersProducer",
         doRegression = cms.int32(0),
         type = cms.string('TracksterInferenceByDNN')
     ),
-     pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
-      algo_verbosity = cms.int32(0),
-      type = cms.string('TracksterInferenceByANN')
-    
-    ),
-    seeding_regions = cms.InputTag("hltTiclSeedingL1"),
-    time_layerclusters = cms.InputTag("hltHgcalMergeLayerClustersL1Seeded","timeLayerCluster"),
-)
+    pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
+        algo_verbosity = cms.int32(0),
+        type = cms.string('TracksterInferenceByANN')
 
+    ),
+    seeding_regions = cms.InputTag("ticlSeedingGlobal"),
+    time_layerclusters = cms.InputTag("hgcalMergeLayerClusters","timeLayerCluster")
+    )
+    
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
-ticl_v5.toModify(hltTiclTrackstersCLUE3DHighL1Seeded.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True), doPidCut = cms.bool(False))
-ticl_v5.toModify(hltTiclTrackstersCLUE3DHighL1Seeded.inferenceAlgo, type = cms.string('TracksterInferenceByDNN'))
+ticl_v5.toModify(ticlTrackstersCLUE3DHigh.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True), doPidCut = cms.bool(False))
+ticl_v5.toModify(ticlTrackstersCLUE3DHigh.inferenceAlgo, type = cms.string('TracksterInferenceByDNN'))

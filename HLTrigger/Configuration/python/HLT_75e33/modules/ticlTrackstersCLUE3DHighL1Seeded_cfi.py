@@ -99,7 +99,6 @@ ticlTrackstersCLUE3DHighL1Seeded = cms.EDProducer("TrackstersProducer",
     doPidCut = cms.bool(True),
     cutHadProb = cms.double(999.),
     type = cms.string('CLUE3D')
-  
     ),
     pluginPatternRecognitionByFastJet = cms.PSet(
         algo_verbosity = cms.int32(0),
@@ -132,15 +131,15 @@ ticlTrackstersCLUE3DHighL1Seeded = cms.EDProducer("TrackstersProducer",
         doRegression = cms.int32(0),
         type = cms.string('TracksterInferenceByDNN')
     ),
-    pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
-        algo_verbosity = cms.int32(0),
-        type = cms.string('TracksterInferenceByANN')
-
-    ),
-    seeding_regions = cms.InputTag("hltTiclSeedingGlobal"),
-    time_layerclusters = cms.InputTag("hltHgcalMergeLayerClusters","timeLayerCluster")
-    )
+     pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
+      algo_verbosity = cms.int32(0),
+      type = cms.string('TracksterInferenceByANN')
     
+    ),
+    seeding_regions = cms.InputTag("ticlSeedingL1"),
+    time_layerclusters = cms.InputTag("hgcalMergeLayerClustersL1Seeded","timeLayerCluster"),
+)
+
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
-ticl_v5.toModify(hltTiclTrackstersCLUE3DHigh.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True), doPidCut = cms.bool(False))
-ticl_v5.toModify(hltTiclTrackstersCLUE3DHigh.inferenceAlgo, type = cms.string('TracksterInferenceByDNN'))
+ticl_v5.toModify(ticlTrackstersCLUE3DHighL1Seeded.pluginPatternRecognitionByCLUE3D, computeLocalTime = cms.bool(True), doPidCut = cms.bool(False))
+ticl_v5.toModify(ticlTrackstersCLUE3DHighL1Seeded.inferenceAlgo, type = cms.string('TracksterInferenceByDNN'))

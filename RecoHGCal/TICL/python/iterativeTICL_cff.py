@@ -32,6 +32,20 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         'ticlTrackstersCLUE3DHigh',
         'ticlTrackstersPassthrough'
     ),
+    pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
+        algo_verbosity = cms.int32(0),
+        doPID = cms.int32(1),
+        doRegression = cms.int32(1),
+        eid_min_cluster_energy = cms.double(1),
+        eid_n_clusters = cms.int32(10),
+        eid_n_layers = cms.int32(50),
+        inputNames = cms.vstring('input'),
+        onnxEnergyModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/linking/energy_v0.onnx'),
+        onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/linking/id_v0.onnx'),
+        output_en = cms.vstring('enreg_output'),
+        output_id = cms.vstring('pid_output'),
+        type = cms.string('TracksterInferenceByDNN')
+    ),
     linkingPSet = cms.PSet(
       track_time_quality_threshold = cms.double(0.5),
       wind = cms.double(0.072),
@@ -47,11 +61,11 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         150,  
         100
       ),  
-      lower_distance_projective_sqr = cms.vdouble(
-        5, 
-        30  
-      ),  
       upper_distance_projective_sqr = cms.vdouble(
+        30, 
+        60  
+      ),  
+      lower_distance_projective_sqr = cms.vdouble(
         30, 
         60  
       ),  
@@ -59,11 +73,11 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         35, 
         35  
       ),  
-      lower_distance_projective_sqr_closest_points = cms.vdouble(
+      upper_distance_projective_sqr_closest_points = cms.vdouble(
         5, 
         30  
       ),  
-      upper_distance_projective_sqr_closest_points = cms.vdouble(
+      lower_distance_projective_sqr_closest_points = cms.vdouble(
         10, 
         50  
       ),  
@@ -82,7 +96,6 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
 
     regressionAndPid = cms.bool(True)
 )
-
 ticlCandidate = _ticlCandidateProducer.clone()
 mtdSoA = _mtdSoAProducer.clone()
 
