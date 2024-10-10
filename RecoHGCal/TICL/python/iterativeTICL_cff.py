@@ -78,6 +78,7 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         9, 
         15  
       ),  
+      deltaRxy = cms.double(4.),
       algo_verbosity = cms.int32(0),
       type = cms.string('Skeletons')
     

@@ -12,6 +12,7 @@ hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
       min_trackster_energy = cms.double(20),
       pca_quality_th = cms.double(0.85),
       dot_prod_th = cms.double(0.97),
+      deltaRxy = cms.double(4),
       lower_boundary = cms.vdouble(
         20,
         10

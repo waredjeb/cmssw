@@ -45,6 +45,18 @@ namespace ticl {
                        const std::array<ticl::Vector, 3>& mySkeleton,
                        const std::array<ticl::Vector, 3>& otherSkeleton);
 
+    bool checkCylinderAlignment(const std::array<ticl::Vector, 3> &mySkeleton,
+                                                            const std::array<ticl::Vector, 3> &otherSkeleton,
+                                                            int isEE);
+    bool checkSkeletonAlignment(const ticl::Trackster &myTrackster,
+                              const ticl::Trackster &otherTrackster);
+
+    bool checkClosestPoints(const ticl::Trackster &myTrackster,
+                                                        const ticl::Trackster &otherTrackster,
+                                                        const std::array<ticl::Vector, 3> &mySkeleton,
+                                                        const std::array<ticl::Vector, 3> &otherSkeleton,
+                                                        int isEE);
+
     void initialize(const HGCalDDDConstants* hgcons,
                     const hgcal::RecHitTools rhtools,
                     const edm::ESHandle<MagneticField> bfieldH,
@@ -57,6 +69,7 @@ namespace ticl {
       iDesc.add<double>("min_trackster_energy", 10.);
       iDesc.add<double>("pca_quality_th", 0.85);
       iDesc.add<double>("dot_prod_th", 0.97);
+      iDesc.add<double>("deltaRxy", 4.f);
       iDesc.add<std::vector<double>>("lower_boundary", {10., 150.});
       iDesc.add<std::vector<double>>("upper_boundary", {3, 70.});
       iDesc.add<std::vector<double>>("upper_distance_projective_sqr", {40., 60.});
@@ -66,6 +79,7 @@ namespace ticl {
       iDesc.add<std::vector<double>>("lower_distance_projective_sqr_closest_points", {10., 30.});
       iDesc.add<std::vector<double>>("max_z_distance_closest_points", {35., 35.});
       iDesc.add<std::vector<double>>("cylinder_radius_sqr", {10, 20});
+      
       TracksterLinkingAlgoBase::fillPSetDescription(iDesc);
     }
 
@@ -75,22 +89,26 @@ namespace ticl {
     void buildLayers();
 
     void dumpLinksFound(std::vector<std::vector<unsigned>>& resultCollection, const char* label) const;
-
-    float timing_quality_threshold_;
-    float del_;
-    unsigned int min_num_lcs_;
-    float min_trackster_energy_;
-    float pca_quality_th_;
-    float dot_prod_th_;
+    
+    static constexpr float z_surface = 400.f;
     std::vector<double> lower_boundary_;
     std::vector<double> upper_boundary_;
     std::vector<double> upper_distance_projective_sqr_;
     std::vector<double> lower_distance_projective_sqr_;
     std::vector<double> min_distance_z_;
     std::vector<double> upper_distance_projective_sqr_closest_points_;
-    std::vector<double> lower_distance_projective_sqr_closest_points_;  
+    std::vector<double> lower_distance_projective_sqr_closest_points_;
     std::vector<double> max_z_distance_closest_points_;
     std::vector<double> cylinder_radius_sqr_;
+
+    float timing_quality_threshold_;
+    float del_;
+    float min_trackster_energy_;
+    float pca_quality_th_;
+    float dot_prod_th_;
+    float deltaRxy_;
+    unsigned int min_num_lcs_;
+    
 
     const HGCalDDDConstants* hgcons_;
 
@@ -101,6 +119,7 @@ namespace ticl {
 
     edm::ESHandle<MagneticField> bfield_;
     edm::ESHandle<Propagator> propagator_;
+    std::array<float, TileConstants::nEtaBins> eta_windows_;
   };
 
 }  // namespace ticl
