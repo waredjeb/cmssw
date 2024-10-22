@@ -2,6 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 from RecoHGCal.TICL.FastJetStep_cff import *
 from RecoHGCal.TICL.CLUE3DHighStep_cff import *
+from RecoHGCal.TICL.CluesteringHighStep_cff import *
 from RecoHGCal.TICL.MIPStep_cff import *
 from RecoHGCal.TICL.TrkEMStep_cff import *
 from RecoHGCal.TICL.TrkStep_cff import *
@@ -29,8 +30,9 @@ ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
 ticlTracksterLinks = _tracksterLinksProducer.clone(
     tracksters_collections = cms.VInputTag(
-        'ticlTrackstersCLUE3DHigh',
-        'ticlTrackstersPassthrough'
+        #'ticlTrackstersCLUE3DHigh',
+        'ticlTrackstersCluesteringHigh'
+        #'ticlTrackstersPassthrough'
     ),
     regressionAndPid = cms.bool(True)
 )
@@ -43,6 +45,7 @@ ticl_v5.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTIC
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(
+    ticlCluesteringHighStepTask,
     ticlCLUE3DHighStepTask
 )
 
@@ -59,7 +62,7 @@ ticl_v5.toReplaceWith(ticlIterationsTask, ticlIterationsTask.copyAndExclude([tic
 from Configuration.ProcessModifiers.fastJetTICL_cff import fastJetTICL
 fastJetTICL.toModify(ticlIterationsTask, func=lambda x : x.add(ticlFastJetStepTask))
 
-ticlIterLabels = ["CLUE3DHigh"]
+ticlIterLabels = ["CluesteringHigh","CLUE3DHigh"]
 ''' For future separate iterations
 "CLUE3DEM", "CLUE3DHAD",
 '''

@@ -10,14 +10,14 @@ filteredLayerClustersPassthrough = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterBySize",
     min_cluster_size = 2, # inclusive
     iteration_label = "Passthrough",
-    LayerClustersInputMask = 'ticlTrackstersCLUE3DHigh',
+    LayerClustersInputMask = 'ticlTrackstersCluesteringHigh',
 )
 
 # PATTERN RECOGNITION
 
 ticlTrackstersPassthrough = _trackstersProducer.clone(
     filtered_mask = "filteredLayerClustersPassthrough:Passthrough",
-    original_mask = 'ticlTrackstersCLUE3DHigh',
+    original_mask = 'ticlTrackstersCluesteringHigh',
     seeding_regions = "ticlSeedingGlobal",
     itername = "PassThrough",
     patternRecognitionBy = "Passthrough",

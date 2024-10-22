@@ -38,7 +38,14 @@ def customiseTICLv5FromReco(process, enableDumper = False):
     process.tracksterSimTracksterAssociationPRbyCLUE3DHigh = _tracksterSimTracksterAssociationPRbyCLUE3D.clone(
         label_tst = cms.InputTag("ticlTrackstersCLUE3DHigh")
         )
-
+    '''
+    process.tracksterSimTracksterAssociationLinkingbyCluesteringHigh = _tracksterSimTracksterAssociationLinkingbyCluestering.clone(
+        label_tst = cms.InputTag("ticlTrackstersCluesteringHigh")
+        )
+    process.tracksterSimTracksterAssociationPRbyCluesteringHigh = _tracksterSimTracksterAssociationPRbyCluestering.clone(
+        label_tst = cms.InputTag("ticlTrackstersCluesteringHigh")
+        )
+    '''    
     '''for future CLUE3D separate iterations, merge collections and compute scores
     process.tracksterSimTracksterAssociationLinkingbyCLUE3DEM = _tracksterSimTracksterAssociationLinkingbyCLUE3D.clone(
         label_tst = cms.InputTag("ticlTrackstersCLUE3DEM")
