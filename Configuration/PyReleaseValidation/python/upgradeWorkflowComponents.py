@@ -816,6 +816,37 @@ upgradeWFs['ticl_v5_superclustering_mustache_pf'] = UpgradeWorkflow_ticl_v5_supe
 upgradeWFs['ticl_v5_superclustering_mustache_pf'].step3 = {'--procModifiers': 'ticl_v5,ticl_superclustering_mustache_pf'}
 upgradeWFs['ticl_v5_superclustering_mustache_pf'].step4 = {'--procModifiers': 'ticl_v5,ticl_superclustering_mustache_pf'}
 
+class UpgradeWorkflow_CPfromPU(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        if ('Digi' in step and 'NoHLT' not in step) or ('HLTOnly' in step):
+            stepDict[stepName][k] = merge([self.step2, stepDict[step][k]])
+        if 'RecoGlobal' in step:
+            stepDict[stepName][k] = merge([self.step3, stepDict[step][k]])
+        if 'HARVESTGlobal' in step:
+            stepDict[stepName][k] = merge([self.step4, stepDict[step][k]])
+    def condition(self, fragment, stepList, key, hasHarvest):
+        return (fragment=="TTbar_14TeV" or 'CloseByP' in fragment or 'Eta1p7_2p7' in fragment) and '2026' in key
+
+upgradeWFs['CPfromPU'] = UpgradeWorkflow_CPfromPU(
+    steps = [
+        'HLTOnly',
+        'DigiTrigger',
+        'RecoGlobal',
+        'HARVESTGlobal'
+    ],
+    PU = [
+        'HLTOnly',
+        'DigiTrigger',
+        'RecoGlobal',
+        'HARVESTGlobal'
+    ],
+    suffix = '_withCPfromPU',
+    offset = 0.206,
+)
+upgradeWFs['CPfromPU'].step2 = {'--procModifiers': 'enableCPfromPU'}
+upgradeWFs['CPfromPU'].step3 = {'--procModifiers': 'enableCPfromPU'}
+upgradeWFs['CPfromPU'].step4 = {'--procModifiers': 'enableCPfromPU'}
+
 # Track DNN workflows
 class UpgradeWorkflow_trackdnn(UpgradeWorkflow):
     def setup_(self, step, stepName, stepDict, k, properties):
@@ -1190,7 +1221,7 @@ upgradeWFs['PatatrackPixelOnlyTripletsGPUProfiling'] = PatatrackWorkflow(
         '--customise': 'RecoTracker/Configuration/customizePixelTracksForTriplets.customizePixelTracksForTriplets,RecoTracker/Configuration/customizePixelOnlyForProfiling.customizePixelOnlyForProfilingGPUOnly'
     },
     harvest = None,
-    suffix = 'Patatrack_PixelOnlyTripletsGPU_Profiling',    
+    suffix = 'Patatrack_PixelOnlyTripletsGPU_Profiling',
     offset = 0.508,
 )
 
@@ -1201,7 +1232,7 @@ upgradeWFs['PatatrackPixelOnlyTripletsGPUProfiling'] = PatatrackWorkflow(
 upgradeWFs['PatatrackECALOnlyAlpaka'] = PatatrackWorkflow(
     digi = {
         # customize the ECAL Local Reco part of the HLT menu for Alpaka
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1377,7 +1408,7 @@ upgradeWFs['PatatrackHCALOnlyGPUProfiling'] = PatatrackWorkflow(
 # - HCAL-only reconstruction using Alpaka with DQM and Validation
 upgradeWFs['PatatrackHCALOnlyAlpakaValidation'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1397,7 +1428,7 @@ upgradeWFs['PatatrackHCALOnlyAlpakaValidation'] = PatatrackWorkflow(
 # - HCAL-only reconstruction using GPU and Alpaka with DQM and Validation for PF Alpaka vs CPU comparisons
 upgradeWFs['PatatrackHCALOnlyGPUandAlpakaValidation'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1417,7 +1448,7 @@ upgradeWFs['PatatrackHCALOnlyGPUandAlpakaValidation'] = PatatrackWorkflow(
 # - HCAL-only reconstruction using Alpaka
 upgradeWFs['PatatrackHCALOnlyAlpakaProfiling'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
     },
     reco = {
         '-s': 'RAW2DIGI:RawToDigi_hcalOnly,RECO:reconstruction_hcalOnly',
@@ -1434,7 +1465,7 @@ upgradeWFs['PatatrackHCALOnlyAlpakaProfiling'] = PatatrackWorkflow(
 #  - harvesting
 upgradeWFs['PatatrackFullRecoAlpaka'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1456,7 +1487,7 @@ upgradeWFs['PatatrackFullRecoAlpaka'] = PatatrackWorkflow(
 #  - harvesting
 upgradeWFs['PatatrackFullRecoAlpaka'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1778,7 +1809,7 @@ upgradeWFs['PatatrackFullRecoTripletsGPUValidation'] = PatatrackWorkflow(
 
 upgradeWFs['PatatrackPixelOnlyAlpaka'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1795,7 +1826,7 @@ upgradeWFs['PatatrackPixelOnlyAlpaka'] = PatatrackWorkflow(
 
 upgradeWFs['PatatrackPixelOnlyAlpakaValidation'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
     reco = {
@@ -1813,7 +1844,7 @@ upgradeWFs['PatatrackPixelOnlyAlpakaValidation'] = PatatrackWorkflow(
 
 upgradeWFs['PatatrackPixelOnlyAlpakaProfiling'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpaka', 
+        '--procModifiers': 'alpaka',
     },
     reco = {
         '-s': 'RAW2DIGI:RawToDigi_pixelOnly,RECO:reconstruction_pixelTrackingOnly',
@@ -1843,7 +1874,7 @@ upgradeWFs['PatatrackPixelOnlyTripletsAlpaka'] = PatatrackWorkflow(
 )
 
 upgradeWFs['PatatrackPixelOnlyTripletsAlpakaValidation'] = PatatrackWorkflow(
-    digi = { 
+    digi = {
         '--procModifiers': 'alpaka',
         '--customise' : 'HeterogeneousCore/AlpakaServices/customiseAlpakaServiceMemoryFilling.customiseAlpakaServiceMemoryFilling',
     },
@@ -1860,7 +1891,7 @@ upgradeWFs['PatatrackPixelOnlyTripletsAlpakaValidation'] = PatatrackWorkflow(
 )
 
 upgradeWFs['PatatrackPixelOnlyTripletsAlpakaProfiling'] = PatatrackWorkflow(
-    digi = { 
+    digi = {
         '--procModifiers': 'alpaka',
     },
     reco = {
