@@ -35,6 +35,21 @@
 <use name="TrackingTools/Records"/>
 <use name="TrackingTools/TrajectoryState"/>
 <use name="fastjet"/>
+<use name="HeterogeneousCore/AlpakaCore"/>
+<use name="HeterogeneousCore/AlpakaTest"/>
+<use name="HeterogeneousCore/AlpakaInterface"/>
 <library file="*.cc" name="RecoHGCalTICLPlugins">
   <flags EDM_PLUGIN="1"/>
+</library>
+
+<!-- alpaka-based portable plugins -->
+<library file="alpaka/*.cc" name="AlpakaCLUEstering">
+  <use name="alpaka"/>
+  <use name="RecoHGCal/TICL"/>
+  <use name="FWCore/Framework"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <flags ALPAKA_BACKENDS="serial"/>
 </library>

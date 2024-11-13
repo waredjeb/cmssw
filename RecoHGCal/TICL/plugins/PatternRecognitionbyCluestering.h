@@ -99,6 +99,12 @@ namespace ticl {
         c.shrink_to_fit();
       }
     }
+
+    void filter(std::vector<Trackster>& output,
+            const std::vector<Trackster>& inTracksters,
+            const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
+            std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) override;
+
     void calculateLocalDensity(const TILES&, const int layerId, const std::vector<std::pair<int, int>>&);
     void calculateDistanceToHigher(const TILES&, const int layerId, const std::vector<std::pair<int, int>>&);
     int findAndAssignTracksters(const TILES&, const std::vector<std::pair<int, int>>&);

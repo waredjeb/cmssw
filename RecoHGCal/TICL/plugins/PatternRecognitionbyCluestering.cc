@@ -155,6 +155,12 @@ void PatternRecognitionbyCluestering<TILES>::dumpClusters(const TILES &tiles,
 }
 
 template <typename TILES>
+void PatternRecognitionbyCluestering<TILES>::filter(std::vector<Trackster>& output,
+        const std::vector<Trackster>& inTracksters,
+        const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
+        std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) {};
+
+template <typename TILES>
 void PatternRecognitionbyCluestering<TILES>::makeTracksters(
     const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
     std::vector<Trackster> &result,
@@ -337,7 +343,7 @@ void PatternRecognitionbyCluestering<TILES>::makeTracksters(
                               }),
                result.end());
   if (doPidCut_) {
-    energyRegressionAndID(input.layerClusters, input.tfSession, result);
+    // energyRegressionAndID(input.layerClusters, input.tfSession, result);
     result.erase(std::remove_if(std::begin(result),
                                 std::end(result),
                                 [&](auto const &v) {
