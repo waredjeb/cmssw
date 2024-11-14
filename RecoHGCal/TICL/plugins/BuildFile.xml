@@ -45,7 +45,6 @@
 <!-- alpaka-based portable plugins -->
 <library file="alpaka/*.cc" name="AlpakaCLUEstering">
   <use name="alpaka"/>
-  <use name="RecoHGCal/TICL"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/ParameterSet"/>
   <use name="FWCore/Utilities"/>

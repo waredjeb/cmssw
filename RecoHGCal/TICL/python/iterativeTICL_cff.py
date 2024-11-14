@@ -44,9 +44,12 @@ ticl_v5.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTIC
 
 ticlPFTask = cms.Task(pfTICL)
 
+ticlCluesteringAlpaka = cms.EDProducer("alpaka_serial_sync::TrackstersProducerAlpaka")
+ticlCluesteringAlpakaTask = cms.Task(ticlCluesteringAlpaka) 
 ticlIterationsTask = cms.Task(
     ticlCluesteringHighStepTask,
-    ticlCLUE3DHighStepTask
+    ticlCLUE3DHighStepTask,
+    ticlCluesteringAlpakaTask 
 )
 
 ticl_v5.toModify(ticlIterationsTask , func=lambda x : x.add(ticlPassthroughStepTask))

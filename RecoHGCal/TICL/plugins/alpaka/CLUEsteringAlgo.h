@@ -1,5 +1,7 @@
 #ifndef __RecoHGCal_TICL_CLUEsteringAlgo_H__
 #define __RecoHGCal_TICL_CLUEsteringAlgo_H__
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
