@@ -154,11 +154,11 @@ void PatternRecognitionbyCluestering<TILES>::dumpClusters(const TILES &tiles,
   }
 }
 
-template <typename TILES>
-void PatternRecognitionbyCluestering<TILES>::filter(std::vector<Trackster>& output,
-        const std::vector<Trackster>& inTracksters,
-        const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
-        std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) {};
+//template <typename TILES>
+//void PatternRecognitionbyCluestering<TILES>::filter(std::vector<Trackster>& output,
+//        const std::vector<Trackster>& inTracksters,
+//        const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
+//        std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) {};
 
 template <typename TILES>
 void PatternRecognitionbyCluestering<TILES>::makeTracksters(
