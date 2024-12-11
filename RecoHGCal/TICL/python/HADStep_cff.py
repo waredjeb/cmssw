@@ -11,14 +11,12 @@ filteredLayerClustersHAD = _filteredLayerClustersProducer.clone(
     clusterFilter = "ClusterFilterByAlgoAndSize",
     min_cluster_size = 3, # inclusive
     iteration_label = "HAD",
-    LayerClustersInputMask = "ticlTrackstersTrk"
 )
 
 # CA - PATTERN RECOGNITION
 
 ticlTrackstersHAD = _trackstersProducer.clone(
     filtered_mask = "filteredLayerClustersHAD:HAD",
-    original_mask = 'ticlTrackstersTrk',
     seeding_regions = "ticlSeedingGlobal",
     # For the moment we mask everything w/o requirements since we are last
 #    filter_on_categories = [5], # filter neutral hadrons
@@ -45,7 +43,7 @@ ticlHADStepTask = cms.Task(ticlSeedingGlobal
 filteredLayerClustersHFNoseHAD = filteredLayerClustersHAD.clone(
     min_cluster_size = 2, # inclusive
     algo_number = [9], # reco::CaloCluster::hfnose
-    iteration_label = "HADn",
+    iteration_label = "HAD",
     LayerClusters = 'hgcalLayerClustersHFNose',
     LayerClustersInputMask = "ticlTrackstersHFNoseTrk"
 )
@@ -68,7 +66,7 @@ ticlTrackstersHFNoseHAD = ticlTrackstersHAD.clone(
        min_cos_pointing = 0.866, # ~30 degrees
        max_delta_time = -1
     ),
-    itername = "HADn"
+    itername = "HAD"
     )
 
 ticl_v5.toModify(ticlTrackstersHFNoseHAD.pluginPatternRecognitionByCA, computeLocalTime = cms.bool(True))

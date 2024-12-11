@@ -11,6 +11,8 @@ from RecoParticleFlow.PFClusterProducer.particleFlowRecHitHGC_cfi import *
 from RecoParticleFlow.PFClusterProducer.particleFlowClusterHGC_cfi import *
 from RecoLocalCalo.HGCalRecProducers.hgcalMultiClusters_cfi import *
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersHFNose, hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci, hgcalMergeLayerClusters
+from Configuration.ProcessModifiers.ticl_v3_cff import ticl_v3
+ticl_v3.toModify(particleFlowClusterHGCal.initialClusteringStep, tracksterSrc = cms.InputTag("ticlTrackstersMergeV3"))
 
 hgcalLocalRecoTask = cms.Task( HGCalUncalibRecHit,
                                        HGCalRecHit,

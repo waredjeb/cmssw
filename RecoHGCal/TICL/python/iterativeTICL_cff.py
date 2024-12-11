@@ -14,6 +14,7 @@ from RecoHGCal.TICL.PRbyRecovery_cff import *
 from RecoHGCal.TICL.ticlLayerTileProducer_cfi import ticlLayerTileProducer
 from RecoHGCal.TICL.pfTICLProducer_cfi import pfTICLProducer as _pfTICLProducer
 from RecoHGCal.TICL.trackstersMergeProducer_cfi import trackstersMergeProducer as _trackstersMergeProducer
+from RecoHGCal.TICL.trackstersMergeProducerV3_cfi import trackstersMergeProducerV3 as _trackstersMergeProducerV3
 from RecoHGCal.TICL.tracksterSelectionTf_cfi import *
 
 from RecoHGCal.TICL.tracksterLinksProducer_cfi import tracksterLinksProducer as _tracksterLinksProducer
@@ -23,6 +24,7 @@ from RecoHGCal.TICL.ticlCandidateProducer_cfi import ticlCandidateProducer as _t
 from RecoHGCal.TICL.mtdSoAProducer_cfi import mtdSoAProducer as _mtdSoAProducer
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
+from Configuration.ProcessModifiers.ticl_v3_cff import ticl_v3
 from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_superclustering_dnn
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
@@ -30,6 +32,7 @@ from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff impor
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
+ticlTrackstersMergeV3 = _trackstersMergeProducerV3.clone()
 ticlTracksterLinks = _tracksterLinksProducer.clone(
     tracksters_collections = cms.VInputTag(
         'ticlTrackstersCLUE3DHigh',
@@ -106,12 +109,22 @@ mtdSoA = _mtdSoAProducer.clone()
 
 pfTICL = _pfTICLProducer.clone()
 ticl_v5.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTICLv5 = cms.bool(True), useTimingAverage=True)
+ticl_v3.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlTrackstersMergeV3')) 
 
 ticlPFTask = cms.Task(pfTICL)
 
 ticlIterationsTask = cms.Task(
     ticlCLUE3DHighStepTask
 )
+
+from Configuration.ProcessModifiers.ticl_v3_cff import ticl_v3
+ticl_v3.toReplaceWith(ticlIterationsTask, ticlIterationsTask.copyAndExclude([ticlCLUE3DHighStepTask]))
+ticl_v3.toModify(ticlIterationsTask, func=lambda x : x.add( ticlTrkEMStepTask
+    ,ticlEMStepTask
+    ,ticlTrkStepTask
+    ,ticlHADStepTask) )
+ticlIterLabels = [_step.itername.value() for _iteration in ticlIterationsTask for _step in _iteration if (_step._TypedParameterizable__type == "TrackstersProducer")]
+TracksterMergeTaskV3 = cms.Task(ticlTrackstersMergeV3)
 
 ticl_v5.toModify(ticlIterationsTask , func=lambda x : x.add(ticlRecoveryStepTask))
 ''' For future separate iterations
@@ -128,6 +141,7 @@ fastJetTICL.toModify(ticlIterationsTask, func=lambda x : x.add(ticlFastJetStepTa
 
 ticlIterLabels = ["ticlTrackstersCLUE3DHigh", "ticlTrackstersMerge"]
 ticlIterLabels_v5 = ["ticlTrackstersCLUE3DHigh", "ticlTracksterLinks", "ticlCandidate"]
+ticlIterLabels_v3 = ["ticlTrackstersEM", "ticlTrackstersHAD", "ticlTrackstersTrk", "ticlTrackstersTrkEM", "ticlTrackstersMergeV3"] 
 
 ''' For future separate iterations
 "CLUE3DEM", "CLUE3DHAD",
@@ -142,6 +156,10 @@ mergeTICLTask = cms.Task(ticlLayerTileTask
     ,ticlTracksterMergeTask
 )
 
+ticlTracksterMergeTaskV3 = cms.Task(ticlTrackstersMergeV3)
+ticl_v3.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
+ticl_v3.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterMergeTaskV3))
+ticlIterLabelsMerge = ticlIterLabels + ["Merge"]
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
 ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterLinksTask))
 
@@ -156,6 +174,8 @@ if ticl_v5._isChosen():
         ticlIterLabels.append("ticlTracksterLinksSuperclusteringMustache")
     if ticl_superclustering_dnn._isChosen():
         ticlIterLabels.append("ticlTracksterLinksSuperclusteringDNN")
+if ticl_v3._isChosen():
+    ticlIterLabels = ticlIterLabels_v3.copy()
 
 
 associatorsInstances = []

@@ -20,6 +20,7 @@ TICL_RECO = cms.PSet(
        'keep *_ticlTrackstersHFNoseMIP_*_*',
        'keep *_ticlTrackstersHFNoseHAD_*_*',
        'keep *_ticlTrackstersHFNoseMerge_*_*',] +
+      [ 'keep *_ticlTracksters*_*_*',] +
       ['keep *_pfTICL_*_*'] +
       ['keep CaloParticles_mix_*_*', 'keep SimClusters_mix_*_*', 'keep *_SimClusterToCaloParticleAssociation*_*_*'] +
       ['keep *_SimClusterToCaloParticleAssociation*_*_*', 'keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*'] +
