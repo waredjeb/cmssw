@@ -36,3 +36,60 @@ ticl_v5.toModify(hgcalValidator,
     mergeSimToRecoAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlCandidate"),
     mergeRecoToSimAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlCandidateToticlSimTrackstersfromCPs"),
 )
+
+from Configuration.ProcessModifiers.ticl_v3_cff import ticl_v3
+
+lcInputMask_v3 = ["ticlTrackstersEM", "ticlTrackstersHAD", "ticlTrackstersTrk", "ticlTrackstersTrkEM"]
+lcInputMask_v3.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
+
+ticl_v3.toModify(hgcalValidator,
+    LayerClustersInputMask = cms.VInputTag(lcInputMask_v3),
+    ticlTrackstersMerge = cms.InputTag("ticlTrackstersMergeV3"),
+    isticlv5 = cms.untracked.bool(True),
+    mergeSimToRecoAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlTrackstersMergeV3"),
+    mergeRecoToSimAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersMergeV3ToticlSimTrackstersfromCPs"),
+    allTracksterTracksterAssociatorsLabels = cms.VInputTag(
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersEMToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersEM',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersEMToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlTrackstersEM',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersTrkEMToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersTrkEM',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersTrkEMToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlTrackstersHAD',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersHADToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersHAD',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersHADToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlTrackstersHAD',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersTrkToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersTrk',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersTrkToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlTrackstersTrk',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersMergeV3ToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersMergeV3',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersMergeV3ToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlTrackstersMergeV3'
+    ),
+    allTracksterTracksterByHitsAssociatorsLabels = cms.VInputTag(
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersEMToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersToticlTrackstersEM',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersEMToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersfromCPsToticlTrackstersEM',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersTrkEMToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersToticlTrackstersTrkEM',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersTrkEMToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersfromCPsToticlTrackstersHAD',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersHADToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersToticlTrackstersHAD',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersHADToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersfromCPsToticlTrackstersHAD',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersTrkToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersToticlTrackstersTrk',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersTrkToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersfromCPsToticlTrackstersTrk',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersMergeV3ToticlSimTracksters',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersToticlTrackstersMergeV3',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlTrackstersMergeV3ToticlSimTrackstersfromCPs',
+      'allTrackstersToSimTrackstersAssociationsByHits:ticlSimTrackstersfromCPsToticlTrackstersMergeV3'
+    ),
+)
