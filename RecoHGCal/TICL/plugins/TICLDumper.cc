@@ -853,14 +853,6 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
       muons_token_(consumes<std::vector<reco::Muon>>(ps.getParameter<edm::InputTag>("muons"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
-      superclustering_linkedResultTracksters_token(
-          consumes<std::vector<std::vector<unsigned int>>>(ps.getParameter<edm::InputTag>("superclustering"))),
-      recoSuperClusters_token(
-          consumes<reco::SuperClusterCollection>(ps.getParameter<edm::InputTag>("recoSuperClusters"))),
-      recoSuperClusters_caloClusters_token(
-          consumes<reco::CaloClusterCollection>(ps.getParameter<edm::InputTag>("recoSuperClusters"))),
-      recoSuperClusters_sourceTracksters_token(consumes<std::vector<ticl::Trackster>>(
-          ps.getParameter<edm::InputTag>("recoSuperClusters_sourceTracksterCollection"))),
       caloGeometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       simTracksters_SC_token_(
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("simtrackstersSC"))),

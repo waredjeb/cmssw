@@ -7,23 +7,38 @@ from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import 
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 
 
-from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, associatorsInstances
+from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, ticlIterLabels_v3, associatorsInstances
 
 
 simTrackstersCollections = ["ticlSimTracksters", "ticlSimTrackstersfromCPs"]
 dumperAssociators = []
 
-for simTrackstersCollection in simTrackstersCollections:
-    for tracksterIteration in ticlIterLabels:
-        suffix = "CP" if "fromCPs" in simTrackstersCollection else "SC"
-        dumperAssociators.append(
-            cms.PSet(
-                branchName=cms.string(tracksterIteration),
-                suffix=cms.string(suffix),
-                associatorRecoToSimInputTag=cms.InputTag(f"allTrackstersToSimTrackstersAssociationsByLCs:{tracksterIteration}To{simTrackstersCollection}"),
-                associatorSimToRecoInputTag=cms.InputTag(f"allTrackstersToSimTrackstersAssociationsByLCs:{simTrackstersCollection}To{tracksterIteration}")
+from Configuration.ProcessModifiers.ticl_v3_cff import ticl_v3
+
+if ticl_v3._isChosen():
+    for simTrackstersCollection in simTrackstersCollections:
+        for tracksterIteration in ticlIterLabels_v3:
+            suffix = "CP" if "fromCPs" in simTrackstersCollection else "SC"
+            dumperAssociators.append(
+                cms.PSet(
+                    branchName=cms.string(tracksterIteration),
+                    suffix=cms.string(suffix),
+                    associatorRecoToSimInputTag=cms.InputTag(f"allTrackstersToSimTrackstersAssociationsByLCs:{tracksterIteration}To{simTrackstersCollection}"),
+                    associatorSimToRecoInputTag=cms.InputTag(f"allTrackstersToSimTrackstersAssociationsByLCs:{simTrackstersCollection}To{tracksterIteration}")
+                )
             )
-        )
+else:            
+    for simTrackstersCollection in simTrackstersCollections:
+        for tracksterIteration in ticlIterLabels:
+            suffix = "CP" if "fromCPs" in simTrackstersCollection else "SC"
+            dumperAssociators.append(
+                cms.PSet(
+                    branchName=cms.string(tracksterIteration),
+                    suffix=cms.string(suffix),
+                    associatorRecoToSimInputTag=cms.InputTag(f"allTrackstersToSimTrackstersAssociationsByLCs:{tracksterIteration}To{simTrackstersCollection}"),
+                    associatorSimToRecoInputTag=cms.InputTag(f"allTrackstersToSimTrackstersAssociationsByLCs:{simTrackstersCollection}To{tracksterIteration}")
+                )
+            )
 
 
 ticlDumper = ticlDumper_.clone(
@@ -44,6 +59,10 @@ ticlDumper = ticlDumper_.clone(
     saveSuperclustering = cms.bool(False)
 )
 
+ticl_v3.toModify(ticlDumper, ticlcandidates = cms.InputTag("ticlTrackstersMergeV3"))
+ticl_v3.toModify(ticlDumper, trackstersInCand = cms.InputTag("ticlTrackstersMergeV3"))
+ticl_v3.toModify(ticlDumper, saveSuperclustering = cms.bool(False))
+ticl_v3.toModify(ticlDumper, saveRecoSuperclusters = cms.bool(False))
 ticl_v5.toModify(ticlDumper, ticlcandidates = cms.InputTag("ticlCandidate"), recoSuperClusters_sourceTracksterCollection=cms.InputTag("ticlCandidate"))
 ticl_v5.toModify(ticlDumper, saveSuperclustering = cms.bool(True))
 
