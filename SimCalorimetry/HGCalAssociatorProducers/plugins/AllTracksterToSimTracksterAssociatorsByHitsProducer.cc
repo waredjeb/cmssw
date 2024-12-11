@@ -270,7 +270,7 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer::produce(edm::StreamID,
             float sharedEnergy = std::min(simFraction * rechitEnergy, recoSharedEnergy);
             float squaredFraction =
                 std::min(squaredRecoFraction, (recoFraction - simFraction) * (recoFraction - simFraction));
-            float score = invDenominator * squaredFraction * squaredRecHitEnergy;
+            float score = squaredFraction * squaredRecHitEnergy;
             tracksterToSimTracksterMap->insert(recoTracksterRef, simTracksterRef, sharedEnergy, score);
           }
         }
