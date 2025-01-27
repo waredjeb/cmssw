@@ -1,5 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-from ..modules.hltTiclTracksterLinks_cfi import *
+from ..modules.hltTiclTracksterLinksBySkeletons_cfi import *
 
-HLTTiclTracksterLinksSequence = cms.Sequence(hltTiclTracksterLinks)
+HLTTiclTracksterLinksSequence = cms.Sequence(hltTiclTracksterLinksBySkeletons)
