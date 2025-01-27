@@ -35,7 +35,8 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         'ticlTrackstersCLUE3DHigh',
         'ticlTrackstersRecovery'
     ),
-    linkingPSet = cms.PSet(
+    linkingBy = cms.string('Skeletons'),
+    linkingAlgoBySkeletons = cms.PSet(
       cylinder_radius_sqr_split = cms.double(9),
       proj_distance_split = cms.double(5),
       track_time_quality_threshold = cms.double(0.5),

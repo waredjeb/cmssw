@@ -10,7 +10,8 @@ from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import 
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 
 ticlTracksterLinksSuperclusteringDNN = _tracksterLinksProducer.clone(
-    linkingPSet = cms.PSet(
+    linkingBy = cms.string("SuperClusteringDNN"), 
+    linkingAlgoBySuperClusteringDNN  = cms.PSet(
         type=cms.string("SuperClusteringDNN"),
         algo_verbosity=cms.int32(0),
         onnxModelPath = cms.FileInPath("RecoHGCal/TICL/data/superclustering/supercls_v2p1.onnx"),
@@ -20,7 +21,8 @@ ticlTracksterLinksSuperclusteringDNN = _tracksterLinksProducer.clone(
 )
 
 ticlTracksterLinksSuperclusteringMustache = _tracksterLinksProducer.clone(
-    linkingPSet = cms.PSet(
+    linkingBy = cms.string("SuperClusteringMustache"), 
+    linkingAlgoBySuperClusteringMustache  = cms.PSet(
         type=cms.string("SuperClusteringMustache"),
         algo_verbosity=cms.int32(0)
     ),
