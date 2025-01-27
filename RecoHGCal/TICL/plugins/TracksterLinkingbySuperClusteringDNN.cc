@@ -339,7 +339,7 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
 
 void TracksterLinkingbySuperClusteringDNN::fillPSetDescription(edm::ParameterSetDescription& desc) {
   TracksterLinkingAlgoBase::fillPSetDescription(desc);  // adds algo_verbosity
-  desc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoHGCal/TICL/data/ticlv4/onnx_models/energy_id_v0.onnx"))->setComment("Path to DNN (as ONNX model)");
+  desc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoHGCal/TICL/data/superclustering/upercls_v2p1.onnx"))->setComment("Path to DNN (as ONNX model)");
   desc.ifValue(edm::ParameterDescription<std::string>("dnnInputsVersion", "v2", true),
                edm::allowedValues<std::string>("v1", "v2"))
       ->setComment(
