@@ -123,7 +123,7 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   // LayerClusters Mask
   produces<std::vector<float>>();
 
-  auto linkingPSet  = ps.getParameter<edm::ParameterSet>("linkingAlgoBy" + algoType_);
+  auto linkingPSet = ps.getParameter<edm::ParameterSet>("linkingAlgoBy" + algoType_);
 
   if (algoType_ == "Skeletons") {
     std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
@@ -135,12 +135,11 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
 }
 
 std::unique_ptr<ONNXRuntime> TracksterLinksProducer::initializeGlobalCache(const edm::ParameterSet &iConfig) {
-  auto const &pluginPset = iConfig.getParameter<edm::ParameterSet>("linkingAlgoBy" + iConfig.getParameter<std::string>("linkingBy"));
-  if (pluginPset.exists("onnxModelPath"))
-  {
+  auto const &pluginPset =
+      iConfig.getParameter<edm::ParameterSet>("linkingAlgoBy" + iConfig.getParameter<std::string>("linkingBy"));
+  if (pluginPset.exists("onnxModelPath")) {
     return std::make_unique<ONNXRuntime>(pluginPset.getParameter<edm::FileInPath>("onnxModelPath").fullPath());
-  }
-  else{
+  } else {
     return std::unique_ptr<ONNXRuntime>(nullptr);
   }
 }
@@ -301,11 +300,13 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<edm::ParameterSetDescription>("linkingAlgoByFastJet", linkingFJDesc);
 
   edm::ParameterSetDescription linkingSuperClusteringDNNDesc;
-  linkingSuperClusteringDNNDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringDNN", true));
+  linkingSuperClusteringDNNDesc.addNode(
+      edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringDNN", true));
   desc.add<edm::ParameterSetDescription>("linkingAlgoBySuperClusteringDNN", linkingSuperClusteringDNNDesc);
 
   edm::ParameterSetDescription linkingSuperClusteringMustacheDesc;
-  linkingSuperClusteringMustacheDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringMustache", true));
+  linkingSuperClusteringMustacheDesc.addNode(
+      edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringMustache", true));
   desc.add<edm::ParameterSetDescription>("linkingAlgoBySuperClusteringMustache", linkingSuperClusteringMustacheDesc);
 
   // Inference Plugins
