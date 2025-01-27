@@ -89,7 +89,7 @@ private:
 };
 
 TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, const ONNXRuntime *onnxRuntime)
-    : algoType_(ps.getParameter<edm::ParameterSet>("linkingPSet").getParameter<std::string>("type")),
+    : algoType_(ps.getParameter<std::string>("linkingBy")),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
@@ -281,6 +281,17 @@ void TracksterLinksProducer::printTrackstersDebug(const std::vector<Trackster> &
 
 void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
+
+  desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
+  desc.add<std::vector<edm::InputTag>>("original_masks",
+                                       {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
+  desc.add<std::string>("detector", "HGCAL");
+  desc.add<std::string>("propagator", "PropagatorWithMaterial");
+  desc.add<std::string>("linkingBy", "Skeletons");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
+  desc.add<bool>("regressionAndPid", false);
   edm::ParameterSetDescription linkingDesc;
   linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Skeletons", true));
   desc.add<edm::ParameterSetDescription>("linkingAlgoBySkeletons", linkingDesc);
@@ -306,17 +317,6 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   inferenceDescCNNv4.addNode(
       edm::PluginDescription<TracksterInferenceAlgoFactory>("type", "TracksterInferenceByCNNv4", true));
   desc.add<edm::ParameterSetDescription>("pluginInferenceAlgoTracksterInferenceByCNNv4", inferenceDescCNNv4);
-
-  desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
-  desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
-  desc.add<std::vector<edm::InputTag>>("original_masks",
-                                       {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
-  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
-  desc.add<bool>("regressionAndPid", false);
-  desc.add<std::string>("detector", "HGCAL");
-  desc.add<std::string>("propagator", "PropagatorWithMaterial");
-  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
   descriptions.add("tracksterLinksProducer", desc);
 }
 
