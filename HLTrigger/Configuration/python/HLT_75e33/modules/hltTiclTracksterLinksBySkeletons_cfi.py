@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 from ..psets.hltTiclTracksterLinksPSet_cfi import hltTiclTracksterLinksBySkeletonsPSet 
 
-hltTiclTracksterLinksBySkeletons = cms.EDProducer("TracksterLinksProducer",
+hltTiclTracksterLinksBySkeletonsUnseeded = cms.EDProducer("TracksterLinksProducer",
     detector = cms.string('HGCAL'),
     layer_clusters = cms.InputTag("hltHgcalMergeLayerClusters"),
     layer_clustersTime = cms.InputTag("hltHgcalMergeLayerClusters","timeLayerCluster"),
