@@ -58,7 +58,7 @@ void LCToSCAssociatorByEnergyScoreProducer<HIT>::produce(edm::StreamID,
 template <typename HIT>
 void LCToSCAssociatorByEnergyScoreProducer<HIT>::fillDescriptions(edm::ConfigurationDescriptions &cfg) {
   edm::ParameterSetDescription desc;
-  desc.add<bool>("hardScatterOnly", true);
+  desc.add<bool>("hardScatterOnly", false);
   if constexpr (std::is_same_v<HIT, HGCRecHit>) {
     desc.add<edm::InputTag>("hitMapTag", edm::InputTag("recHitMapProducer", "hgcalRecHitMap"));
     desc.add<std::vector<edm::InputTag>>("hits",
