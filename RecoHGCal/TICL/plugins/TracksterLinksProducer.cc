@@ -122,7 +122,8 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   produces<std::vector<std::vector<unsigned int>>>("linkedTracksterIdToInputTracksterId");
   // LayerClusters Mask
   produces<std::vector<float>>();
-  auto linkingPSet  = ps.getParameter<edm::ParameterSet>("linkingAlgoBy" + algoType_);
+
+  auto linkingPSet = ps.getParameter<edm::ParameterSet>("linkingAlgoBy" + algoType_);
 
   if (algoType_ == "Skeletons") {
     std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
@@ -134,12 +135,11 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
 }
 
 std::unique_ptr<ONNXRuntime> TracksterLinksProducer::initializeGlobalCache(const edm::ParameterSet &iConfig) {
-  auto const &pluginPset = iConfig.getParameter<edm::ParameterSet>("linkingAlgoBy" + iConfig.getParameter<std::string>("linkingBy"));
-  if (pluginPset.exists("onnxModelPath"))
-  {
+  auto const &pluginPset =
+      iConfig.getParameter<edm::ParameterSet>("linkingAlgoBy" + iConfig.getParameter<std::string>("linkingBy"));
+  if (pluginPset.exists("onnxModelPath")) {
     return std::make_unique<ONNXRuntime>(pluginPset.getParameter<edm::FileInPath>("onnxModelPath").fullPath());
-  }
-  else{
+  } else {
     return std::unique_ptr<ONNXRuntime>(nullptr);
   }
 }
@@ -280,17 +280,16 @@ void TracksterLinksProducer::printTrackstersDebug(const std::vector<Trackster> &
 
 void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<std::string>("linkingBy", "Skeletons");
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
-  desc.add<bool>("regressionAndPid", false);
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");
+  desc.add<std::string>("linkingBy", "Skeletons");
   desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
-
+  desc.add<bool>("regressionAndPid", false);
   edm::ParameterSetDescription linkingDesc;
   linkingDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "Skeletons", true));
   desc.add<edm::ParameterSetDescription>("linkingAlgoBySkeletons", linkingDesc);
@@ -300,11 +299,13 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<edm::ParameterSetDescription>("linkingAlgoByFastJet", linkingFJDesc);
 
   edm::ParameterSetDescription linkingSuperClusteringDNNDesc;
-  linkingSuperClusteringDNNDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringDNN", true));
+  linkingSuperClusteringDNNDesc.addNode(
+      edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringDNN", true));
   desc.add<edm::ParameterSetDescription>("linkingAlgoBySuperClusteringDNN", linkingSuperClusteringDNNDesc);
 
   edm::ParameterSetDescription linkingSuperClusteringMustacheDesc;
-  linkingSuperClusteringMustacheDesc.addNode(edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringMustache", true));
+  linkingSuperClusteringMustacheDesc.addNode(
+      edm::PluginDescription<TracksterLinkingPluginFactory>("type", "SuperClusteringMustache", true));
   desc.add<edm::ParameterSetDescription>("linkingAlgoBySuperClusteringMustache", linkingSuperClusteringMustacheDesc);
 
   // Inference Plugins

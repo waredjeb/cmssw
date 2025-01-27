@@ -1,12 +1,13 @@
 import FWCore.ParameterSet.Config as cms
-from ..psets.hltTiclTracksterLinksPSet_cfi import hltTiclTracksterLinksPSet 
+from ..psets.hltTiclTracksterLinksPSet_cfi import hltTiclTracksterLinksBySuperClusteringMustachePSet 
 
-hltTiclTracksterLinksL1Seeded = cms.EDProducer("TracksterLinksProducer",
+hltTiclTracksterLinksBySuperClusteringMustacheUnseeded = cms.EDProducer("TracksterLinksProducer",
     detector = cms.string('HGCAL'),
-    layer_clusters = cms.InputTag("hltHgcalMergeLayerClustersL1Seeded"),
-    layer_clustersTime = cms.InputTag("hltHgcalMergeLayerClustersL1Seeded","timeLayerCluster"),
+    layer_clusters = cms.InputTag("hltHgcalMergeLayerClusters"),
+    layer_clustersTime = cms.InputTag("hltHgcalMergeLayerClusters","timeLayerCluster"),
     inferenceAlgo = cms.string('TracksterInferenceByDNN'),
-    linkingPSet = hltTiclTracksterLinksPSet,
+    linkingBy = cms.string('SuperClusteringMustache'),
+    linkingAlgoBySuperClusteringMustache  = hltTiclTracksterLinksBySuperClusteringMustachePSet,
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
         algo_verbosity = cms.int32(0),
         onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/linking/id_v0.onnx'),
@@ -22,10 +23,10 @@ hltTiclTracksterLinksL1Seeded = cms.EDProducer("TracksterLinksProducer",
         type = cms.string('TracksterInferenceByDNN')
     ),
     mightGet = cms.optional.untracked.vstring,
-    original_masks = cms.VInputTag("hltHgcalMergeLayerClustersL1Seeded:InitialLayerClustersMask"),
+    original_masks = cms.VInputTag("hltHgcalMergeLayerClusters:InitialLayerClustersMask"),
     propagator = cms.string('PropagatorWithMaterial'),
     regressionAndPid = cms.bool(True),
-    tracksters_collections = cms.VInputTag("hltTiclTrackstersCLUE3DHighL1Seeded", "hltTiclTrackstersRecoveryL1Seeded")
+    tracksters_collections = cms.VInputTag("hltTiclTrackstersCLUE3DHigh", "hltTiclTrackstersRecovery")
 )
 
 
