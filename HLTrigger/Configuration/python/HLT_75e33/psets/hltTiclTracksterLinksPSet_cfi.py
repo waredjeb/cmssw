@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-hltTiclTracksterLinksPSet = cms.PSet(
+hltTiclTracksterLinksBySkeletonsPSet = cms.PSet(
       cylinder_radius_sqr_split = cms.double(9),
       proj_distance_split = cms.double(5),
       track_time_quality_threshold = cms.double(0.5),
@@ -47,4 +47,39 @@ hltTiclTracksterLinksPSet = cms.PSet(
       ),
       algo_verbosity = cms.int32(0),
       type = cms.string('Skeletons')
+    )
+
+hltTiclTracksterLinksBySuperClusteringDNNPSet = cms.PSet(
+      algo_verbosity = cms.int32(0),
+      onnxModelPath = cms.FileInPath('RecoHGCal/TICL/data/superclustering/supercls_v2p1.onnx'),
+      dnnInputsVersion = cms.string('v2'),
+      inferenceBatchSize = cms.uint32(100000),
+      nnWorkingPoint = cms.double(0.3),
+      deltaEtaWindow = cms.double(0.1),
+      deltaPhiWindow = cms.double(0.5),
+      seedPtThreshold = cms.double(4),
+      candidateEnergyThreshold = cms.double(2),
+      explVarRatioCut_energyBoundary = cms.double(50),
+      explVarRatioMinimum_lowEnergy = cms.double(0.92),
+      explVarRatioMinimum_highEnergy = cms.double(0.95),
+      filterByTracksterPID = cms.bool(True),
+      tracksterPIDCategoriesToFilter = cms.vint32(
+        0,
+        1
+      ),
+      PIDThreshold = cms.double(0.8),
+      type = cms.string('SuperClusteringDNN')
+    )
+
+hltTiclTracksterLinksBySuperClusteringMustachePSet = cms.PSet(
+      algo_verbosity = cms.int32(0),
+      seedThresholdPt = cms.double(1),
+      candidateEnergyThreshold = cms.double(0.15),
+      filterByTracksterPID = cms.bool(True),
+      tracksterPIDCategoriesToFilter = cms.vint32(
+        0,
+        1
+      ),
+      PIDThreshold = cms.double(0.8),
+      type = cms.string('SuperClusteringMustache')
     )
