@@ -131,7 +131,8 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
         edm::ESInputTag("", detectorName_));
   }
 
-  linkingAlgo_ = TracksterLinkingPluginFactory::get()->create(ps.getParameter<std::string>("linkingBy"), linkingPSet, consumesCollector(), onnxRuntime);
+  linkingAlgo_ = TracksterLinkingPluginFactory::get()->create(
+      ps.getParameter<std::string>("linkingBy"), linkingPSet, consumesCollector(), onnxRuntime);
 }
 
 std::unique_ptr<ONNXRuntime> TracksterLinksProducer::initializeGlobalCache(const edm::ParameterSet &iConfig) {

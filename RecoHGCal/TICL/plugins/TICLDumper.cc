@@ -255,7 +255,10 @@ public:
     trackster_vertices_multiplicity.clear();
   }
 
-  bool isFromPU(const ticl::Trackster& simTrackster, edm::Handle<std::vector<CaloParticle>>& caloparticles_h, const std::vector<CaloParticle>& caloparticles, const std::vector<SimCluster>& simclusters) {
+  bool isFromPU(const ticl::Trackster& simTrackster,
+                edm::Handle<std::vector<CaloParticle>>& caloparticles_h,
+                const std::vector<CaloParticle>& caloparticles,
+                const std::vector<SimCluster>& simclusters) {
     CaloObjectVariant caloObj;
     if (simTrackster.seedID() == caloparticles_h.id()) {
       caloObj = caloparticles[simTrackster.seedIndex()];
@@ -266,8 +269,7 @@ public:
     auto const& simTrack = std::visit([](auto&& obj) { return obj.g4Tracks()[0]; }, caloObj);
     if ((simTrack.eventId().event() != 0 or simTrack.eventId().bunchCrossing() != 0)) {
       return true;
-    }
-    else{
+    } else {
       return false;
     }
   }
@@ -310,12 +312,11 @@ public:
 
         simtrackster_timeBoundary.push_back(trackster_iterator->boundaryTime());
 
-        if (tracksterType_ == TracksterType::SimTracksterCP){
+        if (tracksterType_ == TracksterType::SimTracksterCP) {
           simtrackster_pdgID.push_back(caloparticles[trackster_iterator->seedIndex()].pdgId());
           bool isPU = isFromPU(*trackster_iterator, caloparticles_h, caloparticles, simclusters);
           simtrackster_isPU.push_back(isPU);
-        }
-        else if (tracksterType_ == TracksterType::SimTracksterSC){
+        } else if (tracksterType_ == TracksterType::SimTracksterSC) {
           simtrackster_pdgID.push_back(simclusters[trackster_iterator->seedIndex()].pdgId());
           bool isPU = isFromPU(*trackster_iterator, caloparticles_h, caloparticles, simclusters);
           simtrackster_isPU.push_back(isPU);

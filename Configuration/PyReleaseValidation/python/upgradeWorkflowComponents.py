@@ -763,6 +763,29 @@ upgradeWFs['ticl_v3'] = UpgradeWorkflow_ticl_v3(
 upgradeWFs['ticl_v3'].step3 = {'--procModifiers': 'ticl_v3'}
 upgradeWFs['ticl_v3'].step4 = {'--procModifiers': 'ticl_v3'}
 
+class UpgradeWorkflow_ticl_v5FJ(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        if 'RecoGlobal' in step:
+            stepDict[stepName][k] = merge([self.step3, stepDict[step][k]])
+        if 'HARVESTGlobal' in step:
+            stepDict[stepName][k] = merge([self.step4, stepDict[step][k]])
+    def condition(self, fragment, stepList, key, hasHarvest):
+        return (fragment=="TTbar_14TeV" or 'CloseByP' in fragment or 'Eta1p7_2p7' in fragment) and 'Run4' in key
+upgradeWFs['ticl_v5FJ'] = UpgradeWorkflow_ticl_v5FJ(
+    steps = [
+        'RecoGlobal',
+        'HARVESTGlobal'
+    ],
+    PU = [
+        'RecoGlobal',
+        'HARVESTGlobal'
+    ],
+    suffix = '_ticl_v5FJ',
+    offset = 0.207,
+)
+upgradeWFs['ticl_v5FJ'].step3 = {'--procModifiers': 'ticl_v5FJ'}
+upgradeWFs['ticl_v5FJ'].step4 = {'--procModifiers': 'ticl_v5FJ'}
+
 class UpgradeWorkflow_ticl_v5(UpgradeWorkflow):
     def setup_(self, step, stepName, stepDict, k, properties):
         if ('Digi' in step and 'NoHLT' not in step) or ('HLTOnly' in step):

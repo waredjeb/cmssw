@@ -2,12 +2,13 @@ import FWCore.ParameterSet.Config as cms
 from RecoHGCal.TICL.ticlDumper_cfi import ticlDumper as ticlDumper_
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
+from Configuration.ProcessModifiers.ticl_v5FJ_cff import ticl_v5FJ
 from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_superclustering_dnn
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 
 
-from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, ticlIterLabels_v3, associatorsInstances
+from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, ticlIterLabels_v3,ticlIterLabels_v5FJ, associatorsInstances
 
 
 simTrackstersCollections = ["ticlSimTracksters", "ticlSimTrackstersfromCPs"]
@@ -63,6 +64,12 @@ ticl_v3.toModify(ticlDumper, ticlcandidates = cms.InputTag("ticlTrackstersMergeV
 ticl_v3.toModify(ticlDumper, trackstersInCand = cms.InputTag("ticlTrackstersMergeV3"))
 ticl_v3.toModify(ticlDumper, saveSuperclustering = cms.bool(False))
 ticl_v3.toModify(ticlDumper, saveRecoSuperclusters = cms.bool(False))
+
+ticl_v5FJ.toModify(ticlDumper, ticlcandidates = cms.InputTag("ticlTracksterLinksByFJ"))
+ticl_v5FJ.toModify(ticlDumper, trackstersInCand = cms.InputTag("ticlTracksterLinksByFJ"))
+ticl_v5FJ.toModify(ticlDumper, saveSuperclustering = cms.bool(True))
+ticl_v5FJ.toModify(ticlDumper, saveRecoSuperclusters = cms.bool(True))
+ticl_v5FJ.toModify(ticlDumper, ticlcandidates = cms.InputTag("ticlCandidate"), recoSuperClusters_sourceTracksterCollection=cms.InputTag("ticlCandidate"))
 ticl_v5.toModify(ticlDumper, ticlcandidates = cms.InputTag("ticlCandidate"), recoSuperClusters_sourceTracksterCollection=cms.InputTag("ticlCandidate"))
 ticl_v5.toModify(ticlDumper, saveSuperclustering = cms.bool(True))
 

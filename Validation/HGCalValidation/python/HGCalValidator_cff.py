@@ -37,6 +37,55 @@ ticl_v5.toModify(hgcalValidator,
     mergeRecoToSimAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlCandidateToticlSimTrackstersfromCPs"),
 )
 
+from Configuration.ProcessModifiers.ticl_v5FJ_cff import ticl_v5FJ
+
+lcInputMask_v5  = ["ticlTrackstersCLUE3DHigh"]
+lcInputMask_v5.extend([cms.InputTag("ticlSimTracksters", "fromCPs"), cms.InputTag("ticlSimTracksters")])
+
+ticl_v5FJ.toModify(hgcalValidator,
+    LayerClustersInputMask = cms.VInputTag(lcInputMask_v5),
+    ticlTrackstersMerge = cms.InputTag("ticlCandidate"),
+    isticlv5 = cms.untracked.bool(True),
+    mergeSimToRecoAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersfromCPsToticlCandidate"),
+    mergeRecoToSimAssociator = cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlCandidateToticlSimTrackstersfromCPs"),
+    allTracksterTracksterAssociatorsLabels = cms.VInputTag(                                                                                                                                                                                
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlTrackstersCLUE3DHighToticlSimTracksters"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersToticlTrackstersCLUE3DHigh"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlTrackstersCLUE3DHighToticlSimTrackstersfromCPs"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersfromCPsToticlTrackstersCLUE3DHigh"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlTracksterLinksByFJToticlSimTracksters"),                                                                                                                                                 
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersToticlTracksterLinksByFJ"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlTracksterLinksByFJToticlSimTrackstersfromCPs"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersfromCPsToticlTracksterLinksByFJ"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlCandidateToticlSimTracksters"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersToticlCandidate"),                                                                                                                                                                                   
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlCandidateToticlSimTrackstersfromCPs"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersfromCPsToticlCandidate"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlTracksterLinksSuperclusteringDNNToticlSimTracksters"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersToticlTracksterLinksSuperclusteringDNN"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlTracksterLinksSuperclusteringDNNToticlSimTrackstersfromCPs"),                                                                                                                      
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByLCs","ticlSimTrackstersfromCPsToticlTracksterLinksSuperclusteringDNN")                                                                                                     
+    ),                                                                                                                                                                                                                                     
+	allTracksterTracksterByHitsAssociatorsLabels = cms.VInputTag(                                                                                                                                                                          
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlTrackstersCLUE3DHighToticlSimTracksters"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersToticlTrackstersCLUE3DHigh"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlTrackstersCLUE3DHighToticlSimTrackstersfromCPs"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersfromCPsToticlTrackstersCLUE3DHigh"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlTracksterLinksByFJToticlSimTracksters"),                                                                                                                                            
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersToticlTracksterLinksByFJ"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlTracksterLinksByFJToticlSimTrackstersfromCPs"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersfromCPsToticlTracksterLinksByFJ"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlCandidateToticlSimTracksters"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersToticlCandidate"),                                                                                                                                                                              
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlCandidateToticlSimTrackstersfromCPs"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersfromCPsToticlCandidate"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlTracksterLinksSuperclusteringDNNToticlSimTracksters"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersToticlTracksterLinksSuperclusteringDNN"),
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlTracksterLinksSuperclusteringDNNToticlSimTrackstersfromCPs"),                                                                                                                 
+		cms.InputTag("allTrackstersToSimTrackstersAssociationsByHits","ticlSimTrackstersfromCPsToticlTracksterLinksSuperclusteringDNN")                                                                                                    
+    )    
+)
+
 from Configuration.ProcessModifiers.ticl_v3_cff import ticl_v3
 
 lcInputMask_v3 = ["ticlTrackstersEM", "ticlTrackstersHAD", "ticlTrackstersTrk", "ticlTrackstersTrkEM"]
