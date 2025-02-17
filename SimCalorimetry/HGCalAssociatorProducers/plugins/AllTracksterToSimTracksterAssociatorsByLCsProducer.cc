@@ -35,11 +35,14 @@ private:
       edm::EDGetTokenT<
           ticl::AssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>>>
       layerClusterToSimTracksterMapTokens_;
+  std::string prefixAssoc_;
 };
 
 AllTracksterToSimTracksterAssociatorsByLCsProducer::AllTracksterToSimTracksterAssociatorsByLCsProducer(
     const edm::ParameterSet& pset)
-    : layerClustersToken_(consumes<std::vector<reco::CaloCluster>>(pset.getParameter<edm::InputTag>("layerClusters"))) {
+    : layerClustersToken_(consumes<std::vector<reco::CaloCluster>>(pset.getParameter<edm::InputTag>("layerClusters"))),
+      prefixAssoc_(pset.getParameter<std::string>("prefixAssoc"))
+  {
   const auto& tracksterCollections = pset.getParameter<std::vector<edm::InputTag>>("tracksterCollections");
   for (const auto& tag : tracksterCollections) {
     std::string label = tag.label();
@@ -51,7 +54,7 @@ AllTracksterToSimTracksterAssociatorsByLCsProducer::AllTracksterToSimTracksterAs
         label,
         consumes<
             ticl::AssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
-            edm::InputTag("allLayerClusterToTracksterAssociations", label)));
+            edm::InputTag(prefixAssoc_, label)));
   }
 
   const auto& simTracksterCollections = pset.getParameter<std::vector<edm::InputTag>>("simTracksterCollections");
@@ -65,7 +68,7 @@ AllTracksterToSimTracksterAssociatorsByLCsProducer::AllTracksterToSimTracksterAs
         label,
         consumes<
             ticl::AssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
-            edm::InputTag("allLayerClusterToTracksterAssociations", label)));
+            edm::InputTag(prefixAssoc_, label)));
   }
 
   // Produce separate association maps for each trackster-simTrackster combination
@@ -287,6 +290,7 @@ void AllTracksterToSimTracksterAssociatorsByLCsProducer::fillDescriptions(edm::C
   desc.add<std::vector<edm::InputTag>>(
       "simTracksterCollections", {edm::InputTag("ticlSimTracksters"), edm::InputTag("ticlSimTracksters", "fromCPs")});
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<std::string>("prefixAssoc", "allLayerClusterToTracksterAssociations");
   descriptions.add("AllTracksterToSimTracksterAssociatorsByLCsProducer", desc);
 }
 

@@ -3,6 +3,7 @@ from RecoHGCal.TICL.iterativeTICL_cff import *
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci
 from RecoLocalCalo.HGCalRecProducers.hgcalMergeLayerClusters_cfi import hgcalMergeLayerClusters
 from RecoHGCal.TICL.ticlDumper_cff import ticlDumper
+from RecoHGCal.TICL.ticlDumperSimple_cff import ticlDumperSimple
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cff import *
 from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cfi import recHitMapProducer
@@ -74,4 +75,15 @@ def customiseTICLForDumper(process, histoName="histo.root"):
                                        )
     process.FEVTDEBUGHLToutput_step = cms.EndPath(
         process.FEVTDEBUGHLToutput + process.ticlDumper)
+    return process
+
+def customiseTICLForDumperSimple(process, histoName="histo.root"):
+
+    process.ticlDumperSimple = ticlDumper.clone()
+
+    process.TFileService = cms.Service("TFileService",
+                                       fileName=cms.string(histoName)
+                                       )
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(
+        process.FEVTDEBUGHLToutput + process.ticlDumperSimple)
     return process
