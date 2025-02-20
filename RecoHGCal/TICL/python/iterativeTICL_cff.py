@@ -110,13 +110,13 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
 ticlTracksterLinksByFJ = _tracksterLinksProducer.clone(
     tracksters_collections = cms.VInputTag(
         'ticlTrackstersCLUE3DHigh',
-#        'ticlTrackstersRecovery'
+        'ticlTrackstersRecovery'
     ),
     linkingBy = cms.string('FastJet'),
     linkingAlgoByFastJet = cms.PSet(
       algo_verbosity = cms.int32(0),
       jet_algorithm = cms.int32(2),
-      radius = cms.double(0.1),
+      radius = cms.double(0.03),
       type = cms.string('FastJet')
     ),
     regressionAndPid = cms.bool(True),
@@ -149,7 +149,7 @@ mtdSoA = _mtdSoAProducer.clone()
 pfTICL = _pfTICLProducer.clone()
 ticl_v5.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTICLv5 = cms.bool(True), useTimingAverage=True)
 ticl_v5FJ.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlCandidate'), isTICLv5 = cms.bool(True), useTimingAverage=True)
-ticl_v3.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlTrackstersMergeV3')) 
+ticl_v3.toModify(pfTICL, ticlCandidateSrc = cms.InputTag('ticlTrackstersMergeV3'), isTICLv5 = cms.bool(False), useTimingAverage=False) 
 
 ticlPFTask = cms.Task(pfTICL)
 
@@ -199,7 +199,7 @@ mergeTICLTask = cms.Task(ticlLayerTileTask
     ,ticlTracksterMergeTask
 )
 
-ticlTracksterMergeTaskV3 = cms.Task(ticlTrackstersMergeV3)
+ticlTracksterMergeTaskV3 = cms.Task(ticlTrackstersMergeV3, ticlSuperclusteringTask) 
 ticlTracksterMergeTaskV5FJ = cms.Task(ticlTracksterLinksFJTask)
 ticl_v3.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
 ticl_v3.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterMergeTaskV3))
@@ -228,6 +228,7 @@ if ticl_v5FJ._isChosen():
         ticlIterLabels.append("ticlTracksterLinksSuperclusteringDNN")
 if ticl_v3._isChosen():
     ticlIterLabels = ticlIterLabels_v3.copy()
+#    ticlIterLabels.append("ticlTracksterLinksSuperclusteringDNN")
 
 print("From TICL ", ticlIterLabels)
 
