@@ -238,11 +238,11 @@ private:
 
   void prepareDataStructures(const unsigned int layerId);
   void calculateLocalDensity(const TILE& lt, const unsigned int layerId,
-                             float delta);  // return max density
-  void calculateLocalDensity(const TILE& lt, const unsigned int layerId, float delta, HGCalSiliconStrategy strategy);
+                             const float delta);  // return max density
+  void calculateLocalDensity(const TILE& lt, const unsigned int layerId, const float delta, HGCalSiliconStrategy strategy);
   void calculateLocalDensity(const TILE& lt,
                              const unsigned int layerId,
-                             float delta,
+                             const float delta,
                              HGCalScintillatorStrategy strategy);
   void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, const std::vector<double>& deltas_o);
   int findAndAssignClusters(const unsigned int layerId, const float delta_c, const std::vector<double>& deltas_o);
