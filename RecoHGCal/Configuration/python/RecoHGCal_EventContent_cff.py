@@ -89,6 +89,10 @@ TICLv5_FEVTHLT = cms.PSet(
             'keep *_hltTiclTracksterLinks_*_*',
             'keep *_hltTiclCandidate_*_*',
             'keep *_hltPfTICL_*_*',
+            'keep *_hltTiclEGammaSuperClusterProducerUnseeded_*_*',
+            'keep *_hltTiclTracksterLinksSuperclusteringDNNUnseeded_*_*'
+            'keep *_hltTiclEGammaSuperClusterProducerL1Seeded_*_*',
+            'keep *_hltTiclTracksterLinksSuperclusteringDNNL1Seeded_*_*'
         ]
     )
 )
