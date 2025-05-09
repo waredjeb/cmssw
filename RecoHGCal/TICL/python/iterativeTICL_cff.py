@@ -21,6 +21,7 @@ from RecoHGCal.TICL.superclustering_cff import *
 from RecoHGCal.TICL.ticlCandidateProducer_cfi import ticlCandidateProducer as _ticlCandidateProducer
 
 from RecoHGCal.TICL.mtdSoAProducer_cfi import mtdSoAProducer as _mtdSoAProducer
+from RecoHGCal.TICL.ticlGraphProducer_cfi import ticlGraphProducer as _ticlGraphProducer
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_superclustering_dnn
@@ -150,10 +151,13 @@ ticlIterLabels_v5 = ["ticlTrackstersCLUE3DHigh", "ticlTracksterLinks", "ticlCand
 ticlTracksterMergeTask = cms.Task(ticlTrackstersMerge)
 ticlTracksterLinksTask = cms.Task(ticlTracksterLinks, ticlSuperclusteringTask) 
 
+ticlGraph = _ticlGraphProducer.clone()
+ticlGraphTask = cms.Task(ticlGraph)
 
 mergeTICLTask = cms.Task(ticlLayerTileTask
     ,ticlIterationsTask
     ,ticlTracksterMergeTask
+    ,ticlGraphTask
 )
 
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
