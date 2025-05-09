@@ -25,6 +25,7 @@
 #include "DataFormats/Provenance/interface/EventID.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -576,6 +577,7 @@ private:
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_in_candidate_token_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
   const edm::EDGetTokenT<std::vector<TICLCandidate>> ticl_candidates_token_;
+  const edm::EDGetTokenT<std::vector<TICLGraph>> ticl_graph_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>>
       ticl_candidates_tracksters_token_;  ///< trackster collection used by TICLCandidate
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
@@ -696,6 +698,11 @@ private:
   std::vector<std::vector<uint32_t>> tracksters_in_candidate;
   std::vector<int> track_in_candidate;
 
+  // TICLGraph
+  std::vector<std::vector<uint32_t>> inner;
+  std::vector<std::vector<uint32_t>> outer;
+  
+
   // Layer clusters
   std::vector<uint32_t> cluster_seedID;
   std::vector<float> cluster_energy;
@@ -745,6 +752,7 @@ private:
   TTree* superclustering_tree_;
   TTree* tracks_tree_;
   TTree* simTICLCandidate_tree;
+  TTree* TICLGraph_tree;
 };
 
 void TICLDumper::clearVariables() {
@@ -857,6 +865,8 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("trackstersInCand"))),
       layer_clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClusters"))),
       ticl_candidates_token_(consumes<std::vector<TICLCandidate>>(ps.getParameter<edm::InputTag>("ticlcandidates"))),
+      ticl_graph_token_(consumes<std::vector<TICLGraph>>(ps.getParameter<edm::InputTag>("ticlgraph"))),
+
       ticl_candidates_tracksters_token_(
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("ticlcandidates"))),
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
@@ -992,6 +1002,11 @@ void TICLDumper::beginJob() {
     candidate_tree_->Branch("track_in_candidate", &track_in_candidate);
     candidate_tree_->Branch("tracksters_in_candidate", &tracksters_in_candidate);
   }
+
+  TICLGraph_tree = fs->make<TTree>("TICLGraph", "TICL Graph");
+  TICLGraph_tree->Branch("inner", &inner);
+  TICLGraph_tree->Branch("outer", &outer);
+
   if (saveSuperclustering_ || saveRecoSuperclusters_) {
     superclustering_tree_ = fs->make<TTree>("superclustering", "Superclustering in HGCAL CE-E");
     superclustering_tree_->Branch("event", &eventId_);
@@ -1095,6 +1110,11 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   const auto& ticlcandidates = *candidates_h;
   edm::Handle<std::vector<ticl::Trackster>> ticlcandidates_tracksters_h =
       event.getHandle(ticl_candidates_tracksters_token_);
+
+  //TICL Graph
+  edm::Handle<std::vector<TICLGraph>> graphs_h;
+  event.getByToken(ticl_graph_token_, graphs_h);
+  const auto& ticlgraphs = *graphs_h;
 
   //Track
   edm::Handle<std::vector<reco::Track>> tracks_h;
@@ -1406,6 +1426,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<edm::InputTag>("trackstersInCand", edm::InputTag("ticlTrackstersCLUE3DHigh"));
 
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("graph", edm::InputTag("ticlGraph"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("ticlcandidates", edm::InputTag("ticlTrackstersMerge"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
