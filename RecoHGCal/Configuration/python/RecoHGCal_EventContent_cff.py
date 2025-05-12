@@ -19,7 +19,8 @@ TICL_RECO = cms.PSet(
        'keep *_ticlTrackstersHFNoseTrk_*_*',
        'keep *_ticlTrackstersHFNoseMIP_*_*',
        'keep *_ticlTrackstersHFNoseHAD_*_*',
-       'keep *_ticlTrackstersHFNoseMerge_*_*',] +
+       'keep *_ticlTrackstersHFNoseMerge_*_*',
+       'keep *_ticlGraph_*_*'] +
       ['keep *_pfTICL_*_*'] +
       ['keep CaloParticles_mix_*_*', 'keep SimClusters_mix_*_*', 'keep *_SimClusterToCaloParticleAssociation*_*_*'] +
       ['keep *_SimClusterToCaloParticleAssociation*_*_*', 'keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*'] +
@@ -35,7 +36,7 @@ TICLv5_RECO = cms.PSet(
             'keep *_ticlTracksterLinks*_*_*',
             'keep *_ticlTracksterLinksSuperclustering*_*_*',
             'keep *_ticlCandidate_*_*',
-            
+            'keep *_ticlGraph_*_*'
         ]
     )
 )
@@ -63,7 +64,8 @@ TICLv5_FEVT = cms.PSet(
       'keep CaloParticles_mix_*_*', 'keep SimClusters_mix_*_*', 'keep *_SimClusterToCaloParticleAssociation*_*_*',
       'keep *_SimClusterToCaloParticleAssociation*_*_*', 'keep *_layerClusterSimClusterAssociationProducer_*_*','keep *_layerClusterCaloParticleAssociationProducer_*_*', 'keep *_layerClusterSimTracksterAssociationProducer_*_*',
       'keep *_SimTau*_*_*',
-      'keep *_allTrackstersToSimTrackstersAssociations*_*_*'
+      'keep *_allTrackstersToSimTrackstersAssociations*_*_*',
+      'keep *_ticlGraph_*_*'
       
       )
     )

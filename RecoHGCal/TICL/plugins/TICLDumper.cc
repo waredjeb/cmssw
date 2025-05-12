@@ -574,7 +574,7 @@ private:
   const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_in_candidate_token_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
   const edm::EDGetTokenT<std::vector<TICLCandidate>> ticl_candidates_token_;
-  const edm::EDGetTokenT<std::vector<TICLGraph>> ticl_graph_token_;
+  const edm::EDGetTokenT<TICLGraph> ticl_graph_token_;
   const edm::EDGetTokenT<std::vector<ticl::Trackster>>
       ticl_candidates_tracksters_token_;  ///< trackster collection used by TICLCandidate
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
@@ -760,6 +760,9 @@ void TICLDumper::clearVariables() {
     tsDumper.clearVariables();
   }
 
+  inner.clear();
+  outer.clear();
+
   superclustering_linkedResultTracksters.clear();
 
   recoSuperCluster_rawEnergy.clear();
@@ -862,7 +865,7 @@ TICLDumper::TICLDumper(const edm::ParameterSet& ps)
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("trackstersInCand"))),
       layer_clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClusters"))),
       ticl_candidates_token_(consumes<std::vector<TICLCandidate>>(ps.getParameter<edm::InputTag>("ticlcandidates"))),
-      ticl_graph_token_(consumes<std::vector<TICLGraph>>(ps.getParameter<edm::InputTag>("ticlgraph"))),
+      ticl_graph_token_(consumes<TICLGraph>(ps.getParameter<edm::InputTag>("graph"))),
 
       ticl_candidates_tracksters_token_(
           consumes<std::vector<ticl::Trackster>>(ps.getParameter<edm::InputTag>("ticlcandidates"))),
@@ -1109,7 +1112,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       event.getHandle(ticl_candidates_tracksters_token_);
 
   //TICL Graph
-  edm::Handle<std::vector<TICLGraph>> graphs_h;
+  edm::Handle<TICLGraph> graphs_h;
   event.getByToken(ticl_graph_token_, graphs_h);
   const auto& ticlgraphs = *graphs_h;
 
@@ -1145,6 +1148,23 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   edm::Handle<edm::ValueMap<GlobalPoint>> trackPosMtd_h;
   event.getByToken(tracks_pos_mtd_token_, trackPosMtd_h);
   const auto& trackPosMtd = *trackPosMtd_h;
+
+  // Create data
+  inner.resize(ticlgraphs.getNodes().size());
+  outer.resize(ticlgraphs.getNodes().size());
+
+  for (size_t i=0; i < inner.size(); i++) {
+    inner[i].resize(ticlgraphs.getNodes().size());
+    outer[i].resize(ticlgraphs.getNodes().size());
+  }
+
+  for (const auto& node : ticlgraphs.getNodes()) {
+    auto nodeId = node.getId();
+    inner[nodeId] = node.getInnerNeighbours();
+    outer[nodeId] = node.getOuterNeighbours();
+  }
+
+  TICLGraph_tree->Fill();
 
   // superclustering
   if (saveSuperclustering_)  // To support running with Mustache
