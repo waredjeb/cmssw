@@ -92,7 +92,6 @@ void TICLGraphProducer::beginRun(edm::Run const &iEvent, edm::EventSetup const &
 };
 
 void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
-  std::cout << "Heyho" << std::endl;
   edm::Handle<std::vector<Trackster>> trackstersclue3d_h;
   evt.getByToken(tracksters_clue3d_token_, trackstersclue3d_h);
   auto trackstersclue3d = *trackstersclue3d_h;
