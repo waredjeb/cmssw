@@ -61,6 +61,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+using CaloObjectVariant = std::variant<CaloParticle, SimCluster>;
 using TracksterToTracksterMap =
     ticl::AssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
 // Helper class for geometry, magnetic field, etc
@@ -159,6 +160,7 @@ public:
     if (tracksterType_ != TracksterType::Trackster) {
       trackster_tree_->Branch("regressed_pt", &simtrackster_regressed_pt);
       trackster_tree_->Branch("pdgID", &simtrackster_pdgID);
+      trackster_tree_->Branch("isPU", &simtrackster_isPU);
       trackster_tree_->Branch("trackIdx", &simtrackster_trackIdx);
       trackster_tree_->Branch("trackTime", &simtrackster_trackTime);
       trackster_tree_->Branch("timeBoundary", &simtrackster_timeBoundary);
@@ -217,6 +219,7 @@ public:
 
     simtrackster_regressed_pt.clear();
     simtrackster_pdgID.clear();
+    simtrackster_isPU.clear();
     simtrackster_trackIdx.clear();
     simtrackster_trackTime.clear();
     simtrackster_timeBoundary.clear();
@@ -252,6 +255,23 @@ public:
     trackster_vertices_multiplicity.clear();
   }
 
+  bool isFromPU(const ticl::Trackster& simTrackster, edm::Handle<std::vector<CaloParticle>>& caloparticles_h, const std::vector<CaloParticle>& caloparticles, const std::vector<SimCluster>& simclusters) {
+    CaloObjectVariant caloObj;
+    if (simTrackster.seedID() == caloparticles_h.id()) {
+      caloObj = caloparticles[simTrackster.seedIndex()];
+
+    } else {
+      caloObj = simclusters[simTrackster.seedIndex()];
+    }
+    auto const& simTrack = std::visit([](auto&& obj) { return obj.g4Tracks()[0]; }, caloObj);
+    if ((simTrack.eventId().event() != 0 or simTrack.eventId().bunchCrossing() != 0)) {
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+
   void fillFromEvent(std::vector<ticl::Trackster> const& tracksters,
                      std::vector<reco::CaloCluster> const& clusters,
                      edm::ValueMap<std::pair<float, float>> const& layerClustersTimes,
@@ -284,22 +304,26 @@ public:
       trackster_sigmaPCA1.push_back(trackster_iterator->sigmasPCA()[0]);
       trackster_sigmaPCA2.push_back(trackster_iterator->sigmasPCA()[1]);
       trackster_sigmaPCA3.push_back(trackster_iterator->sigmasPCA()[2]);
-
       if (tracksterType_ != TracksterType::Trackster) {  // is simtrackster
         auto const& simclusters = *simClusters_h;
         auto const& caloparticles = *caloparticles_h;
 
         simtrackster_timeBoundary.push_back(trackster_iterator->boundaryTime());
 
-        if (tracksterType_ == TracksterType::SimTracksterCP)
+        if (tracksterType_ == TracksterType::SimTracksterCP){
           simtrackster_pdgID.push_back(caloparticles[trackster_iterator->seedIndex()].pdgId());
-        else if (tracksterType_ == TracksterType::SimTracksterSC)
+          bool isPU = isFromPU(*trackster_iterator, caloparticles_h, caloparticles, simclusters);
+          simtrackster_isPU.push_back(isPU);
+        }
+        else if (tracksterType_ == TracksterType::SimTracksterSC){
           simtrackster_pdgID.push_back(simclusters[trackster_iterator->seedIndex()].pdgId());
-
-        using CaloObjectVariant = std::variant<CaloParticle, SimCluster>;
+          bool isPU = isFromPU(*trackster_iterator, caloparticles_h, caloparticles, simclusters);
+          simtrackster_isPU.push_back(isPU);
+        }
         CaloObjectVariant caloObj;
         if (trackster_iterator->seedID() == caloparticles_h.id()) {
           caloObj = caloparticles[trackster_iterator->seedIndex()];
+
         } else {
           caloObj = simclusters[trackster_iterator->seedIndex()];
         }
@@ -447,6 +471,7 @@ private:
   // for simtrackster
   std::vector<float> simtrackster_regressed_pt;
   std::vector<int> simtrackster_pdgID;
+  std::vector<int> simtrackster_isPU;
   std::vector<int> simtrackster_trackIdx;
   std::vector<float> simtrackster_trackTime;
   std::vector<float> simtrackster_timeBoundary;
