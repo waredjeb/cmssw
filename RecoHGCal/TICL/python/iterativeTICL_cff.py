@@ -27,6 +27,7 @@ from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_superclustering_dnn
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
+from RecoHGCal.TICL.TracksterSoAProducer_alpaka import TracksterSoAProducer_alpaka
 
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
@@ -160,8 +161,10 @@ mergeTICLTask = cms.Task(ticlLayerTileTask
     ,ticlGraphTask
 )
 
+ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(batchSize=1)
+ticlTracksterSoATask = cms.Task(ticlTracksterSoAProducer)
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
-ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterLinksTask))
+ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask, ticlTracksterLinksTask))
 
 
 mtdSoATask = cms.Task(mtdSoA)
