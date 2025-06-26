@@ -90,4 +90,9 @@
   <class name="edm::Wrapper<TICLGraph>" />
   <class name="edm::Wrapper<std::vector<TICLGraph> >" />
 
+  <class name="TrackstersSoA"/>
+  <class name="TrackstersSoAHostCollection"/>
+  <class name="edm::Wrapper<TrackstersSoAHostCollection>" splitLevel="0"/>
+
+
 </lcgdict>
