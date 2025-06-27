@@ -1,8 +1,13 @@
 #include "DataFormats/HGCalReco/interface/alpaka/TracksterSoADeviceCollection.h"
+#include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
@@ -19,15 +24,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
   private:
-    const device::EDPutToken<TrackstersSoADeviceCollection> sic_put_token_; /**< Token to store output data. */
+    const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_token_;
+    const edm::EDGetTokenT<TICLGraph> ticl_graph_token_;
     const uint32_t batch_size_; /**< Size of the batch to be produced. */
+    const device::EDPutToken<TrackstersSoADeviceCollection> tracksterSoA_token_; /**< Token to store output data. */
   };
 
   TracksterSoAProducer::TracksterSoAProducer(edm::ParameterSet const &params)
-      : EDProducer<>(params), sic_put_token_{produces()}, batch_size_(params.getParameter<uint32_t>("batchSize")) {}
+      : EDProducer<>(params),
+        tracksters_token_(consumes<std::vector<ticl::Trackster>>(params.getParameter<edm::InputTag>("tracksters"))),
+        ticl_graph_token_(consumes<TICLGraph>(params.getParameter<edm::InputTag>("ticlGraph"))),
+        batch_size_(params.getParameter<uint32_t>("batchSize")), 
+        tracksterSoA_token_{produces()} {}
 
   void TracksterSoAProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-    std::cout << "HELLLOOOOOOOOOOOOOO " << std::endl;
     auto t1 = std::chrono::high_resolution_clock::now();
 
     // debug stream usage in concurrently scheduled modules
@@ -39,7 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // create dummy data
     auto collection = TrackstersSoADeviceCollection(batch_size_, event.queue());
     collection.zeroInitialise(event.queue());
-    event.emplace(sic_put_token_, std::move(collection));
+    event.emplace(tracksterSoA_token_, std::move(collection));
     alpaka::wait(event.queue());
     auto t2 = std::chrono::high_resolution_clock::now();
     std::cout << "(Data) E: " << event.id().event() << " OK - "
@@ -53,6 +63,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
    */
   void TracksterSoAProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
     edm::ParameterSetDescription desc;
+    desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
+    desc.add<edm::InputTag>("ticlGraph", edm::InputTag("ticlGraph"));
     desc.add<uint32_t>("batchSize");
     descriptions.addWithDefaultLabel(desc);
   }
