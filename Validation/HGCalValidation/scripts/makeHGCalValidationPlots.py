@@ -5,14 +5,18 @@ import argparse
 import datetime
 
 from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabels, ticlIterLabels_v5
-
+from Validation.HGCalValidation.HLT_TICLIterLabels_cff import hltTiclIterLabels 
 from Validation.RecoTrack.plotting.validation import SeparateValidation, SimpleValidation, SimpleSample
 from Validation.HGCalValidation.HGCalValidator_cff import hgcalValidator
+from Validation.HGCalValidation.HLTHGCalValidator_cff import hltHgcalValidator as _hltHgcalValidator
 import Validation.HGCalValidation.hgcalPlots as hgcalPlots
 import Validation.RecoTrack.plotting.plotting as plotting
 
-simClustersIters = [hgcalValidator.label_SimClustersLevel._InputTag__moduleLabel, "ticlSimTracksters"]
 
+
+simClustersIters = [hgcalValidator.label_SimClustersLevel._InputTag__moduleLabel, "ticlSimTracksters"]
+simClustersItersHLT = [_hltHgcalValidator.label_SimClustersLevel._InputTag__moduleLabel, "hltTiclSimTracksters"]
+hltFolder = 'DQMData/Run 1/HLT/Run summary/HGCAL/HGCalValidator/'
 hitCalLabel = 'hitCalibration'
 hitValLabel = 'hitValidation'
 layerClustersLabel = 'layerClusters'
@@ -32,6 +36,7 @@ def main(opts):
     drawArgs={}
     extendedFlag = False
     ticlVersion = 4
+    hltPlots = False
     if opts.no_ratio:
         drawArgs["ratio"] = False
     if opts.separate:
@@ -42,9 +47,13 @@ def main(opts):
         extendedFlag = True
     if opts.verbose:
         plotting.verbose = True
+    if opts.hlt:
+        hltPlots = True
     if opts.ticlv == 5:
         ticlVersion = 5
 
+
+    validator = _hltHgcalValidator if hltPlots else hgcalValidator
     filenames = [(f, f.replace(".root", "")) for f in opts.files]
     sample = SimpleSample(opts.subdirprefix[0], opts.html_sample, filenames)
 
@@ -53,22 +62,31 @@ def main(opts):
         val = SeparateValidation([sample], opts.outputDir[0])
     htmlReport = val.createHtmlReport(validationName=opts.html_validation_name[0])
     trackstersIters = []
-    if (ticlVersion == 5):
-        trackstersIters = ticlIterLabels_v5.copy()
-        trackstersIters.extend(['ticlTracksterLinksSuperclusteringDNN','ticlTracksterLinksSuperclusteringMustache'])
+    if(hltPlots):
+        trackstersIters = hltTiclIterLabels.copy()
+        trackstersIters.extend(["hltTiclSimTracksters", "hltTiclSimTracksters_fromCPs"])
     else:
-        trackstersIters = ticlIterLabels.copy()
-    trackstersIters.extend(['ticlSimTracksters', 'ticlSimTracksters_fromCPs'])
+        if (ticlVersion == 5):
+            trackstersIters = ticlIterLabels_v5.copy()
+        else:
+            trackstersIters = ticlIterLabels.copy()
+        trackstersIters.extend(["ticlSimTracksters", "hltTiclSimTracksters_fromCPs"])
+
+
     #layerClusters
     def plot_LC():
         hgclayclus = [hgcalPlots.hgcalLayerClustersPlotter]
-        hgcalPlots.append_hgcalLayerClustersPlots(hgcalValidator.label_layerClusterPlots._InputTag__moduleLabel, "Layer Clusters", extendedFlag)
+        if(hltPlots):
+            hgcalPlots.append_hgcalLayerClustersPlots(_hltHgcalValidator.label_layerClusterPlots._InputTag__moduleLabel, "Layer Clusters", extendedFlag)
+        else:
+            hgcalPlots.append_hgcalLayerClustersPlots(hgcalValidator.label_layerClusterPlots._InputTag__moduleLabel, "Layer Clusters", extendedFlag)
         val.doPlots(hgclayclus, plotterDrawArgs=drawArgs)
 
     #simClusters
     def plot_SC():
         hgcsimclus = [hgcalPlots.hgcalSimClustersPlotter]
-        for i_iter in simClustersIters:
+        sim_iters = simClustersItersHLT if hltPlots else simClustersIters
+        for i_iter in sim_iters:
             hgcalPlots.append_hgcalSimClustersPlots(i_iter, i_iter)
         val.doPlots(hgcsimclus, plotterDrawArgs=drawArgs)
 
@@ -79,7 +97,7 @@ def main(opts):
         for tracksterCollection in trackstersIters :
             print("Searching for tracksters collection in DQM files: ", tracksterCollection)
 
-            hgcalPlots.append_hgcalTrackstersPlots(tracksterCollection, tracksterCollection)
+            hgcalPlots.append_hgcalTrackstersPlots(validator, hltFolder, tracksterCollection, tracksterCollection)
         val.doPlots(hgctrackster, plotterDrawArgs=drawArgs)
 
     #trackstersWithEdges
@@ -165,6 +183,12 @@ if __name__ == "__main__":
                         help="Number of jobs to run in parallel for generating plots. Default is 0 i.e. run number of cpu cores jobs.")
     parser.add_argument("--ticlv", choices=ticlVersions, default=4, type=int,
                         help="TICL Version. Specify 4 or 5. Default 4.")
+    parser.add_argument(
+        "--hlt",
+        action="store_true",
+        default=False,
+        help="Enable HLT mode (default: off)"
+    )    
     parser.add_argument("--verbose", action="store_true", default = False,
                         help="Be verbose")
 
