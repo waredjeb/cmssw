@@ -71,7 +71,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto input_records = inputs.view().records();
     auto output_records = outputs.view().records();
     cms::torch::alpaka::SoAMetadata<TrackstersSoA> inputs_metadata(batch_size);
-    inputs_metadata.append_block("features", input_records.x(), input_records.y(), input_records.z());
+    inputs_metadata.append_block("features", input_records.barycenter_x(), input_records.barycenter_y(), input_records.barycenter_z());
     cms::torch::alpaka::SoAMetadata<torchportable::ClassificationSoA> outputs_metadata(batch_size);
     outputs_metadata.append_block("preds", output_records.c1(), output_records.c2());
     cms::torch::alpaka::ModelMetadata<TrackstersSoA, torchportable::ClassificationSoA> metadata(
