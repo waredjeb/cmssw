@@ -1,5 +1,6 @@
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/alpaka/TracksterSoADeviceCollection.h"
+#include "DataFormats/HGCalReco/interface/TracksterSoAHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -17,8 +18,10 @@
 #include "PhysicsTools/PyTorch/interface/Nvtx.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
   class TracksterSoAProducer : public stream::EDProducer<> {
   public:
+    float detector_size = (2*(3 - 1.5) * (2 * 47));
     TracksterSoAProducer(const edm::ParameterSet &params);
 
     void produce(device::Event &event, const device::EventSetup &event_setup) override;
@@ -43,21 +46,80 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void TracksterSoAProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto const& ticlGraph = event.get(ticl_graph_token_);
+    auto const& tracksters = event.get(tracksters_token_);
     auto const& layerClusters = event.get(layer_clusters_token_);
 
     // debug stream usage in concurrently scheduled modules
     std::stringstream msg_stream;
-    msg_stream << "Data::produce [E: " << event.id().event() << "]";
+    msg_stream << "TracksterSoAProducer::produce [E: " << event.id().event() << "]";
     auto msg = msg_stream.str();
     NvtxScopedRange produce_range(msg.c_str());
 
     // create dummy data
-    auto collection = TrackstersSoADeviceCollection(batch_size_, event.queue());
-    collection.zeroInitialise(event.queue());
-    event.emplace(tracksterSoA_token_, std::move(collection));
+    auto hostCollection = TrackstersSoAHostCollection(batch_size_, event.queue());
+    auto deviceCollection = TrackstersSoADeviceCollection(batch_size_, event.queue());
+    TrackstersSoAView& view = hostCollection.view();
+
+    view.trackster_density() = batch_size_ / detector_size;
+    
+    for (size_t i = 0; i < batch_size_; i++) {
+        view.time()[i] = tracksters[i].time();
+        view.raw_energy()[i] = tracksters[i].raw_energy();
+        view.raw_em_energy()[i] = tracksters[i].raw_em_energy();
+
+        view.barycenter_x()[i] = tracksters[i].barycenter().x();
+        view.barycenter_y()[i] = tracksters[i].barycenter().y();
+        view.barycenter_z()[i] = tracksters[i].barycenter().z();
+        view.barycenter_eta()[i] = tracksters[i].barycenter().eta();
+        view.barycenter_phi()[i] = tracksters[i].barycenter().phi();
+
+        view.eigenvector0_x()[i] = tracksters[i].eigenvectors(0).x();
+        view.eigenvector0_y()[i] = tracksters[i].eigenvectors(0).y();
+        view.eigenvector0_z()[i] = tracksters[i].eigenvectors(0).z();
+
+        view.eigenvalue1()[i] = tracksters[i].eigenvalues()[0];
+        view.eigenvalue2()[i] = tracksters[i].eigenvalues()[1];
+        view.eigenvalue3()[i] = tracksters[i].eigenvalues()[2];
+
+        view.sigmasPCA1()[i] = tracksters[i].sigmasPCA()[0];
+        view.sigmasPCA2()[i] = tracksters[i].sigmasPCA()[1];
+        view.sigmasPCA3()[i] = tracksters[i].sigmasPCA()[2];
+
+        view.photon_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::photon);
+        view.electron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::electron);
+        view.muon_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::muon);
+        view.neutral_pion_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::neutral_pion);
+        view.charged_hadron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::charged_hadron);
+        view.neutral_hadron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::neutral_hadron);
+
+        view.num_LCs()[i] = tracksters[i].vertices().size();
+
+        int hits = 0;
+        float z_min = std::numeric_limits<float>::max();
+        float z_max = std::numeric_limits<float>::min();
+        for (auto& vertex : tracksters[i].vertices()) {
+          auto& cluster = layerClusters[vertex];
+          hits += cluster.size();
+
+          if (cluster.z() > z_max)
+            z_max = cluster.z();
+
+          if (cluster.z() < z_min)
+            z_min = cluster.z();
+        }
+
+        view.z_min()[i] = z_min;
+        view.z_max()[i] = z_max;
+        view.LC_density()[i] = view.num_LCs()[i] / detector_size;
+    }
+
+    alpaka::memcpy(event.queue(), deviceCollection.buffer(), hostCollection.buffer());
+    alpaka::wait(event.queue());
+
+    event.emplace(tracksterSoA_token_, std::move(deviceCollection));
     alpaka::wait(event.queue());
     auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << "(Data) E: " << event.id().event() << " OK - "
+    std::cout << "(TracksterSoAProducer) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
     produce_range.end();
   }
