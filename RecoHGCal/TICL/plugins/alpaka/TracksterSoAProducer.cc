@@ -1,3 +1,4 @@
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/alpaka/TracksterSoADeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/HGCalReco/interface/TICLGraph.h"
@@ -26,6 +27,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_token_;
     const edm::EDGetTokenT<TICLGraph> ticl_graph_token_;
+    const edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
     const uint32_t batch_size_; /**< Size of the batch to be produced. */
     const device::EDPutToken<TrackstersSoADeviceCollection> tracksterSoA_token_; /**< Token to store output data. */
   };
@@ -34,6 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       : EDProducer<>(params),
         tracksters_token_(consumes<std::vector<ticl::Trackster>>(params.getParameter<edm::InputTag>("tracksters"))),
         ticl_graph_token_(consumes<TICLGraph>(params.getParameter<edm::InputTag>("ticlGraph"))),
+        layer_clusters_token_(consumes<std::vector<reco::CaloCluster>>(params.getParameter<edm::InputTag>("layerClusters"))),
         batch_size_(params.getParameter<uint32_t>("batchSize")), 
         tracksterSoA_token_{produces()} {}
 
@@ -65,6 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
     desc.add<edm::InputTag>("ticlGraph", edm::InputTag("ticlGraph"));
+    desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
     desc.add<uint32_t>("batchSize");
     descriptions.addWithDefaultLabel(desc);
   }
