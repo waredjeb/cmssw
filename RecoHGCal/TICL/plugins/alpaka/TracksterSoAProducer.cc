@@ -42,6 +42,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void TracksterSoAProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
     auto t1 = std::chrono::high_resolution_clock::now();
+    auto const& ticlGraph = event.get(ticl_graph_token_);
+    auto const& layerClusters = event.get(layer_clusters_token_);
 
     // debug stream usage in concurrently scheduled modules
     std::stringstream msg_stream;
