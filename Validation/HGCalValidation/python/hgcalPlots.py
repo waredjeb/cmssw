@@ -2966,17 +2966,19 @@ hgcalHitCalibPlotter.append("EcalDrivenGsfElectronsFromTrackster_Closest_EoverCP
 
 hgcalTICLCandPlotter = Plotter()
 
-hgcalTICLCandPlotter.append('ticlCandidates', [
-             "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/"+hgcalValidator.ticlCandidates.value(),
-            ], PlotFolder(
-            *_candidatesPlots,
-            loopSubFolders=False,
-            purpose=PlotPurpose.Timing, page="General", section="Candidates"))
-
-for i in range(6):
-    hgcalTICLCandPlotter.append('ticlCandidates', [
-             "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/"+hgcalValidator.ticlCandidates.value()+"/"+cand_type[i],
-            ], PlotFolder(
-            *_allCandidatesPlots[i],
-            loopSubFolders=False,
-            purpose=PlotPurpose.Timing, page=cand_type[i], section="Candidates"))
+def append_ticlCandidatePlots(validator, folder = "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/", collection = 'ticlTrackstersMerge', name_collection = "TrackstersMerge"):
+  hgcalTICLCandPlotter.append(collection, [
+               f"{folder}"+validator.ticlCandidates.value(),
+              ], PlotFolder(
+              *_candidatesPlots,
+              loopSubFolders=False,
+              purpose=PlotPurpose.Timing, page="General", section=name_collection))
+  
+  for i in range(6):
+      hgcalTICLCandPlotter.append(collection, [
+               f"{folder}"+validator.ticlCandidates.value()+"/"+cand_type[i],
+              ], PlotFolder(
+              *_allCandidatesPlots[i],
+              loopSubFolders=False,
+              purpose=PlotPurpose.Timing, page=cand_type[i], section=name_collection))
+  return hgcalTICLCandPlotter

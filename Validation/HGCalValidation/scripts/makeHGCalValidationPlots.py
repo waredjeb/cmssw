@@ -96,8 +96,11 @@ def main(opts):
         hgctrackster = [hgcalPlots.hgcalTrackstersPlotter]
         for tracksterCollection in trackstersIters :
             print("Searching for tracksters collection in DQM files: ", tracksterCollection)
+            if(hltPlots):
+                hgcalPlots.append_hgcalTrackstersPlots(validator=validator, folder=hltFolder, collection=tracksterCollection, name_collection=tracksterCollection)
+            else:
+                hgcalPlots.append_hgcalTrackstersPlots(validator=validator, collection=tracksterCollection, name_collection=tracksterCollection)
 
-            hgcalPlots.append_hgcalTrackstersPlots(validator, hltFolder, tracksterCollection, tracksterCollection)
         val.doPlots(hgctrackster, plotterDrawArgs=drawArgs)
 
     #trackstersWithEdges
@@ -134,6 +137,11 @@ def main(opts):
 
     def plotCand():
         ticlcand = [hgcalPlots.hgcalTICLCandPlotter]
+        if(hltPlots):
+            hgcalPlots.append_ticlCandidatePlots(validator=validator, folder=hltFolder, collection="ticlCandidate", name_collection="TICLCandidate")
+        else:
+            hgcalPlots.append_ticlCandidatePlots(validator=validator, collection="ticlCandidate", name_collection="TICLCandidate")
+
         val.doPlots(ticlcand, plotterDrawArgs=drawArgs)
 
     plotDict = {hitCalLabel:[plot_hitCal], hitValLabel:[plot_hitVal], layerClustersLabel:[plot_LC], trackstersLabel:[plot_Tst], trackstersWithEdgesLabel:[plot_TstEdges], simLabel:[plot_SC, plot_CP], candidatesLabel:[plotCand]}
