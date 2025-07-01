@@ -7,7 +7,8 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  using TrackstersSoADeviceCollection = PortableCollection<TrackstersSoA>;
+  using TrackstersSoADeviceCollection = PortableCollection<GNNNodeSoA>;
+  using TrackstersEdgeSoADeviceCollection = PortableCollection<GNNEdgeSoA>;
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
