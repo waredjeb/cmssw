@@ -13,13 +13,35 @@ from HLTrigger.NGTScouting.hltTracks_cfi import *
 from HLTrigger.NGTScouting.hltJets_cfi import *
 from HLTrigger.NGTScouting.hltTaus_cfi import *
 from HLTrigger.NGTScouting.hltTracksters_cfi import *
+from HLTrigger.NGTScouting.hltCaloParticles_cfi import *
+from HLTrigger.NGTScouting.hltSums_cfi import *
 from HLTrigger.NGTScouting.hltTriggerAcceptFilter_cfi import hltTriggerAcceptFilter,dstTriggerAcceptFilter
 
 hltNanoProducer = cms.Sequence(
     prunedGenParticles
     + finalGenParticles
     + genParticleTable
-    + hltTriggerAcceptFilter
+    + genParticlesForJetsNoNu
+    + ak4GenJetsNoNu
+    + selectedHadronsAndPartonsForGenJetsFlavourInfos
+    + packedGenParticles
+    + slimmedGenJets
+    + ak4GenJetFlavourInfos
+    + slimmedGenJetsFlavourInfos
+    + genJetTable
+    + genJetFlavourTable
+)
+
+namedProducers = []
+for i, _producer in enumerate(hltTrackstersTable):
+    label = f"tracksterTableProducer{i}"
+    globals()[label] = _producer.clone()
+    namedProducers.append(globals()[label])
+    
+trackstersSeq = cms.Sequence(sum(namedProducers, cms.Sequence()))
+hltNanoProducer = cms.Sequence(
+    NanoGenTable
+    #+ hltTriggerAcceptFilter
     + hltVertexTable
     + hltPixelTrackTable
     + hltGeneralTrackTable
@@ -30,7 +52,11 @@ hltNanoProducer = cms.Sequence(
     + hltMuonTable
     + hltPFCandidateTable
     + hltJetTable
-    + hltTrackstersTable
+    + trackstersSeq 
+    + hltTauTable
+    + hltTauExtTable
+    + METTable
+    + HTTable
 )
 
 dstNanoProducer = cms.Sequence(
@@ -49,7 +75,10 @@ dstNanoProducer = cms.Sequence(
     + hltPFCandidateTable
     + hltJetTable
     + hltTauTable
-    + hltTrackstersTable
+    + trackstersSeq 
+    + hltTauExtTable
+    + METTable
+    + HTTable
 )
 
 def hltNanoCustomize(process):
@@ -70,6 +99,15 @@ def hltNanoCustomize(process):
 
 def hltNanoValCustomize(process):
     if hasattr(process, "dstNanoProducer"):
-        process.dstNanoProducer += (process.hltTrackstersAssociationOneToManyTable + process.hltSimCl2CPOneToOneFlatTable)
+        namedProducers = []
+        for i, _producer in enumerate(hltTrackstersAssociationOneToManyTable):
+            label = f"trackstersAssociationProducer{i}"
+            globals()[label] = _producer.clone()
+            setattr(process, label, _producer.clone())
+            namedProducers.append(getattr(process,label))
+        associationsSeq = cms.Sequence(sum(namedProducers, cms.Sequence()))
+        process.associationsSeq = associationsSeq
+
+        process.dstNanoProducer += (process.associationsSeq  + process.hltSimCl2CPOneToOneFlatTable + process.hltSimTracksterTable + process.hltSimTracksterFromCPsTable + process.hltTiclSimTrackstersExtraTable + process.hltTiclSimTrackstersFromCPsExtraTable)
 
     return process
