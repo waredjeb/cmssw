@@ -5,7 +5,7 @@
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 #include "DataFormats/SoATemplate/interface/SoAView.h"
 
-GENERATE_SOA_LAYOUT(TrackstersSoALayout,
+GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
                     // columns: one value per element
                     SOA_COLUMN(float, raw_energy),
                     SOA_COLUMN(float, raw_em_energy),
@@ -36,9 +36,22 @@ GENERATE_SOA_LAYOUT(TrackstersSoALayout,
                     SOA_COLUMN(float, LC_density),
                     SOA_COLUMN(float, time),
                     SOA_SCALAR(float, trackster_density)
-)
+);
 
-using TrackstersSoA = TrackstersSoALayout<>;
-using TrackstersSoAView = TrackstersSoA::View;
+GENERATE_SOA_LAYOUT(GNNEdgeSoALayout ,
+                    SOA_COLUMN(float, raw_energy),
+                    SOA_COLUMN(float, barycenter_z),
+                    SOA_COLUMN(float, barycenter_xy),
+                    SOA_COLUMN(float, eigenvector0),
+                    SOA_COLUMN(float, time)
+);
+
+GENERATE_SOA_LAYOUT(GNNYSoALayout ,
+                    SOA_COLUMN(float, score)
+);
+
+using GNNNodeSoA = GNNNodeSoALayout<>;
+using GNNEdgeSoA = GNNEdgeSoALayout<>;
+using GNNYSoA = GNNYSoALayout<>;
 
 #endif
