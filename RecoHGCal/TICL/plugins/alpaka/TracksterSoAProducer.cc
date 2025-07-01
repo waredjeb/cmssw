@@ -55,44 +55,48 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto msg = msg_stream.str();
     NvtxScopedRange produce_range(msg.c_str());
 
-    // create dummy data
-    auto hostCollection = TrackstersSoAHostCollection(batch_size_, event.queue());
-    auto deviceCollection = TrackstersSoADeviceCollection(batch_size_, event.queue());
-    TrackstersSoAView& view = hostCollection.view();
+    size_t numTrackster = tracksters.size();
 
-    view.trackster_density() = batch_size_ / detector_size;
+    auto hostCollection = TrackstersSoAHostCollection(numTrackster, event.queue());
+    auto deviceCollection = TrackstersSoADeviceCollection(numTrackster, event.queue());
+    auto& nodeView = hostCollection.view();
+
+    std::cout << "(TracksterSoAProducer) Num Trackster: " << numTrackster << std::endl;
+
+    size_t numEdges = 0;
+    nodeView.trackster_density() = numTrackster / detector_size;
     
-    for (size_t i = 0; i < batch_size_; i++) {
-        view.time()[i] = tracksters[i].time();
-        view.raw_energy()[i] = tracksters[i].raw_energy();
-        view.raw_em_energy()[i] = tracksters[i].raw_em_energy();
+    for (size_t i = 0; i < numTrackster; i++) {
+        nodeView.time()[i] = tracksters[i].time();
+        nodeView.raw_energy()[i] = tracksters[i].raw_energy();
+        nodeView.raw_em_energy()[i] = tracksters[i].raw_em_energy();
 
-        view.barycenter_x()[i] = tracksters[i].barycenter().x();
-        view.barycenter_y()[i] = tracksters[i].barycenter().y();
-        view.barycenter_z()[i] = tracksters[i].barycenter().z();
-        view.barycenter_eta()[i] = tracksters[i].barycenter().eta();
-        view.barycenter_phi()[i] = tracksters[i].barycenter().phi();
+        nodeView.barycenter_x()[i] = tracksters[i].barycenter().x();
+        nodeView.barycenter_y()[i] = tracksters[i].barycenter().y();
+        nodeView.barycenter_z()[i] = tracksters[i].barycenter().z();
+        nodeView.barycenter_eta()[i] = tracksters[i].barycenter().eta();
+        nodeView.barycenter_phi()[i] = tracksters[i].barycenter().phi();
 
-        view.eigenvector0_x()[i] = tracksters[i].eigenvectors(0).x();
-        view.eigenvector0_y()[i] = tracksters[i].eigenvectors(0).y();
-        view.eigenvector0_z()[i] = tracksters[i].eigenvectors(0).z();
+        nodeView.eigenvector0_x()[i] = tracksters[i].eigenvectors(0).x();
+        nodeView.eigenvector0_y()[i] = tracksters[i].eigenvectors(0).y();
+        nodeView.eigenvector0_z()[i] = tracksters[i].eigenvectors(0).z();
 
-        view.eigenvalue1()[i] = tracksters[i].eigenvalues()[0];
-        view.eigenvalue2()[i] = tracksters[i].eigenvalues()[1];
-        view.eigenvalue3()[i] = tracksters[i].eigenvalues()[2];
+        nodeView.eigenvalue1()[i] = tracksters[i].eigenvalues()[0];
+        nodeView.eigenvalue2()[i] = tracksters[i].eigenvalues()[1];
+        nodeView.eigenvalue3()[i] = tracksters[i].eigenvalues()[2];
 
-        view.sigmasPCA1()[i] = tracksters[i].sigmasPCA()[0];
-        view.sigmasPCA2()[i] = tracksters[i].sigmasPCA()[1];
-        view.sigmasPCA3()[i] = tracksters[i].sigmasPCA()[2];
+        nodeView.sigmasPCA1()[i] = tracksters[i].sigmasPCA()[0];
+        nodeView.sigmasPCA2()[i] = tracksters[i].sigmasPCA()[1];
+        nodeView.sigmasPCA3()[i] = tracksters[i].sigmasPCA()[2];
 
-        view.photon_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::photon);
-        view.electron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::electron);
-        view.muon_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::muon);
-        view.neutral_pion_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::neutral_pion);
-        view.charged_hadron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::charged_hadron);
-        view.neutral_hadron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::neutral_hadron);
+        nodeView.photon_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::photon);
+        nodeView.electron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::electron);
+        nodeView.muon_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::muon);
+        nodeView.neutral_pion_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::neutral_pion);
+        nodeView.charged_hadron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::charged_hadron);
+        nodeView.neutral_hadron_prob()[i] = tracksters[i].id_probability(ticl::Trackster::ParticleType::neutral_hadron);
 
-        view.num_LCs()[i] = tracksters[i].vertices().size();
+        nodeView.num_LCs()[i] = tracksters[i].vertices().size();
 
         int hits = 0;
         float z_min = std::numeric_limits<float>::max();
@@ -108,16 +112,40 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             z_min = cluster.z();
         }
 
-        view.z_min()[i] = z_min;
-        view.z_max()[i] = z_max;
-        view.LC_density()[i] = view.num_LCs()[i] / detector_size;
+        nodeView.z_min()[i] = z_min;
+        nodeView.z_max()[i] = z_max;
+        nodeView.LC_density()[i] = nodeView.num_LCs()[i] / detector_size;
+
+        numEdges += ticlGraph.getNode(i).getOuterNeighbours().size();
+    }
+
+    std::cout << "(TracksterSoAProducer) Num Edges: " << numEdges << std::endl;
+
+    auto edgeHostCollection = TrackstersEdgeSoAHostCollection(numEdges, event.queue());
+    auto edgeDeviceCollection = TrackstersEdgeSoADeviceCollection(numEdges, event.queue());
+    auto& edgeView = edgeHostCollection.view();
+
+    size_t k = 0;
+    for (size_t i = 0; i < numTrackster; i++) {
+      std::vector<unsigned int> outer = ticlGraph.getNode(i).getOuterNeighbours();
+
+      for (unsigned int node : outer) {
+        edgeView.raw_energy()[k] = 2;
+        edgeView.barycenter_z()[k] = std::abs(nodeView.barycenter_z()[i] - nodeView.barycenter_z()[node]);
+        edgeView.time()[k] = std::abs(nodeView.time()[i] - nodeView.time()[node]);
+        edgeView.barycenter_xy()[k] = std::hypot((nodeView.barycenter_x()[i] - nodeView.barycenter_x()[node]), (nodeView.barycenter_y()[i] - nodeView.barycenter_y()[node]));
+        edgeView.eigenvector0()[k] = std::acos(nodeView.eigenvector0_x()[i] * nodeView.eigenvector0_x()[node] + nodeView.eigenvector0_y()[i] * nodeView.eigenvector0_y()[node] + nodeView.eigenvector0_z()[i] * nodeView.eigenvector0_z()[node]);
+        k++;
+      }
     }
 
     alpaka::memcpy(event.queue(), deviceCollection.buffer(), hostCollection.buffer());
+    alpaka::memcpy(event.queue(), edgeDeviceCollection.buffer(), edgeHostCollection.buffer());
     alpaka::wait(event.queue());
 
     event.emplace(tracksterSoA_token_, std::move(deviceCollection));
     alpaka::wait(event.queue());
+
     auto t2 = std::chrono::high_resolution_clock::now();
     std::cout << "(TracksterSoAProducer) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
