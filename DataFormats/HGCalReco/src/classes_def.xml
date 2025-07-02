@@ -104,9 +104,15 @@
   <class name="edm::Wrapper<TICLGraph>" />
   <class name="edm::Wrapper<std::vector<TICLGraph> >" />
 
+
   <class name="GNNNodeSoA"/>
   <class name="GNNEdgeSoA"/>
   <class name="GNNYSoA"/>
+  <class name="portablecollection::CollectionImpl<0,GNNNodeSoALayout<128,false>,GNNEdgeSoALayout<128,false>>"/>
+  <class name="portablecollection::CollectionImpl<1,GNNEdgeSoALayout<128,false>>"/>
+  <class name="portablecollection::CollectionLeaf<0,GNNNodeSoALayout<128,false> >"/>
+  <class name="portablecollection::CollectionLeaf<1,GNNEdgeSoALayout<128,false> >"/>
+
   <class name="TrackstersSoAHostCollection"/>
   <class name="TrackstersEdgeSoAHostCollection"/>
   <class name="TrackstersNodeSoAHostCollection"/>

@@ -50,7 +50,7 @@ public:
   inline const ticl::Node& getNode(int i) const { return nodes_[i]; }
   inline std::vector<ticl::Node> getRootNodes() const { return rootNodes_; }
   inline void findRootNodes();
-  // size_t getNumberOfEdges() const;
+  size_t getNumberOfEdges() const;
 
   std::vector<std::vector<unsigned int>> findSubComponents();
   std::vector<std::vector<unsigned int>> findSubComponents(std::vector<ticl::Node>& rootNodes);
