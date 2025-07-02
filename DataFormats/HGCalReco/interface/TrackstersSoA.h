@@ -35,23 +35,29 @@ GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
                     SOA_COLUMN(float, z_max),
                     SOA_COLUMN(float, LC_density),
                     SOA_COLUMN(float, time),
-                    SOA_SCALAR(float, trackster_density)
+                    SOA_COLUMN(float, trackster_density)
 );
 
-GENERATE_SOA_LAYOUT(GNNEdgeSoALayout ,
-                    SOA_COLUMN(float, diff_raw_energy),
-                    SOA_COLUMN(float, diff_barycenter_z),
-                    SOA_COLUMN(float, diff_barycenter_xy),
-                    SOA_COLUMN(float, diff_eigenvector0),
-                    SOA_COLUMN(float, diff_time)
+GENERATE_SOA_LAYOUT(GNNEdgeSoALayout,
+                    SOA_COLUMN(float, raw_energy),
+                    SOA_COLUMN(float, barycenter_z),
+                    SOA_COLUMN(float, barycenter_xy),
+                    SOA_COLUMN(float, eigenvector0),
+                    SOA_COLUMN(float, time)
 );
 
-GENERATE_SOA_LAYOUT(GNNYSoALayout ,
+GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout,
+                    SOA_COLUMN(float, in),
+                    SOA_COLUMN(float, out)
+);
+
+GENERATE_SOA_LAYOUT(GNNOutputSoALayout ,
                     SOA_COLUMN(float, score)
 );
 
 using GNNNodeSoA = GNNNodeSoALayout<>;
 using GNNEdgeSoA = GNNEdgeSoALayout<>;
-using GNNYSoA = GNNYSoALayout<>;
+using GNNEdgeIndexSoA = GNNEdgeIndexSoALayout<>;
+using GNNOutputSoA = GNNOutputSoALayout<>;
 
 #endif

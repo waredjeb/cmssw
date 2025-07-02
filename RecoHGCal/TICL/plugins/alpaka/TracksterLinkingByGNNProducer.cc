@@ -35,7 +35,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     const device::EDGetToken<TrackstersSoADeviceCollection> inputs_token_;
-    const device::EDPutToken<torchportable::ClassificationCollection> outputs_token_;
+    const device::EDPutToken<TrackstersGNNOutputSoADeviceCollection> outputs_token_;
 //    std::unique_ptr<Kernels> kernels_ = nullptr; /**< Kernel utilities for post-inference validation. */
     std::unique_ptr<JitModel> model_;
   };
@@ -64,17 +64,63 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // get data
     auto &inputs = const_cast<TrackstersSoADeviceCollection&>(event.get(inputs_token_));
-    const size_t batch_size = inputs.const_view().metadata().size();
-    auto outputs = torchportable::ClassificationCollection(batch_size, event.queue());
+    const size_t numNodes = inputs.const_view<GNNNodeSoA>().metadata().size();
+    const size_t numEdges = inputs.const_view<GNNEdgeSoA>().metadata().size();
+    auto outputs = TrackstersGNNOutputSoADeviceCollection(numEdges, event.queue());
 
     // metadata for automatic tensor conversion
-    auto input_records = inputs.view<GNNNodeSoA>().records();
+    auto node_records = inputs.view<GNNNodeSoA>().records();
+    auto edge_feature_records = inputs.view<GNNEdgeSoA>().records();
+    auto edge_index_records = inputs.view<GNNEdgeIndexSoA>().records();
     auto output_records = outputs.view().records();
-    cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(batch_size);
-    inputs_metadata.append_block("features", input_records.barycenter_x(), input_records.barycenter_y(), input_records.barycenter_z());
-    cms::torch::alpaka::SoAMetadata<torchportable::ClassificationSoA> outputs_metadata(batch_size);
-    outputs_metadata.append_block("preds", output_records.c1(), output_records.c2());
-    cms::torch::alpaka::ModelMetadata<GNNNodeSoA, torchportable::ClassificationSoA> metadata(
+    cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(numNodes);
+
+    // Converter can also do full SoA
+    inputs_metadata.append_block("nodes", node_records.barycenter_x(), 
+                            node_records.barycenter_y(), 
+                            node_records.barycenter_z(),
+                            node_records.barycenter_eta(),
+                            node_records.barycenter_phi(),
+                            node_records.eigenvector0_x(),
+                            node_records.eigenvector0_y(),
+                            node_records.eigenvector0_z(),
+                            node_records.eigenvalue1(),
+                            node_records.eigenvalue2(),
+                            node_records.eigenvalue3(),
+                            node_records.sigmasPCA1(),
+                            node_records.sigmasPCA2(),
+                            node_records.sigmasPCA3(),
+                            node_records.num_LCs(),
+                            node_records.num_hits(),
+                            node_records.raw_energy(),
+                            node_records.raw_em_energy(),
+                            node_records.photon_prob(),
+                            node_records.electron_prob(),
+                            node_records.muon_prob(),
+                            node_records.neutral_pion_prob(),
+                            node_records.charged_hadron_prob(),
+                            node_records.neutral_hadron_prob(),
+                            node_records.z_min(),
+                            node_records.z_max(),
+                            node_records.LC_density(),
+                            node_records.trackster_density(),
+                            node_records.time());
+
+      inputs_metadata.append_block<GNNEdgeSoA>("edge_features", numEdges,
+                            edge_feature_records.raw_energy(),
+                            edge_feature_records.barycenter_z(),
+                            edge_feature_records.barycenter_xy(),
+                            edge_feature_records.eigenvector0(),
+                            edge_feature_records.time());
+
+      inputs_metadata.append_block<GNNEdgeIndexSoA>("edge_index", numEdges,
+                            edge_index_records.in(),
+                            edge_index_records.out());
+
+    cms::torch::alpaka::SoAMetadata<GNNOutputSoA> outputs_metadata(numEdges);
+    outputs_metadata.append_block("preds", output_records.score());
+
+    cms::torch::alpaka::ModelMetadata<GNNNodeSoA, GNNOutputSoA> metadata(
         inputs_metadata, outputs_metadata);
 
     // inference

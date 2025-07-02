@@ -166,7 +166,7 @@ ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(batchSize=1, ticlGraph = 
 ticlTracksterSoATask = cms.Task(ticlTracksterSoAProducer)
 ticlTrackstersLinkingByGNNProducer = TracksterLinkingByGNNProducer_alpaka(
     inputs = cms.InputTag("ticlTracksterSoAProducer"),
-    modelPath = cms.FileInPath("RecoHGCal/TICL/models/model_date_2025-06-30.pt"),
+    modelPath = cms.FileInPath("RecoHGCal/TICL/models/model_date_2025-06-30_pickle.pt"),
 )
 ticlTrackstersLinkingByGNNProducerTask = cms.Task(ticlTrackstersLinkingByGNNProducer)
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
