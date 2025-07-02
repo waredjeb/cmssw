@@ -56,6 +56,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     NvtxScopedRange produce_range(msg.c_str());
 
     size_t edges = 0;
+    int numEdgesTest = ticlGraph.getNumberOfEdges(); //just for testing
     for (auto const& n : ticlGraph.getNodes())
       edges += n.getOuterNeighbours().size();
 
