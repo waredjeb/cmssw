@@ -55,13 +55,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto msg = msg_stream.str();
     NvtxScopedRange produce_range(msg.c_str());
 
-    size_t edges = 0;
-    int numEdgesTest = ticlGraph.getNumberOfEdges(); //just for testing
-    for (auto const& n : ticlGraph.getNodes())
-      edges += n.getOuterNeighbours().size();
-
     int numTrackster = tracksters.size();
-    int numEdges = edges;
+    int numEdges = ticlGraph.getNumberOfEdges();
     std::array<int, 2> const sizes{{numTrackster, numEdges}};
 
     auto hostCollection = TrackstersSoAHostCollection(sizes, event.queue());
@@ -137,7 +132,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     alpaka::memcpy(event.queue(), deviceCollection.buffer(), hostCollection.buffer());
-    // alpaka::memcpy(event.queue(), edgeDeviceCollection.buffer(), edgeHostCollection.buffer());
     alpaka::wait(event.queue());
 
     event.emplace(tracksterSoA_token_, std::move(deviceCollection));

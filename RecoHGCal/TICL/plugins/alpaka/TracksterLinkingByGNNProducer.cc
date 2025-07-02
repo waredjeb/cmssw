@@ -53,7 +53,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // debug stream usage in concurrently scheduled modules
     std::stringstream msg_stream;
-    msg_stream << "ClassifierAot::produce [E: " << event.id().event() << "]";
+    msg_stream << "TracksterLinkingGNN::produce [E: " << event.id().event() << "]";
     auto msg = msg_stream.str();
     NvtxScopedRange produce_range(msg.c_str());
 
@@ -68,7 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto outputs = torchportable::ClassificationCollection(batch_size, event.queue());
 
     // metadata for automatic tensor conversion
-    auto input_records = inputs.view().records();
+    auto input_records = inputs.view<GNNNodeSoA>().records();
     auto output_records = outputs.view().records();
     cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(batch_size);
     inputs_metadata.append_block("features", input_records.barycenter_x(), input_records.barycenter_y(), input_records.barycenter_z());
@@ -80,13 +80,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // inference
     NvtxScopedRange move_to_device("Classifier::move_to_device");
     if (cms::torch::alpaka::device(event.queue()) != model_->device()) {
-      std::cout << "(ClassifierAot) E: " << event.id().event() << " Model: " << model_->device() << " -> "
+      std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " Model: " << model_->device() << " -> "
                 << cms::torch::alpaka::device(event.queue()) << std::endl;
       model_->to(event.queue());
     }
     assert(cms::torch::alpaka::device(event.queue()) == model_->device());
     move_to_device.end();
-    NvtxScopedRange infer_range("Classifier::inference");
+    NvtxScopedRange infer_range("TracksterLinkingGNN::inference");
     model_->forward(metadata);
     infer_range.end();
 
@@ -94,7 +94,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     event.emplace(outputs_token_, std::move(outputs));
     alpaka::wait(event.queue());
     auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << "(ClassifierAot) E: " << event.id().event() << " OK - "
+    std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
     produce_range.end();
   }
