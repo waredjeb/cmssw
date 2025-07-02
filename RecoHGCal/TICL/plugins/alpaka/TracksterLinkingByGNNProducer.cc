@@ -76,7 +76,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(numNodes);
 
     // Converter can also do full SoA
-    inputs_metadata.append_block("nodes", node_records.barycenter_x(), 
+    inputs_metadata.append_block("nodes", 
+                            node_records.barycenter_x(), 
                             node_records.barycenter_y(), 
                             node_records.barycenter_z(),
                             node_records.barycenter_eta(),
