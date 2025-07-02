@@ -55,18 +55,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto msg = msg_stream.str();
     NvtxScopedRange produce_range(msg.c_str());
 
-    size_t numTrackster = tracksters.size();
+    size_t edges = 0;
+    for (auto const& n : ticlGraph.getNodes())
+      edges += n.getOuterNeighbours().size();
 
-    auto hostCollection = TrackstersSoAHostCollection(numTrackster, event.queue());
-    auto deviceCollection = TrackstersSoADeviceCollection(numTrackster, event.queue());
-    auto& nodeView = hostCollection.view();
+    int numTrackster = tracksters.size();
+    int numEdges = edges;
+    std::array<int, 2> const sizes{{numTrackster, numEdges}};
+
+    auto hostCollection = TrackstersSoAHostCollection(sizes, event.queue());
+    hostCollection.zeroInitialise(event.queue());
+    auto deviceCollection = TrackstersSoADeviceCollection(sizes, event.queue());
+    auto& nodeView = hostCollection.view<GNNNodeSoA>();
+    auto& edgeView = hostCollection.view<GNNEdgeSoA>();
 
     std::cout << "(TracksterSoAProducer) Num Trackster: " << numTrackster << std::endl;
-
-    size_t numEdges = 0;
+    std::cout << "(TracksterSoAProducer) Num Edges: " << numEdges << std::endl;
     nodeView.trackster_density() = numTrackster / detector_size;
+    size_t k = 0;
     
-    for (size_t i = 0; i < numTrackster; i++) {
+    for (int i = 0; i < numTrackster; i++) {
         nodeView.time()[i] = tracksters[i].time();
         nodeView.raw_energy()[i] = tracksters[i].raw_energy();
         nodeView.raw_em_energy()[i] = tracksters[i].raw_em_energy();
@@ -115,32 +123,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         nodeView.z_min()[i] = z_min;
         nodeView.z_max()[i] = z_max;
         nodeView.LC_density()[i] = nodeView.num_LCs()[i] / detector_size;
-
-        numEdges += ticlGraph.getNode(i).getOuterNeighbours().size();
-    }
-
-    std::cout << "(TracksterSoAProducer) Num Edges: " << numEdges << std::endl;
-
-    auto edgeHostCollection = TrackstersEdgeSoAHostCollection(numEdges, event.queue());
-    auto edgeDeviceCollection = TrackstersEdgeSoADeviceCollection(numEdges, event.queue());
-    auto& edgeView = edgeHostCollection.view();
-
-    size_t k = 0;
-    for (size_t i = 0; i < numTrackster; i++) {
-      std::vector<unsigned int> outer = ticlGraph.getNode(i).getOuterNeighbours();
-
-      for (unsigned int node : outer) {
-        edgeView.raw_energy()[k] = 2;
-        edgeView.barycenter_z()[k] = std::abs(nodeView.barycenter_z()[i] - nodeView.barycenter_z()[node]);
-        edgeView.time()[k] = std::abs(nodeView.time()[i] - nodeView.time()[node]);
-        edgeView.barycenter_xy()[k] = std::hypot((nodeView.barycenter_x()[i] - nodeView.barycenter_x()[node]), (nodeView.barycenter_y()[i] - nodeView.barycenter_y()[node]));
-        edgeView.eigenvector0()[k] = std::acos(nodeView.eigenvector0_x()[i] * nodeView.eigenvector0_x()[node] + nodeView.eigenvector0_y()[i] * nodeView.eigenvector0_y()[node] + nodeView.eigenvector0_z()[i] * nodeView.eigenvector0_z()[node]);
-        k++;
+        
+        std::vector<unsigned int> outer = ticlGraph.getNode(i).getOuterNeighbours();
+        for (unsigned int node : outer) {
+          edgeView.diff_raw_energy()[k] = 2;
+          edgeView.diff_barycenter_z()[k] = std::abs(nodeView.barycenter_z()[i] - nodeView.barycenter_z()[node]);
+          edgeView.diff_time()[k] = std::abs(nodeView.time()[i] - nodeView.time()[node]);
+          edgeView.diff_barycenter_xy()[k] = std::hypot((nodeView.barycenter_x()[i] - nodeView.barycenter_x()[node]), (nodeView.barycenter_y()[i] - nodeView.barycenter_y()[node]));
+          edgeView.diff_eigenvector0()[k] = std::acos(nodeView.eigenvector0_x()[i] * nodeView.eigenvector0_x()[node] + nodeView.eigenvector0_y()[i] * nodeView.eigenvector0_y()[node] + nodeView.eigenvector0_z()[i] * nodeView.eigenvector0_z()[node]);
+          k++;
       }
     }
 
     alpaka::memcpy(event.queue(), deviceCollection.buffer(), hostCollection.buffer());
-    alpaka::memcpy(event.queue(), edgeDeviceCollection.buffer(), edgeHostCollection.buffer());
+    // alpaka::memcpy(event.queue(), edgeDeviceCollection.buffer(), edgeHostCollection.buffer());
     alpaka::wait(event.queue());
 
     event.emplace(tracksterSoA_token_, std::move(deviceCollection));
