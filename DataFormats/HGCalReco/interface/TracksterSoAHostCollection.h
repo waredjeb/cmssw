@@ -4,8 +4,6 @@
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/HGCalReco/interface/TrackstersSoA.h"
 
-using TrackstersSoAHostCollection = PortableMultiCollection<alpaka::DevCpu, GNNNodeSoA, GNNEdgeSoA>;
-using TrackstersNodeSoAHostCollection = PortableHostCollection<GNNNodeSoA>;
-using TrackstersEdgeSoAHostCollection = PortableHostCollection<GNNEdgeSoA>;
+using TrackstersSoAHostCollection = PortableMultiCollection<alpaka::DevCpu, GNNNodeSoA, GNNEdgeSoA, GNNEdgeIndexSoA>;
 
 #endif  // DataFormats_HGCalReco_interface_TrackstersSoAHostCollection_h
