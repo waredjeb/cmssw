@@ -39,11 +39,11 @@ GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
 );
 
 GENERATE_SOA_LAYOUT(GNNEdgeSoALayout ,
-                    SOA_COLUMN(float, raw_energy),
-                    SOA_COLUMN(float, barycenter_z),
-                    SOA_COLUMN(float, barycenter_xy),
-                    SOA_COLUMN(float, eigenvector0),
-                    SOA_COLUMN(float, time)
+                    SOA_COLUMN(float, diff_raw_energy),
+                    SOA_COLUMN(float, diff_barycenter_z),
+                    SOA_COLUMN(float, diff_barycenter_xy),
+                    SOA_COLUMN(float, diff_eigenvector0),
+                    SOA_COLUMN(float, diff_time)
 );
 
 GENERATE_SOA_LAYOUT(GNNYSoALayout ,
