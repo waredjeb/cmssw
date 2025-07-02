@@ -57,17 +57,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     int numTrackster = tracksters.size();
     int numEdges = ticlGraph.getNumberOfEdges();
-    std::array<int, 2> const sizes{{numTrackster, numEdges}};
+    std::array<int, 3> const sizes{{numTrackster, numEdges, numEdges}};
 
     auto hostCollection = TrackstersSoAHostCollection(sizes, event.queue());
     hostCollection.zeroInitialise(event.queue());
     auto deviceCollection = TrackstersSoADeviceCollection(sizes, event.queue());
     auto& nodeView = hostCollection.view<GNNNodeSoA>();
     auto& edgeView = hostCollection.view<GNNEdgeSoA>();
+    auto& edgeIndexView = hostCollection.view<GNNEdgeIndexSoA>();
 
     std::cout << "(TracksterSoAProducer) Num Trackster: " << numTrackster << std::endl;
     std::cout << "(TracksterSoAProducer) Num Edges: " << numEdges << std::endl;
-    nodeView.trackster_density() = numTrackster / detector_size;
+    float trackster_density = numTrackster / detector_size;
     size_t k = 0;
     
     for (int i = 0; i < numTrackster; i++) {
@@ -119,14 +120,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         nodeView.z_min()[i] = z_min;
         nodeView.z_max()[i] = z_max;
         nodeView.LC_density()[i] = nodeView.num_LCs()[i] / detector_size;
+        nodeView.trackster_density()[i] = trackster_density;
         
         std::vector<unsigned int> outer = ticlGraph.getNode(i).getOuterNeighbours();
         for (unsigned int node : outer) {
-          edgeView.diff_raw_energy()[k] = 2;
-          edgeView.diff_barycenter_z()[k] = std::abs(nodeView.barycenter_z()[i] - nodeView.barycenter_z()[node]);
-          edgeView.diff_time()[k] = std::abs(nodeView.time()[i] - nodeView.time()[node]);
-          edgeView.diff_barycenter_xy()[k] = std::hypot((nodeView.barycenter_x()[i] - nodeView.barycenter_x()[node]), (nodeView.barycenter_y()[i] - nodeView.barycenter_y()[node]));
-          edgeView.diff_eigenvector0()[k] = std::acos(nodeView.eigenvector0_x()[i] * nodeView.eigenvector0_x()[node] + nodeView.eigenvector0_y()[i] * nodeView.eigenvector0_y()[node] + nodeView.eigenvector0_z()[i] * nodeView.eigenvector0_z()[node]);
+          edgeView.raw_energy()[k] = 2;
+          edgeView.barycenter_z()[k] = std::abs(nodeView.barycenter_z()[i] - nodeView.barycenter_z()[node]);
+          edgeView.time()[k] = std::abs(nodeView.time()[i] - nodeView.time()[node]);
+          edgeView.barycenter_xy()[k] = std::hypot((nodeView.barycenter_x()[i] - nodeView.barycenter_x()[node]), (nodeView.barycenter_y()[i] - nodeView.barycenter_y()[node]));
+          edgeView.eigenvector0()[k] = std::acos(nodeView.eigenvector0_x()[i] * nodeView.eigenvector0_x()[node] + nodeView.eigenvector0_y()[i] * nodeView.eigenvector0_y()[node] + nodeView.eigenvector0_z()[i] * nodeView.eigenvector0_z()[node]);
+
+          edgeIndexView.in()[k] = i;
+          edgeIndexView.out()[k] = node;
+
           k++;
       }
     }
