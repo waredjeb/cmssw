@@ -108,6 +108,8 @@
   <class name="GNNEdgeSoA"/>
   <class name="GNNYSoA"/>
   <class name="TrackstersSoAHostCollection"/>
+  <class name="TrackstersEdgeSoAHostCollection"/>
+  <class name="TrackstersNodeSoAHostCollection"/>
   <class name="edm::Wrapper<TrackstersSoAHostCollection>" splitLevel="0"/>
 
 

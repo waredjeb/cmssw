@@ -64,6 +64,13 @@ inline void TICLGraph::findRootNodes() {
   }
 }
 
+// size_t TICLGraph::getNumberOfEdges() const {
+//   size_t edges = 0;
+//   for (auto const& n : nodes_)
+//     edges += n.getOuterNeighbours().size();
+//   return edges;
+// }
+
 bool TICLGraph::isGraphOk() {
   for (const auto& n : nodes_) {
     if (n.getInnerNeighbours().size() > 1) {
