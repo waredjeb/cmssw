@@ -7,8 +7,6 @@
 
 GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
                     // columns: one value per element
-                    SOA_COLUMN(float, raw_energy),
-                    SOA_COLUMN(float, raw_em_energy),
                     SOA_COLUMN(float, barycenter_x),
                     SOA_COLUMN(float, barycenter_y),
                     SOA_COLUMN(float, barycenter_z),
@@ -25,6 +23,8 @@ GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
                     SOA_COLUMN(float, sigmasPCA3),
                     SOA_COLUMN(float, num_LCs),
                     SOA_COLUMN(float, num_hits),
+                    SOA_COLUMN(float, raw_energy),
+                    SOA_COLUMN(float, raw_em_energy),
                     SOA_COLUMN(float, photon_prob),
                     SOA_COLUMN(float, electron_prob),
                     SOA_COLUMN(float, muon_prob),
@@ -34,8 +34,8 @@ GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
                     SOA_COLUMN(float, z_min),
                     SOA_COLUMN(float, z_max),
                     SOA_COLUMN(float, LC_density),
-                    SOA_COLUMN(float, time),
-                    SOA_COLUMN(float, trackster_density)
+                    SOA_COLUMN(float, trackster_density),
+                    SOA_COLUMN(float, time)
 );
 
 GENERATE_SOA_LAYOUT(GNNEdgeSoALayout,
@@ -47,8 +47,8 @@ GENERATE_SOA_LAYOUT(GNNEdgeSoALayout,
 );
 
 GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout,
-                    SOA_COLUMN(float, in),
-                    SOA_COLUMN(float, out)
+                    SOA_COLUMN(long, in),
+                    SOA_COLUMN(long, out)
 );
 
 GENERATE_SOA_LAYOUT(GNNOutputSoALayout ,
