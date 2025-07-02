@@ -34,9 +34,9 @@ namespace cms::torch::alpaka {
                                                       ::torch::Device device) {
       std::vector<::torch::IValue> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr) % SOA_Input::alignment == 0);
+        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % metadata.input[metadata.input.order[i]].alignment_ == 0);
         tensors.at(i) =
-            std::move(Converter::array_to_tensor<SOA_Input>(device, metadata.input[metadata.input.order[i]]));
+            std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
       }
       return tensors;
     }
@@ -47,9 +47,9 @@ namespace cms::torch::alpaka {
                                                              ::torch::Device device) {
       std::vector<::torch::Tensor> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr) % SOA_Input::alignment == 0);
+        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % metadata.input[metadata.input.order[i]].alignment_ == 0);
         tensors.at(i) =
-            std::move(Converter::array_to_tensor<SOA_Input>(device, metadata.input[metadata.input.order[i]]));
+            std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
       }
       return tensors;
     }
@@ -58,8 +58,8 @@ namespace cms::torch::alpaka {
     template <typename SOA_Input, typename SOA_Output>
     static ::torch::Tensor convert_output(const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                           ::torch::Device device) {
-      assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[0]].ptr) % SOA_Output::alignment == 0);
-      return Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[0]]);
+      assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[0]].ptr_) % metadata.output[metadata.output.order[0]].alignment_ == 0);
+      return Converter::array_to_tensor(device, metadata.output[metadata.output.order[0]]);
     }
 
     // Calculate size and stride of data store based on OutputMetadata and fill SoA with tensor values
@@ -70,9 +70,8 @@ namespace cms::torch::alpaka {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
         // Only tensors are currenlty supported for conversion
         if (tensors.at(i).isTensor()) {
-          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr) % SOA_Output::alignment ==
-                 0);
-          Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]]) =
+          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % metadata.output[metadata.output.order[0]].alignment_ == 0);
+          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) =
               tensors.at(i).toTensor();
         }
       }
@@ -84,22 +83,21 @@ namespace cms::torch::alpaka {
                                const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                ::torch::Device device) {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr) % SOA_Output::alignment == 0);
-        Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]]) = tensors.at(i);
+        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % metadata.output[metadata.output.order[0]].alignment_ == 0);
+        Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors.at(i);
       }
     }
 
   private:
     // Wrap raw pointer by torch::Tensor based on type, size and stride.
-    template <typename SOA_Layout>
-    static ::torch::Tensor array_to_tensor(::torch::Device device, const Block<SOA_Layout>& block) {
+    static ::torch::Tensor array_to_tensor(::torch::Device device, const Block& block) {
       auto options = ::torch::TensorOptions()
-                         .dtype(block.type)
+                         .dtype(block.type_)
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
                          .device(device)
 #endif
                          .pinned_memory(true);
-      return ::torch::from_blob(block.ptr, block.size, block.stride, options);
+      return ::torch::from_blob(block.ptr_, block.size_, block.stride_, options);
     }
   };
 

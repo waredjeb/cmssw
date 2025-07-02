@@ -34,32 +34,32 @@ namespace cms::torch::alpaka {
 
   // Block of SoA Columns with same type and element size.
   // Calculates size and stride and stores torch type.
-  template <typename SOA_Layout>
   struct Block {
-    std::vector<long int> stride;
-    std::vector<long int> size;
+    std::vector<long int> stride_;
+    std::vector<long int> size_;
 
-    void* ptr;
-    ::torch::ScalarType type;
-    size_t bytes;
+    void* ptr_;
+    ::torch::ScalarType type_;
+    size_t bytes_;
+    size_t alignment_;
     bool is_scalar = false;
 
-    Block() : ptr(nullptr) {}
+    Block() : ptr_(nullptr) {}
     // Constructor for columns and eigen columns
-    Block(int nElements, void* ptr_, const Columns& columns_, ::torch::ScalarType type_, size_t bytes_)
-        : ptr(ptr_), type(type_), bytes(bytes_) {
-      stride = create_stride(nElements, columns_, bytes_);
-      size = create_size(nElements, columns_);
+    Block(int nElements, size_t alignment, void* ptr, const Columns& columns, ::torch::ScalarType type, size_t bytes)
+        : ptr_(ptr), type_(type), bytes_(bytes), alignment_(alignment) {
+      stride_ = create_stride(nElements, alignment, columns, bytes);
+      size_ = create_size(nElements, columns);
     };
 
     // Constructor for scalar columns
-    Block(int nElements, void* ptr_, ::torch::ScalarType type_, size_t bytes_) : ptr(ptr_), type(type_), bytes(bytes_) {
-      stride = create_stride(nElements, 1, bytes_, true);
-      size = create_size(nElements, 1);
+    Block(int nElements, size_t alignment, void* ptr, ::torch::ScalarType type, size_t bytes) : ptr_(ptr), type_(type), bytes_(bytes), alignment_(alignment) {
+      stride_ = create_stride(nElements, alignment, 1, bytes, true);
+      size_ = create_size(nElements, 1);
     };
 
-    static int get_elems_per_column(int nElements, size_t bytes) {
-      int per_bunch = SOA_Layout::alignment / bytes;
+    static int get_elems_per_column(int nElements, size_t alignment, size_t bytes) {
+      int per_bunch = alignment / bytes;
       int bunches = std::ceil(1.0 * nElements / per_bunch);
       return bunches * per_bunch;
     }
@@ -74,13 +74,14 @@ namespace cms::torch::alpaka {
     }
 
     static std::vector<long int> create_stride(int nElements,
+                                               size_t alignment,
                                                const Columns& columns,
                                                size_t bytes,
                                                bool is_scalar = false) {
       int N = columns.size() + 1;
       std::vector<long int> stride(N);
 
-      int per_bunch = SOA_Layout::alignment / bytes;
+      int per_bunch = alignment / bytes;
       int bunches = std::ceil(1.0 * nElements / per_bunch);
 
       if (!is_scalar)
@@ -105,10 +106,10 @@ namespace cms::torch::alpaka {
 
   // Metadata for SOA split into multiple blocks.
   // An order for the resulting tensors can be defined.
-  template <typename SOA_Layout>
+  template <typename DEFAULT_SOA_Layout>
   struct SoAMetadata {
   private:
-    std::map<std::string, Block<SOA_Layout>> blocks;
+    std::map<std::string, Block> blocks;
 
     template <typename T>
     inline static ::torch::ScalarType get_type() {
@@ -141,18 +142,17 @@ namespace cms::torch::alpaka {
   public:
     // Order of resulting tensor list
     std::vector<std::string> order;
-    int nElements;
+    int nElements_;
     int nBlocks;
 
-    SoAMetadata(int nElements_) : nElements(nElements_), nBlocks(0) {}
+    SoAMetadata(int nElements_) : nElements_(nElements_), nBlocks(0) {}
 
-    // TODO: Check columns are contiguous
     template <typename T, typename... Others>
       requires(SameTypes<typename T::ValueType, typename Others::ValueType...> && T::columnType == SoAColumnType::eigen)
     void append_block(const std::string& name, T column, Others... others) {
       const auto [ptr, stride] = column.tupleOrPointer();
 
-      int elems = Block<SOA_Layout>::get_elems_per_column(nElements, sizeof(typename T::ScalarType));
+      int elems = Block::get_elems_per_column(nElements_, DEFAULT_SOA_Layout::alignment, sizeof(typename T::ScalarType));
       assert(check_location(elems * T::ValueType::RowsAtCompileTime * T::ValueType::ColsAtCompileTime,
                             ptr,
                             std::get<0>(others.tupleOrPointer())...));
@@ -161,23 +161,22 @@ namespace cms::torch::alpaka {
       if (T::ValueType::ColsAtCompileTime > 1)
         col.push(T::ValueType::ColsAtCompileTime);
 
-      blocks.try_emplace(name, nElements, ptr, col, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
+      blocks.try_emplace(name, nElements_, DEFAULT_SOA_Layout::alignment, ptr, col, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
       order.push_back(name);
       nBlocks += 1;
     }
 
-    // TODO: Check columns are contiguous
     // Append a block based on a typed pointer and a column object.
-    // Can be normal column or eigen column.
     template <typename T, typename... Others>
       requires(SameTypes<typename T::ScalarType, typename Others::ScalarType...> &&
                T::columnType == SoAColumnType::column)
     void append_block(const std::string& name, T column, Others... others) {
-      int elems = Block<SOA_Layout>::get_elems_per_column(nElements, sizeof(typename T::ScalarType));
+      int elems = Block::get_elems_per_column(nElements_, DEFAULT_SOA_Layout::alignment, sizeof(typename T::ScalarType));
       assert(check_location(elems, column.tupleOrPointer(), others.tupleOrPointer()...));
 
       blocks.try_emplace(name,
-                         nElements,
+                         nElements_,
+                         DEFAULT_SOA_Layout::alignment,
                          column.tupleOrPointer(),
                          sizeof...(others) + 1,
                          get_type<typename T::ScalarType>(),
@@ -186,10 +185,31 @@ namespace cms::torch::alpaka {
       nBlocks += 1;
     }
 
+    // Append a block based on a typed pointer and a column object.
+    // Override SOA_LAYOUT with other layout
+    template <typename SOA_LAYOUT, typename T, typename... Others>
+      requires(SameTypes<typename T::ScalarType, typename Others::ScalarType...> &&
+               T::columnType == SoAColumnType::column)
+    void append_block(const std::string& name, int nElements, T column, Others... others) {
+      int elems = Block::get_elems_per_column(nElements, SOA_LAYOUT::alignment, sizeof(typename T::ScalarType));
+      assert(check_location(elems, column.tupleOrPointer(), others.tupleOrPointer()...));
+
+      blocks.try_emplace(name,
+                         nElements,
+                         SOA_LAYOUT::alignment,
+                         column.tupleOrPointer(),
+                         sizeof...(others) + 1,
+                         get_type<typename T::ScalarType>(),
+                         sizeof(typename T::ScalarType));
+      order.push_back(name);
+      nBlocks += 1;
+    }
+
+
     template <SoAColumnType col_type, typename T>
       requires(std::is_arithmetic_v<T> && col_type == SoAColumnType::scalar)
     void append_block(const std::string& name, SoAParametersImpl<col_type, T> column) {
-      blocks.try_emplace(name, nElements, column.tupleOrPointer(), get_type<T>(), sizeof(T));
+      blocks.try_emplace(name, nElements_, DEFAULT_SOA_Layout::alignment, column.tupleOrPointer(), get_type<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
     }
@@ -200,7 +220,7 @@ namespace cms::torch::alpaka {
     void change_order(const std::vector<std::string>& new_order) { order = new_order; }
     void change_order(std::vector<std::string>&& new_order) { order = std::move(new_order); }
 
-    inline Block<SOA_Layout> operator[](const std::string& key) const { return blocks.at(key); }
+    inline Block operator[](const std::string& key) const { return blocks.at(key); }
   };
 
 }  // namespace cms::torch::alpaka
