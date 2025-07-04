@@ -81,7 +81,7 @@
   <flags ALPAKA_BACKENDS="serial"/>
 </bin>
 
-<!-- <bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch">
+<bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch">
   <use name="alpaka"/>
   <use name="cppunit"/>
   <use name="eigen"/>
@@ -90,7 +90,18 @@
   <use name="FWCore/Utilities"/>
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
-</bin> -->
+</bin>
+
+<bin file="alpaka/testMultiSoA.dev.cc testRunner.cc" name="testMultiSoA">
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="eigen"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="FWCore/Utilities"/>
+  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial"/>
+</bin>
 
 <bin file="alpaka/testTorchDeviceMatchAlpaka.cc testRunner.cc" name="testTorchDeviceMatchAlpaka">
   <use name="cppunit"/>
