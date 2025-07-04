@@ -34,9 +34,10 @@ namespace cms::torch::alpaka {
                                                       ::torch::Device device) {
       std::vector<::torch::IValue> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % metadata.input[metadata.input.order[i]].alignment_ == 0);
-        tensors.at(i) =
-            std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
+        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) %
+                   metadata.input[metadata.input.order[i]].alignment_ ==
+               0);
+        tensors.at(i) = std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
       }
       return tensors;
     }
@@ -47,9 +48,10 @@ namespace cms::torch::alpaka {
                                                              ::torch::Device device) {
       std::vector<::torch::Tensor> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % metadata.input[metadata.input.order[i]].alignment_ == 0);
-        tensors.at(i) =
-            std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
+        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) %
+                   metadata.input[metadata.input.order[i]].alignment_ ==
+               0);
+        tensors.at(i) = std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
       }
       return tensors;
     }
@@ -58,7 +60,9 @@ namespace cms::torch::alpaka {
     template <typename SOA_Input, typename SOA_Output>
     static ::torch::Tensor convert_output(const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                           ::torch::Device device) {
-      assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[0]].ptr_) % metadata.output[metadata.output.order[0]].alignment_ == 0);
+      assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[0]].ptr_) %
+                 metadata.output[metadata.output.order[0]].alignment_ ==
+             0);
       return Converter::array_to_tensor(device, metadata.output[metadata.output.order[0]]);
     }
 
@@ -70,9 +74,10 @@ namespace cms::torch::alpaka {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
         // Only tensors are currenlty supported for conversion
         if (tensors.at(i).isTensor()) {
-          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % metadata.output[metadata.output.order[0]].alignment_ == 0);
-          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) =
-              tensors.at(i).toTensor();
+          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) %
+                     metadata.output[metadata.output.order[0]].alignment_ ==
+                 0);
+          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors.at(i).toTensor();
         }
       }
     }
@@ -83,7 +88,9 @@ namespace cms::torch::alpaka {
                                const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                ::torch::Device device) {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % metadata.output[metadata.output.order[0]].alignment_ == 0);
+        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) %
+                   metadata.output[metadata.output.order[0]].alignment_ ==
+               0);
         Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors.at(i);
       }
     }
