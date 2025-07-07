@@ -78,12 +78,39 @@ for iterLabel in hltTiclIterLabels:
         src=cms.InputTag(
             f"hltAllTrackstersToSimTrackstersAssociationsByHits:hltTiclSimTrackstersTo{iterLabel}"
         ),
-        name=cms.string("SimTS2TSMergeByHits"),
+        name=cms.string(f"SimTSSC2{iterLabel}MergeByHits"),
         doc=cms.string(
             f"Association between SimTracksters and {iterLabel}, by hits."),
         collectionVariables=cms.PSet(
             links=cms.PSet(
-                name=cms.string("SimTS2TSMergeByHitsLinks"),
+                name=cms.string(f"SimTSSC2TS{iterLabel}ByHitsLinks"),
+                doc=cms.string("Association links."),
+                useCount=cms.bool(True),
+                useOffset=cms.bool(False),
+                variables=cms.PSet(
+                    index=Var("index", "uint",
+                              doc="Index of the associated Trackster."),
+                    sharedEnergy=Var(
+                        "sharedEnergy",
+                        "float",
+                        doc="Shared energy with associated Trackster.",
+                    ),
+                    score=Var("score", "float", doc="Association score."),
+                ),
+            )
+        ),
+    )
+    trackstersAssociationOneToManyTable_fromCPs = cms.EDProducer(
+        "TracksterTracksterEnergyScoreFlatTableProducer",
+        src=cms.InputTag(
+            f"hltAllTrackstersToSimTrackstersAssociationsByHits:hltTiclSimTrackstersfromCPsTo{iterLabel}"
+        ),
+        name=cms.string(f"SimTSCP2{iterLabel}MergeByHits"),
+        doc=cms.string(
+            f"Association between SimTracksters and {iterLabel}, by hits."),
+        collectionVariables=cms.PSet(
+            links=cms.PSet(
+                name=cms.string(f"SimTSCP2{iterLabel}ByHitsLinks"),
                 doc=cms.string("Association links."),
                 useCount=cms.bool(True),
                 useOffset=cms.bool(False),
@@ -101,8 +128,8 @@ for iterLabel in hltTiclIterLabels:
         ),
     )
     hltTrackstersTable.append(tracksterTable)
-    hltTrackstersAssociationOneToManyTable.append(
-        trackstersAssociationOneToManyTable)
+    hltTrackstersAssociationOneToManyTable.extend([
+        trackstersAssociationOneToManyTable, trackstersAssociationOneToManyTable_fromCPs])
 
 hltSimTracksterTable = cms.EDProducer(
     "TracksterCollectionTableProducer",
