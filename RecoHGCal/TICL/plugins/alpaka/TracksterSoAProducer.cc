@@ -61,6 +61,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto hostCollection = TrackstersSoAHostCollection(sizes, event.queue());
     hostCollection.zeroInitialise(event.queue());
+    alpaka::wait(event.queue());
+    
     auto deviceCollection = TrackstersSoADeviceCollection(sizes, event.queue());
     auto& nodeView = hostCollection.view<GNNNodeSoA>();
     auto& edgeView = hostCollection.view<GNNEdgeSoA>();
