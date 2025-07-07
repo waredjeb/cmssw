@@ -1,98 +1,127 @@
-#include <algorithm>
-#include <numeric>
-#include "DataFormats/NanoAOD/interface/FlatTable.h"
-#include "DataFormats/HGCalReco/interface/TICLCandidate.h"
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/MakerMacros.h"
-#include "FWCore/Framework/interface/global/EDProducer.h"
-#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#ifndef HLTrigger_HLTUpgradeNano_TICLCandidateExtraTableProducer_h
+#define HLTrigger_HLTUpgradeNano_TICLCandidateExtraTableProducer_h
 
-class TICLCandidateExtraTableProducer : public edm::global::EDProducer<> {
+#include "PhysicsTools/NanoAOD/interface/SimpleFlatTableProducer.h"
+#include "DataFormats/HGCalReco/interface/TICLCandidate.h"
+#include "DataFormats/HGCalReco/interface/Trackster.h"
+
+//
+// One-to-many: TICLCandidate -> linked Tracksters
+// Or SimTICLCandidate --> SimTracksters
+//
+
+class TICLCandidateExtraTableProducer : public SimpleFlatTableProducerBase<TICLCandidate, std::vector<TICLCandidate>> {
 public:
-  TICLCandidateExtraTableProducer(const edm::ParameterSet& cfg)
-      : tableName_(cfg.getParameter<std::string>("tableName")),
-        skipNonExistingSrc_(cfg.getParameter<bool>("skipNonExistingSrc")),
-        ticlCandidate_token_(mayConsume<std::vector<TICLCandidate>>(cfg.getParameter<edm::InputTag>("candidates"))),
-        precision_(cfg.getParameter<int>("precision")) {
-    produces<nanoaod::FlatTable>(tableName_);         // main table
-    produces<nanoaod::FlatTable>("tracksterIndices"); // child table
+  using TProd = edm::Ptr<ticl::Trackster>;
+
+  TICLCandidateExtraTableProducer(edm::ParameterSet const& params)
+      : SimpleFlatTableProducerBase<TICLCandidate, std::vector<TICLCandidate>>(params) {
+    if (params.existsAs<edm::ParameterSet>("collectionVariables")) {
+      edm::ParameterSet const& collectionVarsPSet = params.getParameter<edm::ParameterSet>("collectionVariables");
+      for (const auto& coltablename : collectionVarsPSet.getParameterNamesForType<edm::ParameterSet>()) {
+        const auto& coltablePSet = collectionVarsPSet.getParameter<edm::ParameterSet>(coltablename);
+
+        CollectionVariableTableInfo coltable;
+        coltable.name = coltablePSet.existsAs<std::string>("name") ? coltablePSet.getParameter<std::string>("name")
+                                                                   : coltablename;
+        coltable.doc = coltablePSet.getParameter<std::string>("doc");
+        coltable.useCount = coltablePSet.getParameter<bool>("useCount");
+        coltable.useOffset = coltablePSet.getParameter<bool>("useOffset");
+
+        this->coltables_.push_back(std::move(coltable));
+        produces<nanoaod::FlatTable>(coltables_.back().name + "Table");
+      }
+    }
+  }
+
+  void produce(edm::Event& iEvent, const edm::EventSetup&) override {
+    edm::Handle<std::vector<TICLCandidate>> prod;
+    iEvent.getByToken(this->src_, prod);
+
+    const auto& candidates = *prod;
+    const size_t table_size = candidates.size();
+
+    auto out = std::make_unique<nanoaod::FlatTable>(table_size, this->name_, /*singleton*/ false, /*extension*/ false);
+
+    unsigned int coltablesize = 0;
+    std::vector<unsigned int> counts;
+    counts.reserve(table_size);
+
+    std::vector<uint32_t> tracksterKeys;
+
+    for (const auto& cand : candidates) {
+      const auto& children = cand.tracksters();
+      counts.push_back(children.size());
+      coltablesize += children.size();
+      for (const auto& t : children) {
+        tracksterKeys.push_back(t.key());
+      }
+    }
+
+    for (const auto& coltable : this->coltables_) {
+      if (coltable.useCount) {
+        out->addColumn<uint16_t>("n" + coltable.name, counts, "Count for " + coltable.name);
+      }
+      if (coltable.useOffset) {
+        std::vector<unsigned int> offsets;
+        offsets.reserve(counts.size());
+        unsigned int offset = 0;
+        for (auto c : counts) {
+          offsets.push_back(offset);
+          offset += c;
+        }
+        out->addColumn<uint16_t>("o" + coltable.name, offsets, "Offset for " + coltable.name);
+      }
+
+      auto outcoltable = std::make_unique<nanoaod::FlatTable>(coltablesize, coltable.name, false, false);
+
+      outcoltable->addColumn<uint32_t>("tracksterIndex", tracksterKeys, "Index of associated Trackster");
+
+      outcoltable->setDoc(coltable.doc);
+      iEvent.put(std::move(outcoltable), coltable.name + "Table");
+    }
+
+    if (out->nColumns() > 0) {
+      out->setDoc(this->doc_);
+      iEvent.put(std::move(out));
+    } 
+  }
+
+  std::unique_ptr<nanoaod::FlatTable> fillTable(const edm::Event&, const edm::Handle<std::vector<TICLCandidate>>&) const override {
+    return std::make_unique<nanoaod::FlatTable>();
   }
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-    edm::ParameterSetDescription desc;
-    desc.add<std::string>("tableName", "hltTiclCandidatesTable")
-        ->setComment("Name of the main TICLCandidate table");
-    desc.add<bool>("skipNonExistingSrc", false)
-        ->setComment("Skip if missing input");
-    desc.add<edm::InputTag>("candidates", edm::InputTag("hltTiclCandidates"));
-    desc.add<int>("precision", 7);
+    edm::ParameterSetDescription desc = SimpleFlatTableProducerBase<TICLCandidate, std::vector<TICLCandidate>>::baseDescriptions();
+
+    edm::ParameterSetDescription coltable;
+    coltable.add<std::string>("name");
+    coltable.add<std::string>("doc");
+    coltable.add<bool>("useCount");
+    coltable.add<bool>("useOffset");
+    edm::ParameterSetDescription colvariables;  // unused here
+    coltable.add<edm::ParameterSetDescription>("variables", colvariables);
+
+    edm::ParameterSetDescription coltables;
+    coltables.addOptionalNode(
+        edm::ParameterWildcard<edm::ParameterSetDescription>("*", edm::RequireZeroOrMore, true, coltable), false);
+
+    desc.addOptional<edm::ParameterSetDescription>("collectionVariables", coltables);
     descriptions.addWithDefaultLabel(desc);
   }
 
-private:
-  void produce(edm::StreamID id, edm::Event& event, const edm::EventSetup& setup) const override {
-    const auto& ticlCandidatesHandle = event.getHandle(ticlCandidate_token_);
-    if (!ticlCandidatesHandle.isValid()) {
-      if (skipNonExistingSrc_) return;
-      throw cms::Exception("MissingProduct") << "TICLCandidates not found!\n";
-    }
-
-    const auto& ticlCandidates = *ticlCandidatesHandle;
-    const size_t nCandidates = ticlCandidates.size();
-
-    // One flat vector for ALL trackster indices
-    std::vector<int> flatTracksterIndices;
-    // One count per TICLCandidate
-    std::vector<uint32_t> nTrackstersPerCandidate;
-    flatTracksterIndices.reserve(nCandidates * 5);  // guess: avg 5 per candidate
-    nTrackstersPerCandidate.reserve(nCandidates);
-
-    for (const auto& candidate : ticlCandidates) {
-      const auto& tracksters = candidate.tracksters();
-      uint32_t count = 0;
-      for (const auto& trackster : tracksters) {
-        if (trackster.isNonnull()) {
-          flatTracksterIndices.push_back(trackster.key());
-          ++count;
-        }
-      }
-      nTrackstersPerCandidate.push_back(count);
-    }
-
-    // === Main table ===
-    auto mainTable = std::make_unique<nanoaod::FlatTable>(nCandidates, tableName_, /*singleton=*/false, /*extension=*/true);
-    mainTable->setDoc("TICLCandidates with associated Tracksters");
-    mainTable->addColumn<uint32_t>(
-      "nTracksters",
-      nTrackstersPerCandidate,
-      "Number of Tracksters associated to this TICLCandidate"
-    );
-
-    // === Child table ===
-    auto childTable = std::make_unique<nanoaod::FlatTable>(
-      flatTracksterIndices.size(), "tracksterIndices", /*singleton=*/false, /*extension=*/true);
-    childTable->setDoc("Flattened indices of all Tracksters linked to TICLCandidates");
-    childTable->addColumn<int>(
-      "tracksterIndex",
-      flatTracksterIndices,
-      "Index in the Trackster collection for each Trackster in TICLCandidates",
-      precision_
-    );
-
-    // Put both tables
-    event.put(std::move(mainTable), tableName_);
-    event.put(std::move(childTable), "tracksterIndices");
-  }
-
-private:
-  const std::string tableName_;
-  const bool skipNonExistingSrc_;
-  const edm::EDGetTokenT<std::vector<TICLCandidate>> ticlCandidate_token_;
-  const unsigned int precision_;
+protected:
+  struct CollectionVariableTableInfo {
+    std::string name;
+    std::string doc;
+    bool useCount;
+    bool useOffset;
+  };
+  std::vector<CollectionVariableTableInfo> coltables_;
 };
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(TICLCandidateExtraTableProducer);
+
+#endif
 

@@ -22,7 +22,7 @@ from HLTrigger.NGTScouting.hltJets_cfi import *
 from HLTrigger.NGTScouting.hltTaus_cfi import *
 from HLTrigger.NGTScouting.hltTracksters_cfi import *
 from HLTrigger.NGTScouting.hltTICLCandidates_cfi import *
-from HLTrigger.NGTScouting.hltCaloParticles_cfi import *
+from HLTrigger.NGTScouting.hltTICLSuperClusters_cfi import *
 from HLTrigger.NGTScouting.hltSums_cfi import *
 from HLTrigger.NGTScouting.hltTriggerAcceptFilter_cfi import hltTriggerAcceptFilter,dstTriggerAcceptFilter
 
@@ -64,6 +64,8 @@ hltNanoProducer = cms.Sequence(
     + hltJetTable
     + trackstersSeq 
     + hltTiclCandidateTable 
+    + hltTiclCandidateExtraTable 
+    + hltTiclSuperClustersTable
     + hltTauTable
     + hltTauExtTable
     + METTable
@@ -86,6 +88,8 @@ dstNanoProducer = cms.Sequence(
     + hltTauTable
     + trackstersSeq 
     + hltTiclCandidateTable 
+    + hltTiclCandidateExtraTable 
+    + hltTiclSuperClustersTable
     + hltTauExtTable
     + METTable
     + HTTable
@@ -112,13 +116,13 @@ def hltNanoValCustomize(process):
     if hasattr(process, "dstNanoProducer"):
         namedProducers = []
         for i, _producer in enumerate(hltTrackstersAssociationOneToManyTable):
-            label = f"trackstersAssociationProducer{i}"
+            label = f"trackstersAssociationOneToManyTable{i}"
             globals()[label] = _producer.clone()
             setattr(process, label, _producer.clone())
             namedProducers.append(getattr(process,label))
         associationsSeq = cms.Sequence(sum(namedProducers, cms.Sequence()))
         process.associationsSeq = associationsSeq
 
-        process.dstNanoProducer += (process.associationsSeq  + process.hltSimCl2CPOneToOneFlatTable + process.hltSimTracksterTable + process.hltSimTracksterFromCPsTable + process.hltTiclSimTrackstersExtraTable + process.hltTiclSimTrackstersFromCPsExtraTable)
+        process.dstNanoProducer += (process.associationsSeq  + process.hltSimCl2CPOneToOneFlatTable + process.hltSimTracksterTable + process.hltSimTracksterFromCPsTable + process.hltTiclSimTrackstersExtraTable + process.hltTiclSimTrackstersFromCPsExtraTable + process.hltSimTiclCandidateTable + process.hltSimTiclCandidateExtraTable )
 
     return process
