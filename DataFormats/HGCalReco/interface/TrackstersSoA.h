@@ -51,7 +51,7 @@ GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout,
                     SOA_COLUMN(long, out)
 );
 
-GENERATE_SOA_LAYOUT(GNNOutputSoALayout ,
+GENERATE_SOA_LAYOUT(GNNOutputSoALayout,
                     SOA_COLUMN(float, score)
 );
 
