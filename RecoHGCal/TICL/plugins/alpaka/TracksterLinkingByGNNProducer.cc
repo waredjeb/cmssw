@@ -4,6 +4,7 @@
 
 #include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
 #include "DataFormats/HGCalReco/interface/alpaka/TracksterSoADeviceCollection.h"
+#include "DataFormats/HGCalReco/interface/alpaka/GNNOutputSoADeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -125,21 +126,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         inputs_metadata, outputs_metadata);
 
     // inference
-    NvtxScopedRange move_to_device("Classifier::move_to_device");
-    if (cms::torch::alpaka::device(event.queue()) != model_->device()) {
-      std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " Model: " << model_->device() << " -> "
-                << cms::torch::alpaka::device(event.queue()) << std::endl;
-      model_->to(event.queue());
-    }
-    assert(cms::torch::alpaka::device(event.queue()) == model_->device());
-    move_to_device.end();
+   NvtxScopedRange move_to_device("Classifier::move_to_device");
+   if (cms::torch::alpaka::device(event.queue()) != model_->device()) {
+     std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " Model: " << model_->device() << " -> "
+               << cms::torch::alpaka::device(event.queue()) << std::endl;
+     model_->to(event.queue());
+   }
+   assert(cms::torch::alpaka::device(event.queue()) == model_->device());
+   move_to_device.end();
     NvtxScopedRange infer_range("TracksterLinkingGNN::inference");
     model_->forward(metadata);
     infer_range.end();
 
     //kernels_->AssertClassification(event.queue(), outputs);
-    event.emplace(outputs_token_, std::move(outputs));
     alpaka::wait(event.queue());
+    event.emplace(outputs_token_, std::move(outputs));
     auto t2 = std::chrono::high_resolution_clock::now();
     std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;

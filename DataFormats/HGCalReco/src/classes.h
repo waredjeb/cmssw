@@ -16,3 +16,4 @@
 #include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "DataFormats/HGCalReco/interface/TrackstersSoA.h"
 #include "DataFormats/HGCalReco/interface/TracksterSoAHostCollection.h"
+#include "DataFormats/HGCalReco/interface/GNNOutputSoAHostCollection.h"

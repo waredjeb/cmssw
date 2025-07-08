@@ -18,4 +18,7 @@
   <class name="alpaka_cuda_async::TrackstersGNNOutputSoADeviceCollection" persistent="false"/>
   <class name="edm::DeviceProduct<alpaka_cuda_async::TrackstersGNNOutputSoADeviceCollection>" persistent="false"/>
   <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::TrackstersGNNOutputSoADeviceCollection>>" persistent="false"/>
+  <class name="PortableDeviceCollection<GNNOutputSoALayout<128,false>, alpaka::DevUniformCudaHipRt<alpaka::ApiCudaRt>, void>" />
+  <class name="edm::Wrapper<PortableDeviceCollection<GNNOutputSoALayout<128,false>, alpaka::DevUniformCudaHipRt<alpaka::ApiCudaRt>, void> >" />
+
 </lcgdict>

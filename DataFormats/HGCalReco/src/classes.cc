@@ -5,6 +5,7 @@
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsExtraHostCollection.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoAClustersHostCollection.h"
 #include "DataFormats/HGCalReco/interface/TracksterSoAHostCollection.h"
+#include "DataFormats/HGCalReco/interface/GNNOutputSoAHostCollection.h"
 
 SET_PORTABLEHOSTCOLLECTION_READ_RULES(MtdHostCollection);
 SET_PORTABLEHOSTCOLLECTION_READ_RULES(HGCalSoARecHitsHostCollection);

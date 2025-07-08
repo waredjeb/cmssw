@@ -106,8 +106,9 @@
   <class name="portablecollection::CollectionLeaf<2,GNNEdgeIndexSoALayout<128,false> >"/>
 
   <class name="TrackstersSoAHostCollection"/>
-  <class name="TrackstersGNNOutputSoAHostCollection"/>
   <class name="edm::Wrapper<TrackstersSoAHostCollection>" splitLevel="0"/>
+
+  <class name="TrackstersGNNOutputSoAHostCollection"/>
   <class name="edm::Wrapper<TrackstersGNNOutputSoAHostCollection>" splitLevel="0"/>
 
 

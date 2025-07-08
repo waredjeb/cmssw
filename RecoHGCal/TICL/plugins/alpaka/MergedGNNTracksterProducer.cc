@@ -10,9 +10,10 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDGetToken.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "PhysicsTools/PyTorch/interface/Nvtx.h"
@@ -29,14 +30,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_token_;
-    const edm::EDGetTokenT<TrackstersGNNOutputSoADeviceCollection> gnn_output_token_;
+    const device::EDGetToken<TrackstersGNNOutputSoADeviceCollection> gnn_output_token_;
     const edm::EDPutTokenT<std::vector<ticl::Trackster>> merged_tracksters_token_; /**< Token to store output data. */
   };
 
   MergedGNNTracksterProducer::MergedGNNTracksterProducer(edm::ParameterSet const &params)
       : EDProducer<>(params),
         tracksters_token_(consumes<std::vector<ticl::Trackster>>(params.getParameter<edm::InputTag>("tracksters"))),
-        gnn_output_token_(consumes<TrackstersGNNOutputSoADeviceCollection>(params.getParameter<edm::InputTag>("gnnOutput"))),
+        gnn_output_token_{consumes(params.getParameter<edm::InputTag>("gnnOutput"))},
         merged_tracksters_token_{produces()} {}
 
   void MergedGNNTracksterProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
@@ -72,5 +73,5 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
-
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 DEFINE_FWK_ALPAKA_MODULE(MergedGNNTracksterProducer);
