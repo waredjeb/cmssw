@@ -28,6 +28,7 @@ from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_sup
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 from RecoHGCal.TICL.TracksterSoAProducer_alpaka import TracksterSoAProducer_alpaka
+from RecoHGCal.TICL.MergedGNNTracksterProducer_alpaka import MergedGNNTracksterProducer_alpaka
 from RecoHGCal.TICL.TracksterLinkingByGNNProducer_alpaka import TracksterLinkingByGNNProducer_alpaka 
 
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
@@ -162,15 +163,19 @@ mergeTICLTask = cms.Task(ticlLayerTileTask
     ,ticlGraphTask
 )
 
-ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(batchSize=1, ticlGraph = cms.InputTag("ticlGraph"))
+ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(ticlGraph = cms.InputTag("ticlGraph"))
 ticlTracksterSoATask = cms.Task(ticlTracksterSoAProducer)
 ticlTrackstersLinkingByGNNProducer = TracksterLinkingByGNNProducer_alpaka(
     inputs = cms.InputTag("ticlTracksterSoAProducer"),
     modelPath = cms.FileInPath("RecoHGCal/TICL/models/model_inference.pt"),
 )
 ticlTrackstersLinkingByGNNProducerTask = cms.Task(ticlTrackstersLinkingByGNNProducer)
+ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
+    gnnOutput = cms.InputTag("ticlTrackstersLinkingByGNNProducer"),
+)
+ticlMergedGNNTrackstersProducerTask = cms.Task(ticlMergedGNNTrackstersProducer)
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
-ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask,ticlTrackstersLinkingByGNNProducerTask, ticlTracksterLinksTask))
+ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask,ticlTrackstersLinkingByGNNProducerTask,ticlMergedGNNTrackstersProducerTask,ticlTracksterLinksTask))
 
 
 mtdSoATask = cms.Task(mtdSoA)
