@@ -52,7 +52,9 @@ GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout,
 );
 
 GENERATE_SOA_LAYOUT(GNNOutputSoALayout ,
-                    SOA_COLUMN(float, score)
+                    SOA_COLUMN(float, score),
+		    SOA_COLUMN(float, in),
+		    SOA_COLUMN(float, out)
 );
 
 using GNNNodeSoA = GNNNodeSoALayout<>;
