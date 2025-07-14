@@ -58,71 +58,73 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const size_t numNodes = inputs.const_view<GNNNodeSoA>().metadata().size();
     const size_t numEdges = inputs.const_view<GNNEdgeSoA>().metadata().size();
     auto outputs = TrackstersGNNOutputSoADeviceCollection(numEdges, event.queue());
+    outputs.zeroInitialise(event.queue());
 
-    // metadata for automatic tensor conversion
-    auto node_records = inputs.view<GNNNodeSoA>().records();
-    auto edge_feature_records = inputs.view<GNNEdgeSoA>().records();
-    auto edge_index_records = inputs.view<GNNEdgeIndexSoA>().records();
-    auto output_records = outputs.view().records();
-    cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(numNodes);
+    if (numNodes > 0) {
+      // metadata for automatic tensor conversion
+      auto node_records = inputs.view<GNNNodeSoA>().records();
+      auto edge_feature_records = inputs.view<GNNEdgeSoA>().records();
+      auto edge_index_records = inputs.view<GNNEdgeIndexSoA>().records();
+      auto output_records = outputs.view().records();
+      cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(numNodes);
 
-    // Converter can also do full SoA
-    inputs_metadata.append_block("nodes",
-                                 node_records.barycenter_x(),
-                                 node_records.barycenter_y(),
-                                 node_records.barycenter_z(),
-                                 node_records.barycenter_eta(),
-                                 node_records.barycenter_phi(),
-                                 node_records.eigenvector0_x(),
-                                 node_records.eigenvector0_y(),
-                                 node_records.eigenvector0_z(),
-                                 node_records.eigenvalue1(),
-                                 node_records.eigenvalue2(),
-                                 node_records.eigenvalue3(),
-                                 node_records.sigmasPCA1(),
-                                 node_records.sigmasPCA2(),
-                                 node_records.sigmasPCA3(),
-                                 node_records.num_LCs(),
-                                 node_records.num_hits(),
-                                 node_records.raw_energy(),
-                                 node_records.raw_em_energy(),
-                                 node_records.photon_prob(),
-                                 node_records.electron_prob(),
-                                 node_records.muon_prob(),
-                                 node_records.neutral_pion_prob(),
-                                 node_records.charged_hadron_prob(),
-                                 node_records.neutral_hadron_prob(),
-                                 node_records.z_min(),
-                                 node_records.z_max(),
-                                 node_records.LC_density(),
-                                 node_records.trackster_density(),
-                                 node_records.time());
+      // Converter can also do full SoA
+      inputs_metadata.append_block("nodes",
+                                   node_records.barycenter_x(),
+                                   node_records.barycenter_y(),
+                                   node_records.barycenter_z(),
+                                   node_records.barycenter_eta(),
+                                   node_records.barycenter_phi(),
+                                   node_records.eigenvector0_x(),
+                                   node_records.eigenvector0_y(),
+                                   node_records.eigenvector0_z(),
+                                   node_records.eigenvalue1(),
+                                   node_records.eigenvalue2(),
+                                   node_records.eigenvalue3(),
+                                   node_records.sigmasPCA1(),
+                                   node_records.sigmasPCA2(),
+                                   node_records.sigmasPCA3(),
+                                   node_records.num_LCs(),
+                                   node_records.num_hits(),
+                                   node_records.raw_energy(),
+                                   node_records.raw_em_energy(),
+                                   node_records.photon_prob(),
+                                   node_records.electron_prob(),
+                                   node_records.muon_prob(),
+                                   node_records.neutral_pion_prob(),
+                                   node_records.charged_hadron_prob(),
+                                   node_records.neutral_hadron_prob(),
+                                   node_records.z_min(),
+                                   node_records.z_max(),
+                                   node_records.LC_density(),
+                                   node_records.trackster_density(),
+                                   node_records.time());
 
-    inputs_metadata.append_block<GNNEdgeSoA>("edge_features",
-                                             numEdges,
-                                             edge_feature_records.raw_energy(),
-                                             edge_feature_records.barycenter_z(),
-                                             edge_feature_records.barycenter_xy(),
-                                             edge_feature_records.eigenvector0(),
-                                             edge_feature_records.time());
+      inputs_metadata.append_block<GNNEdgeSoA>("edge_features",
+                                               numEdges,
+                                               edge_feature_records.raw_energy(),
+                                               edge_feature_records.barycenter_z(),
+                                               edge_feature_records.barycenter_xy(),
+                                               edge_feature_records.eigenvector0(),
+                                               edge_feature_records.time());
 
-    inputs_metadata.append_block<GNNEdgeIndexSoA>(
-        "edge_index", numEdges, edge_index_records.in(), edge_index_records.out());
+      inputs_metadata.append_block<GNNEdgeIndexSoA>(
+          "edge_index", numEdges, edge_index_records.in(), edge_index_records.out());
 
-    cms::torch::alpaka::SoAMetadata<GNNOutputSoA> outputs_metadata(numEdges);
-    outputs_metadata.append_block("preds", output_records.score());
+      cms::torch::alpaka::SoAMetadata<GNNOutputSoA> outputs_metadata(numEdges);
+      outputs_metadata.append_block("preds", output_records.score());
 
-    cms::torch::alpaka::ModelMetadata<GNNNodeSoA, GNNOutputSoA> metadata(inputs_metadata, outputs_metadata);
+      cms::torch::alpaka::ModelMetadata<GNNNodeSoA, GNNOutputSoA> metadata(inputs_metadata, outputs_metadata);
 
-    // inference
-    if (cms::torch::alpaka::device(event.queue()) != model_->device()) {
-      std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " Model: " << model_->device() << " -> "
-                << cms::torch::alpaka::device(event.queue()) << std::endl;
-      model_->to(event.queue());
+      // inference
+      if (cms::torch::alpaka::device(event.queue()) != model_->device()) {
+        std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " Model: " << model_->device() << " -> "
+                  << cms::torch::alpaka::device(event.queue()) << std::endl;
+        model_->to(event.queue());
+      }
+      assert(cms::torch::alpaka::device(event.queue()) == model_->device());
+      model_->forward(metadata);
     }
-    assert(cms::torch::alpaka::device(event.queue()) == model_->device());
-    model_->forward(metadata);
-
     event.emplace(outputs_token_, std::move(outputs));
     alpaka::wait(event.queue());
   }
