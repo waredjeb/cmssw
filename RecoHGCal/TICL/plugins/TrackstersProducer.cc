@@ -6,6 +6,7 @@
 
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/FileBlock.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -104,6 +105,7 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
 
   produces<std::vector<Trackster>>();
   produces<std::vector<float>>();  // Mask to be applied at the next iteration
+  produces<std::vector<float>>("tracksterMask");  // Mask to be applied at the next iteration
 }
 
 void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -168,6 +170,8 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   auto result = std::make_unique<std::vector<Trackster>>();
   auto initialResult = std::make_unique<std::vector<Trackster>>();
   auto output_mask = std::make_unique<std::vector<float>>();
+  auto output_maskTrackster = std::make_unique<std::vector<float>>();
+
 
   const std::vector<float>& original_layerclusters_mask = evt.get(original_layerclusters_mask_token_);
   const auto& layerClusters = evt.get(clusters_token_);
@@ -223,7 +227,9 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
       (*output_mask)[v] = 0.;
     }
   }
+  output_maskTrackster->resize(result->size(), 1.f);
 
   evt.put(std::move(result));
   evt.put(std::move(output_mask));
+  evt.put(std::move(output_maskTrackster), "tracksterMask");
 }
