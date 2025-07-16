@@ -25,7 +25,7 @@ namespace ticl {
                 hgcal::RecHitTools& rhtools) const override {
       for (size_t i = 0; i < tracksters.size(); i++) {
         if (tracksters[i].vertices().size() > max_cluster_size_) {
-          trackstersMask[i] = 0.;
+          trackstersMask[i] = 0.f;
         }
       }
     }
