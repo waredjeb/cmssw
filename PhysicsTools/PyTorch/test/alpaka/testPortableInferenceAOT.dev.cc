@@ -71,7 +71,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       inputs_host.view().z()[i] = 0.0f;
     }
     alpaka::memcpy(queue, inputs_device.buffer(), inputs_host.buffer());
-    alpaka::wait(queue);
 
     {
       // guard scope

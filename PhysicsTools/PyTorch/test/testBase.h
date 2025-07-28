@@ -3,8 +3,8 @@
  *
  */
 
-#ifndef PHYSICS_TOOLS__PYTORCH_TEST__TEST__TEST_BASE_H_
-#define PHYSICS_TOOLS__PYTORCH_TEST__TEST__TEST_BASE_H_
+#ifndef PhysicsTools_PyTorch_test_testBase_h
+#define PhysicsTools_PyTorch_test_testBase_h
 
 #include <boost/filesystem.hpp>
 #include <filesystem>
@@ -65,4 +65,4 @@ std::string testBasePyTorch::cmsswPath(std::string path) {
   return (std::filesystem::exists(base.c_str()) ? base : releaseBase) + path;
 }
 
-#endif  // PHYSICS_TOOLS__PYTORCH_TEST__TEST__TEST_BASE_H_
+#endif  // PhysicsTools_PyTorch_test_testBase_h

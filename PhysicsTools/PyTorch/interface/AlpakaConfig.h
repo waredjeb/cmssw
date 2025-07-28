@@ -1,20 +1,16 @@
 // ROCm/HIP backend not yet supported, see: https://github.com/pytorch/pytorch/blob/main/aten/CMakeLists.txt#L75
-
-#ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__ALPAKA_CONFIG_H_
-#define PHYSICS_TOOLS__PYTORCH__INTERFACE__ALPAKA_CONFIG_H_
+#ifndef PhysicsTools_PyTorch_interface_AlpakaConfig_h
+#define PhysicsTools_PyTorch_interface_AlpakaConfig_h
 
 #include <alpaka/alpaka.hpp>
+#include <fmt/format.h>
 #include "PhysicsTools/PyTorch/interface/Config.h"
 
-// #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED || ALPAKA_ACC_GPU_HIP_ENABLED
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <c10/cuda/CUDAStream.h>
 #endif
 
 namespace cms::torch::alpaka {
-
-  template <typename>
-  inline constexpr bool false_value = false;
 
 /**
  * @brief Specifies the device type used in the torch integration with Alpaka.
@@ -47,14 +43,18 @@ namespace cms::torch::alpaka {
  * @return Corresponding PyTorch device.
  */
   template <typename T>
+    requires ::alpaka::isDevice<T>
   inline ::torch::Device device(const T &obj) {
-    if constexpr (::alpaka::isDevice<T>)
-      return ::torch::Device(kTorchDeviceType, obj.getNativeHandle());
-    else if constexpr (::alpaka::isQueue<T>)
-      return ::torch::Device(kTorchDeviceType, ::alpaka::getDev(obj).getNativeHandle());
-    else
-      static_assert(false_value<T>, "Unsupported type passed to device()");
+    return ::torch::Device(kTorchDeviceType, obj.getNativeHandle());
   }
+
+  template <typename T>
+    requires ::alpaka::isQueue<T>
+  inline ::torch::Device device(const T &obj) {
+    return ::torch::Device(kTorchDeviceType, ::alpaka::getDev(obj).getNativeHandle());
+  }
+
+  inline const ::torch::Device &device(const ::torch::Device &dev) { return dev; }
 
   /**
    * @brief Computes a unique hash representation for the given Alpaka queue.
@@ -68,16 +68,12 @@ namespace cms::torch::alpaka {
    */
   template <typename TQueue, typename = std::enable_if_t<::alpaka::isQueue<TQueue>>>
   inline std::string queue_hash(const TQueue &queue) {
-    std::stringstream repr;
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), device(queue).index());
-    repr << "0x" << std::hex << stream.stream();
-    return repr.str();
-// #elif ALPAKA_ACC_GPU_HIP_ENABLED
-//   return "0x0";
+    return fmt::format("{:#x}", reinterpret_cast<std::uintptr_t>(stream.stream()));
+#else
+    return fmt::format("{:#x}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 #endif
-    repr << "0x" << std::hex << std::hash<std::thread::id>{}(std::this_thread::get_id());
-    return repr.str();
   }
 
   /**
@@ -92,17 +88,13 @@ namespace cms::torch::alpaka {
    */
   template <typename TQueue, typename = std::enable_if_t<::alpaka::isQueue<TQueue>>>
   inline std::string current_stream_hash(const TQueue &queue) {
-    std::stringstream repr;
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const auto dev = device(queue);
     auto stream = c10::cuda::getCurrentCUDAStream(dev.index());
-    repr << "0x" << std::hex << stream.stream();
-    return repr.str();
-// #elif ALPAKA_ACC_GPU_HIP_ENABLED
-//     return "0x0";
+    return fmt::format("{:#x}", reinterpret_cast<std::uintptr_t>(stream.stream()));
+#else
+    return fmt::format("{:#x}", std::hash<std::thread::id>{}(std::this_thread::get_id()));
 #endif
-    repr << "0x" << std::hex << std::hash<std::thread::id>{}(std::this_thread::get_id());
-    return repr.str();
   }
 
   /**
@@ -233,4 +225,4 @@ namespace cms::torch::alpaka {
 
 }  // namespace cms::torch::alpaka
 
-#endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__ALPAKA_CONFIG_H_
+#endif  // PhysicsTools_PyTorch_interface_AlpakaConfig_h

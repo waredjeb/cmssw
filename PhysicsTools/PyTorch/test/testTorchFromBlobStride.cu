@@ -13,8 +13,8 @@
 
 using std::chrono::duration;
 using std::chrono::duration_cast;
-using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
+using std::chrono::steady_clock;
 
 /*
  * Demonstration of using stride in torch::from_blob to load SOA input 
@@ -118,14 +118,14 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Benchmark stride and transpose:" << std::endl;
 
-  auto t1 = high_resolution_clock::now();
+  auto t1 = steady_clock::now();
   const size_t dim_b = sizeof(b_shape) / sizeof(long int);
   torch::Tensor tensor_stride = array_to_tensor<int, dim_b>(device, b_gpu, b_shape);
-  auto t2 = high_resolution_clock::now();
+  auto t2 = steady_clock::now();
   duration<double, std::milli> ms_double = t2 - t1;
   std::cout << "Stride:" << ms_double.count() << "ms\n";
 
-  t1 = high_resolution_clock::now();
+  t1 = steady_clock::now();
   const size_t dim_b2 = sizeof(b_shape) / sizeof(long int);
   long int b_size[dim_b2];
   std::copy(b_shape, b_shape + dim_b2, b_size);
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
   std::reverse(std::begin(b_shape), std::end(b_shape));
   torch::Tensor tensor_transp = torch::from_blob(b_gpu, b_size, options);
   tensor_transp = torch::transpose(tensor_transp, 0, dim_b2 - 1);
-  t2 = high_resolution_clock::now();
+  t2 = steady_clock::now();
   ms_double = t2 - t1;
   std::cout << "Transpose:" << ms_double.count() << "ms\n";
 

@@ -1,28 +1,24 @@
-#ifndef PHYSICS_TOOLS__PYTORCH__PLUGINS__ALPAKA__KERNELS_H_
-#define PHYSICS_TOOLS__PYTORCH__PLUGINS__ALPAKA__KERNELS_H_
+#ifndef PhysicsTools_PyTorch_plugins_alpaka_Kernels_h
+#define PhysicsTools_PyTorch_plugins_alpaka_Kernels_h
 
 #include <alpaka/alpaka.hpp>
 
-#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/TestDeviceCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
+namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   /**
-   * @class Kernels
-   * @brief Utility class containing helper functions to run simple Alpaka kernels for testing or validation.
+   * @brief Utility functions to run simple Alpaka kernels for testing or validation.
    *
-   * This class provides simple device-side functionality for modifying and verifying
+   * Simple device-side functionality for modifying and verifying
    * collections of structured SoA data, such as particles, classification outputs, and regressions.
    */
-  class Kernels {
-  public:
-    void FillParticleCollection(Queue &queue, torchportable::ParticleCollection &data, float value);
-    void AssertCombinatorics(Queue &queue, torchportable::ParticleCollection &data, float value);
-    void AssertClassification(Queue &queue, torchportable::ClassificationCollection &data);
-    void AssertRegression(Queue &queue, torchportable::RegressionCollection &data);
-  };
+  void fillParticleCollection(Queue &queue, torchportabletest::ParticleCollection &data, float value);
+  void assertCombinatorics(Queue &queue, torchportabletest::ParticleCollection &data, float value);
+  void assertClassification(Queue &queue, torchportabletest::ClassificationCollection &data);
+  void assertRegression(Queue &queue, torchportabletest::RegressionCollection &data);
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest
 
-#endif  // PHYSICS_TOOLS__PYTORCH__PLUGINS__ALPAKA__KERNELS_H_
+#endif  // PhysicsTools_PyTorch_plugins_alpaka_Kernels_h

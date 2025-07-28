@@ -1,4 +1,4 @@
-#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/TestDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -10,7 +10,7 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "PhysicsTools/PyTorch/interface/Nvtx.h"
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
+namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   /**
    * @class DataProducer
@@ -27,7 +27,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
   private:
-    const device::EDPutToken<torchportable::ParticleCollection> sic_put_token_; /**< Token to store output data. */
+    const device::EDPutToken<torchportabletest::ParticleCollection> sic_put_token_; /**< Token to store output data. */
     const uint32_t batch_size_; /**< Size of the batch to be produced. */
   };
 
@@ -40,20 +40,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
    * @param event_setup Event setup context (not used).
    */
   void DataProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-    auto t1 = std::chrono::high_resolution_clock::now();
+    auto t1 = std::chrono::steady_clock::now();
 
     // debug stream usage in concurrently scheduled modules
-    std::stringstream msg_stream;
-    msg_stream << "Data::produce [E: " << event.id().event() << "]";
-    auto msg = msg_stream.str();
+    auto msg = fmt::format("Data::produce [E: {}]", event.id().event());
     NvtxScopedRange produce_range(msg.c_str());
 
     // create dummy data
-    auto collection = torchportable::ParticleCollection(batch_size_, event.queue());
+    auto collection = torchportabletest::ParticleCollection(batch_size_, event.queue());
     collection.zeroInitialise(event.queue());
     event.emplace(sic_put_token_, std::move(collection));
     alpaka::wait(event.queue());
-    auto t2 = std::chrono::high_resolution_clock::now();
+    auto t2 = std::chrono::steady_clock::now();
     std::cout << "(Data) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
     produce_range.end();
@@ -69,6 +67,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     descriptions.addWithDefaultLabel(desc);
   }
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest
 
-DEFINE_FWK_ALPAKA_MODULE(DataProducer);
+DEFINE_FWK_ALPAKA_MODULE(torchtest::DataProducer);

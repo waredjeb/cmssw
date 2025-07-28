@@ -1,4 +1,4 @@
-## PhysicsTools/PyTorch
+# PhysicsTools/PyTorch
 
 This package enables seamless integration between PyTorch and the Alpaka-based heterogeneous computing backend, supporting inference workflows with usage of `pytorch` library with `PortableCollection`s objects. It provides:
 - Compatibility with Alpaka device/queue abstractions.
@@ -6,31 +6,22 @@ This package enables seamless integration between PyTorch and the Alpaka-based h
 - Support for both just-in-time (JIT) and ahead-of-time (AOT) model execution (Beta version for AOT).
 - Single-threading and CUDA stream management are handled by Guard objects specialized for each supported backend.
 
-### Alpaka Config
-To enable alpaka aware compilation the config files specify the appropriate mappings between common structures like device types:
+## Alpaka Config
+To enable Alpaka-aware compilation, device type mappings (e.g., to `c10::DeviceType`) are provided in the central configuration file:
 ```cpp
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-constexpr c10::DeviceType kTorchDeviceType = c10::DeviceType::CUDA;
-// #elif ALPAKA_ACC_GPU_HIP_ENABLED  // not supported
-// constexpr c10::DeviceType kTorchDeviceType = c10::DeviceType::HIP;
-#elif ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
-constexpr c10::DeviceType kTorchDeviceType = c10::DeviceType::CPU;
-#elif ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
-constexpr c10::DeviceType kTorchDeviceType = c10::DeviceType::CPU;
-#else
-#error "Could not define the torch device type."
-#endif
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
 ```
+This header defines the appropriate kTorchDeviceType constant based on the enabled Alpaka backend (e.g., CUDA, CPU). You can include it in your code to avoid duplicating backend selection logic.
 
-### Interface for Alpaka Modules
+## Interface for Alpaka Modules
 PyTorch internally uses optimizations such as a custom thread pool initialized with all available threads by default. To manage thread usage and control execution context, a Guard object is provided. It enforces single-threaded execution on CPU backends and sets the appropriate stream (e.g., CUDA stream) on GPU backends based on the associated Queue event.
 > To enable proper execution user has to explicitly scope range of execution with `Guard<Queue>` construct inside Module.
 
 Examples demonstrating the interoperability of PyTorch with Alpaka in the CMSSW environment can be found in the `plugins` directory. The basic test pipeline includes one input data producer and three heterogeneous modules: a dummy Alpaka module with a basic kernel, a second module performing machine learning inference on the target backend, and a third module explicitly configured to run inference on the CPU backend. This setup serves as a test case for evaluating behavior in a multithreaded and multistream CMSSW environment where inference is executed in parallel across different devices.
-### Inference: JIT and AOT Model Execution
+## Inference: JIT and AOT Model Execution
 Interface provide `Model` class which is templated over compilation type (possible choices: `kAheadOfTime`, `kJustInTime`) providing wrapper enabling inference with SoA objects by incorporating necessary conversions with reduced number of memcpy operations.
 
-#### Just-in-Time:
+### Just-in-Time:
 - Loads `torch::jit::script::Module` at runtime.
 - Compiles model on-the-fly.
 - Introduces warm-up overhead without additional optimization.
@@ -43,9 +34,9 @@ CPPUNIT_ASSERT(cms::torch::alpaka::device(queue) == jit_model.device());
 auto outputs = jit_model.forward(inputs);
 ```
 
-#### Ahead-of-Time (beta version):
+### Ahead-of-Time (beta version):
 - Uses PyTorch AOT compiler to generate `.cpp` and `.so` files. (prerequisite done manually by end-user)
-    - Package provide helper script to automate this process to some extent `PhysicsTools/PyTorch/scripts/aot.sh` (run from within `PhysicsTools/PyTorch` directory)
+    - Package provide helper script to automate this process to some extent `PhysicsTools/PyTorch/scripts/pytorch_aot_auto_compilation.sh` (run from within `PhysicsTools/PyTorch` directory)
 - Loads compiled model via `AOTIModelContainerRunner`.
 - Eliminates JIT overhead, enable optimization, but requires architecture-specific handling.
 
@@ -59,15 +50,15 @@ auto outputs = aot_model.forward(inputs_tensor);
 ```
 
 
-### PyTorch Wrapper for C++ and Alpaka
+## PyTorch Wrapper for C++ and Alpaka
 
 The interface provides a converter to dynamically wrap SoA data into one or more `torch::tensors` without the need to copy data. This can be used directly with a PyTorch model. The result can also be dynamically placed into a SoA buffer.
 
-#### Metadata
+### Metadata
 
 The structual information of the input and output SoA are stored in an `SoAMetadata`. These two objects are then combined to a `ModelMetadata`, to be used by the `Converter`.
 
-#### Defining Metadata
+### Defining Metadata
 
 The `SoAMetadata' can be defined by first initialising the object and then adding blocks to the metadata. Each block is transformed into a tensor whose size and type are derived from the columns provided.
 
@@ -90,7 +81,7 @@ GENERATE_SOA_LAYOUT(SoAOutputTemplate,
                     SOA_COLUMN(int, cluster));
 ```
 
-#### Metadata Definition (Automatic Approach):
+### Metadata Definition (Automatic Approach):
 ```cpp
 PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
 PortableCollection<SoA_Result, Device> deviceResultCollection(batch_size, queue);
@@ -136,7 +127,6 @@ for (size_t i = 0; i < batch_size; i++) {
     inputs_host.view().z()[i] = 0.0f;
 }
 alpaka::memcpy(queue, inputs_device.buffer(), inputs_host.buffer());
-alpaka::wait(queue);
 
 {
     // guard scope
@@ -171,13 +161,13 @@ alpaka::wait(queue);
 }
 ```
 
-#### Ordering of Blocks
+### Ordering of Blocks
 
 The function `change_order()` in the allows specifying the order in which the blocks should be processed. The order should match the expected input configuration of the PyTorch model.
 
 
 
-### Limitations
+## Limitations
 - Current implementation supports CUDA backend only. ROCm backend is not yet supported, see: https://github.com/pytorch/pytorch/blob/main/aten/CMakeLists.txt#L75ROCm.  Connected with:
     - #9786 Pytorch with ROCm (temp): https://github.com/cms-sw/cmsdist/pull/9312
     - #9312 [WIP] Build PyTorch with ROCm https://github.com/cms-sw/cmsdist/pull/9786

@@ -3,7 +3,7 @@
 
 namespace ticl {
 
-  void Node::findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>& subComponent) {
+  void Node::findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>& subComponent) { 
     if (!alreadyVisited_) {
       alreadyVisited_ = true;
       subComponent.push_back(index_);
@@ -18,18 +18,15 @@ TICLGraph::TICLGraph(std::vector<ticl::Node>& nodes) {
   nodes_ = nodes;
   rootNodes_.reserve(nodes_.size());
   findRootNodes();
-  rootNodes_.shrink_to_fit();
 }
 
 std::vector<std::vector<unsigned int>> TICLGraph::findSubComponents() {
   std::vector<std::vector<unsigned int>> components;
-  for (auto const& node : nodes_) {
+  for (auto const& node : rootNodes_) {
     auto const id = node.getId();
-    if (isRootNode_[id]) {
-      std::vector<unsigned int> tmpSubComponents;
-      nodes_[id].findSubComponents(nodes_, tmpSubComponents);
-      components.push_back(tmpSubComponents);
-    }
+	std::vector<unsigned int> tmpSubComponents;
+	nodes_[id].findSubComponents(nodes_, tmpSubComponents);
+	components.push_back(tmpSubComponents);
   }
   // Second loop: DFS for non-root nodes that haven't been visited
   for (auto const& node : nodes_) {
@@ -56,12 +53,13 @@ std::vector<std::vector<unsigned int>> TICLGraph::findSubComponents(std::vector<
   return components;
 }
 
-inline void TICLGraph::findRootNodes() {
+void TICLGraph::findRootNodes() {
   for (auto const& n : nodes_) {
     if (n.getInnerNeighbours().empty()) {
       rootNodes_.push_back(n);
     }
   }
+  rootNodes_.shrink_to_fit();
 }
 
 size_t TICLGraph::getNumberOfEdges() const {

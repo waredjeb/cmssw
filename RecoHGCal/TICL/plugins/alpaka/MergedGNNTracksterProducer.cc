@@ -24,38 +24,75 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     const edm::EDGetTokenT<std::vector<ticl::Trackster>> tracksters_token_;
-    const edm::EDGetTokenT<TICLGraph> ticl_graph_token_;
+    const device::EDGetToken<TrackstersSoADeviceCollection> gnn_input_token_;
     const device::EDGetToken<TrackstersGNNOutputSoADeviceCollection> gnn_output_token_;
     const edm::EDPutTokenT<std::vector<ticl::Trackster>> merged_tracksters_token_; /**< Token to store output data. */
+
+    const int threshold = 0.6;
   };
 
   MergedGNNTracksterProducer::MergedGNNTracksterProducer(edm::ParameterSet const &params)
       : EDProducer<>(params),
         tracksters_token_(consumes<std::vector<ticl::Trackster>>(params.getParameter<edm::InputTag>("tracksters"))),
-        ticl_graph_token_(consumes<TICLGraph>(params.getParameter<edm::InputTag>("ticlGraph"))),
+        gnn_input_token_{consumes(params.getParameter<edm::InputTag>("gnnInput"))},
         gnn_output_token_(consumes(params.getParameter<edm::InputTag>("gnnOutput"))),
         merged_tracksters_token_{produces()} {}
 
   void MergedGNNTracksterProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto const& tracksters = event.get(tracksters_token_);
-    auto const& ticlGraph = event.get(ticl_graph_token_);
-    auto const& gnn_output = event.get(gnn_output_token_);
+    auto const &tracksters = event.get(tracksters_token_);
+    auto const &gnn_output = event.get(gnn_output_token_);
+    auto const &gnn_input = event.get(gnn_input_token_);
 
-    // debug stream usage in concurrently scheduled modules
+    auto numEdges = gnn_output.view().metadata().size();
+    auto edge_index_records = gnn_input.const_view<GNNEdgeIndexSoA>().records();
+    GNNPostprocessingSoA::ConstView merged_view(gnn_output.const_view().records().score(), edge_index_records.in(), edge_index_records.out());
+
+    TrackstersGNNPostprocessingSoAHostCollection gnn_post_host(numEdges, event.queue());
+    gnn_post_host.deepCopy(merged_view, event.queue());
+    alpaka::wait(event.queue());
+    auto post_view = gnn_post_host.view();
+
     std::stringstream msg_stream;
     msg_stream << "MergedGNNTracksterProducer::produce [E: " << event.id().event() << "]";
-    auto msg = msg_stream.str();
-    NvtxScopedRange produce_range(msg.c_str());
 
+    std::vector<ticl::Node> nodes;
+    for (size_t i = 0; i < tracksters.size(); i++) {
+      nodes.emplace_back(i);
+    }
+
+    TICLGraph ticlGraph(nodes);
+    for (int i = 0; i < numEdges; i++) {
+      if (post_view.score()[i] > threshold) {
+        ticlGraph.adaptNode(post_view.out()[i]).addOuterNeighbour(post_view.in()[i]);
+        ticlGraph.adaptNode(post_view.in()[i]).addInnerNeighbour(post_view.out()[i]);
+      }
+    }
+
+    ticlGraph.findRootNodes();
 
     std::vector<ticl::Trackster> output;
-    event.emplace(merged_tracksters_token_, std::move(output));
+    std::vector<ticl::Trackster> tmp;
+    ticl::Trackster trackster;
+    auto components = ticlGraph.findSubComponents();
+    for (auto comp : components) {
+      if (comp.size() < 1) {
+        continue;
+      }
+      trackster = tracksters[comp.back()];
 
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << "(MergedGNNTracksterProducer) E: " << event.id().event() << " OK - "
-              << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
-    produce_range.end();
+      if (comp.size() > 1) {
+        comp.pop_back();
+        for (auto node : comp) {
+          tmp.push_back(tracksters[node]);
+        }
+        trackster.mergeTracksters(tmp);
+        tmp.clear();
+      }
+      output.push_back(trackster);
+    }
+
+    std::cout << "(MergedGNNTracksterProducer) Number of Trackster: " << output.size() << std::endl;
+    event.emplace(merged_tracksters_token_, std::move(output));
   }
 
   /**
@@ -65,7 +102,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void MergedGNNTracksterProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
-    desc.add<edm::InputTag>("ticlGraph", edm::InputTag("ticlGraph"));
+    desc.add<edm::InputTag>("gnnInput");
     desc.add<edm::InputTag>("gnnOutput");
     descriptions.addWithDefaultLabel(desc);
   }
