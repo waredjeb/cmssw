@@ -1,45 +1,47 @@
-#ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__NVTX_H_
-#define PHYSICS_TOOLS__PYTORCH__INTERFACE__NVTX_H_
+#ifndef PhysicsTools_PyTorch_interface_Nvtx_h
+#define PhysicsTools_PyTorch_interface_Nvtx_h
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED) || \
-    defined(ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED)
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <nvtx3/nvToolsExt.h>
 #endif
 
-/**
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
+  /**
  * @class NvtxScopedRange
  * @brief Helper class for NVTX profiling.
  *
  * Exposes a simple interface to create and manage NVTX ranges.
  * Automatically ends the range when the object goes out of scope.
+ *
+ * Only enabled on CUDA backend via NVTX.
  */
-class NvtxScopedRange {
-public:
-  NvtxScopedRange(const char* msg) {
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED) || \
-    defined(ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED)
-    id_ = nvtxRangeStartA(msg);
+  class NvtxScopedRange {
+  public:
+    explicit NvtxScopedRange(const char* msg) {
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+      id_ = nvtxRangeStartA(msg);
 #endif
-  }
-
-  void end() {
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED) || \
-    defined(ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED)
-    if (active_) {
-      active_ = false;
-      nvtxRangeEnd(id_);
     }
+
+    void end() {
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+      if (active_) {
+        active_ = false;
+        nvtxRangeEnd(id_);
+      }
 #endif
-  }
+    }
 
-  ~NvtxScopedRange() { end(); }
+    ~NvtxScopedRange() { end(); }
 
-private:
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED) || \
-    defined(ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED)
-  nvtxRangeId_t id_;
-  bool active_ = true;
+  private:
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    nvtxRangeId_t id_;
+    bool active_ = true;
 #endif
-};
+  };
 
-#endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__NVTX_H_
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // PhysicsTools_PyTorch_interface_Nvtx_h

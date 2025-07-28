@@ -171,7 +171,8 @@ ticlTrackstersLinkingByGNNProducer = TracksterLinkingByGNNProducer_alpaka(
 )
 ticlTrackstersLinkingByGNNProducerTask = cms.Task(ticlTrackstersLinkingByGNNProducer)
 ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
-    gnnOutput = cms.InputTag("ticlTrackstersLinkingByGNNProducer")
+    gnnOutput = cms.InputTag("ticlTrackstersLinkingByGNNProducer"),
+    gnnInput = cms.InputTag("ticlTracksterSoAProducer")
 )
 ticlMergedGNNTrackstersProducerTask = cms.Task(ticlMergedGNNTrackstersProducer)
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))

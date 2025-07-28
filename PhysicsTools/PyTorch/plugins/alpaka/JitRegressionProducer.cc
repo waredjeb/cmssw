@@ -2,7 +2,7 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 
-#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/TestDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -19,7 +19,7 @@
 #include "PhysicsTools/PyTorch/interface/Nvtx.h"
 #include "PhysicsTools/PyTorch/plugins/alpaka/Kernels.h"
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
+namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   using JitModel = cms::torch::alpaka::Model<cms::torch::alpaka::CompilationType::kJustInTime>;
 
@@ -40,17 +40,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
   private:
-    const device::EDGetToken<torchportable::ParticleCollection> inputs_token_;    /**< Token to get input data. */
-    const device::EDPutToken<torchportable::RegressionCollection> outputs_token_; /**< Token to store output data. */
-    std::unique_ptr<Kernels> kernels_ = nullptr; /**< Kernel utilities for post-inference validation. */
-    std::unique_ptr<JitModel> model_;            /**< Cache for the JIT model. */
+    const device::EDGetToken<torchportabletest::ParticleCollection> inputs_token_;    /**< Token to get input data. */
+    const device::EDPutToken<torchportabletest::RegressionCollection> outputs_token_; /**< Token to store output data. */
+    std::unique_ptr<JitModel> model_;                                                 /**< Cache for the JIT model. */
   };
 
   JitRegressionProducer::JitRegressionProducer(edm::ParameterSet const &params)
       : EDProducer<>(params),
         inputs_token_{consumes(params.getParameter<edm::InputTag>("inputs"))},
-        outputs_token_{produces()},
-        kernels_{std::make_unique<Kernels>()} {
+        outputs_token_{produces()} {
     cms::torch::alpaka::set_threading_guard();
     model_ = std::make_unique<JitModel>(params.getParameter<edm::FileInPath>("modelPath").fullPath());
   }
@@ -61,12 +59,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
    * @param event_setup Event setup information.
    */
   void JitRegressionProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-    auto t1 = std::chrono::high_resolution_clock::now();
+    auto t1 = std::chrono::steady_clock::now();
 
     // debug stream usage in concurrently scheduled modules
-    std::stringstream msg_stream;
-    msg_stream << "RegressionJit::produce [E: " << event.id().event() << "]";
-    auto msg = msg_stream.str();
+    auto msg = fmt::format("RegressionJit::produce [E: {}]", event.id().event());
     NvtxScopedRange produce_range(msg.c_str());
 
     // guard torch internal operations to not conflict with cmssw fw scheme
@@ -78,18 +74,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // TODO: const_cast should not be done by user
     // in principle should not be done by anyone
     // @see: torch::from_blob(void*)
-    auto &inputs = const_cast<torchportable::ParticleCollection &>(event.get(inputs_token_));
+    auto &inputs = const_cast<torchportabletest::ParticleCollection &>(event.get(inputs_token_));
     const size_t batch_size = inputs.const_view().metadata().size();
-    auto outputs = torchportable::RegressionCollection(batch_size, event.queue());
+    auto outputs = torchportabletest::RegressionCollection(batch_size, event.queue());
 
     // metadata for automatic tensor conversion
     auto input_records = inputs.view().records();
     auto output_records = outputs.view().records();
-    cms::torch::alpaka::SoAMetadata<torchportable::ParticleSoA> inputs_metadata(batch_size);
+    cms::torch::alpaka::SoAMetadata<torchportabletest::ParticleSoA> inputs_metadata(batch_size);
     inputs_metadata.append_block("features", input_records.pt(), input_records.eta(), input_records.phi());
-    cms::torch::alpaka::SoAMetadata<torchportable::RegressionSoA> outputs_metadata(batch_size);
+    cms::torch::alpaka::SoAMetadata<torchportabletest::RegressionSoA> outputs_metadata(batch_size);
     outputs_metadata.append_block("preds", output_records.reco_pt());
-    cms::torch::alpaka::ModelMetadata<torchportable::ParticleSoA, torchportable::RegressionSoA> metadata(
+    cms::torch::alpaka::ModelMetadata<torchportabletest::ParticleSoA, torchportabletest::RegressionSoA> metadata(
         inputs_metadata, outputs_metadata);
 
     // inference
@@ -106,10 +102,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     infer_range.end();
 
     // assert output match expected
-    kernels_->AssertRegression(event.queue(), outputs);
+    assertRegression(event.queue(), outputs);
     event.emplace(outputs_token_, std::move(outputs));
     alpaka::wait(event.queue());
-    auto t2 = std::chrono::high_resolution_clock::now();
+    auto t2 = std::chrono::steady_clock::now();
     std::cout << "(RegressionJit) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
     produce_range.end();
@@ -126,6 +122,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     descriptions.addWithDefaultLabel(desc);
   }
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest
 
-DEFINE_FWK_ALPAKA_MODULE(JitRegressionProducer);
+DEFINE_FWK_ALPAKA_MODULE(torchtest::JitRegressionProducer);

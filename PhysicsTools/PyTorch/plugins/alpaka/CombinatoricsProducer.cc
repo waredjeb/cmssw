@@ -2,7 +2,7 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 
-#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/TestDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -17,7 +17,7 @@
 #include "PhysicsTools/PyTorch/interface/Nvtx.h"
 #include "PhysicsTools/PyTorch/plugins/alpaka/Kernels.h"
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
+namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   /**
    * @class CombinatoricsProducer
@@ -34,16 +34,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
   private:
-    const device::EDGetToken<torchportable::ParticleCollection> inputs_token_;  /**< Token to get input data. */
-    const device::EDPutToken<torchportable::ParticleCollection> outputs_token_; /**< Token to store output data. */
-    std::unique_ptr<Kernels> kernels_ = nullptr;                                /**< Kernel helper object. */
+    const device::EDGetToken<torchportabletest::ParticleCollection> inputs_token_;  /**< Token to get input data. */
+    const device::EDPutToken<torchportabletest::ParticleCollection> outputs_token_; /**< Token to store output data. */
   };
 
   CombinatoricsProducer::CombinatoricsProducer(edm::ParameterSet const &params)
       : EDProducer<>(params),
         inputs_token_{consumes(params.getParameter<edm::InputTag>("inputs"))},
-        outputs_token_{produces()},
-        kernels_(std::make_unique<Kernels>()) {}
+        outputs_token_{produces()} {}
 
   /**
    * @brief Processes the event and fills output with mock data using a kernel.
@@ -51,29 +49,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
    * @param event_setup Setup information for the event.
    */
   void CombinatoricsProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-    auto t1 = std::chrono::high_resolution_clock::now();
+    auto t1 = std::chrono::steady_clock::now();
 
     // debug stream usage in concurrently scheduled modules
-    std::stringstream msg_stream;
-    msg_stream << "Combinatorics::produce [E: " << event.id().event() << "]";
-    auto msg = msg_stream.str();
+    auto msg = fmt::format("Combinatorics::produce [E: {}]", event.id().event());
     NvtxScopedRange produce_range(msg.c_str());
 
     // get data
     const auto &inputs = event.get(inputs_token_);
     const size_t batch_size = inputs.const_view().metadata().size();
-    auto outputs = torchportable::ParticleCollection(batch_size, event.queue());
+    auto outputs = torchportabletest::ParticleCollection(batch_size, event.queue());
 
     // dummy kernel emulation
     NvtxScopedRange kernel_range("Combinatorics::kernel");
-    kernels_->FillParticleCollection(event.queue(), outputs, 0.32f);
+    fillParticleCollection(event.queue(), outputs, 0.32f);
     kernel_range.end();
 
     // assert output match expected
-    kernels_->AssertCombinatorics(event.queue(), outputs, 0.32f);
+    assertCombinatorics(event.queue(), outputs, 0.32f);
     event.emplace(outputs_token_, std::move(outputs));
     alpaka::wait(event.queue());
-    auto t2 = std::chrono::high_resolution_clock::now();
+    auto t2 = std::chrono::steady_clock::now();
     std::cout << "(Combinatorics) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
     produce_range.end();
@@ -89,6 +85,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     descriptions.addWithDefaultLabel(desc);
   }
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest
 
-DEFINE_FWK_ALPAKA_MODULE(CombinatoricsProducer);
+DEFINE_FWK_ALPAKA_MODULE(torchtest::CombinatoricsProducer);

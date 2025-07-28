@@ -46,6 +46,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="DataFormats/PyTorchTest"/>
+  <use name="PhysicsTools/PyTorch"/>
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
   <flags ALPAKA_BACKENDS="cuda"/>

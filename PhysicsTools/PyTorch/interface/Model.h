@@ -1,5 +1,5 @@
-#ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__MODEL_H_
-#define PHYSICS_TOOLS__PYTORCH__INTERFACE__MODEL_H_
+#ifndef PhysicsTools_PyTorch_interface_Model_h
+#define PhysicsTools_PyTorch_interface_Model_h
 
 #include <torch/csrc/inductor/aoti_package/model_package_loader.h>
 #include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
@@ -78,16 +78,8 @@ namespace cms::torch::alpaka {
      * @throws A static assertion failure at compile-time if an unsupported type is passed.
      */
     template <typename T>
-    void to(const T &obj) const {
-      auto device = ::torch::Device(::torch::kCPU, 0);
-      if constexpr (::alpaka::isDevice<T> || ::alpaka::isQueue<T>) {
-        device = cms::torch::alpaka::device(obj);
-      } else if constexpr (std::is_same_v<T, ::torch::Device>) {
-        device = obj;
-      } else {
-        static_assert(false_value<T>, "Unsupported type passed -> to(const T&)");
-      }
-
+    void to(const T &obj) {
+      auto device = cms::torch::alpaka::device(obj);
       if (device == device_)
         return;
       device_ = device;
@@ -100,9 +92,9 @@ namespace cms::torch::alpaka {
     ::torch::Device device() const { return device_; }
 
   private:
-    mutable ::torch::Device device_ = ::torch::Device(::torch::kCPU, 0);    /**< Device metadata of the model */
-    mutable ::torch::inductor::AOTIModelPackageLoader loader_;              /**< AOT model package loader */
-    mutable ::torch::inductor::AOTIModelContainerRunner *runner_ = nullptr; /**< AOT model container runner */
+    ::torch::Device device_ = ::torch::Device(::torch::kCPU, 0);    /**< Device metadata of the model */
+    ::torch::inductor::AOTIModelPackageLoader loader_;              /**< AOT model package loader */
+    ::torch::inductor::AOTIModelContainerRunner *runner_ = nullptr; /**< AOT model container runner */
   };
 
   /**
@@ -114,7 +106,7 @@ namespace cms::torch::alpaka {
   template <>
   class Model<CompilationType::kJustInTime> {
   public:
-    Model(const std::string &model_path) : model_(cms::torch::load(model_path)) {}
+    explicit Model(const std::string &model_path) : model_(cms::torch::load(model_path)) {}
 
     /**
      * @brief Moves the model to a specified device.
@@ -133,16 +125,8 @@ namespace cms::torch::alpaka {
      * @throws A static assertion failure at compile-time if an unsupported type is passed.
      */
     template <typename T>
-    void to(const T &obj) const {
-      auto device = ::torch::Device(::torch::kCPU, 0);
-      if constexpr (::alpaka::isDevice<T> || ::alpaka::isQueue<T>) {
-        device = cms::torch::alpaka::device(obj);
-      } else if constexpr (std::is_same_v<T, ::torch::Device>) {
-        device = obj;
-      } else {
-        static_assert(false_value<T>, "Unsupported type passed -> to(const T&)");
-      }
-
+    void to(const T &obj) {
+      auto device = cms::torch::alpaka::device(obj);
       if (device == device_)
         return;
 
@@ -155,14 +139,14 @@ namespace cms::torch::alpaka {
      * @param inputs input tensors
      * @return output tensors
      */
-    auto forward(std::vector<::torch::IValue> &inputs) const { return model_.forward(inputs); }
+    auto forward(std::vector<::torch::IValue> &inputs) { return model_.forward(inputs); }
 
     /**
      * @brief Torch portable inference with SoA buffers without explicit copies.
      * @param metadata Metadata specyfies how memory blob is organized and can be accessed.
      */
     template <typename InMemLayout, typename OutMemLayout>
-    void forward(const ModelMetadata<InMemLayout, OutMemLayout> &metadata) const {
+    void forward(const ModelMetadata<InMemLayout, OutMemLayout> &metadata) {
       auto input_tensor = Converter::convert_input(metadata, device_);
       // TODO: think about support for multi-output models (without temporary mem copy)
       Converter::convert_output(metadata, device_) = model_.forward(input_tensor).toTensor();
@@ -175,10 +159,10 @@ namespace cms::torch::alpaka {
     ::torch::Device device() const { return device_; }
 
   private:
-    mutable ::torch::jit::script::Module model_;                         /**< JIT model */
-    mutable ::torch::Device device_ = ::torch::Device(::torch::kCPU, 0); /**< Device binded to the model */
+    ::torch::jit::script::Module model_;                         /**< JIT model */
+    ::torch::Device device_ = ::torch::Device(::torch::kCPU, 0); /**< Device binded to the model */
   };
 
 }  // namespace cms::torch::alpaka
 
-#endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__MODEL_H_
+#endif  // PhysicsTools_PyTorch_interface_Model_h

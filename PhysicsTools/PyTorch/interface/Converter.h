@@ -1,5 +1,5 @@
-#ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_
-#define PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_
+#ifndef PhysicsTools_PyTorch_interface_Converter_h
+#define PhysicsTools_PyTorch_interface_Converter_h
 
 #include <torch/torch.h>
 
@@ -34,10 +34,8 @@ namespace cms::torch::alpaka {
                                                       ::torch::Device device) {
       std::vector<::torch::IValue> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) %
-                   metadata.input[metadata.input.order[i]].alignment_ ==
-               0);
-        tensors.at(i) = std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
+        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % SOA_Input::alignment == 0);
+        tensors[i] = Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]);
       }
       return tensors;
     }
@@ -48,10 +46,8 @@ namespace cms::torch::alpaka {
                                                              ::torch::Device device) {
       std::vector<::torch::Tensor> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) %
-                   metadata.input[metadata.input.order[i]].alignment_ ==
-               0);
-        tensors.at(i) = std::move(Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]));
+        assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % SOA_Input::alignment == 0);
+        tensors[i] = Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]);
       }
       return tensors;
     }
@@ -73,11 +69,11 @@ namespace cms::torch::alpaka {
                                ::torch::Device device) {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
         // Only tensors are currenlty supported for conversion
-        if (tensors.at(i).isTensor()) {
-          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) %
-                     metadata.output[metadata.output.order[0]].alignment_ ==
+        if (tensors[i].isTensor()) {
+          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % SOA_Output::alignment ==
                  0);
-          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors.at(i).toTensor();
+          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) =
+              tensors[i].toTensor();
         }
       }
     }
@@ -88,10 +84,8 @@ namespace cms::torch::alpaka {
                                const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                ::torch::Device device) {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) %
-                   metadata.output[metadata.output.order[0]].alignment_ ==
-               0);
-        Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors.at(i);
+        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % SOA_Output::alignment == 0);
+        Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors[i];
       }
     }
 
@@ -110,4 +104,4 @@ namespace cms::torch::alpaka {
 
 }  // namespace cms::torch::alpaka
 
-#endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_
+#endif  // PhysicsTools_PyTorch_interface_Converter_h

@@ -1,5 +1,5 @@
-#ifndef PHYSICS_TOOLS__PYTORCH__TEST__TEST_UTILITIES_H_
-#define PHYSICS_TOOLS__PYTORCH__TEST__TEST_UTILITIES_H_
+#ifndef PhysicsTools_PyTorch_test_testUtilities_h
+#define PhysicsTools_PyTorch_test_testUtilities_h
 
 #include <boost/filesystem.hpp>
 #include <filesystem>
@@ -134,4 +134,4 @@ private:
   torch::nn::Linear reg_fc1{nullptr}, reg_fc2{nullptr};
 };
 
-#endif  // PHYSICS_TOOLS__PYTORCH__TEST__TEST_UTILITIES_H_
+#endif  // PhysicsTools_PyTorch_test_testUtilities_h

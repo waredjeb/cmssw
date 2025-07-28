@@ -1,7 +1,8 @@
 <use name="eigen"/>
+<use name="fmt"/>
 <use name="pytorch"/>
 <use name="pytorch-cuda"/>
-<use name="DataFormats/PyTorch"/>
+<use name="DataFormats/PortableTestObjects"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/MessageLogger"/>
 <use name="FWCore/Utilities"/>

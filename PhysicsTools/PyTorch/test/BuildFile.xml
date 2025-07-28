@@ -6,8 +6,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <!-- <bin file="alpaka/testModelAOT.cc testRunner.cc" name="testModelAOT">
@@ -16,8 +15,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin> -->
 
 <bin file="alpaka/testModelJIT.cc testRunner.cc" name="testModelJIT">
@@ -26,8 +24,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <!-- <bin file="alpaka/testPortableInferenceAOT.dev.cc testRunner.cc" name="testPortableInferenceAOT">
@@ -43,8 +40,7 @@
   <use name="FWCore/Utilities"/>
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin> -->
 
 <bin file="alpaka/testPortableInferenceJIT.cc testRunner.cc" name="testPortableInferenceJIT">
@@ -60,8 +56,7 @@
   <use name="FWCore/Utilities"/>
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <bin file="alpaka/testSOADataTypes.dev.cc testRunner.cc" name="testSOADataTypes">
@@ -77,8 +72,7 @@
   <use name="FWCore/Utilities"/>
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
-  <flags ALPAKA_BACKENDS="serial"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch">
@@ -88,8 +82,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
-  <flags ALPAKA_BACKENDS="serial"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <bin file="alpaka/testMultiSoA.dev.cc testRunner.cc" name="testMultiSoA">
@@ -99,8 +92,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
-  <flags ALPAKA_BACKENDS="serial"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <bin file="alpaka/testTorchDeviceMatchAlpaka.cc testRunner.cc" name="testTorchDeviceMatchAlpaka">
@@ -108,8 +100,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <bin file="alpaka/testTorchExecutionControlGuard.cc testRunner.cc" name="testTorchExecutionControlGuard">
@@ -118,8 +109,7 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
 
 <bin file="testModelCpu.cc testRunner.cc" name="testModelCpu">
@@ -137,55 +127,34 @@
 
 <iftool name="cuda-gcc-support">
 <bin name="testTensorStride" file="testRunner.cc,testTensorStride.cu">
-  <use name="catch2"/>
   <use name="cppunit"/>
   <use name="cuda"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/ParameterSetReader"/>
-  <use name="FWCore/PluginManager"/>
-  <use name="FWCore/ServiceRegistry"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/CUDAServices"/>
   <use name="HeterogeneousCore/CUDAUtilities"/>
 </bin>
 </iftool>
 
 <iftool name="cuda-gcc-support">
 <bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
-  <use name="catch2"/>
   <use name="cppunit"/>
   <use name="cuda"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/ParameterSetReader"/>
-  <use name="FWCore/PluginManager"/>
-  <use name="FWCore/ServiceRegistry"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/CUDAServices"/>
   <use name="HeterogeneousCore/CUDAUtilities"/>
 </bin>
 </iftool>
 
 <iftool name="cuda-gcc-support">
 <bin name="testTorchFromBufferPinnedMemory" file="testTorchFromBufferPinnedMemory.cu">
-  <use name="catch2"/>
   <use name="cppunit"/>
   <use name="cuda"/>
   <use name="pytorch"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/ParameterSetReader"/>
-  <use name="FWCore/PluginManager"/>
-  <use name="FWCore/ServiceRegistry"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/CUDAServices"/>
   <use name="HeterogeneousCore/CUDAUtilities"/>
 </bin>
 </iftool>
 
-<test name="TestPipelineCpu" command="testPipeline.sh cpu"/>
-<test name="TestPipelineCuda" command="testPipeline.sh cuda">
+<test name="TestPyTorchPipelineCpu" command="testPyTorchPipeline.sh cpu"/>
+<test name="TestPyTorchPipelineCuda" command="testPyTorchPipeline.sh cuda">
   <use name="cuda"/>
 </test>
