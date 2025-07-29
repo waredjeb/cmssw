@@ -28,7 +28,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const device::EDGetToken<TrackstersGNNOutputSoADeviceCollection> gnn_output_token_;
     const edm::EDPutTokenT<std::vector<ticl::Trackster>> merged_tracksters_token_; /**< Token to store output data. */
 
-    const int threshold = 0.6;
+    const float threshold = 0.6;
   };
 
   MergedGNNTracksterProducer::MergedGNNTracksterProducer(edm::ParameterSet const &params)
@@ -45,7 +45,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto numEdges = gnn_output.view().metadata().size();
     auto edge_index_records = gnn_input.const_view<GNNEdgeIndexSoA>().records();
-    GNNPostprocessingSoA::ConstView merged_view(gnn_output.const_view().records().score(), edge_index_records.in(), edge_index_records.out());
+    GNNPostprocessingSoA::ConstView merged_view(
+        gnn_output.const_view().records().score(), edge_index_records.in(), edge_index_records.out());
 
     TrackstersGNNPostprocessingSoAHostCollection gnn_post_host(numEdges, event.queue());
     gnn_post_host.deepCopy(merged_view, event.queue());
@@ -54,42 +55,38 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     std::stringstream msg_stream;
     msg_stream << "MergedGNNTracksterProducer::produce [E: " << event.id().event() << "]";
-
-    std::vector<ticl::Node> nodes;
-    for (size_t i = 0; i < tracksters.size(); i++) {
-      nodes.emplace_back(i);
-    }
-
-    TICLGraph ticlGraph(nodes);
+   
+    std::vector<ticl::Trackster> output(tracksters);
+    std::vector<int> lookup(output.size());
+    std::iota(lookup.begin(), lookup.end(), 0);
+    std::array<int, 2> merge_idx;
+    
     for (int i = 0; i < numEdges; i++) {
       if (post_view.score()[i] > threshold) {
-        ticlGraph.adaptNode(post_view.out()[i]).addOuterNeighbour(post_view.in()[i]);
-        ticlGraph.adaptNode(post_view.in()[i]).addInnerNeighbour(post_view.out()[i]);
-      }
-    }
-
-    ticlGraph.findRootNodes();
-
-    std::vector<ticl::Trackster> output;
-    std::vector<ticl::Trackster> tmp;
-    ticl::Trackster trackster;
-    auto components = ticlGraph.findSubComponents();
-    for (auto comp : components) {
-      if (comp.size() < 1) {
-        continue;
-      }
-      trackster = tracksters[comp.back()];
-
-      if (comp.size() > 1) {
-        comp.pop_back();
-        for (auto node : comp) {
-          tmp.push_back(tracksters[node]);
+        merge_idx[0] = post_view.out()[i];
+        while (merge_idx[0] != lookup[merge_idx[0]]) {
+          merge_idx[0] = lookup[merge_idx[0]];
         }
-        trackster.mergeTracksters(tmp);
-        tmp.clear();
+
+        merge_idx[1] = post_view.in()[i];
+        while (merge_idx[1] != lookup[merge_idx[1]]) {
+          merge_idx[1] = lookup[merge_idx[1]];
+        }
+
+        if (merge_idx[0] != merge_idx[1]) {
+          output[merge_idx[0]].mergeTracksters(output[merge_idx[1]]);
+          lookup[merge_idx[1]] = merge_idx[0];
+        }
       }
-      output.push_back(trackster);
     }
+
+    for (int idx = lookup.size() - 1; idx >= 0; idx--) {
+      if (lookup[idx] != idx) {
+        output.erase(output.begin() + idx);
+      }
+    }
+
+    output.shrink_to_fit();
 
     std::cout << "(MergedGNNTracksterProducer) Number of Trackster: " << output.size() << std::endl;
     event.emplace(merged_tracksters_token_, std::move(output));
