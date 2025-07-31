@@ -176,7 +176,7 @@ ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
 )
 ticlMergedGNNTrackstersProducerTask = cms.Task(ticlMergedGNNTrackstersProducer)
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
-ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask,ticlTrackstersLinkingByGNNProducerTask,ticlMergedGNNTrackstersProducerTask,ticlTracksterLinksTask))
+ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask,ticlTracksterLinksTask))
 
 
 mtdSoATask = cms.Task(mtdSoA)

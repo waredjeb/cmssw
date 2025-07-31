@@ -3,7 +3,7 @@
 
 namespace ticl {
 
-  void Node::findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>& subComponent) { 
+  void Node::findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>& subComponent) {
     if (!alreadyVisited_) {
       alreadyVisited_ = true;
       subComponent.push_back(index_);
@@ -24,9 +24,9 @@ std::vector<std::vector<unsigned int>> TICLGraph::findSubComponents() {
   std::vector<std::vector<unsigned int>> components;
   for (auto const& node : rootNodes_) {
     auto const id = node.getId();
-	std::vector<unsigned int> tmpSubComponents;
-	nodes_[id].findSubComponents(nodes_, tmpSubComponents);
-	components.push_back(tmpSubComponents);
+    std::vector<unsigned int> tmpSubComponents;
+    nodes_[id].findSubComponents(nodes_, tmpSubComponents);
+    components.push_back(tmpSubComponents);
   }
   // Second loop: DFS for non-root nodes that haven't been visited
   for (auto const& node : nodes_) {
