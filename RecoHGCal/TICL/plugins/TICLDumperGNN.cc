@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <variant>
 #include <algorithm>  // for std::minmax_element
@@ -107,10 +108,14 @@ namespace {
     if (validEdge) {
       label = 1;
 
-      float termSrc = (rawE[src] > 0.f) ? (1.f - delta[src]) * sharedE[src] / rawE[src] : 0.f;
-      float termDst = (rawE[dst] > 0.f) ? (1.f - delta[dst]) * sharedE[dst] / rawE[dst] : 0.f;
+      float termSrc =
+          (rawE[src] > std::numeric_limits<float>::epsilon()) ? (1.f - delta[src]) * sharedE[src] / rawE[src] : 0.f;
+      float termDst =
+          (rawE[dst] > std::numeric_limits<float>::epsilon()) ? (1.f - delta[dst]) * sharedE[dst] / rawE[dst] : 0.f;
 
-      weight = termSrc + termDst;
+      weight = (termSrc + termDst);
+      std::cout << "RawESrc " << rawE[src] << "termSrc " << termSrc << "RawEDst " << rawE[dst] << " termDst " << termDst
+                << " sE_src " << sharedE[src] << " sE_dst " << sharedE[dst] << " weight " << weight << std::endl;
     } else {
       label = 0;
       weight = 0.f;
@@ -316,7 +321,6 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
   std::cout << "(TICLDumperGNN) Num Trackster: " << numTrackster << std::endl;
   std::cout << "(TICLDumperGNN) Num Edges: " << numEdges << std::endl;
   float trackster_dens = numTrackster / detector_size;
-  size_t k = 0;
 
   std::vector<int> y;
   std::vector<float> sharedE, score;
@@ -384,6 +388,10 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
     edgeIndex_out.resize(numTrackster);
     edge_label.resize(numTrackster);
     edge_weight.resize(numTrackster);
+  }
+
+  for (int i = 0; i < numTrackster; i++) {
+    std::vector<unsigned int> outer = ticlGraph.getNode(i).getOuterNeighbours();
 
     for (unsigned int node : outer) {
       edge_raw_energy[i].push_back(std::abs(tracksters[i].raw_energy() -
@@ -400,16 +408,12 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
 
       edgeIndex_in[i].push_back(i);
       edgeIndex_out[i].push_back(node);
-
       int edge_lab;
       float edge_w;
 
       edgeLabelAndWeight(i, node, y, score, sharedE, node_raw_energy, edge_lab, edge_w);
-
       edge_label[i].push_back(edge_lab);
       edge_weight[i].push_back(edge_w);
-
-      k++;
     }
   }
   gnnTree->Fill();
@@ -420,7 +424,7 @@ void TICLDumperGNN::fillDescriptions(edm::ConfigurationDescriptions& description
   desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
   desc.add<edm::InputTag>("ticlGraph", edm::InputTag("ticlGraph"));
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
-  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
+  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters", "fromCPs"));
   desc.add<edm::InputTag>(
       "simToReco",
       edm::InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersCLUE3DHigh"));
