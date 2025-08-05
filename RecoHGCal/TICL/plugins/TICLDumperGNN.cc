@@ -97,17 +97,20 @@ namespace {
   inline void edgeLabelAndWeight(int src,
                                  int dst,
                                  const std::vector<int>& y,
-                                 const std::vector<float>& score,
+                                 const std::vector<float>& delta,
                                  const std::vector<float>& sharedE,
                                  const std::vector<float>& rawE,
                                  int& label,
                                  float& weight) {
-    const bool goodSrc = (y[src] != -1) && (score[src] < 0.2f);
-    const bool goodDst = (y[dst] != -1) && (score[dst] < 0.2f);
-    if (goodSrc && goodDst && y[src] == y[dst]) {
+    const bool validEdge = (y[src] != -1) && (y[dst] != -1) && (y[src] == y[dst]);
+
+    if (validEdge) {
       label = 1;
-      float denom = rawE[src] + rawE[dst];
-      weight = (denom > 0.f) ? (sharedE[src] + sharedE[dst]) / denom : 0.f;
+
+      float termSrc = (rawE[src] > 0.f) ? (1.f - delta[src]) * sharedE[src] / rawE[src] : 0.f;
+      float termDst = (rawE[dst] > 0.f) ? (1.f - delta[dst]) * sharedE[dst] / rawE[dst] : 0.f;
+
+      weight = termSrc + termDst;
     } else {
       label = 0;
       weight = 0.f;
@@ -356,8 +359,6 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
     node_time_error.push_back(tracksters[i].timeError());
 
     int hits = 0;
-    float z_min = std::numeric_limits<float>::max();
-    float z_max = std::numeric_limits<float>::min();
 
     const auto& vertices = tracksters[i].vertices();
 
