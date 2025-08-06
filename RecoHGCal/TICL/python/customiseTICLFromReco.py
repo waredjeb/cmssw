@@ -3,6 +3,7 @@ from RecoHGCal.TICL.iterativeTICL_cff import *
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci
 from RecoLocalCalo.HGCalRecProducers.hgcalMergeLayerClusters_cfi import hgcalMergeLayerClusters
 from RecoHGCal.TICL.ticlDumper_cff import ticlDumper
+from RecoHGCal.TICL.ticlDumperGNN_cfi import ticlDumperGNN
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cff import *
 from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cff import recHitMapProducer
@@ -68,6 +69,17 @@ def customiseTICLFromReco(process):
 def customiseTICLForDumper(process, histoName="histo.root"):
 
     process.ticlDumper = ticlDumper.clone()
+
+    process.TFileService = cms.Service("TFileService",
+                                       fileName=cms.string(histoName)
+                                       )
+    process.FEVTDEBUGHLToutput_step = cms.EndPath(
+        process.FEVTDEBUGHLToutput + process.ticlDumper)
+    return process
+
+def customiseTICLForDumperGNN(process, histoName="histo.root"):
+
+    process.ticlDumper = ticlDumperGNN.clone()
 
     process.TFileService = cms.Service("TFileService",
                                        fileName=cms.string(histoName)

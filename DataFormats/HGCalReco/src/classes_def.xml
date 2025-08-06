@@ -92,4 +92,17 @@
   <class name="HGCalSoAClustersHostCollection"/>
   <class name="edm::Wrapper<HGCalSoAClustersHostCollection>" splitLevel="0"/>
 
+
+  <class name="ticl::Node">
+  </class>
+  <class name="std::vector<ticl::Node>" />
+  <class name="edm::Wrapper<ticl::Node>" />
+  <class name="edm::Wrapper<std::vector<ticl::Node> >" />
+
+  <class name="TICLGraph">
+  </class>
+  <class name="std::vector<TICLGraph>" />
+  <class name="edm::Wrapper<TICLGraph>" />
+  <class name="edm::Wrapper<std::vector<TICLGraph> >" />
+
 </lcgdict>
