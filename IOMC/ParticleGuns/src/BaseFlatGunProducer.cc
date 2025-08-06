@@ -5,11 +5,11 @@
 #include <ostream>
 #include <memory>
 
-#include "FWCore/AbstractServices/interface/RandomNumberGenerator.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/AbstractServices/interface/RandomNumberGenerator.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
@@ -44,11 +44,11 @@ BaseFlatGunProducer::BaseFlatGunProducer(const ParameterSet& pset)
   // it looks like it's NOT even necessary to check if it is,
   // before trying to extract parameters - if it is empty,
   // the default values seem to be taken
-  fPartIDs = pgun_params.getParameter<vector<int> >("PartID");
-  fMinEta = pgun_params.getParameter<double>("MinEta");
-  fMaxEta = pgun_params.getParameter<double>("MaxEta");
-  fMinPhi = pgun_params.getParameter<double>("MinPhi");
-  fMaxPhi = pgun_params.getParameter<double>("MaxPhi");
+//  fPartIDs = pgun_params.getParameter<vector<int> >("PartID");
+//  fMinEta = pgun_params.getParameter<double>("MinEta");
+//  fMaxEta = pgun_params.getParameter<double>("MaxEta");
+//  fMinPhi = pgun_params.getParameter<double>("MinPhi");
+//  fMaxPhi = pgun_params.getParameter<double>("MaxPhi");
 
   //
   //fPDGTablePath = "/afs/cern.ch/sw/lcg/external/clhep/1.9.2.1/slc3_ia32_gcc323/data/HepPDT/" ;
