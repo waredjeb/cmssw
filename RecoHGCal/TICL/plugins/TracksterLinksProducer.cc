@@ -68,6 +68,7 @@ private:
   std::string algoType_;
 
   std::vector<edm::EDGetTokenT<std::vector<Trackster>>> tracksters_tokens_;
+  std::vector<edm::EDGetTokenT<std::vector<float>>> trackstersMask_tokens_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
 
@@ -102,6 +103,9 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   // Loop over the edm::VInputTag and append the token to tracksters_tokens_
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("tracksters_collections")) {
     tracksters_tokens_.emplace_back(consumes<std::vector<Trackster>>(tag));
+  }
+  for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("trackstersMask_collections")) {
+    trackstersMask_tokens_.emplace_back(consumes<std::vector<float>>(tag));
   }
   //Loop over the edm::VInputTag of masks and append the token to original_masks_tokens_
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("original_masks")) {
@@ -208,6 +212,13 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     evt.getByToken(tracksters_tokens_[i], tracksters_h[i]);
     //Fill MultiSpan
     trackstersManager.add(*tracksters_h[i]);
+  }
+  std::vector<edm::Handle<std::vector<float>>> trackstersMask_h(trackstersMask_tokens_.size());
+  MultiVectorManager<float> trackstersMaskManager;
+  for (unsigned int i = 0; i < trackstersMask_tokens_.size(); ++i) {
+    evt.getByToken(trackstersMask_tokens_[i], trackstersMask_h[i]);
+    //Fill MultiVectorManager
+    trackstersMaskManager.addVector(*trackstersMask_h[i]);
   }
 
   // Linking
