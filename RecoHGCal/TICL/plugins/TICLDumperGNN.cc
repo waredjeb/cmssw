@@ -62,6 +62,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+using CaloObjectVariant = std::variant<CaloParticle, SimCluster>;
+
 namespace {
   template <typename TTMap>
   void calcReco2SimTracksterFit(const TTMap& recoToSimMap,
@@ -113,9 +115,7 @@ namespace {
       float termDst =
           (rawE[dst] > std::numeric_limits<float>::epsilon()) ? (1.f - delta[dst]) * sharedE[dst] / rawE[dst] : 0.f;
 
-      weight = (termSrc + termDst);
-      std::cout << "RawESrc " << rawE[src] << "termSrc " << termSrc << "RawEDst " << rawE[dst] << " termDst " << termDst
-                << " sE_src " << sharedE[src] << " sE_dst " << sharedE[dst] << " weight " << weight << std::endl;
+      weight = (termSrc + termDst) / 2.;
     } else {
       label = 0;
       weight = 0.f;
@@ -147,6 +147,8 @@ private:
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
   edm::EDGetTokenT<TracksterToTracksterMap> associations_simToReco_token_;  ///< The tokens for each assocation
   edm::EDGetTokenT<TracksterToTracksterMap> associations_recoToSim_token_;
+  const edm::EDGetTokenT<std::vector<SimCluster>> simclusters_token_;
+  const edm::EDGetTokenT<std::vector<CaloParticle>> caloparticles_token_;
   std::vector<float> node_raw_energy;
   std::vector<float> node_raw_em_energy;
   std::vector<float> node_barycenter_x;
@@ -178,6 +180,11 @@ private:
   std::vector<float> node_num_LCs;
   std::vector<float> node_num_hits;
 
+  std::vector<float> simTrackster_raw_energy;
+  std::vector<float> simTrackster_true_energy;
+  std::vector<int> simTrackster_isPU;
+  std::vector<int> simTrackster_pdgID;
+
   std::vector<int> node_match_idx;
   std::vector<float> node_match_sharedE;
   std::vector<float> node_match_score;
@@ -204,7 +211,10 @@ TICLDumperGNN::TICLDumperGNN(edm::ParameterSet const& params)
           consumes<std::vector<reco::CaloCluster>>(params.getParameter<edm::InputTag>("layerClusters"))),
       associations_simToReco_token_(consumes<TracksterToTracksterMap>(params.getParameter<edm::InputTag>("simToReco"))),
       associations_recoToSim_token_(
-          consumes<TracksterToTracksterMap>(params.getParameter<edm::InputTag>("recoToSim"))) {}
+          consumes<TracksterToTracksterMap>(params.getParameter<edm::InputTag>("recoToSim"))),
+      simclusters_token_(consumes(params.getParameter<edm::InputTag>("simclusters"))),
+      caloparticles_token_(consumes(params.getParameter<edm::InputTag>("caloparticles")))
+{}
 
 void TICLDumperGNN::clearVariables() {
   node_raw_energy.clear();
@@ -237,6 +247,12 @@ void TICLDumperGNN::clearVariables() {
   node_trackster_density.clear();
   node_num_LCs.clear();
   node_num_hits.clear();
+
+  simTrackster_raw_energy.clear();
+  simTrackster_true_energy.clear();
+  simTrackster_isPU.clear();
+  simTrackster_pdgID.clear();
+
   node_match_idx.clear();
   node_match_sharedE.clear();
   node_match_score.clear();
@@ -291,6 +307,11 @@ void TICLDumperGNN::beginJob() {
   gnnTree->Branch("node_match_sharedE", &node_match_sharedE);
   gnnTree->Branch("node_match_score", &node_match_score);
 
+  gnnTree->Branch("simTrackster_raw_energy", &simTrackster_raw_energy);
+  gnnTree->Branch("simTrackster_true_energy", &simTrackster_true_energy);
+  gnnTree->Branch("simTrackster_isPU", &simTrackster_isPU);
+  gnnTree->Branch("simTrackster_pdgID", &simTrackster_pdgID);
+
   gnnTree->Branch("edge_raw_energy", &edge_raw_energy);
   gnnTree->Branch("edge_barycenter_z", &edge_barycenter_z);
   gnnTree->Branch("edge_barycenter_xy", &edge_barycenter_xy);
@@ -300,6 +321,30 @@ void TICLDumperGNN::beginJob() {
   gnnTree->Branch("edge_weight", &edge_weight);
   gnnTree->Branch("edgeIndex_out", &edgeIndex_out);
   gnnTree->Branch("edgeIndex_in", &edgeIndex_in);
+}
+bool isFromPU(const ticl::Trackster& simTrackster,
+              edm::Handle<std::vector<CaloParticle>>& caloparticles_h,
+              const std::vector<CaloParticle>& caloparticles,
+              const std::vector<SimCluster>& simclusters) {
+  CaloObjectVariant caloObj;
+
+  if (simTrackster.seedID() == caloparticles_h.id()) {
+    caloObj = caloparticles[simTrackster.seedIndex()];
+
+  } else {
+    caloObj = simclusters[simTrackster.seedIndex()];
+  }
+
+  auto const& simTrack = std::visit([](auto&& obj) { return obj.g4Tracks()[0]; }, caloObj);
+
+  if ((simTrack.eventId().event() != 0 or simTrack.eventId().bunchCrossing() != 0)) {
+    return true;
+
+  }
+
+  else {
+    return false;
+  }
 }
 void TICLDumperGNN::beginRun(edm::Run const&, edm::EventSetup const& es) {};
 
@@ -311,6 +356,10 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
   auto const& simToRecoMap = event.get(associations_simToReco_token_);
   auto const& recoToSimMap = event.get(associations_recoToSim_token_);
   auto const& layerClusters = event.get(layer_clusters_token_);
+  auto const& caloparticles = event.get(caloparticles_token_);
+  auto caloparticles_h = event.getHandle(caloparticles_token_);
+  auto simclusters_h = event.getHandle(simclusters_token_);
+  auto const simclusters = event.get(simclusters_token_);
 
   // debug stream usage in concurrently scheduled modules
 
@@ -318,8 +367,6 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
   int numEdges = ticlGraph.getNumberOfEdges();
   std::array<int, 3> const sizes{{numTrackster, numEdges, numEdges}};
 
-  std::cout << "(TICLDumperGNN) Num Trackster: " << numTrackster << std::endl;
-  std::cout << "(TICLDumperGNN) Num Edges: " << numEdges << std::endl;
   float trackster_dens = numTrackster / detector_size;
 
   std::vector<int> y;
@@ -333,6 +380,21 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
 
   edge_label.resize(numTrackster);
   edge_weight.resize(numTrackster);
+
+  for (size_t i = 0; i < simTracksters.size(); i++) {
+    auto const& simT = simTracksters[i];
+    simTrackster_raw_energy.push_back(simT.raw_energy());
+    simTrackster_true_energy.push_back(simT.regressed_energy());
+    CaloObjectVariant caloObj;
+    if (simT.seedID() == caloparticles_h.id()) {
+      caloObj = caloparticles[simT.seedIndex()];
+    } else {
+      caloObj = simclusters[simT.seedIndex()];
+    }
+    simTrackster_pdgID.push_back(std::visit([](auto&& obj) { return obj.pdgId(); }, caloObj));
+    bool isPU = isFromPU(simT, caloparticles_h, caloparticles, simclusters);
+    simTrackster_isPU.push_back(isPU);
+  }
   for (int i = 0; i < numTrackster; i++) {
     node_raw_energy.push_back(tracksters[i].raw_energy());
     node_raw_em_energy.push_back(tracksters[i].raw_em_energy());
@@ -402,9 +464,9 @@ void TICLDumperGNN::analyze(const edm::Event& event, const edm::EventSetup& setu
                                                  (tracksters[i].barycenter().y() - tracksters[node].barycenter().y())));
 
       edge_eigenvector0[i].push_back(
-          std::acos(tracksters[i].eigenvectors(0).x() * tracksters[node].eigenvectors(0).x() +
+          std::acos(std::clamp((tracksters[i].eigenvectors(0).x() * tracksters[node].eigenvectors(0).x() +
                     tracksters[i].eigenvectors(0).y() * tracksters[node].eigenvectors(0).y() +
-                    tracksters[i].eigenvectors(0).z() * tracksters[node].eigenvectors(0).z()));
+                    tracksters[i].eigenvectors(0).z() * tracksters[node].eigenvectors(0).z()),-1.f,1.f)));
 
       edgeIndex_in[i].push_back(i);
       edgeIndex_out[i].push_back(node);
@@ -424,13 +486,15 @@ void TICLDumperGNN::fillDescriptions(edm::ConfigurationDescriptions& description
   desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
   desc.add<edm::InputTag>("ticlGraph", edm::InputTag("ticlGraph"));
   desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
-  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters", "fromCPs"));
+  desc.add<edm::InputTag>("simTracksters", edm::InputTag("ticlSimTracksters"));
   desc.add<edm::InputTag>(
       "simToReco",
       edm::InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlSimTrackstersToticlTrackstersCLUE3DHigh"));
   desc.add<edm::InputTag>(
       "recoToSim",
       edm::InputTag("allTrackstersToSimTrackstersAssociationsByLCs:ticlTrackstersCLUE3DHighToticlSimTracksters"));
+  desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
+  desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
   descriptions.add("ticlDumperGNN", desc);
 }
 
