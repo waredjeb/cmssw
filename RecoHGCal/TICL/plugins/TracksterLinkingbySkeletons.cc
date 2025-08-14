@@ -286,7 +286,18 @@ bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackst
                                           << myTrackster.vertices().size() << " IS GOOD " << std::endl;
 
   float proj_distance = projective_distance(mySkeleton[1], otherSkeleton[1]);
-  auto isEE = mySkeleton[1].z() <= zVal_interface ? 0 : 1;
+
+  bool isInEE  = mySkeleton[1].z()    <= zVal_interface;
+  bool isOutEE = otherSkeleton[1].z() <= zVal_interface;
+  
+  if (isInEE && isOutEE) {
+      return false;  // both on EE side — early exit
+  }
+  
+  // isEE is true if not both in/out, and mySkeleton is outside EE
+  bool isEE = !(isInEE) && isOutEE ? false : true;
+
+  
   auto const max_distance_proj_sqr = computeParameter(myTrackster.raw_energy(),
                                                       lower_boundary_[isEE],
                                                       lower_distance_projective_sqr_[isEE],
@@ -310,10 +321,10 @@ bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackst
         LogDebug("TracksterLinkingbySkeletons") << "\t\t Linked! Splitted components!" << std::endl;
         return true;
       }
-      //if is EE do not try to link more, PU occupancy is too high in this region
-      if (isEE) {
-        return false;
-      }
+//      //if is EE do not try to link more, PU occupancy is too high in this region
+//      if (isEE) {
+//        return false;
+//      }
       //if instead we are in the CE-H part of the detector, we can try to link more
       // we measure the distance between the two closest nodes in the two skeletons
       return checkClosestPoints(myTrackster, otherTrackster, mySkeleton, otherSkeleton, isEE);
