@@ -701,7 +701,6 @@ private:
   // TICLGraph
   std::vector<std::vector<uint32_t>> inner;
   std::vector<std::vector<uint32_t>> outer;
-  
 
   // Layer clusters
   std::vector<uint32_t> cluster_seedID;
@@ -1156,7 +1155,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   inner.resize(ticlgraphs.getNodes().size());
   outer.resize(ticlgraphs.getNodes().size());
 
-  for (size_t i=0; i < inner.size(); i++) {
+  for (size_t i = 0; i < inner.size(); i++) {
     inner[i].resize(ticlgraphs.getNodes().size());
     outer[i].resize(ticlgraphs.getNodes().size());
   }

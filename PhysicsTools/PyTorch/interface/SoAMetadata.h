@@ -199,7 +199,12 @@ namespace cms::torch::alpaka {
     template <SoAColumnType col_type, typename T>
       requires(std::is_arithmetic_v<T> && col_type == SoAColumnType::scalar)
     void append_block(const std::string& name, std::tuple<SoAParametersImpl<col_type, T>, cms::soa::size_type> column) {
-      blocks.try_emplace(name, nElements_, DEFAULT_SOA_Layout::alignment, std::get<0>(column).tupleOrPointer(), get_type<T>(), sizeof(T));
+      blocks.try_emplace(name,
+                         nElements_,
+                         DEFAULT_SOA_Layout::alignment,
+                         std::get<0>(column).tupleOrPointer(),
+                         get_type<T>(),
+                         sizeof(T));
       order.push_back(name);
       nBlocks += 1;
     }
@@ -208,7 +213,9 @@ namespace cms::torch::alpaka {
     template <typename SOA_LAYOUT, typename T, typename... Others>
       requires(SameTypes<typename T::ScalarType, typename Others::ScalarType...> &&
                T::columnType == SoAColumnType::column)
-    void append_block(const std::string& name, int nElements, std::tuple<T, cms::soa::size_type> column,
+    void append_block(const std::string& name,
+                      int nElements,
+                      std::tuple<T, cms::soa::size_type> column,
                       std::tuple<Others, cms::soa::size_type>... others) {
       int elems = Block::get_elems_per_column(nElements, SOA_LAYOUT::alignment, sizeof(typename T::ScalarType));
       assert(check_location(elems, std::get<0>(column).tupleOrPointer(), std::get<0>(others).tupleOrPointer()...));
@@ -226,7 +233,9 @@ namespace cms::torch::alpaka {
 
     template <typename SOA_LAYOUT, typename T, typename... Others>
       requires(SameTypes<typename T::ValueType, typename Others::ValueType...> && T::columnType == SoAColumnType::eigen)
-    void append_block(const std::string& name, int nElements, std::tuple<T, cms::soa::size_type> column,
+    void append_block(const std::string& name,
+                      int nElements,
+                      std::tuple<T, cms::soa::size_type> column,
                       std::tuple<Others, cms::soa::size_type>... others) {
       const auto [ptr, stride] = std::get<0>(column).tupleOrPointer();
 
@@ -252,8 +261,11 @@ namespace cms::torch::alpaka {
 
     template <typename SOA_LAYOUT, SoAColumnType col_type, typename T>
       requires(std::is_arithmetic_v<T> && col_type == SoAColumnType::scalar)
-    void append_block(const std::string& name, int nElements, std::tuple<SoAParametersImpl<col_type, T>, cms::soa::size_type> column) {
-      blocks.try_emplace(name, nElements_, SOA_LAYOUT::alignment, std::get<0>(column).tupleOrPointer(), get_type<T>(), sizeof(T));
+    void append_block(const std::string& name,
+                      int nElements,
+                      std::tuple<SoAParametersImpl<col_type, T>, cms::soa::size_type> column) {
+      blocks.try_emplace(
+          name, nElements_, SOA_LAYOUT::alignment, std::get<0>(column).tupleOrPointer(), get_type<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
     }

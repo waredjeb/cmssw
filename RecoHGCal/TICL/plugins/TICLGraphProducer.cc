@@ -35,7 +35,7 @@ using namespace ticl;
 class TICLGraphProducer : public edm::stream::EDProducer<> {
 public:
   explicit TICLGraphProducer(const edm::ParameterSet &ps);
-  ~TICLGraphProducer() override{};
+  ~TICLGraphProducer() override {};
   void produce(edm::Event &, const edm::EventSetup &) override;
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
@@ -78,7 +78,7 @@ TICLGraphProducer::TICLGraphProducer(const edm::ParameterSet &ps)
 
 void TICLGraphProducer::beginJob() {}
 
-void TICLGraphProducer::endJob(){};
+void TICLGraphProducer::endJob() {};
 
 void TICLGraphProducer::beginRun(edm::Run const &iEvent, edm::EventSetup const &es) {
   edm::ESHandle<HGCalDDDConstants> hdc = es.getHandle(hdc_token_);

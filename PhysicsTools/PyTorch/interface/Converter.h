@@ -72,8 +72,7 @@ namespace cms::torch::alpaka {
         if (tensors[i].isTensor()) {
           assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % SOA_Output::alignment ==
                  0);
-          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) =
-              tensors[i].toTensor();
+          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors[i].toTensor();
         }
       }
     }
