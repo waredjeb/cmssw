@@ -108,50 +108,54 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto post_view = gnn_post_host.view();
 
     std::stringstream msg_stream;
-
     std::vector<ticl::Trackster> output(tracksters);
-    std::vector<std::vector<unsigned int>> linkedTrackstersOutput; 
-    linkedTrackstersOutput.resize(tracksters.size());
+    std::vector<std::vector<unsigned int>> linkedTrackstersOutput(tracksters.size());
     std::vector<int> lookup(output.size());
     std::iota(lookup.begin(), lookup.end(), 0);
     std::array<int, 2> merge_idx;
-
-    for (int i = 0; i < numEdges; i++) {
+    for (int i = 0; i < numEdges; ++i) {
       if (post_view.score()[i] > 0.99) {
         merge_idx[0] = post_view.out()[i];
         while (merge_idx[0] != lookup[merge_idx[0]]) {
           merge_idx[0] = lookup[merge_idx[0]];
         }
-
         merge_idx[1] = post_view.in()[i];
         while (merge_idx[1] != lookup[merge_idx[1]]) {
           merge_idx[1] = lookup[merge_idx[1]];
         }
-
         if (merge_idx[0] != merge_idx[1]) {
           output[merge_idx[0]].mergeTracksters(output[merge_idx[1]]);
           lookup[merge_idx[1]] = merge_idx[0];
-          linkedTrackstersOutput[merge_idx[0]].push_back(merge_idx[1]);
-
         }
       }
     }
-
-    for (int idx = lookup.size() - 1; idx >= 0; idx--) {
+    auto find_root = [&](int x) {
+      while (lookup[x] != x) x = lookup[x];
+      return x;
+    };
+    for (int i = 0; i < static_cast<int>(lookup.size()); ++i) {
+      lookup[i] = find_root(i);
+    }
+    int nextIdx = 0;
+    for (int i = 0; i < static_cast<int>(lookup.size()); ++i) {
+      if (lookup[i] == i) {
+        linkedTrackstersOutput[i].push_back(static_cast<unsigned int>(nextIdx));
+        ++nextIdx;
+      }
+    }
+    for (int idx = static_cast<int>(lookup.size()) - 1; idx >= 0; --idx) {
       if (lookup[idx] != idx) {
         output.erase(output.begin() + idx);
         linkedTrackstersOutput.erase(linkedTrackstersOutput.begin() + idx);
       }
     }
 
-    output.shrink_to_fit();
     ticlAlpaka::assignPCAtoTracksters(output,
                                 layerClusters,
                                 layerClustersTimes,
                                 rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
                                 rhtools_,
                                 true);
-
     event.emplace(merged_tracksters_token_, std::move(output));
     event.emplace(linked_merged_trackstersId_token_, std::move(linkedTrackstersOutput));
   }
