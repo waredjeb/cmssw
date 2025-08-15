@@ -27,8 +27,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const device::EDGetToken<TrackstersSoADeviceCollection> gnn_input_token_;
     const device::EDGetToken<TrackstersGNNOutputSoADeviceCollection> gnn_output_token_;
     const edm::EDPutTokenT<std::vector<ticl::Trackster>> merged_tracksters_token_; /**< Token to store output data. */
-
-    const float threshold = 0.6;
   };
 
   MergedGNNTracksterProducer::MergedGNNTracksterProducer(edm::ParameterSet const &params)
@@ -62,7 +60,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::array<int, 2> merge_idx;
     
     for (int i = 0; i < numEdges; i++) {
-      if (post_view.score()[i] > threshold) {
+      if (post_view.score()[i] > 0.99) {
         merge_idx[0] = post_view.out()[i];
         while (merge_idx[0] != lookup[merge_idx[0]]) {
           merge_idx[0] = lookup[merge_idx[0]];
