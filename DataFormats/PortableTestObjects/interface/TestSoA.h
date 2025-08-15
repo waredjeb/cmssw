@@ -63,4 +63,17 @@ namespace portabletest {
 
 }  // namespace portabletest
 
+namespace torchportabletest {
+
+  GENERATE_SOA_LAYOUT(ParticleLayout, SOA_COLUMN(float, pt), SOA_COLUMN(float, eta), SOA_COLUMN(float, phi))
+  using ParticleSoA = ParticleLayout<>;
+
+  GENERATE_SOA_LAYOUT(ClassificationLayout, SOA_COLUMN(float, c1), SOA_COLUMN(float, c2))
+  using ClassificationSoA = ClassificationLayout<>;
+
+  GENERATE_SOA_LAYOUT(RegressionLayout, SOA_COLUMN(float, reco_pt))
+  using RegressionSoA = RegressionLayout<>;
+
+}  // namespace torchportabletest
+
 #endif  // DataFormats_PortableTestObjects_interface_TestSoA_h

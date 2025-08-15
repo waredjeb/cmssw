@@ -26,9 +26,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   }  // namespace portabletest
 
+  namespace torchportabletest {
+
+    /**
+   * make the names from the top-level `torchportabletest` namespace visible for unqualified lookup
+   * inside the `ALPAKA_ACCELERATOR_NAMESPACE::torchportabletest` namespace
+   */
+    using namespace ::torchportabletest;
+
+    using ParticleCollection = PortableCollection<ParticleSoA>;
+    using ClassificationCollection = PortableCollection<ClassificationSoA>;
+    using RegressionCollection = PortableCollection<RegressionSoA>;
+
+  }  // namespace torchportabletest
+
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 // check that the portable device collection for the host device is the same as the portable host collection
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(portabletest::TestDeviceCollection, portabletest::TestHostCollection);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportabletest::ParticleCollection, torchportabletest::ParticleCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportabletest::ClassificationCollection,
+                                      torchportabletest::ClassificationCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportabletest::RegressionCollection,
+                                      torchportabletest::RegressionCollectionHost);
 
 #endif  // DataFormats_PortableTestObjects_interface_alpaka_TestDeviceCollection_h
