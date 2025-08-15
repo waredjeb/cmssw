@@ -8,5 +8,4 @@ using TrackstersSoAHostCollection = PortableMultiCollection<alpaka::DevCpu, GNNN
 using TrackstersGNNOutputSoAHostCollection = PortableHostCollection<GNNOutputSoA>;
 using TrackstersGNNPostprocessingSoAHostCollection = PortableHostCollection<GNNPostprocessingSoA>;
 
-
 #endif  // DataFormats_HGCalReco_interface_TrackstersSoAHostCollection_h

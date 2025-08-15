@@ -4,7 +4,7 @@
 #include "DataFormats/SoATemplate/interface/SoACommon.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 
-GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
+GENERATE_SOA_LAYOUT(GNNNodeSoALayout,
                     // columns: one value per element
                     SOA_COLUMN(float, barycenter_x),
                     SOA_COLUMN(float, barycenter_y),
@@ -34,31 +34,20 @@ GENERATE_SOA_LAYOUT(GNNNodeSoALayout ,
                     SOA_COLUMN(float, z_max),
                     SOA_COLUMN(float, LC_density),
                     SOA_COLUMN(float, trackster_density),
-                    SOA_COLUMN(float, time)
-);
+                    SOA_COLUMN(float, time));
 
 GENERATE_SOA_LAYOUT(GNNEdgeSoALayout,
                     SOA_COLUMN(float, raw_energy),
                     SOA_COLUMN(float, barycenter_z),
                     SOA_COLUMN(float, barycenter_xy),
                     SOA_COLUMN(float, eigenvector0),
-                    SOA_COLUMN(float, time)
-);
+                    SOA_COLUMN(float, time));
 
-GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout,
-                    SOA_COLUMN(long, in),
-                    SOA_COLUMN(long, out)
-);
+GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout, SOA_COLUMN(long, in), SOA_COLUMN(long, out));
 
-GENERATE_SOA_LAYOUT(GNNOutputSoALayout,
-                    SOA_COLUMN(float, score)
-);
+GENERATE_SOA_LAYOUT(GNNOutputSoALayout, SOA_COLUMN(float, score));
 
-GENERATE_SOA_LAYOUT(GNNPostprocessingSoALayout,
-                    SOA_COLUMN(float, score),
-		    SOA_COLUMN(long, in),
-		    SOA_COLUMN(long, out)
-);
+GENERATE_SOA_LAYOUT(GNNPostprocessingSoALayout, SOA_COLUMN(float, score), SOA_COLUMN(long, in), SOA_COLUMN(long, out));
 
 using GNNNodeSoA = GNNNodeSoALayout<>;
 using GNNEdgeSoA = GNNEdgeSoALayout<>;
