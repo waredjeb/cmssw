@@ -129,13 +129,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         }
       }
     }
-    auto find_root = [&](int x) {
-      while (lookup[x] != x) x = lookup[x];
-      return x;
-    };
-    for (int i = 0; i < static_cast<int>(lookup.size()); ++i) {
-      lookup[i] = find_root(i);
-    }
     int nextIdx = 0;
     for (int i = 0; i < static_cast<int>(lookup.size()); ++i) {
       if (lookup[i] == i) {
