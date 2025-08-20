@@ -339,9 +339,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
   }
   
 
-  for(auto const& t : *resultTracksters){
-      std::cout << " Raw energy " << t.raw_energy() << " regressed energy " << t.regressed_energy() << std::endl; 
-  }
 
   std::vector<bool> maskTracksters(resultTracksters->size(), true);
   edm::OrphanHandle<std::vector<Trackster>> resultTracksters_h = evt.put(std::move(resultTracksters));
@@ -532,7 +529,7 @@ void TICLCandidateProducer::fillDescriptions(edm::ConfigurationDescriptions &des
   desc.add<std::string>("cutTk",
                         "1.48 < abs(eta) < 3.0 && pt > 1. && quality(\"highPurity\") && "
                         "hitPattern().numberOfLostHits(\"MISSING_OUTER_HITS\") < 5");
-  desc.add<bool>("regressionAndPid", false);
+  desc.add<bool>("regressionAndPid", true);
   desc.add<std::string>("inferenceAlgo", "TracksterInferenceByPFN");
   descriptions.add("ticlCandidateProducer", desc);
 }

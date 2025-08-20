@@ -2,6 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 hltTiclCandidate = cms.EDProducer("TICLCandidateProducer",
     inferenceAlgo = cms.string('TracksterInferenceByPFN'),
+    regressionAndPid = cms.bool(True),
     pluginInferenceAlgoTracksterInferenceByPFN = cms.PSet(
       algo_verbosity = cms.int32(0),
       onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/PFN/linking/id_v0.onnx'),
