@@ -44,47 +44,46 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
       pca_quality_th = cms.double(0.85),
       dot_prod_th = cms.double(0.97),
       lower_boundary = cms.vdouble(
-        20, 
+        20,
         10 
-      ),  
+      ),
       upper_boundary = cms.vdouble(
-        150,  
+        150,
         100
-      ),  
+      ),
       upper_distance_projective_sqr = cms.vdouble(
-        30, 
-        60  
-      ),  
+        4,
+        60
+      ),
       lower_distance_projective_sqr = cms.vdouble(
-        30, 
-        60  
-      ),  
+        4,
+        60
+      ),
       min_distance_z = cms.vdouble(
-        35, 
-        35  
-      ),  
+        35,
+        35
+      ),
       upper_distance_projective_sqr_closest_points = cms.vdouble(
-        5, 
-        30  
-      ),  
+        5,
+        30
+      ),
       lower_distance_projective_sqr_closest_points = cms.vdouble(
-        10, 
-        50  
-      ),  
+        10,
+        50
+      ),
       max_z_distance_closest_points = cms.vdouble(
         35,
         35
       ),
       cylinder_radius_sqr = cms.vdouble(
-        9, 
-        15  
-      ),  
+        9,
+        15
+      ),
       deltaRxy = cms.double(4.),
       algo_verbosity = cms.int32(0),
       type = cms.string('Skeletons')
-    
-    ),  
-    regressionAndPid = cms.bool(True),
+    ),
+    regressionAndPid = cms.bool(False),
     inferenceAlgo = cms.string('TracksterInferenceByPFN'),
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
         algo_verbosity = cms.int32(0),
@@ -92,7 +91,7 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         doRegression = cms.int32(1),
         inputNames  = cms.vstring('input'),
         output_en   = cms.vstring('enreg_output'),
-	output_id   = cms.vstring('pid_output'),
+        output_id   = cms.vstring('pid_output'),
         eid_min_cluster_energy = cms.double(1),
         eid_n_clusters = cms.int32(10),
         eid_n_layers = cms.int32(50),
@@ -102,20 +101,42 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
     ),
     pluginInferenceAlgoTracksterInferenceByPFN = cms.PSet(
         algo_verbosity = cms.int32(0),
-	doPID = cms.int32(1),
+        doPID = cms.int32(1),
         doRegression = cms.int32(1),
         inputNames  = cms.vstring('input','input_tr_features'),
         output_en   = cms.vstring('enreg_output'),
         output_id   = cms.vstring('pid_output'),
-	eid_min_cluster_energy = cms.double(1),
+        eid_min_cluster_energy = cms.double(1),
         eid_n_clusters = cms.int32(10),
-	eid_n_layers = cms.int32(50),
+        eid_n_layers = cms.int32(50),
         onnxEnergyModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/PFN/linking/energy_v0.onnx'),
         onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/PFN/linking/id_v0.onnx'),
         type = cms.string('TracksterInferenceByPFN')
     )
 )
-ticlCandidate = _ticlCandidateProducer.clone()
+
+ticlCandidate = _ticlCandidateProducer.clone(
+    inferenceAlgo=cms.string('TracksterInferenceByPFN'),
+    pluginInferenceAlgoTracksterInferenceByPFN=cms.PSet(
+        algo_verbosity=cms.int32(0),
+        onnxPIDModelPath=cms.FileInPath(
+            'RecoHGCal/TICL/data/ticlv5/onnx_models/PFN/linking/id_v0.onnx'),
+        onnxEnergyModelPath=cms.FileInPath(
+            'RecoHGCal/TICL/data/ticlv5/onnx_models/PFN/linking/energy_v0.onnx'),
+        inputNames=cms.vstring(
+            'input',
+            'input_tr_features'
+        ),
+        output_en=cms.vstring('enreg_output'),
+        output_id=cms.vstring('pid_output'),
+        eid_min_cluster_energy=cms.double(1),
+        eid_n_layers=cms.int32(50),
+        eid_n_clusters=cms.int32(10),
+        doPID=cms.int32(1),
+        doRegression=cms.int32(1),
+        type=cms.string('TracksterInferenceByPFN')
+    )
+)
 mtdSoA = _mtdSoAProducer.clone()
 
 pfTICL = _pfTICLProducer.clone()

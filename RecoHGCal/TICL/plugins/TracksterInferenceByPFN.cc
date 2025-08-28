@@ -20,11 +20,12 @@ namespace ticl {
         inputNames_(conf.getParameter<std::vector<std::string>>("inputNames")),  // Define input names for inference
         output_en_(conf.getParameter<std::vector<std::string>>("output_en")),    // Define output energy for inference
         output_id_(conf.getParameter<std::vector<std::string>>("output_id")),    // Define output PID for inference
-        eidMinClusterEnergy_(conf.getParameter<double>("eid_min_cluster_energy")),  // Minimum cluster energy
-        eidNLayers_(conf.getParameter<int>("eid_n_layers")),                        // Number of layers
-        eidNClusters_(conf.getParameter<int>("eid_n_clusters")),                    // Number of clusters
-        doPID_(conf.getParameter<int>("doPID")),                                    // Number of clusters
-        doRegression_(conf.getParameter<int>("doRegression"))                       // Number of clusters
+        eidMinClusterEnergy_(conf.getParameter<double>("eid_min_cluster_energy")),          // Minimum cluster energy
+        eidNLayers_(conf.getParameter<int>("eid_n_layers")),                                // Number of layers
+        eidNClusters_(conf.getParameter<int>("eid_n_clusters")),                            // Number of clusters
+        doPID_(conf.getParameter<int>("doPID")),
+        doRegression_(conf.getParameter<int>("doRegression")),
+        minRawEnergyForRegression_(conf.getParameter<double>("minRawEnergyForRegression"))  // Minimum raw energy for applying regression 
   {
     onnxPIDSession_ = onnxPIDRuntimeInstance_.get();
     onnxEnergySession_ = onnxEnergyRuntimeInstance_.get();
@@ -117,8 +118,9 @@ namespace ticl {
       auto& energyOutputTensor = result[0];
       if (!output_en_.empty()) {
         for (int i = 0; i < static_cast<int>(batchSize_); i++) {
-          const float energy = energyOutputTensor[i];
-          tracksters[tracksterIndices_[i]].setRegressedEnergy(energy);  // Update energy
+          auto& trackster = tracksters[tracksterIndices_[i]];
+          const float energy = trackster.raw_energy() > minRawEnergyForRegression_ ? energyOutputTensor[i] : trackster.raw_energy();
+          trackster.setRegressedEnergy(energy);  // Update energy
         }
       }
     }
@@ -156,5 +158,6 @@ namespace ticl {
     iDesc.add<int>("eid_n_clusters", 10);
     iDesc.add<int>("doPID", 1);
     iDesc.add<int>("doRegression", 1);
+    iDesc.add<double>("minRawEnergyForRegression", 15.f);
   }
 }  // namespace ticl

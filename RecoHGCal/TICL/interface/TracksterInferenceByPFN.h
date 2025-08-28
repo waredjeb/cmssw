@@ -29,6 +29,7 @@ namespace ticl {
     static constexpr int eidNFeatures_ = 7;
     int doPID_;
     int doRegression_;
+    const float minRawEnergyForRegression_;
 
     hgcal::RecHitTools rhtools_;
     std::vector<std::vector<int64_t>> input_shapes_;
