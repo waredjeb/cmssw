@@ -48,7 +48,7 @@ public:
         setPdgId(pdgId * tk->charge());
         setCharge(tk->charge());
         rawEnergy_ = trackster->raw_energy();
-        auto const& regrE = trackster->raw_energy();
+        auto const& regrE = trackster->regressed_energy();
         math::XYZTLorentzVector p4(regrE * tk->momentum().unit().x(),
                                    regrE * tk->momentum().unit().y(),
                                    regrE * tk->momentum().unit().z(),

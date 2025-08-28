@@ -24,7 +24,8 @@ namespace ticl {
         eidNLayers_(conf.getParameter<int>("eid_n_layers")),                        // Number of layers
         eidNClusters_(conf.getParameter<int>("eid_n_clusters")),                    // Number of clusters
         doPID_(conf.getParameter<int>("doPID")),                                    // Number of clusters
-        doRegression_(conf.getParameter<int>("doRegression"))                       // Number of clusters
+        doRegression_(conf.getParameter<int>("doRegression")),                      // Number of clusters
+        minRawEnergyForRegression_(conf.getParameter<double>("minRawEnergyForRegression"))                       // Number of clusters
   {
     onnxPIDSession_ = onnxPIDRuntimeInstance_.get();
     onnxEnergySession_ = onnxEnergyRuntimeInstance_.get();
@@ -117,8 +118,9 @@ namespace ticl {
       auto& energyOutputTensor = result[0];
       if (!output_en_.empty()) {
         for (int i = 0; i < static_cast<int>(batchSize_); i++) {
-          const float energy = energyOutputTensor[i];
-          tracksters[tracksterIndices_[i]].setRegressedEnergy(energy);  // Update energy
+          auto& trackster = tracksters[tracksterIndices_[i]];
+          const float energy = trackster.raw_energy() > 15.f ? energyOutputTensor[i] : trackster.raw_energy() ;
+          trackster.setRegressedEnergy(energy);  // Update energy
         }
       }
     }
@@ -156,5 +158,6 @@ namespace ticl {
     iDesc.add<int>("eid_n_clusters", 10);
     iDesc.add<int>("doPID", 1);
     iDesc.add<int>("doRegression", 1);
+    iDesc.add<double>("minRawEnergyForRegression", 15.f);
   }
 }  // namespace ticl

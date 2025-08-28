@@ -287,14 +287,13 @@ bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackst
 
   float proj_distance = projective_distance(mySkeleton[1], otherSkeleton[1]);
 
-  bool isInEE  = std::abs(mySkeleton[1].z())  <= zVal_interface;
+  bool isInEE = std::abs(mySkeleton[1].z()) <= zVal_interface;
   bool isOutEE = std::abs(otherSkeleton[1].z()) <= zVal_interface;
   bool bothEE = (isInEE && isOutEE);
-  
+
   // isLoose is true if not both in/out, and mySkeleton is outside EE
   bool isLoose = (!isOutEE);
 
-  
   auto const max_distance_proj_sqr = computeParameter(myTrackster.raw_energy(),
                                                       lower_boundary_[isLoose],
                                                       lower_distance_projective_sqr_[isLoose],
@@ -312,7 +311,7 @@ bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackst
       LogDebug("TracksterLinkingbySkeletons") << "\t\t Linked! " << std::endl;
       return true;
     } else {
-      if(bothEE){
+      if (bothEE) {
         return false;
       }
       //if the tracksters are not aligned in Projective distance, check if otherTrackster is within the cylinder of 3cm radius
@@ -321,16 +320,16 @@ bool TracksterLinkingbySkeletons::areCompatible(const ticl::Trackster &myTrackst
         LogDebug("TracksterLinkingbySkeletons") << "\t\t Linked! Splitted components!" << std::endl;
         return true;
       }
-//      //if is EE do not try to link more, PU occupancy is too high in this region
-//      if (isLoose) {
-//        return false;
-//      }
+      //      //if is EE do not try to link more, PU occupancy is too high in this region
+      //      if (isLoose) {
+      //        return false;
+      //      }
       //if instead we are in the CE-H part of the detector, we can try to link more
       // we measure the distance between the two closest nodes in the two skeletons
       return checkClosestPoints(myTrackster, otherTrackster, mySkeleton, otherSkeleton, isLoose);
     }
   } else {
-    if(bothEE){
+    if (bothEE) {
       return false;
     }
     if (otherTrackster.vertices().size() >= 3) {
