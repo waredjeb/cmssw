@@ -116,11 +116,17 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
     Node tNode(id_t);
 
     auto bary = t.barycenter();
-    double del = 0.1;
 
+    
+    const auto abs_eta = std::abs(bary.eta()); 
+    const auto deltaRxy_ = 8.f;
+    const float expNeg2DeltaRxy = deltaRxy_ * std::exp(-2.f);
+    const auto expNegEta = std::exp(-abs_eta);
+    const auto z_surface = 400.f;
+    float R = z_surface * 2.f * expNegEta / (1.f - expNeg2DeltaRxy * expNegEta);
+    const auto del = std::abs(atan(deltaRxy_ / R));
     double eta_min = std::max(abs(bary.eta()) - del, (double)TileConstants::minEta);
     double eta_max = std::min(abs(bary.eta()) + del, (double)TileConstants::maxEta);
-
     if (bary.eta() > 0.) {
       std::array<int, 4> search_box =
           tracksterTilePos.searchBoxEtaPhi(eta_min, eta_max, bary.phi() - del, bary.phi() + del);
@@ -153,7 +159,7 @@ void TICLGraphProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
         for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
           auto &neighbours = tracksterTileNeg[tracksterTileNeg.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
           for (auto n : neighbours) {
-            if (abs(trackstersclue3d[n].barycenter().z()) < abs(bary.z())) {
+            if (abs(trackstersclue3d[n].barycenter().z()) <= abs(bary.z())) {
               tNode.addInnerNeighbour(n);
             } else if (abs(trackstersclue3d[n].barycenter().z()) > abs(bary.z())) {
               tNode.addOuterNeighbour(n);
