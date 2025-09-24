@@ -20,6 +20,7 @@
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 
 #include "PhysicsTools/TensorFlow/interface/TfGraphRecord.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
@@ -69,6 +70,7 @@ private:
 
   std::vector<edm::EDGetTokenT<std::vector<Trackster>>> tracksters_tokens_;
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  const edm::EDGetTokenT<TICLGraph> ticlGraph_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
 
   const bool regressionAndPid_;
@@ -90,6 +92,7 @@ private:
 TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, const ONNXRuntime *onnxRuntime)
     : algoType_(ps.getParameter<edm::ParameterSet>("linkingPSet").getParameter<std::string>("type")),
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
+      ticlGraph_token_(consumes<TICLGraph>(ps.getParameter<edm::InputTag>("ticlGraph"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
       regressionAndPid_(ps.getParameter<bool>("regressionAndPid")),
@@ -189,6 +192,8 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
 
   const auto &layerClusters = evt.get(clusters_token_);
   const auto &layerClustersTimes = evt.get(clustersTime_token_);
+  const auto &ticlGraphTmp = evt.get(ticlGraph_token_);
+  auto ticlGraph = ticlGraphTmp;
 
   // loop over the original_masks_tokens_ and get the original masks collections and multiply them
   // to get the global mask
@@ -211,7 +216,7 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   }
 
   // Linking
-  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
+  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager, ticlGraph);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   // LinkTracksters will produce a vector of vector of indices of tracksters that:

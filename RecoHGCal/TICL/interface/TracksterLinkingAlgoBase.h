@@ -17,6 +17,7 @@
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "RecoHGCal/TICL/interface/GlobalCache.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
 #include "CommonTools/RecoAlgos/interface/MultiVectorManager.h"
@@ -54,13 +55,15 @@ namespace ticl {
       const std::vector<reco::CaloCluster>& layerClusters;
       const edm::ValueMap<std::pair<float, float>>& layerClustersTime;
       const MultiVectorManager<Trackster>& tracksters;
+      TICLGraph& ticlGraph;
 
       Inputs(const edm::Event& eV,
              const edm::EventSetup& eS,
              const std::vector<reco::CaloCluster>& lC,
              const edm::ValueMap<std::pair<float, float>>& lT,
-             const MultiVectorManager<Trackster>& tS)
-          : ev(eV), es(eS), layerClusters(lC), layerClustersTime(lT), tracksters(tS) {}
+             const MultiVectorManager<Trackster>& tS,
+             TICLGraph& tG)
+          : ev(eV), es(eS), layerClusters(lC), layerClustersTime(lT), tracksters(tS), ticlGraph(tG) {}
     };
 
     virtual void linkTracksters(const Inputs& input,
