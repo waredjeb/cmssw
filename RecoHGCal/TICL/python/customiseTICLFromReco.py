@@ -3,9 +3,10 @@ from RecoHGCal.TICL.iterativeTICL_cff import *
 from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci
 from RecoLocalCalo.HGCalRecProducers.hgcalMergeLayerClusters_cfi import hgcalMergeLayerClusters
 from RecoHGCal.TICL.ticlDumper_cff import ticlDumper
+from RecoHGCal.TICL.ticlDumperGNN_cfi import ticlDumperGNN
 # Validation
 from Validation.HGCalValidation.HGCalValidator_cff import *
-from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cff import recHitMapProducer
+from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cfi import recHitMapProducer
 
 # Load DNN ESSource
 from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
@@ -64,14 +65,33 @@ def customiseTICLFromReco(process):
 
     return process
 
-
+def _attachTFileService(process, histoName):
+    """Create the service only if it is not there yet."""
+    if not hasattr(process, "TFileService"):
+        process.TFileService = cms.Service("TFileService",
+                                           fileName = cms.string(histoName))
+# --------------------------------------------------------------------------
 def customiseTICLForDumper(process, histoName="histo.root"):
+    _attachTFileService(process, histoName)
 
     process.ticlDumper = ticlDumper.clone()
 
-    process.TFileService = cms.Service("TFileService",
-                                       fileName=cms.string(histoName)
-                                       )
-    process.FEVTDEBUGHLToutput_step = cms.EndPath(
-        process.FEVTDEBUGHLToutput + process.ticlDumper)
+    # if the end-path already exists, just add the module to it
+    if hasattr(process, "FEVTDEBUGHLToutput_step"):
+        process.FEVTDEBUGHLToutput_step += process.ticlDumper
+    else:
+        process.FEVTDEBUGHLToutput_step = cms.EndPath(
+            process.FEVTDEBUGHLToutput + process.ticlDumper)
+    return process
+# --------------------------------------------------------------------------
+def customiseTICLForDumperGNN(process, histoName="histo.root"):
+    _attachTFileService(process, histoName)
+
+    process.ticlDumperGNN = ticlDumperGNN.clone()
+
+    if hasattr(process, "FEVTDEBUGHLToutput_step"):
+        process.FEVTDEBUGHLToutput_step += process.ticlDumperGNN
+    else:
+        process.FEVTDEBUGHLToutput_step = cms.EndPath(
+            process.FEVTDEBUGHLToutput + process.ticlDumperGNN)
     return process
