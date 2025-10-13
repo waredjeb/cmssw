@@ -214,11 +214,11 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     trackstersManager.add(*tracksters_h[i]);
   }
   std::vector<edm::Handle<std::vector<float>>> trackstersMask_h(trackstersMask_tokens_.size());
-  MultiVectorManager<float> trackstersMaskManager;
+  edm::MultiSpan<float> trackstersMaskManager;
   for (unsigned int i = 0; i < trackstersMask_tokens_.size(); ++i) {
     evt.getByToken(trackstersMask_tokens_[i], trackstersMask_h[i]);
-    //Fill MultiVectorManager
-    trackstersMaskManager.addVector(*trackstersMask_h[i]);
+    //Fill MultiSpan
+    trackstersMaskManager.add(*trackstersMask_h[i]);
   }
 
   // Linking
