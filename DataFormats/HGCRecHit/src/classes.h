@@ -6,6 +6,7 @@
 #include "DataFormats/Common/interface/Wrapper.h"
 #include "DataFormats/Common/interface/RefToBase.h"
 #include "DataFormats/Common/interface/Holder.h"
+#include "DataFormats/Common/interface/MultiCollection.h"
 #include <vector>
 
 //raw to rechit specific formats
