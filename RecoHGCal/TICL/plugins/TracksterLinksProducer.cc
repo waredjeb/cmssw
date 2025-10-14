@@ -125,6 +125,7 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   produces<std::vector<std::vector<unsigned int>>>("linkedTracksterIdToInputTracksterId");
   // LayerClusters Mask
   produces<std::vector<float>>();
+  produces<edm::MultiSpan<float>>();
 
   auto linkingPSet = ps.getParameter<edm::ParameterSet>("linkingPSet");
 
@@ -214,15 +215,16 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     trackstersManager.add(*tracksters_h[i]);
   }
   std::vector<edm::Handle<std::vector<float>>> trackstersMask_h(trackstersMask_tokens_.size());
-  edm::MultiSpan<float> trackstersMaskManager;
+//  edm::MultiSpan<float> trackstersMaskManager;
+  auto trackstersMaskManager = std::make_unique<edm::MultiSpan<float>>();
   for (unsigned int i = 0; i < trackstersMask_tokens_.size(); ++i) {
     evt.getByToken(trackstersMask_tokens_[i], trackstersMask_h[i]);
     //Fill MultiSpan
-    trackstersMaskManager.add(*trackstersMask_h[i]);
+    trackstersMaskManager->add(*trackstersMask_h[i]);
   }
 
   // Linking
-  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
+  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager, *trackstersMaskManager);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   // LinkTracksters will produce a vector of vector of indices of tracksters that:
@@ -259,6 +261,7 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   evt.put(std::move(resultMask));
   evt.put(std::move(resultTracksters));
   evt.put(std::move(linkedTracksterIdToInputTracksterId), "linkedTracksterIdToInputTracksterId");
+  evt.put(std::move(trackstersMaskManager));
 }
 
 void TracksterLinksProducer::printTrackstersDebug(const std::vector<Trackster> &tracksters, const char *label) const {
@@ -307,6 +310,9 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
 
   desc.add<edm::ParameterSetDescription>("linkingPSet", linkingDesc);
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
+  desc.add<std::vector<edm::InputTag>>("trackstersMask_collections",
+                                       {edm::InputTag("ticlTrackstersCLUE3DHigh", "tracksterMask"),
+                                        edm::InputTag("ticlTrackstersRecovery", "trackstersMask")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));

@@ -8,6 +8,7 @@ from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_superclustering_dnn
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
+from RecoHGCal.TICL.filteredTrackstersProducer_cfi import filteredTrackstersProducer
 
 ticlTracksterLinksSuperclusteringDNN = _tracksterLinksProducer.clone(
     linkingPSet = cms.PSet(
@@ -17,6 +18,9 @@ ticlTracksterLinksSuperclusteringDNN = _tracksterLinksProducer.clone(
         nnWorkingPoint=cms.double(0.3),
     ),
     tracksters_collections = [cms.InputTag("ticlTrackstersCLUE3DHigh")], # to be changed to ticlTrackstersCLUE3DEM once separate CLUE3D iterations are introduced
+    trackstersMask_collections = cms.VInputTag(
+      'ticlTrackstersCLUE3DHigh:tracksterMask'
+    ),
 )
 
 ticlTracksterLinksSuperclusteringMustache = _tracksterLinksProducer.clone(
@@ -27,11 +31,22 @@ ticlTracksterLinksSuperclusteringMustache = _tracksterLinksProducer.clone(
     tracksters_collections = [cms.InputTag("ticlTrackstersCLUE3DHigh")], # to be changed to ticlTrackstersCLUE3DEM once separate CLUE3D iterations are introduced
 )
 
+filterTrackstersSuperClustering = filteredTrackstersProducer.clone(
+
+    LayerClusters = cms.InputTag('hgcalMergeLayerClusters'),
+    Tracksters = cms.InputTag('ticlTrackstersCLUE3DHigh'),
+    TrackstersInputMask = cms.InputTag('ticlTracksterLinksSuperclusteringDNN', 'tracksterMask'),
+    iteration_label = cms.string('SuperClustering'),
+    tracksterFilter = cms.string('TracksterFilterByPDGID'),
+    filterEM = cms.bool(True),
+    threshold = cms.double(0.5),
+  )
+
 ### Superclustering : 3 options : DNN, Mustache-TICL (from tracksters), Mustache-PF (converting tracksters to PFClusters, default for ticl_v4, enable with modifier for v5)
 ticlSuperclusteringTask = cms.Task()
 
 # DNN
-_dnn_task = cms.Task(ticlTracksterLinksSuperclusteringDNN)
+_dnn_task = cms.Task(filterTrackstersSuperClustering, ticlTracksterLinksSuperclusteringDNN)
 ticl_superclustering_dnn.toReplaceWith(ticlSuperclusteringTask, _dnn_task)
 ticl_superclustering_dnn.toModify(ticlEGammaSuperClusterProducer, ticlSuperClusters=cms.InputTag("ticlTracksterLinksSuperclusteringDNN"))
 ticl_superclustering_dnn.toReplaceWith(particleFlowSuperClusterHGCal, ticlEGammaSuperClusterProducer)

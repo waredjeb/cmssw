@@ -423,6 +423,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
     std::vector<std::vector<unsigned int>> &linkedResultTracksters,
     std::vector<std::vector<unsigned int>> &linkedTracksterIdToInputTracksterId) {
   const auto &tracksters = input.tracksters;
+  const auto &trackstersMask = input.trackstersMask;
   const auto &layerClusters = input.layerClusters;
 
   // sort tracksters by energy
@@ -439,6 +440,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
   // fill tiles for trackster linking
   std::vector<std::array<ticl::Vector, 3>> skeletons(tracksters.size());
   for (auto const t_idx : sortedTracksters) {
+    if(trackstersMask[t_idx] == 0.f) continue;
     const auto &trackster = tracksters[t_idx];
     skeletons[t_idx] = findSkeletonNodes(tracksters[t_idx], 0.1, 0.9, layerClusters, rhtools_);
     tracksterTile[trackster.barycenter().eta() > 0.f].fill(
@@ -454,6 +456,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
 
   // loop over tracksters sorted by energy and link them
   for (auto const &t_idx : sortedTracksters) {
+    if(trackstersMask[t_idx] == 0.f) continue;
     auto const &trackster = tracksters[t_idx];
     auto const &skeleton = skeletons[t_idx];
 

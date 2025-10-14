@@ -70,8 +70,8 @@ void FilteredTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions
       {reco::CaloCluster::hgcal_em, reco::CaloCluster::hgcal_had, reco::CaloCluster::hgcal_scintillator});  // 6,7,8
   desc.add<int>("min_cluster_size", 0);
   desc.add<int>("max_cluster_size", 9999);
-  desc.add<int>("filterEM", true);
-  desc.add<int>("threshold", true);
+  desc.add<bool>("filterEM", true);
+  desc.add<double>("threshold", true);
   desc.add<int>("min_layerId", 0);
   desc.add<int>("max_layerId", 9999);
 
