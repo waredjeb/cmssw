@@ -13,6 +13,7 @@
 
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
+#include "DataFormats/Common/interface/MultiCollection.h"
 #include "DataFormats/Common/interface/MultiSpan.h"
 
 class RecHitMapProducer : public edm::global::EDProducer<> {
@@ -26,7 +27,7 @@ private:
   const edm::EDGetTokenT<HGCRecHitCollection> hits_ee_token_;
   const edm::EDGetTokenT<HGCRecHitCollection> hits_fh_token_;
   const edm::EDGetTokenT<HGCRecHitCollection> hits_bh_token_;
-  const edm::EDGetTokenT<MultiCollectionManager<HGCRecHitCollection>> hgcalToken_;
+  const edm::EDGetTokenT<MultiCollection<HGCRecHitCollection>> hgcalToken_;
   const edm::EDGetTokenT<reco::PFRecHitCollection> hits_eb_token_;
   const edm::EDGetTokenT<reco::PFRecHitCollection> hits_hb_token_;
   const edm::EDGetTokenT<reco::PFRecHitCollection> hits_ho_token_;
@@ -38,7 +39,7 @@ DEFINE_FWK_MODULE(RecHitMapProducer);
 using DetIdRecHitMap = std::unordered_map<DetId, const unsigned int>;
 
 RecHitMapProducer::RecHitMapProducer(const edm::ParameterSet& ps)
-    : hgcalToken_{consumes<MultiCollectionManager<HGCRecHitCollection>>(
+    : hgcalToken_{consumes<MultiCollection<HGCRecHitCollection>>(
           ps.getParameter<edm::InputTag>("HGCalMultiRecHits"))},
       hits_eb_token_(consumes<reco::PFRecHitCollection>(ps.getParameter<edm::InputTag>("EBInput"))),
       hits_hb_token_(consumes<reco::PFRecHitCollection>(ps.getParameter<edm::InputTag>("HBInput"))),
@@ -65,18 +66,6 @@ void RecHitMapProducer::produce(edm::StreamID, edm::Event& evt, const edm::Event
   auto flat = mgr.makeFlatView();  // by value
   for (unsigned int i = 0; i < flat.size(); ++i) {
     hitMapHGCal->emplace(flat[i].detid(), i);
-  }
-
-  // TODO may be worth to avoid dependency on the order
-  // of the collections, maybe using a map
-  edm::MultiSpan<HGCRecHit> rechitSpan;
-  rechitSpan.add(*ee_hits);
-  rechitSpan.add(*fh_hits);
-  rechitSpan.add(*bh_hits);
-
-  for (unsigned int i = 0; i < rechitSpan.size(); ++i) {
-    const auto recHitDetId = rechitSpan[i].detid();
-    hitMapHGCal->emplace(recHitDetId, i);
   }
 
   evt.put(std::move(hitMapHGCal), "hgcalRecHitMap");

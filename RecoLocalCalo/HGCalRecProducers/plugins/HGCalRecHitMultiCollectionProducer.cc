@@ -1,9 +1,9 @@
 // Author: Felice Pantaleo (CERN), 2025, felice.pantaleo@cern.ch
 //
-// Produce a MultiCollectionManager<HGCRecHitCollection> that bundles the EE, FH
+// Produce a MultiCollection<HGCRecHitCollection> that bundles the EE, FH
 // and BH rec‑hit branches into one flat, persistent object.  Analysis modules
 // such as RecHitMapProducer can consume the manager and access the hits via the
-// usual MultiVectorManager API.
+// usual MultiSpan API.
 //
 // Configuration example:
 // cms.EDProducer("HGCalRecHitMultiCollectionProducer",
@@ -19,8 +19,8 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
+#include "DataFormats/Common/interface/MultiCollection.h"
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
-#include "CommonTools/RecoAlgos/interface/MultiCollectionManager.h"
 
 class HGCalRecHitMultiCollectionProducer : public edm::global::EDProducer<> {
 public:
@@ -28,7 +28,7 @@ public:
       : eeToken_{consumes<HGCRecHitCollection>(ps.getParameter<edm::InputTag>("EEInput"))},
         fhToken_{consumes<HGCRecHitCollection>(ps.getParameter<edm::InputTag>("FHInput"))},
         bhToken_{consumes<HGCRecHitCollection>(ps.getParameter<edm::InputTag>("BHInput"))} {
-    produces<MultiCollectionManager<HGCRecHitCollection>>();
+    produces<edm::MultiCollection<HGCRecHitCollection>>();
   }
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -47,17 +47,17 @@ public:
 
     if (!ee.isValid() || !fh.isValid() || !bh.isValid()) {
       edm::LogWarning("HGCalRecHitMultiCollectionProducer")
-          << "At least one HGCal rechit collection is missing. Producing an empty manager.";
-      evt.put(std::make_unique<MultiCollectionManager<HGCRecHitCollection>>());
+          << "At least one HGCal rechit collection is missing. Producing an empty multiCollection.";
+      evt.put(std::make_unique<edm::MultiCollection<HGCRecHitCollection>>());
       return;
     }
 
-    auto manager = std::make_unique<MultiCollectionManager<HGCRecHitCollection>>();
-    manager->addCollection(edm::RefProd<HGCRecHitCollection>(ee));
-    manager->addCollection(edm::RefProd<HGCRecHitCollection>(fh));
-    manager->addCollection(edm::RefProd<HGCRecHitCollection>(bh));
+    auto mc = std::make_unique<edm::MultiCollection<HGCRecHitCollection>>();
+    mc->add(edm::RefProd<HGCRecHitCollection>(ee));
+    mc->add(edm::RefProd<HGCRecHitCollection>(fh));
+    mc->add(edm::RefProd<HGCRecHitCollection>(bh));
 
-    evt.put(std::move(manager));
+    evt.put(std::move(mc));
   }
 
 private:
