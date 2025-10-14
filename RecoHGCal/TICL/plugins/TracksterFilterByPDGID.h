@@ -18,26 +18,24 @@ namespace ticl {
   class TracksterFilterByPDGID final : public TracksterFilterBase {
   public:
     TracksterFilterByPDGID(const edm::ParameterSet& ps)
-        : TracksterFilterBase(ps), filterEM_(ps.getParameter<bool>("filterEM")),threshold_(ps.getParameter<double>("threshold")){};
+        : TracksterFilterBase(ps),
+          filterEM_(ps.getParameter<bool>("filterEM")),
+          threshold_(ps.getParameter<double>("threshold")) {};
     ~TracksterFilterByPDGID() override {}
 
     void filter(const std::vector<ticl::Trackster>& tracksters,
                 const std::vector<reco::CaloCluster>& layerClusters,
                 std::vector<float>& trackstersMask,
                 hgcal::RecHitTools& rhtools) const override {
+      auto isEM = [this](const Trackster& t) -> bool {
+        auto const emProb = t.id_probability(ticl::Trackster::ParticleType::electron) +
+                            t.id_probability(ticl::Trackster::ParticleType::photon);
+        return emProb >= threshold_;
+      };
 
-        auto isEM = [this](const Trackster &t) -> bool {
-          auto const emProb = t.id_probability(ticl::Trackster::ParticleType::electron) +
-                               t.id_probability(ticl::Trackster::ParticleType::photon);
-          return emProb >= threshold_;
-        };
-
-    std::ranges::transform(tracksters,
-                       trackstersMask.begin(),
-                       [&](const Trackster& t) {
-                         return (filterEM_ && isEM(t)) ? 0.f : 1.f;
-                       });
-  } 
+      std::ranges::transform(
+          tracksters, trackstersMask.begin(), [&](const Trackster& t) { return (filterEM_ && isEM(t)) ? 0.f : 1.f; });
+    }
 
   private:
     bool filterEM_;

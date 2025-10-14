@@ -11,7 +11,7 @@
 
 namespace edm {
 
-/**
+  /**
  * @brief Lightweight persistent holder for several `edm::RefProd<Collection>`
  *        objects.
  *
@@ -24,39 +24,39 @@ namespace edm {
  * EDM‑wrapper‑friendly while still giving fast, indexed access to the
  * concatenated elements.
  */
-template <typename Collection>
-class MultiCollection {
-public:
-  using value_type = typename Collection::value_type;
+  template <typename Collection>
+  class MultiCollection {
+  public:
+    using value_type = typename Collection::value_type;
 
-  MultiCollection() = default;
+    MultiCollection() = default;
 
-  explicit MultiCollection(std::initializer_list<edm::RefProd<Collection>> refs) : refProds_{refs} {}
+    explicit MultiCollection(std::initializer_list<edm::RefProd<Collection>> refs) : refProds_{refs} {}
 
-  // ---------------- producer‑side API ----------------------------------
-  void add(edm::RefProd<Collection> const& ref) { refProds_.push_back(ref); }
+    // ---------------- producer‑side API ----------------------------------
+    void add(edm::RefProd<Collection> const& ref) { refProds_.push_back(ref); }
 
-  // ---------------- consumer‑side helpers ------------------------------
-  /**
+    // ---------------- consumer‑side helpers ------------------------------
+    /**
    * @brief Build and return a flat view that spans all referenced collections.
    *
    * The returned `MultiSpan` is independent of `this`, so callers may
    * move or store it locally without keeping the manager alive.
    */
-  [[nodiscard]] MultiSpan<value_type> makeFlatView() const {
-    MultiSpan<value_type> ms;
-    for (auto const& rp : refProds_) {
-      auto const& coll = *rp;  // Framework‑managed retrieval
-      ms.add(std::span<const value_type>(coll.data(), coll.size()));
+    [[nodiscard]] MultiSpan<value_type> makeFlatView() const {
+      MultiSpan<value_type> ms;
+      for (auto const& rp : refProds_) {
+        auto const& coll = *rp;  // Framework‑managed retrieval
+        ms.add(std::span<const value_type>(coll.data(), coll.size()));
+      }
+      return ms;
     }
-    return ms;
-  }
 
-  const std::vector<edm::RefProd<Collection>>& refProds() const { return refProds_; }
+    const std::vector<edm::RefProd<Collection>>& refProds() const { return refProds_; }
 
-private:
-  std::vector<edm::RefProd<Collection>> refProds_;
-};
+  private:
+    std::vector<edm::RefProd<Collection>> refProds_;
+  };
 
 }  // namespace edm
 

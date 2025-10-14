@@ -215,7 +215,7 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     trackstersManager.add(*tracksters_h[i]);
   }
   std::vector<edm::Handle<std::vector<float>>> trackstersMask_h(trackstersMask_tokens_.size());
-//  edm::MultiSpan<float> trackstersMaskManager;
+  //  edm::MultiSpan<float> trackstersMaskManager;
   auto trackstersMaskManager = std::make_unique<edm::MultiSpan<float>>();
   for (unsigned int i = 0; i < trackstersMask_tokens_.size(); ++i) {
     evt.getByToken(trackstersMask_tokens_[i], trackstersMask_h[i]);
@@ -224,7 +224,8 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   }
 
   // Linking
-  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager, *trackstersMaskManager);
+  const typename TracksterLinkingAlgoBase::Inputs input(
+      evt, es, layerClusters, layerClustersTimes, trackstersManager, *trackstersMaskManager);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   // LinkTracksters will produce a vector of vector of indices of tracksters that:

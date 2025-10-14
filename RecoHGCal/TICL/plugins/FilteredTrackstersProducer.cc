@@ -61,8 +61,7 @@ void FilteredTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("LayerClusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("Tracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
-  desc.add<edm::InputTag>("TrackstersInputMask",
-                          edm::InputTag("ticlTrackstersCLUE3DHigh", "tracksterMask"));
+  desc.add<edm::InputTag>("TrackstersInputMask", edm::InputTag("ticlTrackstersCLUE3DHigh", "tracksterMask"));
   desc.add<std::string>("iteration_label", "iterationLabelGoesHere");
   desc.add<std::string>("tracksterFilter", "TracksterFilterByPDGID");
   desc.add<std::vector<int>>(

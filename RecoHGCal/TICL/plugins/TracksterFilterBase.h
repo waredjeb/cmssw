@@ -15,21 +15,18 @@ namespace edm {
 
 namespace ticl {
 
-class TracksterFilterBase {
-public:
-  explicit TracksterFilterBase(const edm::ParameterSet &) {}
-  virtual ~TracksterFilterBase() {}
-  virtual void filter(const std::vector<ticl::Trackster> &tracksters,
-                      const std::vector<reco::CaloCluster> &layerClusters,
-                      std::vector<float> &trackstersMask,
-                      hgcal::RecHitTools &rhtools) const = 0;
-};
-}
+  class TracksterFilterBase {
+  public:
+    explicit TracksterFilterBase(const edm::ParameterSet &) {}
+    virtual ~TracksterFilterBase() {}
+    virtual void filter(const std::vector<ticl::Trackster> &tracksters,
+                        const std::vector<reco::CaloCluster> &layerClusters,
+                        std::vector<float> &trackstersMask,
+                        hgcal::RecHitTools &rhtools) const = 0;
+  };
+}  // namespace ticl
 
-
-
-typedef edmplugin::PluginFactory<ticl::TracksterFilterBase*(const edm::ParameterSet &)> TracksterFilterFactory;
+typedef edmplugin::PluginFactory<ticl::TracksterFilterBase *(const edm::ParameterSet &)> TracksterFilterFactory;
 
 #endif
 // RecoHGCal_TICL_TracksterFilterBase_H__
-
