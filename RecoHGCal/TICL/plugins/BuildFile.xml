@@ -41,7 +41,7 @@
 
 <library file="alpaka/*.cc" name="HeterogeneousTrackstersPluginsPortable">
   <use name="alpaka"/>
-  <use name="cluestering"/>
+  <use name="CLUEstering"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/ParameterSet"/>
   <use name="FWCore/Utilities"/>
@@ -56,6 +56,6 @@
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
   <use name="RecoLocalCalo/HGCalRecAlgos"/>
-  <flags ALPAKA_BACKENDS="1"/>
+  <flags ALPAKA_BACKENDS="serial"/>
   <flags EDM_PLUGIN="1"/>
 </library>
