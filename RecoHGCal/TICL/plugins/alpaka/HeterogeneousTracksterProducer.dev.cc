@@ -67,13 +67,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       const int32_t n = static_cast<int32_t>(lc->metadata().size());
-      std::cout << "Event Number of LCs " << n << std::endl;
-      for (const auto& [Z, indices] : map) {
-        std::cout << "z = " << Z << " -> Clusters : ";
-        for (auto i : indices)
-          std::cout << "\t( " << x[i] << ", " << y[i] << ", " << z[i] << ", " << E[i] << ")" << std::endl;
-        std::cout << std::endl;
-      }
       if (n > 0) {
         auto d_clIndex =
             cms::alpakatools::make_device_buffer<int[]>(queue, n);  // temporary buffer needed by CLUEstering
@@ -128,6 +121,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto yHost = h_points.coords(1).data();
         auto zHost = h_points.coords(2).data();
         auto EHost = h_points.weights();
+        std::cout << "Event Number of LCs " << n << std::endl;
+        for (const auto& [Z, indices] : map) {
+          std::cout << "z = " << Z << " -> Clusters : ";
+          for (auto i : indices)
+            std::cout << "\t( " << xHost[i] << ", " << yHost[i] << ", " << zHost[i] << ", " << EHost[i] << ")"
+                      << std::endl;
+          std::cout << std::endl;
+        }
         for (auto& trackster : tracksters) {
           size_t N = trackster.vertices().size();
           if (N == 0)
