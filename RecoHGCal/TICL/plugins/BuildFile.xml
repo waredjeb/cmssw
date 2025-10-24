@@ -56,6 +56,6 @@
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
   <use name="RecoLocalCalo/HGCalRecAlgos"/>
-  <flags ALPAKA_BACKENDS="serial"/>
+  <flags ALPAKA_BACKENDS="1"/>
   <flags EDM_PLUGIN="1"/>
 </library>
