@@ -23,7 +23,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                           const HGCalSoARecHitsDeviceCollection::ConstView inputs,
                                           HGCalSoARecHitsExtraDeviceCollection::View outputs) const {
     CLUEAlgoAlpaka<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D, Queue, HGCalSiliconTestBeam2025Constants, kHGCalLayers> algoStandalone(
-        queue, dc, kappa, outlierDeltaFactor, false);
+        queue, dc, kappa, outlierDeltaFactor / dc, false);
 
     algoStandalone.makeClustersCMSSW(size,
                                      inputs.dim1().data(),
