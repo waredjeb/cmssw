@@ -29,7 +29,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         : EDProducer(config),
           deviceTokenSoAClusters_{consumes(config.getParameter<edm::InputTag>("layerClusters"))},
           legacyTrackstersToken_{produces()},
-          rho_(config.getParameter<double>("rho_c")) {
+          rho_(config.getParameter<double>("rho_c")),
+          verbose_(config.getParameter<bool>("verbose")) {
       auto dc_vec = config.getParameter<std::vector<double>>("dc");
       auto dm_vec = config.getParameter<std::vector<double>>("dm");
 
@@ -50,6 +51,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<double>("rho_c", 0.6);
       desc.add<std::vector<double>>("dc", {2., 2., 2});
       desc.add<std::vector<double>>("dm", {1.8, 1.8, 2});
+      desc.add<bool>("verbose", false);
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -72,11 +74,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cms::alpakatools::make_device_buffer<int[]>(queue, n);  // temporary buffer needed by CLUEstering
         auto dp_clIndex = const_cast<int*>(d_clIndex.data());
         clue::PointsDevice<3> d_points(queue, n, x, y, z, E, dp_clIndex);
-        //  for(int iLC = 0; iLC < n; ++iLC){
-        //  std::cout << "( " << x[iLC] << ", " << y[iLC] << ", " << z[iLC] << ", " << E[iLC] << " )" << std::endl;
-        //  }
-        //          auto isSeed =
-        //            cms::alpakatools::make_device_buffer<int[]>(queue, nLCs);  // temporary buffer needed by CLUEstering
+        if (verbose_) {
+          for (int iLC = 0; iLC < n; ++iLC) {
+            std::cout << "( " << x[iLC] << ", " << y[iLC] << ", " << z[iLC] << ", " << E[iLC] << " )" << std::endl;
+          }
+        }
 
         clue::Clusterer<3> algo(queue, dc_, rho_, dm_);
         algo.make_clusters(queue, d_points);
@@ -94,7 +96,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           tracksters[i].vertex_multiplicity().resize(tracksters[i].vertices().size(), 1);
         }
 
-        std::cout << "Event Number of Tracksters " << tsMap.size() << std::endl;
+        //        std::cout << "Event Number of Tracksters " << tsMap.size() << std::endl;
 
         alpaka::memcpy(queue,
                        cms::alpakatools::make_host_view(h_points.view().coords[0], n),
@@ -121,13 +123,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto yHost = h_points.coords(1).data();
         auto zHost = h_points.coords(2).data();
         auto EHost = h_points.weights();
-        std::cout << "Event Number of LCs " << n << std::endl;
-        for (const auto& [Z, indices] : map) {
-          std::cout << "z = " << Z << " -> Clusters : ";
-          for (auto i : indices)
-            std::cout << "\t( " << xHost[i] << ", " << yHost[i] << ", " << zHost[i] << ", " << EHost[i] << ")"
-                      << std::endl;
-          std::cout << std::endl;
+        if (verbose_) {
+          std::cout << "Event Number of LCs " << n << std::endl;
+          for (const auto& [Z, indices] : map) {
+            std::cout << "z = " << Z << " -> Clusters : ";
+            for (auto i : indices)
+              std::cout << "\t( " << xHost[i] << ", " << yHost[i] << ", " << zHost[i] << ", " << EHost[i] << ")"
+                        << std::endl;
+            std::cout << std::endl;
+          }
         }
         for (auto& trackster : tracksters) {
           size_t N = trackster.vertices().size();
@@ -178,14 +182,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           trackster.calculateRawPt();
           trackster.calculateRawEmPt();
-
-          std::cout << "  LC in TS: ";
-          for (const auto& lc : trackster.vertices())
-            std::cout << lc << " ";
-          std::cout << std::endl;
-          std::cout << "  energy raw: " << trackster.raw_energy() << std::endl;
-          std::cout << "  barycenter: " << trackster.barycenter().x() << ", " << trackster.barycenter().y() << ", "
-                    << trackster.barycenter().z() << std::endl;
+          if (verbose_) {
+            std::cout << "  LC in TS: ";
+            for (const auto& lc : trackster.vertices())
+              std::cout << lc << " ";
+            std::cout << std::endl;
+            std::cout << "  energy raw: " << trackster.raw_energy() << std::endl;
+            std::cout << "  barycenter: " << trackster.barycenter().x() << ", " << trackster.barycenter().y() << ", "
+                      << trackster.barycenter().z() << std::endl;
+          }
         }
         // TODO: do a kernel that computes raw energy and barycenter and returns them
 
@@ -202,6 +207,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     float rho_;
     std::array<float, 3> dc_;
     std::array<float, 3> dm_;
+    bool verbose_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
