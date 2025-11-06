@@ -242,7 +242,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       for (auto idx : uniform_elements(acc, recHits.metadata().size())) {
         if (!recHits[idx].flags() && recHits[idx].energy() > k_noise * recHits[idx].sigmaNoise() &&
             (recHits[idx].layer() < 12 && recHits[idx].layer() > 0) &&
-            (recHits[idx].energy() > 0 && recHits[idx].energy() < 15)) {
+            (recHits[idx].energy() > 0)) {
           sidx[alpaka::atomicAdd(acc, nsel, 1)] = idx;
         }
       }
