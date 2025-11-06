@@ -4,6 +4,7 @@
 #ifndef DataFormats_HGCalReco_TICLLayerTile_h
 #define DataFormats_HGCalReco_TICLLayerTile_h
 
+#include "Common.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "DataFormats/Math/interface/normalizedPhi.h"
 
@@ -81,9 +82,9 @@ private:
 };
 
 namespace ticl {
-  using TICLLayerTile = TICLLayerTileT<TileConstants>;
-  using Tiles = std::array<TICLLayerTile, TileConstants::nLayers>;
-  using TracksterTiles = std::array<TICLLayerTile, TileConstants::iterations>;
+  using TICLLayerTile = TICLLayerTileT<TileConstantsTB2025>;
+  using Tiles = std::array<TICLLayerTile, TileConstantsTB2025::nLayers>;
+  using TracksterTiles = std::array<TICLLayerTile, TileConstantsTB2025::iterations>;
 
   using TICLLayerTileHFNose = TICLLayerTileT<TileConstantsHFNose>;
   using TilesHFNose = std::array<TICLLayerTileHFNose, TileConstantsHFNose::nLayers>;
