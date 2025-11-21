@@ -16,9 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
-
-  namespace ticl = ::ticl;
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PatternRecognitionByCLUEstering final : public PatternRecognitionAlgoBase {
   private:
@@ -47,4 +45,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
                         std::vector<ticl::Trackster>& tracksters) override;
   };
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE

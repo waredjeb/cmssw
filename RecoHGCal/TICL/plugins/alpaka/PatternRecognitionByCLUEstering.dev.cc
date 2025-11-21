@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace ticl = ::ticl;
 
@@ -49,6 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
       alpaka::wait(queue);
 
       // get LCs indices in tracksters and fill the trackster collection
+      const auto tsMap = clue::get_clusters(h_points);
       tracksters.resize(tsMap.size());
       for (auto i = 0ul; i < tsMap.size(); ++i) {
         const auto [beginLC, endLC] = tsMap.equal_range(i);
@@ -153,4 +154,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
     }
   }
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE

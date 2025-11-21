@@ -9,20 +9,18 @@
 
 #include <vector>
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
-
-  namespace ticl = ::ticl;
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PatternRecognitionAlgoBase {
   protected:
-    int m_verbosity;
+    bool m_verbosity;
 
   public:
-    PatternRecognitionAlgoBase(const edm::ParameterSet& conf) : m_verbosity(conf.getParameter<int>("verbosity")) {}
+    PatternRecognitionAlgoBase(const edm::ParameterSet& conf) : m_verbosity(conf.getParameter<bool>("verbose")) {}
     virtual ~PatternRecognitionAlgoBase() = default;
 
     virtual void makeTracksters(Queue& queue,
                                 const HGCalSoAClustersDeviceCollection& layerClusters,
                                 std::vector<ticl::Trackster>& result) = 0;
   };
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE

@@ -22,7 +22,7 @@
 #include <Eigen/Dense>
 #include <memory>
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class HeterogeneousTracksterProducer : public stream::EDProducer<> {
   public:
@@ -62,4 +62,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
 
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
-DEFINE_FWK_ALPAKA_MODULE(ticl::HeterogeneousTracksterProducer);
+DEFINE_FWK_ALPAKA_MODULE(HeterogeneousTracksterProducer);
