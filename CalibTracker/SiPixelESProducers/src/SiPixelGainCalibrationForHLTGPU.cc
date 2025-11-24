@@ -1,4 +1,5 @@
 #include <cuda.h>
+#include <fstream>
 
 #include "CalibTracker/SiPixelESProducers/interface/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/SiPixelObjects/interface/SiPixelGainCalibrationForHLT.h"
@@ -75,6 +76,11 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(const SiPixelGa
     // if (ind[i].detid!=dus[i]->geographicalId()) std::cout << ind[i].detid<<"!="<<dus[i]->geographicalId() << std::endl;
     // gainForHLTonHost_->rangeAndCols[i] = std::make_pair(SiPixelGainForHLTonGPU::Range(ind[i].ibegin,ind[i].iend), ind[i].ncols);
   }
+    std::ofstream out("gain.bin", std::ios::binary);
+      out.write(reinterpret_cast<char const*>(gainForHLTonHost_), sizeof(SiPixelGainForHLTonGPU));
+        unsigned int nbytes = gains_->data().size();
+          out.write(reinterpret_cast<char const*>(&nbytes), sizeof(unsigned int));
+            out.write(reinterpret_cast<char const*>(gains_->data().data()), nbytes);
 }
 
 SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() { cudaCheck(cudaFreeHost(gainForHLTonHost_)); }

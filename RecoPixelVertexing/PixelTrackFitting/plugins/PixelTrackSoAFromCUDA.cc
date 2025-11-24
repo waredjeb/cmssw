@@ -17,6 +17,8 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "HeterogeneousCore/CUDACore/interface/ScopedContext.h"
 
+#include <fstream>
+
 class PixelTrackSoAFromCUDA : public edm::stream::EDProducer<edm::ExternalWork> {
 public:
   explicit PixelTrackSoAFromCUDA(const edm::ParameterSet& iConfig);
@@ -34,11 +36,15 @@ private:
   edm::EDPutTokenT<PixelTrackHeterogeneous> tokenSOA_;
 
   cms::cuda::host::unique_ptr<pixelTrack::TrackSoA> m_soa;
+
+  std::ofstream out_;
 };
 
 PixelTrackSoAFromCUDA::PixelTrackSoAFromCUDA(const edm::ParameterSet& iConfig)
     : tokenCUDA_(consumes<cms::cuda::Product<PixelTrackHeterogeneous>>(iConfig.getParameter<edm::InputTag>("src"))),
-      tokenSOA_(produces<PixelTrackHeterogeneous>()) {}
+      tokenSOA_(produces<PixelTrackHeterogeneous>()),
+      out_{"tracks.bin", std::ios::binary}
+{}
 
 void PixelTrackSoAFromCUDA::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
@@ -72,6 +78,14 @@ void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& i
   }
   std::cout << "found " << nt << " tracks in cpu SoA at " << &tsoa << std::endl;
   */
+
+  unsigned int ntracks = 0;
+  for (int i=0; i<m_soa->stride(); ++i) {
+    if (m_soa->nHits(i) > 0) {
+      ++ntracks;
+    }
+  }
+  out_.write(reinterpret_cast<char const*>(&ntracks), sizeof(unsigned int));
 
   // DO NOT  make a copy  (actually TWO....)
   iEvent.emplace(tokenSOA_, PixelTrackHeterogeneous(std::move(m_soa)));

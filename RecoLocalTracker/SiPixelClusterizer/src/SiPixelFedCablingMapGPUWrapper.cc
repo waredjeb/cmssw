@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 // CUDA includes
 #include <cuda_runtime.h>
@@ -98,6 +99,12 @@ SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCabling
   }
 
   cablingMapHost->size = index - 1;
+    std::ofstream out("cablingMap.bin", std::ios::binary);
+      out.write(reinterpret_cast<const char*>(cablingMapHost), sizeof(SiPixelFedCablingMapGPU));
+        unsigned int modToUnpDefSize = modToUnpDefault.size();
+          out.write(reinterpret_cast<const char*>(&modToUnpDefSize), sizeof(unsigned int));
+            out.write(reinterpret_cast<const char*>(modToUnpDefault.data()), modToUnpDefSize);
+
 }
 
 SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() { cudaCheck(cudaFreeHost(cablingMapHost)); }

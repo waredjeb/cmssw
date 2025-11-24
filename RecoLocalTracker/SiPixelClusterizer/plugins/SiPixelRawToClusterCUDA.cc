@@ -35,6 +35,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <fstream>
 
 class SiPixelRawToClusterCUDA : public edm::stream::EDProducer<edm::ExternalWork> {
 public:
@@ -71,7 +72,10 @@ private:
   std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
   PixelDataFormatter::Errors errors_;
 
-  const bool isRun2_;
+  std::ofstream outraw_;
+  std::ofstream outdigi_;
+
+
   const bool includeErrors_;
   const bool useQuality_;
   const bool usePilotBlade_;
@@ -85,7 +89,8 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(const edm::ParameterSet& iConfi
       gainsToken_(esConsumes<SiPixelGainCalibrationForHLTGPU, SiPixelGainCalibrationForHLTGPURcd>()),
       cablingMapToken_(esConsumes<SiPixelFedCablingMap, SiPixelFedCablingMapRcd>(
           edm::ESInputTag("", iConfig.getParameter<std::string>("CablingMapLabel")))),
-      isRun2_(iConfig.getParameter<bool>("isRun2")),
+      outraw_("raw.bin", std::ios::binary),
+      outdigi_("digicluster.bin", std::ios::binary),
       includeErrors_(iConfig.getParameter<bool>("IncludeErrors")),
       useQuality_(iConfig.getParameter<bool>("UseQualityInfo")),
       usePilotBlade_(iConfig.getParameter<bool>("UsePilotBlade"))  // Control the usage of pilot-blade data, FED=40
@@ -110,7 +115,6 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(const edm::ParameterSet& iConfi
 
 void SiPixelRawToClusterCUDA::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<bool>("isRun2", true);
   desc.add<bool>("IncludeErrors", true);
   desc.add<bool>("UseQualityInfo", false);
   desc.add<bool>("UsePilotBlade", false)->setComment("##  Use pilot blades");
@@ -126,6 +130,10 @@ void SiPixelRawToClusterCUDA::fillDescriptions(edm::ConfigurationDescriptions& d
   }
   desc.add<std::string>("CablingMapLabel", "")->setComment("CablingMap label");  //Tav
   descriptions.addWithDefaultLabel(desc);
+}
+
+namespace {
+  std::once_flag dump_flag;
 }
 
 void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
@@ -178,6 +186,28 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
   unsigned int wordCounterGPU = 0;
   unsigned int fedCounter = 0;
   bool errorsInEvent = false;
+
+  // Dump data
+  {
+    unsigned nfeds = fedIds_.size();
+    outraw_.write(reinterpret_cast<char const*>(&nfeds), sizeof(unsigned));
+    edm::LogPrint("foo") << "FED id " << fedIds_.front();
+    for (unsigned int fedId : fedIds_) {
+      outraw_.write(reinterpret_cast<char const*>(&fedId), sizeof(unsigned int));
+      const FEDRawData& rawData = buffers.FEDData(fedId);
+      unsigned int fedSize = rawData.size();
+      outraw_.write(reinterpret_cast<char const*>(&fedSize), sizeof(unsigned int));
+      outraw_.write(reinterpret_cast<char const*>(rawData.data()), rawData.size());
+    }
+
+    std::call_once(dump_flag, [&]() {
+        {
+          std::ofstream out("fedIds.bin", std::ios::binary);
+          out.write(reinterpret_cast<char const*>(&nfeds), sizeof(unsigned));
+          out.write(reinterpret_cast<char const*>(fedIds_.data()), sizeof(unsigned int)*nfeds);
+        }
+      });
+  }
 
   // In CPU algorithm this loop is part of PixelDataFormatter::interpretRawData()
   ErrorChecker errorcheck;
@@ -236,8 +266,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   }  // end of for loop
 
-  gpuAlgo_.makeClustersAsync(isRun2_,
-                             gpuMap,
+  gpuAlgo_.makeClustersAsync(false, gpuMap,
                              gpuModulesToUnpack,
                              gpuGains,
                              *wordFedAppender_,
@@ -254,6 +283,15 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   cms::cuda::ScopedContextProduce ctx{ctxState_};
 
   auto tmp = gpuAlgo_.getResults();
+
+  unsigned int value;
+  value = tmp.first.nModules();
+  outdigi_.write(reinterpret_cast<char const*>(&value), sizeof(unsigned int));
+  value = tmp.first.nDigis();
+  outdigi_.write(reinterpret_cast<char const*>(&value), sizeof(unsigned int));
+  value = tmp.second.nClusters();
+  outdigi_.write(reinterpret_cast<char const*>(&value), sizeof(unsigned int));
+
   ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
   ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
   if (includeErrors_) {

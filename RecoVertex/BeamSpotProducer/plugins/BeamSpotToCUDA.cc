@@ -13,6 +13,7 @@
 #include "HeterogeneousCore/CUDAUtilities/interface/host_noncached_unique_ptr.h"
 
 #include <cuda_runtime.h>
+#include <fstream>
 
 namespace {
   class BSHost {
@@ -23,6 +24,8 @@ namespace {
   private:
     cms::cuda::host::noncached::unique_ptr<BeamSpotCUDA::Data> bs;
   };
+
+  std::once_flag bsflag;
 }  // namespace
 
 class BeamSpotToCUDA : public edm::global::EDProducer<edm::StreamCache<BSHost>> {
@@ -76,6 +79,11 @@ void BeamSpotToCUDA::produce(edm::StreamID streamID, edm::Event& iEvent, const e
   bsHost->emittanceX = bs.emittanceX();
   bsHost->emittanceY = bs.emittanceY();
   bsHost->betaStar = bs.betaStar();
+
+  std::call_once(bsflag, [bsHost]() {
+      std::ofstream out("beamspot.bin", std::ios::binary);
+      out.write(reinterpret_cast<char const*>(bsHost), sizeof(BeamSpotCUDA::Data));
+    });
 
   ctx.emplace(iEvent, bsPutToken_, bsHost, ctx.stream());
 }

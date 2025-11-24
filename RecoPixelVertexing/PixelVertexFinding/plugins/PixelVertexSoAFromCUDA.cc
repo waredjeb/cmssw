@@ -17,6 +17,8 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "HeterogeneousCore/CUDACore/interface/ScopedContext.h"
 
+#include <fstream>
+
 class PixelVertexSoAFromCUDA : public edm::stream::EDProducer<edm::ExternalWork> {
 public:
   explicit PixelVertexSoAFromCUDA(const edm::ParameterSet& iConfig);
@@ -34,11 +36,15 @@ private:
   edm::EDPutTokenT<ZVertexHeterogeneous> tokenSOA_;
 
   cms::cuda::host::unique_ptr<ZVertexSoA> m_soa;
+
+  std::ofstream out_;
 };
 
 PixelVertexSoAFromCUDA::PixelVertexSoAFromCUDA(const edm::ParameterSet& iConfig)
     : tokenCUDA_(consumes<cms::cuda::Product<ZVertexHeterogeneous>>(iConfig.getParameter<edm::InputTag>("src"))),
-      tokenSOA_(produces<ZVertexHeterogeneous>()) {}
+      tokenSOA_(produces<ZVertexHeterogeneous>()),
+      out_{"vertices.bin", std::ios::binary}
+ {}
 
 void PixelVertexSoAFromCUDA::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
@@ -58,6 +64,9 @@ void PixelVertexSoAFromCUDA::acquire(edm::Event const& iEvent,
 }
 
 void PixelVertexSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {
+  unsigned int nvertices = m_soa->nvFinal;
+  out_.write(reinterpret_cast<char const*>(&nvertices), sizeof(unsigned int));
+
   // No copies....
   iEvent.emplace(tokenSOA_, ZVertexHeterogeneous(std::move(m_soa)));
 }
