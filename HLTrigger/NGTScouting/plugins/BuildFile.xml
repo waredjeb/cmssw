@@ -15,4 +15,9 @@
 <use name="FWCore/Utilities"/>
 <use name="PhysicsTools/NanoAOD"/>
 <use name="RecoVertex/VertexTools"/>
+<use name="RecoLocalCalo/HGCalRecAlgos"/>
+<use name="Geometry/CaloGeometry"/>
+<use name="Geometry/CommonDetUnit" source_only="1"/>
+<use name="Geometry/HGCalCommonData"/>
+<use name="Geometry/Records"/>
 <use name="boost"/>

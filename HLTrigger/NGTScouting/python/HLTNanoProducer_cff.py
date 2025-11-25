@@ -24,6 +24,7 @@ from HLTrigger.NGTScouting.hltTracksters_cfi import *
 from HLTrigger.NGTScouting.hltTICLCandidates_cfi import *
 from HLTrigger.NGTScouting.hltTICLSuperClusters_cfi import *
 from HLTrigger.NGTScouting.hltLayerClusters_cfi import * 
+from HLTrigger.NGTScouting.hltRecHits_cfi import * 
 from HLTrigger.NGTScouting.hltSums_cfi import *
 from HLTrigger.NGTScouting.hltTriggerAcceptFilter_cfi import hltTriggerAcceptFilter,dstTriggerAcceptFilter
 
@@ -121,6 +122,7 @@ def hltNanoValCustomize(process):
                                     process.hltSimTiclCandidateTable +
                                     process.hltSimTiclCandidateExtraTable +
                                     process.hltLayerClustersTableSequence  +
+                                    process.hltRecHitsTableSequence+
                                     process.trackingExtraNanoProducer)
 
     return process
