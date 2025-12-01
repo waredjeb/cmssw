@@ -136,12 +136,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 row.eta() = 0;
                 row.phi() = 0;
                 if (hgcal_geom != nullptr) {
-                  GlobalPoint position = hgcal_geom->getPosition(row.detid());
-                  row.x() = position.x();
-                  row.y() = position.y();
-                  row.z() = position.z();
-                  row.eta() = position.eta();
-                  row.phi() = position.phi();
+                  auto position = hgcal_geom->getPosition(row.detid());
+                  auto wafer_position = hgcal_geom->getWaferPosition(row.detid());
+                  if (row.layer() % 2 == 0) {
+                    auto rotated_x = -position.y() + wafer_position.y() + wafer_position.x();
+                    auto rotated_y = position.x() - wafer_position.x() + wafer_position.y();
+                    GlobalPoint rotated_position(rotated_x, rotated_y, position.z());
+                    row.x() = rotated_position.x();
+                    row.y() = rotated_position.y();
+                    row.z() = rotated_position.z();
+                    row.eta() = rotated_position.eta();
+                    row.phi() = rotated_position.phi();
+                  } else {
+                    auto rotated_x = position.y() - wafer_position.y() + wafer_position.x();
+                    auto rotated_y = -position.x() + wafer_position.x() + wafer_position.y();
+                    GlobalPoint rotated_position(rotated_x, rotated_y, position.z());
+                    row.x() = rotated_position.x();
+                    row.y() = rotated_position.y();
+                    row.z() = rotated_position.z();
+                    row.eta() = rotated_position.eta();
+                    row.phi() = rotated_position.phi();
+                  }
                 }
               }
             }  // end cell loop
