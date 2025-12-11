@@ -18,12 +18,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void HGCalLayerClustersAlgoWrapper::run(Queue& queue,
                                           const unsigned int size,
                                           const float dc,
-                                          const float kappa,
+                                          const float rhoc,
                                           const float outlierDeltaFactor,
                                           const HGCalSoARecHitsDeviceCollection::ConstView inputs,
                                           HGCalSoARecHitsExtraDeviceCollection::View outputs) const {
     CLUEAlgoAlpaka<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D, Queue, HGCalSiliconTilesConstants, kHGCalLayers> algoStandalone(
-        queue, dc, kappa, outlierDeltaFactor, false);
+        queue, dc, rhoc, outlierDeltaFactor / dc, false);
 
     algoStandalone.makeClustersCMSSW(size,
                                      inputs.dim1().data(),
