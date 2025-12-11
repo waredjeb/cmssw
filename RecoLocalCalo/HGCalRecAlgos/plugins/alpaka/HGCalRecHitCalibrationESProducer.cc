@@ -191,18 +191,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           edm::LogInfo("HGCalCalibrationESProducer")
               << "layer = " << layer << ", celltype = " << celltype << ", isSiPM = " << isSiPM << ", dEdx = " << dEdx
               << ", sf_from_config = " << sf_from_config << std::endl;
-<<<<<<< HEAD
           if (sf_from_config <= 0)
             throw cms::Exception("ConfigError") << "EM reconstruction scale factor (SF_thickness_Si) is not positive.";
 
           float sf = 1. / sf_from_config;
-=======
-          float sf = (sf_from_config > 0 ? 1. / sf_from_config : 1.);
-          edm::LogWarning("HGCalCalibrationESProducer")
-              << "EM reconstruction scale factor (SF_thickness_Si) is not positive. Using 1 instead.\n"
-              << "SF_thickness_Si = " << sf_from_config << std::endl;
-
->>>>>>> dbcc7809d8a (code checks)
           dEdx *= sf * 1e-3;  // apply correction and convert from MeV to GeV
           fill_SoA_column_single<float>(product.view().EM_scale().data(), dEdx, offset, nrows);
 
