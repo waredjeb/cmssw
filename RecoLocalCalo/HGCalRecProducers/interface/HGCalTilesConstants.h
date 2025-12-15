@@ -38,4 +38,18 @@ struct HGCalScintillatorTilesConstants {
   static constexpr int maxTileDepth = 32;  // For accelerators.
 };
 
+struct HGCalSiliconTestBeam2025Constants {
+  static constexpr float tileSize = 5.f;
+  static constexpr float minDim1 = 83.f;
+  static constexpr float maxDim1 = 101.f;
+  static constexpr float minDim2 = 62.f;
+  static constexpr float maxDim2 = 82.f;
+  static constexpr int nColumns = reco::ceil((maxDim1 - minDim1) / tileSize);
+  static constexpr int nRows = reco::ceil((maxDim2 - minDim2) / tileSize);
+  static constexpr int nTiles = nColumns * nRows;
+  static constexpr float invDim1BinSize = nColumns / (maxDim1 - minDim1);
+  static constexpr float invDim2BinSize = nRows / (maxDim2 - minDim2);
+  static constexpr int maxTileDepth = 64;  // For accelerators.
+};
+
 #endif
