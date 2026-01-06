@@ -32,7 +32,8 @@ namespace ticl {
     void linkTracksters(const Inputs& input,
                         std::vector<Trackster>& resultTracksters,
                         std::vector<std::vector<unsigned int>>& linkedResultTracksters,
-                        std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) override;
+                        std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId,
+                        std::vector<std::vector<float>>& inputTrackstersMasks) override;
 
     std::array<ticl::Vector, 3> findSkeletonNodes(const ticl::Trackster& trackster,
                                                   float lower_percentage,

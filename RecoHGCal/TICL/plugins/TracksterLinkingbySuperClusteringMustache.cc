@@ -56,10 +56,17 @@ void TracksterLinkingbySuperClusteringMustache::linkTracksters(
     const Inputs& input,
     std::vector<Trackster>& resultTracksters,
     std::vector<std::vector<unsigned int>>& outputSuperclusters,
-    std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) {
+    std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId,
+    std::vector<std::vector<float>>& inputTrackstersMasks) {
   // For now we use all input tracksters for superclustering. At some point there might be a filter here for EM tracksters (electromagnetic identification with DNN ?)
   auto const& inputTracksters = input.tracksters;
   const unsigned int tracksterCount = inputTracksters.size();
+
+  // Helper to check if a trackster is masked (mask == 0 means masked/skip)
+  auto isMasked = [&input, &inputTrackstersMasks](unsigned int globalIdx) {
+    const auto& [collIdx, localIdx] = input.tracksters.spanAndLocalIndex(globalIdx);
+    return inputTrackstersMasks[collIdx][localIdx] == 0.f;
+  };
 
   /* Sorting tracksters by decreasing order of pT (out-of-place sort). 
   inputTracksters[trackstersIndicesPt[0]], ..., inputTracksters[trackstersIndicesPt[N]] makes a list of tracksters sorted by decreasing pT
@@ -73,22 +80,28 @@ void TracksterLinkingbySuperClusteringMustache::linkTracksters(
       });
 
   std::vector<bool> tracksterMask_pt(tracksterCount, false);  // Mask for already superclustered tracksters
-  // We also mask tracksters that don't pass the PID cut
+  // We also mask tracksters that don't pass the PID cut or are masked in input
   for (unsigned int ts_idx_pt = 0; ts_idx_pt < tracksterCount; ts_idx_pt++) {
-    tracksterMask_pt[ts_idx_pt] = !trackstersPassesPIDCut(inputTracksters[trackstersIndicesPt[ts_idx_pt]]);
+    unsigned int globalIdx = trackstersIndicesPt[ts_idx_pt];
+    tracksterMask_pt[ts_idx_pt] =
+        isMasked(globalIdx) || !trackstersPassesPIDCut(inputTracksters[globalIdx]);
   }
 
   for (unsigned int ts_seed_idx_pt = 0; ts_seed_idx_pt < tracksterCount; ts_seed_idx_pt++) {
+    if (tracksterMask_pt[ts_seed_idx_pt])
+      continue;  // Trackster is masked in input or does not pass PID cut
+
     Trackster const& ts_seed = inputTracksters[trackstersIndicesPt[ts_seed_idx_pt]];
     if (ts_seed.raw_pt() <= seedThresholdPt_)
       break;  // Look only at seed tracksters passing threshold, take advantage of pt sorting for fast exit
-    if (tracksterMask_pt[ts_seed_idx_pt])
-      continue;  // Trackster does not pass PID cut
 
     outputSuperclusters.emplace_back(std::initializer_list<unsigned int>{trackstersIndicesPt[ts_seed_idx_pt]});
     resultTracksters.emplace_back(inputTracksters[trackstersIndicesPt[ts_seed_idx_pt]]);
     linkedTracksterIdToInputTracksterId.emplace_back(
         std::initializer_list<unsigned int>{trackstersIndicesPt[ts_seed_idx_pt]});
+    // Mark seed trackster as used in input mask
+    const auto& [collectionIdx_seed, localIdx_seed] = input.tracksters.spanAndLocalIndex(trackstersIndicesPt[ts_seed_idx_pt]);
+    inputTrackstersMasks[collectionIdx_seed][localIdx_seed] = 0.f;
 
     for (unsigned int ts_cand_idx_pt = ts_seed_idx_pt + 1; ts_cand_idx_pt < tracksterCount; ts_cand_idx_pt++) {
       if (tracksterMask_pt[ts_cand_idx_pt])
@@ -116,6 +129,9 @@ void TracksterLinkingbySuperClusteringMustache::linkTracksters(
         resultTracksters.back().mergeTracksters(ts_cand);
         linkedTracksterIdToInputTracksterId.back().push_back(trackstersIndicesPt[ts_cand_idx_pt]);
         tracksterMask_pt[ts_cand_idx_pt] = true;
+        // Mark candidate trackster as used in input mask
+        const auto& [collectionIdx_cand, localIdx_cand] = input.tracksters.spanAndLocalIndex(trackstersIndicesPt[ts_cand_idx_pt]);
+        inputTrackstersMasks[collectionIdx_cand][localIdx_cand] = 0.f;
       }
     }
   }

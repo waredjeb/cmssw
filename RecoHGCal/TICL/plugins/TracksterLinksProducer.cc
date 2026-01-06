@@ -75,6 +75,8 @@ private:
   std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;
 
   std::vector<edm::EDGetTokenT<std::vector<float>>> original_masks_tokens_;
+  std::vector<edm::EDGetTokenT<std::vector<float>>> tracksters_masks_tokens_;
+  std::vector<std::string> tracksters_collections_labels_;
 
   const edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometry_token_;
   const std::string detector_;
@@ -102,10 +104,22 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   // Loop over the edm::VInputTag and append the token to tracksters_tokens_
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("tracksters_collections")) {
     tracksters_tokens_.emplace_back(consumes<std::vector<Trackster>>(tag));
+    tracksters_collections_labels_.emplace_back(tag.label());
   }
   //Loop over the edm::VInputTag of masks and append the token to original_masks_tokens_
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("original_masks")) {
     original_masks_tokens_.emplace_back(consumes<std::vector<float>>(tag));
+  }
+  //Loop over the edm::VInputTag of trackster masks and append the token to tracksters_masks_tokens_
+  for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("trackstersMasks")) {
+    tracksters_masks_tokens_.emplace_back(consumes<std::vector<float>>(tag));
+  }
+
+  // Validation: ensure trackster masks match trackster collections
+  if (tracksters_masks_tokens_.size() != tracksters_tokens_.size()) {
+    throw cms::Exception("Configuration")
+        << "Number of trackstersMasks (" << tracksters_masks_tokens_.size()
+        << ") must match number of tracksters_collections (" << tracksters_tokens_.size() << ")";
   }
   // Initialize inference algorithm using the factory
   std::string inferencePlugin = ps.getParameter<std::string>("inferenceAlgo");
@@ -121,6 +135,12 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   produces<std::vector<std::vector<unsigned int>>>("linkedTracksterIdToInputTracksterId");
   // LayerClusters Mask
   produces<std::vector<float>>();
+  // Trackster mask for output linked tracksters
+  produces<std::vector<float>>("tracksterMask");
+  // Updated trackster masks for each input collection
+  for (const auto &label : tracksters_collections_labels_) {
+    produces<std::vector<float>>("tracksterMask" + label);
+  }
 
   auto linkingPSet = ps.getParameter<edm::ParameterSet>("linkingPSet");
 
@@ -210,6 +230,14 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     trackstersManager.add(*tracksters_h[i]);
   }
 
+  // Get input trackster masks and copy them for modification
+  std::vector<std::vector<float>> trackstersMasks;
+  trackstersMasks.reserve(tracksters_masks_tokens_.size());
+  for (unsigned int i = 0; i < tracksters_masks_tokens_.size(); ++i) {
+    const auto &inputMask = evt.get(tracksters_masks_tokens_[i]);
+    trackstersMasks.emplace_back(inputMask.begin(), inputMask.end());
+  }
+
   // Linking
   const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
@@ -219,7 +247,9 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   // 2) are isolated if only one
   // Result tracksters contains the final version of the trackster collection
   // linkedTrackstersToInputTrackstersMap contains the mapping between the linked tracksters and the input tracksters
-  linkingAlgo_->linkTracksters(input, *resultTracksters, *linkedResultTracksters, *linkedTracksterIdToInputTracksterId);
+  // trackstersMasks will be modified to mark used tracksters as 0
+  linkingAlgo_->linkTracksters(
+      input, *resultTracksters, *linkedResultTracksters, *linkedTracksterIdToInputTracksterId, trackstersMasks);
 
   // Now we need to remove the tracksters that are not linked
   // We need to emplace_back in the resultTracksters only the tracksters that are linked
@@ -244,10 +274,20 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
         *resultTracksters);  //option to use "Linking" instead of "CLU3D"/"energyAndPid" instead of "PID"
   }
 
+  // Create output mask for linked tracksters (all available)
+  auto outputTrackstersMask = std::make_unique<std::vector<float>>(resultTracksters->size(), 1.f);
+
   evt.put(std::move(linkedResultTracksters));
   evt.put(std::move(resultMask));
   evt.put(std::move(resultTracksters));
   evt.put(std::move(linkedTracksterIdToInputTracksterId), "linkedTracksterIdToInputTracksterId");
+  evt.put(std::move(outputTrackstersMask), "tracksterMask");
+
+  // Put updated trackster masks for each input collection
+  for (unsigned int i = 0; i < trackstersMasks.size(); ++i) {
+    auto updatedMask = std::make_unique<std::vector<float>>(trackstersMasks[i]);
+    evt.put(std::move(updatedMask), "tracksterMask" + tracksters_collections_labels_[i]);
+  }
 }
 
 void TracksterLinksProducer::printTrackstersDebug(const std::vector<Trackster> &tracksters, const char *label) const {
@@ -298,6 +338,9 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
+  desc.add<std::vector<edm::InputTag>>(
+      "trackstersMasks", {edm::InputTag("filteredTrackstersCLUE3DHigh")})
+      ->setComment("Trackster masks corresponding to each trackster collection");
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<bool>("regressionAndPid", false);

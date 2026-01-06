@@ -106,7 +106,8 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
     const Inputs& input,
     std::vector<Trackster>& resultTracksters,
     std::vector<std::vector<unsigned int>>& outputSuperclusters,
-    std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) {
+    std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId,
+    std::vector<std::vector<float>>& inputTrackstersMasks) {
   // For now we use all input tracksters for superclustering. At some point there might be a filter here for EM tracksters (electromagnetic identification with DNN ?)
   auto const& inputTracksters = input.tracksters;
   const unsigned int tracksterCount = inputTracksters.size();
@@ -144,13 +145,24 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
     tracksterTilesBothEndcaps_pt[ts.barycenter().eta() > 0.].fill(ts.barycenter().eta(), ts.barycenter().phi(), i_pt);
   }
 
+  // Helper to check if a trackster is masked (mask == 0 means masked/skip)
+  auto isMasked = [&input, &inputTrackstersMasks](unsigned int globalIdx) {
+    const auto& [collIdx, localIdx] = input.tracksters.spanAndLocalIndex(globalIdx);
+    return inputTrackstersMasks[collIdx][localIdx] == 0.f;
+  };
+
   // First loop on candidate tracksters (start at 1 since the highest pt trackster can only be a seed, not a candidate)
   for (unsigned int ts_cand_idx_pt = 1; ts_cand_idx_pt < tracksterCount; ts_cand_idx_pt++) {
-    Trackster const& ts_cand = inputTracksters[trackstersIndicesPt[ts_cand_idx_pt]];
+    unsigned int ts_cand_globalIdx = trackstersIndicesPt[ts_cand_idx_pt];
+
+    // Skip masked tracksters
+    if (isMasked(ts_cand_globalIdx))
+      continue;
+
+    Trackster const& ts_cand = inputTracksters[ts_cand_globalIdx];
 
     if (ts_cand.raw_energy() < candidateEnergyThreshold_ ||
-        //        !checkExplainedVarianceRatioCut(ts_cand))  // || !trackstersPassesPIDCut(ts_cand)
-        !checkExplainedVarianceRatioCut(ts_cand))  //   || !trackstersPassesPIDCut(ts_cand))
+        !checkExplainedVarianceRatioCut(ts_cand))
       continue;
 
     auto& tracksterTiles = tracksterTilesBothEndcaps_pt[ts_cand.barycenter().eta() > 0];
@@ -166,7 +178,13 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
           if (ts_seed_idx_pt >= ts_cand_idx_pt)
             continue;  // Look only at seed tracksters with higher pT than the candidate
 
-          Trackster const& ts_seed = inputTracksters[trackstersIndicesPt[ts_seed_idx_pt]];
+          unsigned int ts_seed_globalIdx = trackstersIndicesPt[ts_seed_idx_pt];
+
+          // Skip masked tracksters
+          if (isMasked(ts_seed_globalIdx))
+            continue;
+
+          Trackster const& ts_seed = inputTracksters[ts_seed_globalIdx];
 
           if (ts_seed.raw_pt() < seedPtThreshold_)
             break;  // All further seeds will have lower pT than threshold (due to pT sorting)
@@ -278,12 +296,18 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
             std::initializer_list<unsigned int>{bestSeedForCurrentCandidate_idx});
         seed_supercluster_it = outputSuperclusters.end() - 1;
         tracksterMask[bestSeedForCurrentCandidate_idx] = true;
+        // Mark seed trackster as used in input mask
+        const auto& [collectionIdx_seed, localIdx_seed] = input.tracksters.spanAndLocalIndex(bestSeedForCurrentCandidate_idx);
+        inputTrackstersMasks[collectionIdx_seed][localIdx_seed] = 0.f;
       }
 
       unsigned int indexIntoOutputTracksters = seed_supercluster_it - outputSuperclusters.begin();
       seed_supercluster_it->push_back(ts_cand_idx);
       resultTracksters[indexIntoOutputTracksters].mergeTracksters(inputTracksters[ts_cand_idx]);
       linkedTracksterIdToInputTracksterId[indexIntoOutputTracksters].push_back(ts_cand_idx);
+      // Mark candidate trackster as used in input mask
+      const auto& [collectionIdx_cand, localIdx_cand] = input.tracksters.spanAndLocalIndex(ts_cand_idx);
+      inputTrackstersMasks[collectionIdx_cand][localIdx_cand] = 0.f;
 
       assert(outputSuperclusters.size() == resultTracksters.size() &&
              outputSuperclusters.size() == linkedTracksterIdToInputTracksterId.size());
@@ -322,11 +346,15 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
   onCandidateTransition(previousCandTrackster_idx);
 
   // Create singleton superclusters for unused tracksters with enough pt
+  // Only consider tracksters that were not masked in the input
   for (unsigned int ts_id = 0; ts_id < tracksterCount; ts_id++) {
-    if (!tracksterMask[ts_id] && inputTracksters[ts_id].raw_pt() >= seedPtThreshold_) {
+    if (!tracksterMask[ts_id] && !isMasked(ts_id) && inputTracksters[ts_id].raw_pt() >= seedPtThreshold_) {
       outputSuperclusters.emplace_back(std::initializer_list<unsigned int>{ts_id});
       resultTracksters.emplace_back(inputTracksters[ts_id]);
       linkedTracksterIdToInputTracksterId.emplace_back(std::initializer_list<unsigned int>{ts_id});
+      // Mark singleton trackster as used in input mask
+      const auto& [collectionIdx, localIdx] = input.tracksters.spanAndLocalIndex(ts_id);
+      inputTrackstersMasks[collectionIdx][localIdx] = 0.f;
     }
   }
 

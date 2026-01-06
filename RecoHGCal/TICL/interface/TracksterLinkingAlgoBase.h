@@ -66,7 +66,8 @@ namespace ticl {
     virtual void linkTracksters(const Inputs& input,
                                 std::vector<Trackster>& resultTracksters,
                                 std::vector<std::vector<unsigned int>>& linkedResultTracksters,
-                                std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) = 0;
+                                std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId,
+                                std::vector<std::vector<float>>& inputTrackstersMasks) = 0;
 
     virtual void initialize(const HGCalDDDConstants* hgcons,
                             const hgcal::RecHitTools rhtools,

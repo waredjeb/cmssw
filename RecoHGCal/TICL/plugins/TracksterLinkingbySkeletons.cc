@@ -421,9 +421,16 @@ void TracksterLinkingbySkeletons::linkTracksters(
     const Inputs &input,
     std::vector<Trackster> &resultTracksters,
     std::vector<std::vector<unsigned int>> &linkedResultTracksters,
-    std::vector<std::vector<unsigned int>> &linkedTracksterIdToInputTracksterId) {
+    std::vector<std::vector<unsigned int>> &linkedTracksterIdToInputTracksterId,
+    std::vector<std::vector<float>> &inputTrackstersMasks) {
   const auto &tracksters = input.tracksters;
   const auto &layerClusters = input.layerClusters;
+
+  // Helper to check if a trackster is masked (mask == 0 means masked/skip)
+  auto isMasked = [&input, &inputTrackstersMasks](unsigned int globalIdx) {
+    const auto &[collIdx, localIdx] = input.tracksters.spanAndLocalIndex(globalIdx);
+    return inputTrackstersMasks[collIdx][localIdx] == 0.f;
+  };
 
   // sort tracksters by energy
   std::vector<unsigned int> sortedTracksters(tracksters.size());
@@ -436,9 +443,13 @@ void TracksterLinkingbySkeletons::linkTracksters(
   // tile 1 for positive eta
   std::array<TICLLayerTile, 2> tracksterTile;
   // loop over tracksters sorted by energy and calculate skeletons
-  // fill tiles for trackster linking
+  // fill tiles for trackster linking (only for non-masked tracksters)
   std::vector<std::array<ticl::Vector, 3>> skeletons(tracksters.size());
   for (auto const t_idx : sortedTracksters) {
+    // Skip masked tracksters
+    if (isMasked(t_idx))
+      continue;
+
     const auto &trackster = tracksters[t_idx];
     skeletons[t_idx] = findSkeletonNodes(tracksters[t_idx], 0.1, 0.9, layerClusters, rhtools_);
     tracksterTile[trackster.barycenter().eta() > 0.f].fill(
@@ -455,6 +466,10 @@ void TracksterLinkingbySkeletons::linkTracksters(
 
   // loop over tracksters sorted by energy and link them
   for (auto const &t_idx : sortedTracksters) {
+    // Skip masked tracksters
+    if (isMasked(t_idx))
+      continue;
+
     auto const &trackster = tracksters[t_idx];
     auto const &skeleton = skeletons[t_idx];
 
@@ -559,17 +574,33 @@ void TracksterLinkingbySkeletons::linkTracksters(
   auto const &components = graph.findSubComponents(sortedRootNodes);
   linkedTracksterIdToInputTracksterId.resize(components.size());
   for (auto const &comp : components) {
+    // Filter out masked tracksters from component
+    std::vector<unsigned int> filteredComp;
+    for (auto const &node : comp) {
+      if (!isMasked(node)) {
+        filteredComp.push_back(node);
+      }
+    }
+
+    // Skip empty components (all tracksters were masked)
+    if (filteredComp.empty())
+      continue;
+
     LogDebug("TracksterLinkingbySkeletons") << "Component " << ic << " Node: ";
     std::vector<unsigned int> linkedTracksters;
     Trackster outTrackster;
-    if (comp.size() == 1) {
-      if (input.tracksters[comp[0]].vertices().size() <= 3 && input.tracksters[comp[0]].raw_energy() < 5.f) {
+    if (filteredComp.size() == 1) {
+      if (input.tracksters[filteredComp[0]].vertices().size() <= 3 &&
+          input.tracksters[filteredComp[0]].raw_energy() < 5.f) {
         continue;
       }
     }
-    for (auto const &node : comp) {
+    for (auto const &node : filteredComp) {
       LogDebug("TracksterLinkingbySkeletons") << node << " ";
       linkedTracksterIdToInputTracksterId[ic].push_back(node);
+      // Mark this trackster as used in the input mask
+      const auto &[collectionIdx, localIdx] = input.tracksters.spanAndLocalIndex(node);
+      inputTrackstersMasks[collectionIdx][localIdx] = 0.f;
     }
     outTrackster.mergeTracksters(input.tracksters, linkedTracksterIdToInputTracksterId[ic]);
     linkedTracksters.push_back(resultTracksters.size());

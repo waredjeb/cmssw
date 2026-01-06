@@ -115,7 +115,8 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
     iterIndex_ = ticl::Trackster::MIP;
 
   produces<std::vector<Trackster>>();
-  produces<std::vector<float>>();  // Mask to be applied at the next iteration
+  produces<std::vector<float>>();                // Mask to be applied at the next iteration
+  produces<std::vector<float>>("tracksterMask");  // Trackster mask
 }
 
 void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -236,6 +237,10 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     }
   }
 
+  // Create initial trackster mask (all available)
+  auto trackstersMask = std::make_unique<std::vector<float>>(result->size(), 1.f);
+
   evt.put(std::move(result));
   evt.put(std::move(output_mask));
+  evt.put(std::move(trackstersMask), "tracksterMask");
 }

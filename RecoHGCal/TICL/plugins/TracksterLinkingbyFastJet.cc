@@ -9,10 +9,21 @@ void TracksterLinkingbyFastJet::linkTracksters(
     const Inputs& input,
     std::vector<Trackster>& resultTracksters,
     std::vector<std::vector<unsigned int>>& linkedResultTracksters,
-    std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) {
-  // Create jets of tracksters using FastJet
+    std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId,
+    std::vector<std::vector<float>>& inputTrackstersMasks) {
+  // Helper to check if a trackster is masked (mask == 0 means masked/skip)
+  auto isMasked = [&input, &inputTrackstersMasks](unsigned int globalIdx) {
+    const auto& [collIdx, localIdx] = input.tracksters.spanAndLocalIndex(globalIdx);
+    return inputTrackstersMasks[collIdx][localIdx] == 0.f;
+  };
+
+  // Create jets of tracksters using FastJet (only non-masked tracksters)
   std::vector<fastjet::PseudoJet> fjInputs;
   for (size_t i = 0; i < input.tracksters.size(); ++i) {
+    // Skip masked tracksters
+    if (isMasked(i))
+      continue;
+
     // Convert Trackster information to PseudoJet
     fastjet::PseudoJet pj(input.tracksters[i].barycenter().x(),
                           input.tracksters[i].barycenter().y(),
@@ -37,6 +48,9 @@ void TracksterLinkingbyFastJet::linkTracksters(
       for (const auto& constituent : jet.constituents()) {
         auto tracksterIndex = constituent.user_index();
         linkedTracksterIdToInputTracksterId[i].push_back(tracksterIndex);
+        // Mark this trackster as used in the input mask
+        const auto& [collectionIdx, localIdx] = input.tracksters.spanAndLocalIndex(tracksterIndex);
+        inputTrackstersMasks[collectionIdx][localIdx] = 0.f;
       }
       outTrackster.mergeTracksters(input.tracksters, linkedTracksterIdToInputTracksterId[i]);
       linkedTracksters.push_back(resultTracksters.size());

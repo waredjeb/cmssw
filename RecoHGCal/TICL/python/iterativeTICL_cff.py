@@ -35,6 +35,10 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         'ticlTrackstersCLUE3DHigh',
         'ticlTrackstersRecovery'
     ),
+    trackstersMasks = cms.VInputTag(
+        cms.InputTag('ticlTrackstersCLUE3DHigh', 'tracksterMask'),
+        cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
+    ),
     linkingPSet = cms.PSet(
       cylinder_radius_sqr_split = cms.double(9),
       proj_distance_split = cms.double(5),
@@ -183,6 +187,20 @@ mergeTICLTask = cms.Task(ticlLayerTileTask
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
 ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterLinksTask))
 
+# When superclustering is enabled, Skeletons should use the mask output from superclustering
+# (so that tracksters used by superclustering are masked out)
+ticl_superclustering_dnn.toModify(ticlTracksterLinks,
+    trackstersMasks = cms.VInputTag(
+        cms.InputTag('ticlTracksterLinksSuperclusteringDNN', 'tracksterMaskticlTrackstersCLUE3DHigh'),
+        cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
+    )
+)
+ticl_superclustering_mustache_ticl.toModify(ticlTracksterLinks,
+    trackstersMasks = cms.VInputTag(
+        cms.InputTag('ticlTracksterLinksSuperclusteringMustache', 'tracksterMaskticlTrackstersCLUE3DHigh'),
+        cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
+    )
+)
 
 mtdSoATask = cms.Task(mtdSoA)
 ticlCandidateTask = cms.Task(ticlCandidate)

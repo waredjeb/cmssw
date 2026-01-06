@@ -38,7 +38,8 @@ namespace ticl {
     void linkTracksters(const Inputs& input,
                         std::vector<Trackster>& resultTracksters,
                         std::vector<std::vector<unsigned int>>& linkedResultTracksters,
-                        std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) override;
+                        std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId,
+                        std::vector<std::vector<float>>& inputTrackstersMasks) override;
     void initialize(const HGCalDDDConstants* hgcons,
                     const hgcal::RecHitTools rhtools,
                     const edm::ESHandle<MagneticField> bfieldH,
