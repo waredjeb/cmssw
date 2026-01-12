@@ -39,7 +39,6 @@ public:
     desc.add<bool>("doPruning", true);      
     desc.add<double>("pruneWmin", 1e-2);              
     desc.add<bool>("pruneUseSeparateKernels", false);  
-    // separate pruning kernels (only used if pruneUseSeparateKernels = true)
     desc.add<double>("sigmaZ_prune", 12.5);
     desc.add<double>("sigmaT_prune", 0.08);
     desc.add<double>("sigmaDR_prune", 0.08);
@@ -61,8 +60,6 @@ private:
   bool   doPruning_; 
   double pruneWmin_;   
   bool   pruneUseSeparateKernels_;
-
-  // optional separate pruning kernels (used iff pruneUseSeparateKernels_==true)
   double sigmaZ_prune_, sigmaT_prune_, sigmaDR_prune_;
   double zPower_prune_, tPower_prune_, drPower_prune_;
 
