@@ -44,8 +44,9 @@ private:
   int algoVerbosity_{0};
 
   // output instance labels
-  std::string labelLinkedOut_;
-  std::string labelMapOut_;
+  // std::string labelLinkedOut_;
+  // std::string labelLinksOut_;
+  // std::string labelMapOut_;
 };
 
 TracksterCleaningProducer::TracksterCleaningProducer(const edm::ParameterSet& ps) {
@@ -61,8 +62,9 @@ TracksterCleaningProducer::TracksterCleaningProducer(const edm::ParameterSet& ps
   algoVerbosity_ = ps.getParameter<int>("algo_verbosity");
 
   // outputs
-  labelLinkedOut_  = ps.getParameter<std::string>("labelLinkedOut");
-  labelMapOut_     = ps.getParameter<std::string>("labelMapOut");
+  // labelLinkedOut_  = ps.getParameter<std::string>("labelLinkedOut");
+  // labelLinksOut_   = ps.getParameter<std::string>("labelLinksOut");
+  // labelMapOut_     = ps.getParameter<std::string>("labelMapOut");
 
   const auto& cleanerPSet = ps.getParameter<edm::ParameterSet>("cleaner");
   const auto pluginName   = cleanerPSet.getParameter<std::string>("type");
@@ -70,8 +72,9 @@ TracksterCleaningProducer::TracksterCleaningProducer(const edm::ParameterSet& ps
       TracksterCleaningPluginFactory::get()->create(pluginName, cleanerPSet, consumesCollector()));
 
   // products
-  produces<std::vector<Trackster>>(labelLinkedOut_);
-  produces<std::vector<std::vector<unsigned int>>>(labelMapOut_);
+  produces<std::vector<Trackster>>();                  
+  produces<std::vector<std::vector<unsigned int>>>();        
+  produces<std::vector<std::vector<unsigned int>>>("linkedTracksterIdToInputTracksterId");
 }
 
 void TracksterCleaningProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
@@ -85,8 +88,15 @@ void TracksterCleaningProducer::produce(edm::Event& ev, const edm::EventSetup& e
   TracksterCleaningAlgoBase::Inputs in(ev, es, linked, clue3d, mapIn);
   cleaningAlgo_->cleanTracksters(in, *outLinked, *outMap);
 
-  ev.put(std::move(outLinked),  labelLinkedOut_);
-  ev.put(std::move(outMap),     labelMapOut_);
+  auto outLinksDefault = std::make_unique<std::vector<std::vector<unsigned int>>>();
+  outLinksDefault->resize(outLinked->size());
+  for (unsigned int i = 0; i < outLinked->size(); ++i) {
+    (*outLinksDefault)[i] = {i};
+  }
+
+  ev.put(std::move(outLinked));            
+  ev.put(std::move(outLinksDefault));             
+  ev.put(std::move(outMap), "linkedTracksterIdToInputTracksterId");
 }
 
 void TracksterCleaningProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -99,8 +109,9 @@ void TracksterCleaningProducer::fillDescriptions(edm::ConfigurationDescriptions&
                           edm::InputTag("tracksterLinksProducer", "linkedTracksterIdToInputTracksterId"));
 
   desc.add<int>("algo_verbosity", 0);
-  desc.add<std::string>("labelLinkedOut",  "cleanedLinkedTracksters");
-  desc.add<std::string>("labelMapOut",     "cleanedLinkedTrackstersToInputTrackstersId");
+  // desc.add<std::string>("labelLinkedOut",  "cleanedLinkedTracksters");
+  // desc.add<std::string>("labelLinksOut",   "cleanedLinkedTracksterLinks");
+  // desc.add<std::string>("labelMapOut",     "cleanedLinkedTrackstersToInputTrackstersId");
 
   edm::ParameterSetDescription cleanerDesc;
   cleanerDesc.add<std::string>("type", "Beta");
