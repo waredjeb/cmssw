@@ -1,4 +1,3 @@
-import os
 import sys
 import copy
 import collections
@@ -14,6 +13,7 @@ from Validation.RecoTrack.plotting.html import PlotPurpose
 import Validation.RecoTrack.plotting.plotting as plotting
 import Validation.RecoTrack.plotting.validation as validation
 import Validation.RecoTrack.plotting.html as html
+from Validation.HGCalValidation.HLTHGCalValidator_cff import hltHgcalValidator as _hltHgcalValidator
 
 from Validation.HGCalValidation.HGCalValidator_cff import hgcalValidator
 from Validation.HGCalValidation.PostProcessorHGCAL_cfi import lcToCP_linking, simDict, TSbyHits_CP, TSbyLCs, TSbyLCs_CP, TSbyHits, variables
@@ -2553,7 +2553,7 @@ def append_hgcalSimClustersPlots(collection, name_collection):
 
 
 #=================================================================================================
-def _hgcalFolders(lastDirName="hgcalLayerClusters"):
+def _hgcalFolders(hgcVal_dqm="DQMData/Run 1/HGCAL/Run summary/HGCalValidator/", lastDirName="hgcalLayerClusters"):
     return hgcVal_dqm + lastDirName
 
 _trackstersPlots = [
@@ -2629,10 +2629,10 @@ _trackstersToSimTracksterByHitsPlots = [
 ]
 
 hgcalTrackstersPlotter = Plotter()
-def append_hgcalTrackstersPlots(collection = 'ticlTrackstersMerge', name_collection = "TrackstersMerge"):
+def append_hgcalTrackstersPlots(validator, folder = "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/", collection = 'ticlTrackstersMerge', name_collection = "TrackstersMerge"):
   # Appending generic plots for Tracksters
   hgcalTrackstersPlotter.append(collection, [
-              _hgcalFolders(collection+ "/" + hgcalValidator.label_TS.value())
+              _hgcalFolders(folder, collection+ "/" + hgcalValidator.label_TS.value())
               ], PlotFolder(
               *_trackstersPlots,
               loopSubFolders=False,
@@ -2641,7 +2641,7 @@ def append_hgcalTrackstersPlots(collection = 'ticlTrackstersMerge', name_collect
 
   # Appending plots for Tracksters TSbyHits_CP, TSbyLCs, TSbyLCs_CP, TSbyHits
   hgcalTrackstersPlotter.append(collection, [
-              _hgcalFolders(collection + "/" + TSbyHits_CP)
+              _hgcalFolders(folder, collection + "/" + TSbyHits_CP)
               ], PlotFolder(
               *_trackstersToSimTracksterFromCPByHitsPlots,
               loopSubFolders=False,
@@ -2651,7 +2651,7 @@ def append_hgcalTrackstersPlots(collection = 'ticlTrackstersMerge', name_collect
               )
 
   hgcalTrackstersPlotter.append(collection, [
-              _hgcalFolders(collection + "/" + TSbyLCs)
+              _hgcalFolders(folder,collection + "/" + TSbyLCs)
               ], PlotFolder(
               *_trackstersToSimTracksterByLCsPlots,
               loopSubFolders=False,
@@ -2661,7 +2661,7 @@ def append_hgcalTrackstersPlots(collection = 'ticlTrackstersMerge', name_collect
               )
 
   hgcalTrackstersPlotter.append(collection, [
-              _hgcalFolders(collection + "/" + TSbyLCs_CP)
+              _hgcalFolders(folder,collection + "/" + TSbyLCs_CP)
               ], PlotFolder(
               *_trackstersToSimTracksterFromCPByLCsPlots,
               loopSubFolders=False,
@@ -2671,7 +2671,7 @@ def append_hgcalTrackstersPlots(collection = 'ticlTrackstersMerge', name_collect
               )
 
   hgcalTrackstersPlotter.append(collection, [
-              _hgcalFolders(collection + "/" + TSbyHits)
+              _hgcalFolders(folder,collection + "/" + TSbyHits)
               ], PlotFolder(
               *_trackstersToSimTracksterByHitsPlots,
               loopSubFolders=False,
@@ -2999,17 +2999,19 @@ hgcalHitCalibPlotter.append("EcalDrivenGsfElectronsFromTrackster_Closest_EoverCP
 
 hgcalTICLCandPlotter = Plotter()
 
-hgcalTICLCandPlotter.append('ticlCandidates', [
-             "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/"+hgcalValidator.ticlCandidates.value(),
-            ], PlotFolder(
-            *_candidatesPlots,
-            loopSubFolders=False,
-            purpose=PlotPurpose.Timing, page="General", section="Candidates"))
+def append_ticlCandidatePlots(validator, folder = "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/", collection = 'ticlTrackstersMerge', name_collection = "TrackstersMerge"):
+  hgcalTICLCandPlotter.append(collection, [
+               f"{folder}"+validator.ticlCandidates.value(),
+              ], PlotFolder(
+              *_candidatesPlots,
+              loopSubFolders=False,
+              purpose=PlotPurpose.Timing, page="General", section=name_collection))
 
-for i in range(6):
-    hgcalTICLCandPlotter.append('ticlCandidates', [
-             "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/"+hgcalValidator.ticlCandidates.value()+"/"+cand_type[i],
-            ], PlotFolder(
-            *_allCandidatesPlots[i],
-            loopSubFolders=False,
-            purpose=PlotPurpose.Timing, page=cand_type[i], section="Candidates"))
+  for i in range(6):
+      hgcalTICLCandPlotter.append(collection, [
+               f"{folder}"+validator.ticlCandidates.value()+"/"+cand_type[i],
+              ], PlotFolder(
+              *_allCandidatesPlots[i],
+              loopSubFolders=False,
+              purpose=PlotPurpose.Timing, page=cand_type[i], section=name_collection))
+  return hgcalTICLCandPlotter
