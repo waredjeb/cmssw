@@ -13,7 +13,6 @@ import Validation.RecoTrack.plotting.plotting as plotting
 from Validation.HGCalValidation.HLT_TICLIterLabels_cff import hltTiclIterLabels
 from Validation.HGCalValidation.HLTHGCalValidator_cff import hltHgcalValidator as _hltHgcalValidator
 
-#simClustersIters = [hgcalValidator.label_SimClustersLevel, "ticlSimTracksters"]
 hltTiclIterLabels_v5 = ["hltTiclTrackstersCLUE3DHigh","hltTiclTrackstersCLUE3DHighL1Seeded", "hltTiclTracksterLinks", "hltTiclTracksterLinksSuperclusteringDNNUnseeded", "hltTiclTracksterLinksSuperclusteringDNNL1Seeded","hltTiclCandidate"]
 simClustersIters = [hgcalValidator.label_SimClustersLevel, "ticlSimTracksters"]
 simClustersItersHLT = [_hltHgcalValidator.label_SimClustersLevel, "hltTiclSimTracksters"]
@@ -80,10 +79,9 @@ def main(opts):
     def plot_LC():
         hgclayclus = [hgcalPlots.hgcalLayerClustersPlotter]
         if(hltPlots):
-            hgcalPlots.append_hgcalLayerClustersPlots(_hltHgcalValidator.label_layerClusterPlots._InputTag__moduleLabel, "Layer Clusters", extendedFlag)
+            hgcalPlots.append_hgcalLayerClustersPlots(folder=hltFolder, collection=_hltHgcalValidator.label_layerClustersPlots.value(), name_collection="Layer Clusters", extended=extendedFlag)
         else:
-            hgcalPlots.append_hgcalLayerClustersPlots(hgcalValidator.label_layerClusterPlots._InputTag__moduleLabel, "Layer Clusters", extendedFlag)                      
-        hgcalPlots.append_hgcalLayerClustersPlots(hgcalValidator.label_layerClustersPlots, "Layer Clusters", extendedFlag)
+            hgcalPlots.append_hgcalLayerClustersPlots(hgcalValidator.label_layerClustersPlots.value(), "Layer Clusters", extendedFlag)                      
         val.doPlots(hgclayclus, plotterDrawArgs=drawArgs)
 
     #simClusters

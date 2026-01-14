@@ -2397,7 +2397,7 @@ lc_zplus_extended = [
   _distancebetseedandmaxcellvsclusterenergy_perthickperlayer_scint_BH_zplus
 ]
 
-def append_hgcalLayerClustersPlots(collection = hgcalValidator.label_layerClustersPlots, name_collection = layerClustersLabel, extended = False):
+def append_hgcalLayerClustersPlots(folder = "DQMData/Run 1/HGCAL/Run summary/HGCalValidator/", collection = hgcalValidator.label_layerClustersPlots, name_collection = layerClustersLabel, extended = False):
   print('extended : ',extended)
   regions_ClusterLevel       = ["General: Cluster Level", "Z-minus: Cluster Level", "Z-plus: Cluster Level"]
   regions_CellLevel          = ["Z-minus: Cell Level", "Z-plus: Cell Level"]
@@ -2423,22 +2423,23 @@ def append_hgcalLayerClustersPlots(collection = hgcalValidator.label_layerCluste
   setPlots_CellLevel          = [plots_lc_cellevel_zminus, plots_lc_cellevel_zplus]
   setPlots_LCtoCP_association = [plots_lc_cp_association_zminus, plots_lc_cp_association_zplus]
   for reg, setPlot in zip(regions_ClusterLevel, setPlots_ClusterLevel):
+    print("Debug: ", folder, collection, "/ClusterLevel")
     hgcalLayerClustersPlotter.append(collection+"_"+reg, [
-                _hgcalFolders(collection + "/ClusterLevel")
+                _hgcalFolders(folder, collection + "/ClusterLevel")
                 ], PlotFolder(
                 *setPlot,
                 loopSubFolders=False,
                 purpose=PlotPurpose.Timing, page=layerClustersLabel, section=reg))
   for reg, setPlot in zip(regions_CellLevel, setPlots_CellLevel):
     hgcalLayerClustersPlotter.append(collection+"_"+reg, [
-                _hgcalFolders(collection + "/CellLevel")
+                _hgcalFolders(folder, collection + "/CellLevel")
                 ], PlotFolder(
                 *setPlot,
                 loopSubFolders=False,
                 purpose=PlotPurpose.Timing, page=layerClustersLabel, section=reg))
   for reg, setPlot in zip(regions_LCtoCP_association, setPlots_LCtoCP_association):
     hgcalLayerClustersPlotter.append(collection+"_"+reg, [
-                _hgcalFolders(collection + "/" + lcToCP_linking)
+                _hgcalFolders(folder, collection + "/" + lcToCP_linking)
                 ], PlotFolder(
                 *setPlot,
                 loopSubFolders=False,
@@ -2554,7 +2555,7 @@ def append_hgcalSimClustersPlots(collection, name_collection):
 
 #=================================================================================================
 def _hgcalFolders(hgcVal_dqm="DQMData/Run 1/HGCAL/Run summary/HGCalValidator/", lastDirName="hgcalLayerClusters"):
-    return hgcVal_dqm + lastDirName
+    return "{}{}".format(hgcVal_dqm, lastDirName)
 
 _trackstersPlots = [
   _trackster_eppe,
