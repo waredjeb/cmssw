@@ -97,16 +97,26 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
       kept.shrink_to_fit();
       ticl::Trackster cleaned = link;
 
+      // cleaned vertices to match CLUE3D membership
+      cleaned.vertices().assign(members.begin(), members.end());
+      cleaned.vertex_multiplicity().assign(members.size(), 1.0f);
+
+      // clear edges
+      cleaned.edges().clear();
+
+      cleaned.calculateRawPt();
+      cleaned.calculateRawEmPt();
+
       outTracksters.emplace_back(std::move(cleaned));
       outMap.emplace_back(std::move(kept));
       continue;
     }
 
-    ticl::Trackster cleaned = link;
     std::vector<unsigned int> kept, dropped;
-    std::vector<float> keptW; 
+    std::vector<float> keptW;
     kept.reserve(members.size());
     keptW.reserve(members.size());
+    dropped.reserve(members.size());
 
     const double sZ_w = std::max(1e-12, sigmaZ_);
     const double sT_w = std::max(1e-12, sigmaT_);
@@ -135,7 +145,7 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
       const bool passZ = std::abs(dz) <= zAbsCut_;
       const bool passT = (tAbsCut_ <= 0.0) ? true : (std::abs(dt) <= tAbsCut_);
 
-      // pruning
+      // pruning 
       if (doPruning_) {
         double wzp = std::exp(-0.5 * (dz*dz)/(sZ_p*sZ_p));
         double wtp = std::exp(-0.5 * (dt*dt)/(sT_p*sT_p));
@@ -145,10 +155,10 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
         const double w_prune = std::pow(wzp, zPp) * std::pow(wtp, tPp) * std::pow(wrp, rPp);
         if (w_prune < pruneWmin_) {
           dropped.push_back(idx);
-          continue; 
+          continue;
         }
       }
-
+      
       // weighting
       double wzw = std::exp(-0.5 * (dz*dz)/(sZ_w*sZ_w));
       double wtw = std::exp(-0.5 * (dt*dt)/(sT_w*sT_w));
@@ -170,31 +180,108 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
       }
     }
 
+    if (kept.empty()) {
+      kept = members;
+      keptW.clear();
+    }
+
+    ticl::Trackster cleaned = link;
+
+    cleaned.vertices().assign(kept.begin(), kept.end());
+    cleaned.vertex_multiplicity().assign(kept.size(), 1.0f);
+
+    cleaned.edges().clear();
+
     // compute energy of cleaned link
     double eNew = 0.0;
-    if (!weightMode_) {
-      for (auto idx : kept) eNew += in.clue3d[idx].raw_energy();
-    } else {
-      for (size_t i = 0; i < kept.size(); ++i)
-        eNew += keptW[i] * in.clue3d[kept[i]].raw_energy();
+
+    double wx = 0.0, wy = 0.0, wz = 0.0;
+    double wsum_pos = 0.0;
+
+    double wt = 0.0;
+    double wsum_t = 0.0;
+
+    auto weight_i = [&](size_t i)->double {
+      if (!weightMode_) return 1.0;
+      return (i < keptW.size() ? static_cast<double>(keptW[i]) : 1.0);
+    };
+
+    for (size_t i = 0; i < kept.size(); ++i) {
+      const unsigned int idx = kept[i];
+      const auto& ts = in.clue3d[idx];
+      const auto& bc = ts.barycenter();
+
+      const double w = weight_i(i);
+      const double e = static_cast<double>(ts.raw_energy());
+
+      // reweighted energy
+      const double e_eff = weightMode_ ? (w * e) : e;
+      eNew += e_eff;
+
+      // barycenter
+      wx += e_eff * bc.x();
+      wy += e_eff * bc.y();
+      wz += e_eff * bc.z();
+      wsum_pos += e_eff;
+
+      // time
+      wt += e_eff * ts.time();
+      wsum_t += e_eff;
     }
+
+    if (wsum_pos > 0.0) {
+      cleaned.setBarycenter(ticl::Trackster::Vector(wx/wsum_pos, wy/wsum_pos, wz/wsum_pos));
+    } else {
+      cleaned.setBarycenter(link.barycenter());
+    }
+
+    if (wsum_t > 0.0) {
+      cleaned.setTimeAndError(static_cast<float>(wt/wsum_t), -1.f);
+    }
+
     setLinkRawEnergy_(cleaned, eNew);
+    cleaned.calculateRawPt();
+    cleaned.calculateRawEmPt();
+    cleaned.zeroProbabilities(); 
 
-    if (!weightMode_) keptW.clear();
-    kept.shrink_to_fit();
-    keptW.shrink_to_fit();
-
+    // store outputs
     outTracksters.emplace_back(std::move(cleaned));
     outMap.emplace_back(std::move(kept));
 
+    // optionally emit dropped as a standalone link
     if (emitDroppedAsStandalone_ && !dropped.empty()) {
       ticl::Trackster droppedLink = link;
 
-      double eDrop = 0.0;
-      for (auto idx : dropped) eDrop += in.clue3d[idx].raw_energy();
-      setLinkRawEnergy_(droppedLink, eDrop);
+      droppedLink.vertices().assign(dropped.begin(), dropped.end());
+      droppedLink.vertex_multiplicity().assign(dropped.size(), 1.0f);
+      droppedLink.edges().clear();
+      droppedLink.zeroProbabilities();
 
-      dropped.shrink_to_fit();
+      double eDrop = 0.0;
+      double dx = 0.0, dy = 0.0, dz = 0.0, dsum = 0.0;
+      double dt = 0.0, dtsum = 0.0;
+      for (auto idx : dropped) {
+        const auto& ts = in.clue3d[idx];
+        const auto& bc = ts.barycenter();
+        const double e = static_cast<double>(ts.raw_energy());
+        eDrop += e;
+        dx += e * bc.x();
+        dy += e * bc.y();
+        dz += e * bc.z();
+        dsum += e;
+        dt += e * ts.time();
+        dtsum += e;
+      }
+      if (dsum > 0.0) {
+        droppedLink.setBarycenter(ticl::Trackster::Vector(dx/dsum, dy/dsum, dz/dsum));
+      }
+      if (dtsum > 0.0) {
+        droppedLink.setTimeAndError(static_cast<float>(dt/dtsum), -1.f);
+      }
+
+      setLinkRawEnergy_(droppedLink, eDrop);
+      droppedLink.calculateRawPt();
+      droppedLink.calculateRawEmPt();
 
       outTracksters.emplace_back(std::move(droppedLink));
       outMap.emplace_back(std::move(dropped));
