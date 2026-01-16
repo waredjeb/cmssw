@@ -4,6 +4,7 @@
 #include "TracksterLinkingbySuperClusteringDNN.h"
 #include "TracksterLinkingbySuperClusteringMustache.h"
 #include "TracksterLinkingbySkeletons.h"
+#include "TracksterLinkingbyLayerOverlap.h"
 #include "TracksterLinkingRecovery.h"
 #include "RecoHGCal/TICL/plugins/TracksterLinkingPluginFactory.h"
 
@@ -16,4 +17,5 @@ DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory,
                             ticl::TracksterLinkingbySuperClusteringMustache,
                             "SuperClusteringMustache");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingbyFastJet, "FastJet");
+DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingbyLayerOverlap, "LayerOverlap");
 DEFINE_EDM_VALIDATED_PLUGIN(TracksterLinkingPluginFactory, ticl::TracksterLinkingRecovery, "Recovery");

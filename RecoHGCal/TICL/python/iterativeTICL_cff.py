@@ -27,6 +27,45 @@ from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_sup
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
 
+# Layer-Overlap Linking algorithm configuration
+# NEW algorithm for hadronic shower reconstruction with timing gates and PU rejection
+tracksterLinkingLayerOverlap = cms.PSet(
+    type = cms.string('LayerOverlap'),
+    algo_verbosity = cms.int32(0),
+
+    # Quality thresholds
+    min_trackster_energy = cms.double(5.0),  # Lower than Skeletons (20) to capture fragments
+    min_pca_quality = cms.double(0.70),      # Slightly lower to accept fragments
+
+    # Spatial search
+    max_search_window_dR = cms.double(0.15),  # Tight eta-phi window
+
+    # Layer overlap [EE+CEH, FH]
+    # Region-dependent gap (FH has coarser granularity)
+    max_layer_gap = cms.vint32(5, 8),  # Max layers between tracksters
+
+    # Geometric compatibility [EE, HAD]
+    max_barycenter_dR = cms.vdouble(0.08, 0.12),  # Tighter than Skeletons
+    min_pca_alignment = cms.double(0.85),          # Dot product threshold
+
+    # Timing gates (CRITICAL for PU200 rejection - currently unused in Skeletons!)
+    max_sigma_timing = cms.double(3.0),           # 3-sigma cut
+    max_time_error = cms.double(10.0),            # Max uncertainty (ns)
+    require_timing_for_loose_geo = cms.bool(True),  # Demand timing if geo marginal
+
+    # Scoring weights
+    # Higher timing weight (0.30 vs 0.20) for better PU200 rejection
+    w_layer = cms.double(0.25),
+    w_geo = cms.double(0.25),
+    w_pca = cms.double(0.20),
+    w_time = cms.double(0.30),  # Increased from Skeletons
+
+    # Multi-stage linking
+    stage1_min_energy = cms.double(15.0),  # High-confidence main fragments
+    stage2_max_energy = cms.double(10.0),  # Small satellites
+    stage2_min_pca = cms.double(0.90),     # Stricter PCA for satellites
+)
+
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
 ticlTrackstersMerge = _trackstersMergeProducer.clone()
