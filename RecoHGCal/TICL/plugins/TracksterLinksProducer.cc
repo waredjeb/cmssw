@@ -116,6 +116,9 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   }
 
   // Validation: ensure trackster masks match trackster collections
+  auto const& tagTracksters = ps.getParameter<std::vector<edm::InputTag>>("tracksters_collections");
+  auto const& tagMasks = ps.getParameter<std::vector<edm::InputTag>>("trackstersMasks");
+  assert(tagTracksters.size() == tagMasks.size());
   if (tracksters_masks_tokens_.size() != tracksters_tokens_.size()) {
     throw cms::Exception("Configuration")
         << "Number of trackstersMasks (" << tracksters_masks_tokens_.size()
@@ -202,8 +205,7 @@ void TracksterLinksProducer::dumpTrackster(const Trackster &t) const {
 
 void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   linkingAlgo_->setEvent(evt, es);
-
-  auto resultTracksters = std::make_unique<std::vector<Trackster>>();
+    auto resultTracksters = std::make_unique<std::vector<Trackster>>();
 
   auto linkedResultTracksters = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
@@ -228,38 +230,59 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
     evt.getByToken(tracksters_tokens_[i], tracksters_h[i]);
     //Fill MultiSpan
     trackstersManager.add(*tracksters_h[i]);
+    std::cout << "Adding trackster collection with size " << tracksters_h[i]->size() << std::endl;
   }
+  std::cout << "Final Tracksters Manager size " << trackstersManager.size() << std::endl;
 
   // Get input trackster masks and copy them for modification
   std::vector<std::vector<float>> trackstersMasks;
   trackstersMasks.reserve(tracksters_masks_tokens_.size());
+  size_t totalSizeMask = 0uz;
   for (unsigned int i = 0; i < tracksters_masks_tokens_.size(); ++i) {
     const auto &inputMask = evt.get(tracksters_masks_tokens_[i]);
     trackstersMasks.emplace_back(inputMask.begin(), inputMask.end());
+    std::cout << "Adding Tracksters Mask collection with size " << inputMask.size() << std::endl;
+    totalSizeMask += inputMask.size();
   }
 
-  // Linking
-  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
-  auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
+  std::cout << "Final Tracksters mask size " << totalSizeMask << std::endl; 
 
+
+  for (size_t i {}; i < trackstersMasks.size(); i++){
+    assert(tracksters_h[i]->size() == trackstersMasks[i].size());
+  }
+
+  std::cout << "Trackster Links Producer  - Input Mask "  << algoType_ <<  std::endl;
+  std::cout << "[";
+  for (auto const& x : trackstersMasks){
+    for( auto const i : x){
+      std::cout << i << ", ";
+    } 
+  }
+  std::cout << "]\n";
+
+  // Linking
+    const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
+  auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
+  
   // LinkTracksters will produce a vector of vector of indices of tracksters that:
   // 1) are linked together if more than one
   // 2) are isolated if only one
   // Result tracksters contains the final version of the trackster collection
   // linkedTrackstersToInputTrackstersMap contains the mapping between the linked tracksters and the input tracksters
   // trackstersMasks will be modified to mark used tracksters as 0
-  linkingAlgo_->linkTracksters(
+    linkingAlgo_->linkTracksters(
       input, *resultTracksters, *linkedResultTracksters, *linkedTracksterIdToInputTracksterId, trackstersMasks);
-
+  
   // Now we need to remove the tracksters that are not linked
   // We need to emplace_back in the resultTracksters only the tracksters that are linked
 
-  for (auto const &resultTrackster : *resultTracksters) {
+    for (auto const &resultTrackster : *resultTracksters) {
     for (auto const &clusterIndex : resultTrackster.vertices()) {
       (*resultMask)[clusterIndex] = 0.f;
     }
   }
-
+  
   assignPCAtoTracksters(*resultTracksters,
                         layerClusters,
                         layerClustersTimes,

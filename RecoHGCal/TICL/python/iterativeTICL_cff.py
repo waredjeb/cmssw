@@ -21,6 +21,7 @@ from RecoHGCal.TICL.superclustering_cff import *
 from RecoHGCal.TICL.ticlCandidateProducer_cfi import ticlCandidateProducer as _ticlCandidateProducer
 
 from RecoHGCal.TICL.mtdSoAProducer_cfi import mtdSoAProducer as _mtdSoAProducer
+from RecoHGCal.TICL.tracksterFilter_cff import filteredTrackstersEM as _filteredTrackstersEM
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 from Configuration.ProcessModifiers.ticl_superclustering_dnn_cff import ticl_superclustering_dnn
@@ -36,7 +37,7 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         'ticlTrackstersRecovery'
     ),
     trackstersMasks = cms.VInputTag(
-        cms.InputTag('ticlTrackstersCLUE3DHigh', 'tracksterMask'),
+        cms.InputTag('ticlTracksterLinksSuperclusteringDNN', 'tracksterMaskticlTrackstersCLUE3DHigh'),
         cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
     ),
     linkingPSet = cms.PSet(
@@ -189,16 +190,15 @@ ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterLinksTask))
 
 # When superclustering is enabled, Skeletons should use the mask output from superclustering
 # (so that tracksters used by superclustering are masked out)
-ticl_superclustering_dnn.toModify(ticlTracksterLinks,
+ticl_superclustering_dnn.toModify(ticlTracksterLinksSuperclusteringDNN,
     trackstersMasks = cms.VInputTag(
-        cms.InputTag('ticlTracksterLinksSuperclusteringDNN', 'tracksterMaskticlTrackstersCLUE3DHigh'),
-        cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
+        cms.InputTag('filteredTrackstersEM') 
+        
     )
 )
-ticl_superclustering_mustache_ticl.toModify(ticlTracksterLinks,
+ticl_superclustering_mustache_ticl.toModify(ticlTracksterLinksSuperclusteringMustache,
     trackstersMasks = cms.VInputTag(
-        cms.InputTag('ticlTracksterLinksSuperclusteringMustache', 'tracksterMaskticlTrackstersCLUE3DHigh'),
-        cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
+        cms.InputTag('filteredTrackstersEM') 
     )
 )
 

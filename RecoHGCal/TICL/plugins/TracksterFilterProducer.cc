@@ -69,7 +69,7 @@ void TracksterFilterProducer::fillDescriptions(edm::ConfigurationDescriptions& d
   desc.add<edm::ParameterSetDescription>("filterParams", filterParamsDesc)
       ->setComment("Parameters for the specific filter");
 
-  descriptions.add("TracksterFilterProducer", desc);
+  descriptions.add("tracksterFilterProducer", desc);
 }
 
 void TracksterFilterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
@@ -105,6 +105,6 @@ void TracksterFilterProducer::produce(edm::Event& evt, const edm::EventSetup& es
   if (filter_) {
     filter_->filter(tracksters, layerClusters, *filteredMask, rhtools_);
   }
-
+  std::cout << "TracksterFilterProducer input collection size " << inputMask.size() << " Output size " << filteredMask->size() << std::endl; 
   evt.put(std::move(filteredMask));
 }

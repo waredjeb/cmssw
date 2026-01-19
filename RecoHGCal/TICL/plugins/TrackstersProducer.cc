@@ -239,7 +239,13 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
   // Create initial trackster mask (all available)
   auto trackstersMask = std::make_unique<std::vector<float>>(result->size(), 1.f);
-
+  auto numberHadronic = std::count_if(result->begin(), result->end(), [](const ticl::Trackster& t) { return t.isHadronic(); });
+  std::cout << "Creating original CLUE3D mask size " << trackstersMask->size() << " Expected " << result->size() << " Number of hadronics " << numberHadronic << std::endl;
+  std::cout << "[";
+  for (auto const x : *trackstersMask){
+    std::cout << x << ", ";
+  }
+  std::cout << "]\n";
   evt.put(std::move(result));
   evt.put(std::move(output_mask));
   evt.put(std::move(trackstersMask), "tracksterMask");
