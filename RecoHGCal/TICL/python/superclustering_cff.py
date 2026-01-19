@@ -18,6 +18,7 @@ ticlTracksterLinksSuperclusteringDNN = _tracksterLinksProducer.clone(
         nnWorkingPoint=cms.double(0.57247),
     ),
     tracksters_collections = [cms.InputTag("ticlTrackstersCLUE3DHigh")],
+    original_trackstersMasks = [cms.InputTag("ticlTrackstersCLUE3DHigh", "tracksterMask")],  # Original mask (all 1s)
     trackstersMasks = [cms.InputTag("filteredTrackstersEM")],  # Use EM-only mask
 )
 
@@ -27,6 +28,7 @@ ticlTracksterLinksSuperclusteringMustache = _tracksterLinksProducer.clone(
         algo_verbosity=cms.int32(0)
     ),
     tracksters_collections = [cms.InputTag("ticlTrackstersCLUE3DHigh")],
+    original_trackstersMasks = [cms.InputTag("ticlTrackstersCLUE3DHigh", "tracksterMask")],  # Original mask (all 1s)
     trackstersMasks = [cms.InputTag("filteredTrackstersEM")],  # Use EM-only mask
 )
 

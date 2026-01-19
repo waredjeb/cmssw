@@ -75,6 +75,7 @@ private:
   std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;
 
   std::vector<edm::EDGetTokenT<std::vector<float>>> original_masks_tokens_;
+  std::vector<edm::EDGetTokenT<std::vector<float>>> original_tracksters_masks_tokens_;
   std::vector<edm::EDGetTokenT<std::vector<float>>> tracksters_masks_tokens_;
   std::vector<std::string> tracksters_collections_labels_;
 
@@ -110,7 +111,11 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("original_masks")) {
     original_masks_tokens_.emplace_back(consumes<std::vector<float>>(tag));
   }
-  //Loop over the edm::VInputTag of trackster masks and append the token to tracksters_masks_tokens_
+  //Loop over the edm::VInputTag of original trackster masks and append the token to original_tracksters_masks_tokens_
+  for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("original_trackstersMasks")) {
+    original_tracksters_masks_tokens_.emplace_back(consumes<std::vector<float>>(tag));
+  }
+  //Loop over the edm::VInputTag of filtered trackster masks and append the token to tracksters_masks_tokens_
   for (auto const &tag : ps.getParameter<std::vector<edm::InputTag>>("trackstersMasks")) {
     tracksters_masks_tokens_.emplace_back(consumes<std::vector<float>>(tag));
   }
@@ -118,10 +123,17 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   // Validation: ensure trackster masks match trackster collections
   auto const& tagTracksters = ps.getParameter<std::vector<edm::InputTag>>("tracksters_collections");
   auto const& tagMasks = ps.getParameter<std::vector<edm::InputTag>>("trackstersMasks");
+  auto const& tagOriginalMasks = ps.getParameter<std::vector<edm::InputTag>>("original_trackstersMasks");
   assert(tagTracksters.size() == tagMasks.size());
+  assert(tagTracksters.size() == tagOriginalMasks.size());
   if (tracksters_masks_tokens_.size() != tracksters_tokens_.size()) {
     throw cms::Exception("Configuration")
         << "Number of trackstersMasks (" << tracksters_masks_tokens_.size()
+        << ") must match number of tracksters_collections (" << tracksters_tokens_.size() << ")";
+  }
+  if (original_tracksters_masks_tokens_.size() != tracksters_tokens_.size()) {
+    throw cms::Exception("Configuration")
+        << "Number of original_trackstersMasks (" << original_tracksters_masks_tokens_.size()
         << ") must match number of tracksters_collections (" << tracksters_tokens_.size() << ")";
   }
   // Initialize inference algorithm using the factory
@@ -234,14 +246,23 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   }
   std::cout << "Final Tracksters Manager size " << trackstersManager.size() << std::endl;
 
-  // Get input trackster masks and copy them for modification
+  // Get original trackster masks (all 1s)
+  std::vector<std::vector<float>> originalTrackstersMasks;
+  originalTrackstersMasks.reserve(original_tracksters_masks_tokens_.size());
+  for (unsigned int i = 0; i < original_tracksters_masks_tokens_.size(); ++i) {
+    const auto &originalMask = evt.get(original_tracksters_masks_tokens_[i]);
+    originalTrackstersMasks.emplace_back(originalMask.begin(), originalMask.end());
+    std::cout << "Adding Original Tracksters Mask collection with size " << originalMask.size() << std::endl;
+  }
+
+  // Get filtered input trackster masks and copy them for modification by linkTracksters
   std::vector<std::vector<float>> trackstersMasks;
   trackstersMasks.reserve(tracksters_masks_tokens_.size());
   size_t totalSizeMask = 0uz;
   for (unsigned int i = 0; i < tracksters_masks_tokens_.size(); ++i) {
     const auto &inputMask = evt.get(tracksters_masks_tokens_[i]);
     trackstersMasks.emplace_back(inputMask.begin(), inputMask.end());
-    std::cout << "Adding Tracksters Mask collection with size " << inputMask.size() << std::endl;
+    std::cout << "Adding Filtered Tracksters Mask collection with size " << inputMask.size() << std::endl;
     totalSizeMask += inputMask.size();
   }
 
@@ -257,14 +278,17 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   for (auto const& x : trackstersMasks){
     for( auto const i : x){
       std::cout << i << ", ";
-    } 
+    }
   }
   std::cout << "]\n";
+
+  // Save filtered masks before linking to determine which tracksters were used
+  std::vector<std::vector<float>> filteredMasksBeforeLinking = trackstersMasks;
 
   // Linking
     const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
-  
+
   // LinkTracksters will produce a vector of vector of indices of tracksters that:
   // 1) are linked together if more than one
   // 2) are isolated if only one
@@ -307,8 +331,16 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   evt.put(std::move(outputTrackstersMask), "tracksterMask");
 
   // Put updated trackster masks for each input collection
-  for (unsigned int i = 0; i < trackstersMasks.size(); ++i) {
-    auto updatedMask = std::make_unique<std::vector<float>>(trackstersMasks[i]);
+  // Start from original masks and mark tracksters that were used
+  for (unsigned int i = 0; i < originalTrackstersMasks.size(); ++i) {
+    auto updatedMask = std::make_unique<std::vector<float>>(originalTrackstersMasks[i]);
+    // Mark tracksters that were used (changed from available to unavailable)
+    for (unsigned int j = 0; j < trackstersMasks[i].size(); ++j) {
+      // If trackster was available before (filtered mask = 1) and is now used (filtered mask = 0 after linking)
+      if (filteredMasksBeforeLinking[i][j] > 0.f && trackstersMasks[i][j] == 0.f) {
+        (*updatedMask)[j] = 0.f;
+      }
+    }
     evt.put(std::move(updatedMask), "tracksterMask" + tracksters_collections_labels_[i]);
   }
 }
@@ -362,8 +394,11 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
   desc.add<std::vector<edm::InputTag>>(
+      "original_trackstersMasks", {edm::InputTag("ticlTrackstersCLUE3DHigh", "tracksterMask")})
+      ->setComment("Original trackster masks (all 1s) corresponding to each trackster collection");
+  desc.add<std::vector<edm::InputTag>>(
       "trackstersMasks", {edm::InputTag("filteredTrackstersCLUE3DHigh")})
-      ->setComment("Trackster masks corresponding to each trackster collection");
+      ->setComment("Filtered trackster masks corresponding to each trackster collection");
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<bool>("regressionAndPid", false);
