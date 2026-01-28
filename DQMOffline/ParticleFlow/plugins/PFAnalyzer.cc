@@ -213,12 +213,19 @@ PFAnalyzer::~PFAnalyzer() { LogTrace("PFAnalyzer") << "[PFAnalyzer] Saving the h
 // ***********************************************************
 void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const&) {
   ibooker.setCurrentFolder(m_directory);
+  std::cout << "STARTING " << std::endl;
 
   for (unsigned int i = 0; i < m_fullCutList.size(); i++) {
+    for(auto const& s : getAllSuffixes(m_fullCutList[i], m_binList[i])){
+      std::cout << __LINE__ << " " << s << std::endl;
+    }
     m_allSuffixes.push_back(getAllSuffixes(m_fullCutList[i], m_binList[i]));
   }
 
   for (unsigned int i = 0; i < m_fullJetCutList.size(); i++) {
+    for(auto const& s : getAllSuffixes(m_fullJetCutList[i], m_jetBinList[i])){
+      std::cout << __LINE__ << " " << s << std::endl;
+    }
     m_allJetSuffixes.push_back(getAllSuffixes(m_fullJetCutList[i], m_jetBinList[i]));
   }
 
@@ -227,7 +234,9 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
   // with the first being the observable name (corresponding to one of
   // the keys in m_funcMap), the second being the number of bins,
   // and the last two being the min and max value for the histogram respectively.
-
+  std::cout << __LINE__ << "m_fullCustList2D " <<  m_fullCutList2D.size() << std::endl;
+  std::cout << __LINE__ << "m_fullCutList " <<  m_fullCutList.size() << std::endl;
+  std::cout << __LINE__ << "m_fullJetCutList " <<  m_fullJetCutList.size() << std::endl;
   for (unsigned int i = 0; i < m_fullCutList2D.size(); i++) {
     // Loop over all of the different types of PF candidates
     for (unsigned int m = 0; m < m_pfNames.size(); m++) {
@@ -235,6 +244,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
       // In all cases, the PFCs that go into these histograms must pass the PFC selection from m_cutList.
       std::string histName =
           Form("%s_%s_%s", m_pfNames[m].c_str(), m_fullCutList2D[i][0].c_str(), m_fullCutList2D[i][1].c_str());
+      std::cout << __LINE__ << " " << histName << std::endl;
       MonitorElement* mHist =
           ibooker.book2D(histName,
                          Form(";%s;%s", m_fullCutList2D[i][0].c_str(), m_fullCutList2D[i][1].c_str()),
@@ -250,6 +260,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
 
   for (unsigned int npv = 0; npv < m_npvBins.size() - 1; npv++) {
     std::string npvString = Form("npv_%.0f_%.0f", m_npvBins[npv], m_npvBins[npv + 1]);
+    std::cout << __LINE__ << " " << npvString << std::endl;
     // TODO: Make it possible to use an arbitrary list of bins instead of evenly space bins?
     // It is not clear if this is straightforward to do with these classes and CMSSW.
     // If it is, it should be an easy change to the code.
@@ -280,6 +291,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
                                         npvString.c_str());
             MonitorElement* mHist = ibooker.book1D(
                 histName, Form(";%s;", obsInfo.axisName.c_str()), obsInfo.nBins, obsInfo.binMin, obsInfo.binMax);
+            std::cout << __LINE__ << "  " <<  Form(";%s;", obsInfo.axisName.c_str()) << std::endl;
             map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
           }
 
@@ -294,6 +306,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
                                             m_allSuffixes[j][n].c_str(),
                                             m_allJetSuffixes[k][p].c_str(),
                                             npvString.c_str());
+                std::cout << __LINE__ << " " << histName << std::endl;
                 MonitorElement* mHistInJet = ibooker.book1D(
                     histName, Form(";%s;", obsInfo.axisName.c_str()), obsInfo.nBins, obsInfo.binMin, obsInfo.binMax);
                 map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHistInJet));
@@ -341,6 +354,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
 
       for (unsigned int m = 0; m < m_pfNames.size(); m++) {
         std::string histName = Form("%s_%s_%s", m_pfNames[m].c_str(), observableName.c_str(), npvString.c_str());
+        std::cout << __LINE__ << " " << histName << std::endl;
         MonitorElement* mHist = ibooker.book1D(histName, Form(";%s;", axisString.c_str()), nBins, binMin, binMax);
         map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
       }
@@ -355,6 +369,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
                                         observableName.c_str(),
                                         m_allJetSuffixes[k][p].c_str(),
                                         npvString.c_str());
+            std::cout << __LINE__ << " " << histName << std::endl;
             MonitorElement* mHistInJet =
                 ibooker.book1D(histName, Form(";%s;", axisString.c_str()), nBinsJet, binMinJet, binMaxJet);
             map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHistInJet));
@@ -382,6 +397,7 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
                                             m_allSuffixes[j][n].c_str(),
                                             m_allJetSuffixes[k][p].c_str(),
                                             npvString.c_str());
+                std::cout << __LINE__ << " " << histName << std::endl;
                 MonitorElement* mHistInJet = ibooker.book1D(histName,
                                                             Form(";%s;", pfInJetInfo.axisName.c_str()),
                                                             pfInJetInfo.nBins,
@@ -397,23 +413,28 @@ void PFAnalyzer::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun
 
     // Extra histograms for basic validation of the selection etc.
     std::string histName = Form("jetPt_%s", npvString.c_str());
+    std::cout << __LINE__ << " " << histName << std::endl;
     MonitorElement* mHist = ibooker.book1D(histName, Form(";%s;", "p_{T,jet}"), 2000, 0, 2000);
     map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
 
     histName = Form("jetPtLead_%s", npvString.c_str());
+    std::cout << __LINE__ << " " << histName << std::endl;
     mHist = ibooker.book1D(histName, Form(";%s;", "p_{T, leading jet}"), 2000, 0, 2000);
     map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
 
     histName = Form("jetEta_%s", npvString.c_str());
+    std::cout << __LINE__ << " " << histName << std::endl;
     mHist = ibooker.book1D(histName, Form(";%s;", "#eta_{jet}"), 200, -5, 5);
     map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
 
     histName = Form("jetEtaLead_%s", npvString.c_str());
+    std::cout << __LINE__ << " " << histName << std::endl;
     mHist = ibooker.book1D(histName, Form(";%s;", "#eta_{leading jet}"), 200, -5, 5);
     map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
   }
 
   std::string histName = Form("NPV");
+    std::cout << __LINE__ << " " << histName << std::endl;
   MonitorElement* mHist = ibooker.book1D(histName, Form(";%s;", "N_PV"), 100, 0, 100);
   map_of_MEs.insert(std::pair<std::string, MonitorElement*>(m_directory + "/" + histName, mHist));
 }
@@ -562,6 +583,7 @@ std::string PFAnalyzer::getSuffix(std::vector<int> binList,
     std::string digitString = stringWithDecimals(binList[i], binnings[i]);
 
     suffix = Form("%s_%s_%s", suffix.c_str(), observables[i].c_str(), digitString.c_str());
+    std::cout << __LINE__ << " " << suffix << std::endl;
   }
 
   return suffix;
