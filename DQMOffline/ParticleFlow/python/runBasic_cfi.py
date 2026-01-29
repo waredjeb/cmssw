@@ -1,7 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+from DQMOffline.ParticleFlow.pfAnalyzer_cfi import pfAnalyzer
 
-PFAnalyzer = DQMEDAnalyzer("PFAnalyzer",
+PFAnalyzer = pfAnalyzer.clone(
     pfJetCollection        = cms.InputTag("hltAK4PFJetsCorrected"),
     pfCandidates             = cms.InputTag("hltParticleFlowTmp"),
     PVCollection             = cms.InputTag("hltOfflinePrimaryVertices"),
@@ -108,6 +109,4 @@ PFAnalyzer = DQMEDAnalyzer("PFAnalyzer",
                                    '[pt;20;10000]',
                                   ),
     )
-
-
 )
