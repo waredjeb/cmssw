@@ -1,5 +1,5 @@
 // Author: Wahid Redjeb - wahid.redjeb@cern.ch
-// Date: 01/2025
+// Date: 01/2026
 
 #ifndef RecoHGCal_TICL_TracksterFilterByPDGID_h
 #define RecoHGCal_TICL_TracksterFilterByPDGID_h
@@ -11,7 +11,7 @@
 #include <memory>
 #include <utility>
 
-// Filter tracksters based on their hadronic/EM nature
+// milter tracksters based on their hadronic/EM type 
 namespace ticl {
   class TracksterFilterByPDGID final : public TracksterFilterBase {
   public:
@@ -25,11 +25,11 @@ namespace ticl {
                 hgcal::RecHitTools& rhtools) const override {
       for (size_t i = 0; i < tracksters.size(); ++i) {
         if (trackstersMask[i] == 0.f)
-          continue;  // Already masked
+          continue;  // already masked
 
         const bool is_hadronic = tracksters[i].isHadronic();
 
-        // Mask tracksters that don't match criterion
+        // mask tracksters that don't match criterion
         if (keep_hadronic_ && !is_hadronic) {
           trackstersMask[i] = 0.f;
         } else if (!keep_hadronic_ && is_hadronic) {

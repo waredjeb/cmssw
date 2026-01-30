@@ -425,7 +425,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
     std::vector<std::vector<float>> &inputTrackstersMasks) {
   const auto &tracksters = input.tracksters;
   const auto &layerClusters = input.layerClusters;
-    // Helper to check if a trackster is masked (mask == 0 means masked/skip)
+    // helper to check if a trackster is masked 
   auto isMasked = [&input, &inputTrackstersMasks](unsigned int globalIdx) {
     const auto &[collIdx, localIdx] = input.tracksters.spanAndLocalIndex(globalIdx);
     std::cout << "Ext size " << inputTrackstersMasks.size() << " ext index " << collIdx << " internal size " << inputTrackstersMasks[collIdx].size() << " int index " << localIdx << std::endl; 
@@ -582,7 +582,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
       }
     }
 
-      // Skip empty components (all tracksters were masked)
+      // Skip empty components 
     if (filteredComp.empty())
       continue;
   
@@ -598,7 +598,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
       for (auto const &node : filteredComp) {
         LogDebug("TracksterLinkingbySkeletons") << node << " ";
       linkedTracksterIdToInputTracksterId[ic].push_back(node);
-      // Mark this trackster as used in the input mask
+      // mark this trackster as used in the input mask
       const auto &[collectionIdx, localIdx] = input.tracksters.spanAndLocalIndex(node);
       inputTrackstersMasks[collectionIdx][localIdx] = 0.f;
     }

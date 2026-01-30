@@ -37,7 +37,7 @@ ticlTracksterLinks = _tracksterLinksProducer.clone(
         'ticlTrackstersRecovery'
     ),
     original_trackstersMasks = cms.VInputTag(
-        cms.InputTag('ticlTrackstersCLUE3DHigh', 'tracksterMask'),
+        cms.InputTag('ticlTracksterLinksSuperclusteringDNN', 'tracksterMaskticlTrackstersCLUE3DHigh'),
         cms.InputTag('ticlTrackstersRecovery', 'tracksterMask')
     ),
     trackstersMasks = cms.VInputTag(

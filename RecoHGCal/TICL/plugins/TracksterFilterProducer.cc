@@ -1,5 +1,5 @@
 // Author: Wahid Redjeb - wahid.redjeb@cern.ch
-// Date: 01/2025
+// Date: 01/2026
 
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -73,11 +73,9 @@ void TracksterFilterProducer::fillDescriptions(edm::ConfigurationDescriptions& d
 }
 
 void TracksterFilterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
-  // Get geometry for RecHitTools
   edm::ESHandle<CaloGeometry> geom = es.getHandle(geometry_token_);
   rhtools_.setGeometry(*geom);
 
-  // Get inputs
   edm::Handle<std::vector<ticl::Trackster>> trackstersHandle;
   edm::Handle<std::vector<reco::CaloCluster>> layerClustersHandle;
   edm::Handle<std::vector<float>> trackstersMaskHandle;
@@ -86,7 +84,6 @@ void TracksterFilterProducer::produce(edm::Event& evt, const edm::EventSetup& es
   evt.getByToken(layer_clusters_token_, layerClustersHandle);
   evt.getByToken(tracksters_mask_token_, trackstersMaskHandle);
 
-  // Protection against missing input collections
   if (!trackstersHandle.isValid() || !trackstersMaskHandle.isValid() || !layerClustersHandle.isValid()) {
     edm::LogWarning("TracksterFilterProducer") << "Missing input collections. Producing an empty mask.";
     auto emptyMask = std::make_unique<std::vector<float>>();
@@ -98,10 +95,9 @@ void TracksterFilterProducer::produce(edm::Event& evt, const edm::EventSetup& es
   const auto& layerClusters = *layerClustersHandle;
   const auto& inputMask = *trackstersMaskHandle;
 
-  // Transfer input mask to output
   auto filteredMask = std::make_unique<std::vector<float>>(inputMask);
 
-  // Apply filter (modifies filteredMask in place)
+  // apply filter 
   if (filter_) {
     filter_->filter(tracksters, layerClusters, *filteredMask, rhtools_);
   }

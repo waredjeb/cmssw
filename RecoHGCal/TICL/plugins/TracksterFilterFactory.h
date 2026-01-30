@@ -1,5 +1,5 @@
 // Author: Wahid Redjeb - wahid.redjeb@cern.ch
-// Date: 01/2025
+// Date: 01/2026
 
 #ifndef RecoHGCal_TICL_TracksterFilterFactory_h
 #define RecoHGCal_TICL_TracksterFilterFactory_h
