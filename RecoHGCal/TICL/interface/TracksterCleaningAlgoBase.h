@@ -8,6 +8,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 
 namespace ticl {
 
@@ -22,13 +23,15 @@ public:
     const edm::EventSetup& es;
     const std::vector<ticl::Trackster>& linked;
     const std::vector<ticl::Trackster>& clue3d;
+    const std::vector<reco::CaloCluster>& layerClusters;
     const std::vector<std::vector<unsigned int>>& map; // indices of tracksters associated to each linkedTrackster
     Inputs(const edm::Event& eV,
            const edm::EventSetup& eS,
            const std::vector<ticl::Trackster>& l,
            const std::vector<ticl::Trackster>& c3d,
+           const std::vector<reco::CaloCluster>& lc,
            const std::vector<std::vector<unsigned int>>& m)
-      : ev(eV), es(eS), linked(l), clue3d(c3d), map(m) {}
+      : ev(eV), es(eS), linked(l), clue3d(c3d), layerClusters(lc), map(m) {}
   };
 
   virtual void cleanTracksters(const Inputs& input,
