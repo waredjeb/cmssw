@@ -1,11 +1,9 @@
 // Author: Riley Clark - riley.coltrane.clark@cern.ch
 // Date: 10/2025
 
-#include <memory>
-#include <string>
 #include <vector>
+#include <cmath>
 #include <algorithm>
-#include <iostream>
 
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -24,7 +22,6 @@
 #include "RecoHGCal/TICL/interface/TracksterCleaningAlgoBase.h"
 #include "RecoHGCal/TICL/plugins/TracksterCleaningPluginFactory.h"
 
-// Only needed for fillDescriptions (to populate parameters)
 #include "RecoHGCal/TICL/plugins/TracksterCleaningByBeta.h"
 
 using namespace ticl;
@@ -47,7 +44,6 @@ private:
   std::unique_ptr<TracksterCleaningAlgoBase> cleaningAlgo_;
   int algoVerbosity_{0};
 
-  // cached for a clean one-time print
   edm::InputTag linkedTag_, clue3dTag_, layerClusterTag_, mapTag_;
 };
 
@@ -74,17 +70,12 @@ TracksterCleaningProducer::TracksterCleaningProducer(const edm::ParameterSet& ps
 }
 
 void TracksterCleaningProducer::produce(edm::Event& ev, const edm::EventSetup& es) {
-  static unsigned long long evtCount = 0;
-  ++evtCount;
-
-  const std::string label = moduleDescription().moduleLabel();
-
   auto const& linked        = ev.get(linked_token_);
   auto const& clue3d        = ev.get(clue3d_token_);
   auto const& layerClusters = ev.get(clusters_token_);
   auto const& mapIn         = ev.get(map_token_);
 
-  // Skeletons fixed => must match exactly
+  // guards
   if (mapIn.size() != linked.size()) {
     throw cms::Exception("TracksterCleaningProducer")
         << "Size mismatch: linked.size()=" << linked.size()
@@ -92,7 +83,6 @@ void TracksterCleaningProducer::produce(edm::Event& ev, const edm::EventSetup& e
         << " (map tag=" << mapTag_.encode() << ", linked tag=" << linkedTag_.encode() << ")";
   }
 
-  // Guard: map indices must be valid clue3d indices
   for (unsigned int L = 0; L < mapIn.size(); ++L) {
     for (auto idx : mapIn[L]) {
       if (idx >= clue3d.size()) {
@@ -103,7 +93,6 @@ void TracksterCleaningProducer::produce(edm::Event& ev, const edm::EventSetup& e
     }
   }
 
-  // Guard: layer cluster indices referenced by clue3d must be valid
   for (unsigned int i = 0; i < clue3d.size(); ++i) {
     for (auto lcIdx : clue3d[i].vertices()) {
       if (lcIdx >= layerClusters.size()) {
@@ -120,14 +109,6 @@ void TracksterCleaningProducer::produce(edm::Event& ev, const edm::EventSetup& e
   TracksterCleaningAlgoBase::Inputs in(ev, es, linked, clue3d, layerClusters, mapIn);
   cleaningAlgo_->cleanTracksters(in, *outLinked, *outMap);
 
-  if (evtCount == 1 && algoVerbosity_ > 0) {
-    std::cout << "[TICL-CLEAN][" << label << "] outputs:"
-              << " outLinked=" << outLinked->size()
-              << " outMap=" << outMap->size()
-              << "\n";
-  }
-
-  // Keep identity links product (unchanged)
   auto outLinksDefault = std::make_unique<std::vector<std::vector<unsigned int>>>();
   outLinksDefault->resize(outLinked->size());
   for (unsigned int i = 0; i < outLinked->size(); ++i) {
@@ -146,7 +127,6 @@ void TracksterCleaningProducer::fillDescriptions(edm::ConfigurationDescriptions&
   desc.add<edm::InputTag>("clue3DTracksters", edm::InputTag("ticlTrackstersCLUE3DHigh"));
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
 
-  // IMPORTANT: tracked InputTag
   desc.add<edm::InputTag>("clue3DInLinkedIndices",
                           edm::InputTag("tracksterLinksProducer", "linkedTracksterIdToInputTracksterId"));
 
