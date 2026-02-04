@@ -1,9 +1,6 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include <limits>
-#include <iostream>
-#include <iomanip>
 
 #include "DataFormats/Math/interface/deltaR.h"
 
@@ -129,13 +126,6 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
         return out;
       };
 
-  // You said: we're not doing pruning. Enforce it here so the behavior is unambiguous.
-  if (doPruning_) {
-    // If you ever accidentally turn it on in config, fail loudly.
-    throw cms::Exception("TracksterCleaningByBeta")
-        << "doPruning_=True but this debug build assumes pruning is disabled.";
-  }
-
   const size_t nL = in.linked.size();
   outTracksters.clear();
   outMap.clear();
@@ -146,14 +136,12 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
     auto const& link    = in.linked[L];
     auto const& members = in.map[L];
 
-    // Stay safe.
     if (members.empty()) {
       outTracksters.emplace_back(link);
       outMap.emplace_back(members);
       continue;
     }
 
-    // Precompute link kinematics/time correction
     const auto& bcL = link.barycenter();
     const double LL = std::sqrt(bcL.x()*bcL.x() + bcL.y()*bcL.y() + bcL.z()*bcL.z());
     const double etaL = bcL.eta();
@@ -163,7 +151,6 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
     const bool linkHasT = validTime(link.time());
     const double tLcorr = linkHasT ? (link.time() - LL * inv_c_cm_per_ns) : 0.0;
 
-    // Sum member energy (informational)
     double eMembersIn = 0.0;
     for (auto idx : members) {
       if (idx >= in.clue3d.size()) continue;
@@ -192,7 +179,13 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
     }
     const double beta = std::log(Ek * std::max(epsDR_, sumDR));
 
-    // beta >= betaMin => apply weight-based thresholding (no pruning)
+    if (beta < betaContamMin_) {
+      outTracksters.emplace_back(link);
+      outMap.emplace_back(members);
+      continue;
+    }
+
+    // beta >= betaMin -> contaminated linkedTrackster candidate -> perform cleaning
     std::vector<unsigned int> kept, dropped;
     std::vector<float> keptW;
 
@@ -247,16 +240,12 @@ void TracksterCleaningByBeta::cleanTracksters(const Inputs& in,
       }
     }
 
-    // Safety: if everything dropped, revert to keeping all (as original)
     if (kept.empty()) {
       kept = members;
       keptW.clear();
     }
 
     ticl::Trackster cleaned = rebuildFromMembers(link, kept, weightMode_ ? &keptW : nullptr);
-
-    const double eBefore = link.raw_energy();
-    const double eAfter  = cleaned.raw_energy();
 
     outTracksters.emplace_back(std::move(cleaned));
     outMap.emplace_back(std::move(kept));
