@@ -139,8 +139,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                   auto position = hgcal_geom->getPosition(row.detid());
 
                   auto wafer_position = hgcal_geom->getWaferPosition(row.detid());
-
-                  if (row.layer() % 2 == 0) {
+		  
+		  if (fedRS.readoutTypes_.size()==10 && row.layer()==10) {
+		    auto shifted_x = position.x() - wafer_position.x();
+		    auto shifted_y = position.y() - wafer_position.y();
+		    //reflection wrt x axis
+		    shifted_x = -shifted_x;
+		    //rotation by 30 degrees
+		    auto rotated_x = shifted_x*cos(30./180.*M_PI) - shifted_y*sin(30./180.*M_PI);
+		    auto rotated_y = shifted_x*sin(30./180.*M_PI) + shifted_y*cos(30./180.*M_PI);
+		    GlobalPoint rotated_position(rotated_x+wafer_position.x(), rotated_y+wafer_position.y(), position.z());
+                    row.x() = rotated_position.x();
+                    row.y() = rotated_position.y();
+                    row.z() = rotated_position.z();
+                    row.eta() = rotated_position.eta();
+                    row.phi() = rotated_position.phi();		    
+		  }	    
+                  else if (row.layer() % 2 == 0) {
                     auto rotated_x = -position.y() + wafer_position.y() + wafer_position.x();
                     auto rotated_y = position.x() - wafer_position.x() + wafer_position.y();
                     GlobalPoint rotated_position(rotated_x, rotated_y, position.z());
