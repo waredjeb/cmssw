@@ -10,6 +10,7 @@ GENERATE_SOA_LAYOUT(HGCalSoAClustersLayout,
                     SOA_COLUMN(float, y),
                     SOA_COLUMN(float, z),
                     SOA_COLUMN(float, energy),
+                    SOA_COLUMN(float, mipEnergy),
                     SOA_COLUMN(int, cells),  // number of hits in the cluster
                     SOA_COLUMN(int, seed)    // This is the index of the seed of each cluster inside the RecHit SoA
 )
