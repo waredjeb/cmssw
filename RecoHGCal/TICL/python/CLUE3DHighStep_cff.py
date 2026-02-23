@@ -27,19 +27,6 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
         doPidCut = True,
         cutHadProb = 999
     ),
-    inferenceAlgo = cms.string('TracksterInferenceByCNNv4'),
-    pluginInferenceAlgoTracksterInferenceByCNNv4 = cms.PSet(
-        algo_verbosity = cms.int32(0),
-        onnxModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv4/onnx_models/energy_id_v0.onnx'),
-        inputNames  = cms.vstring('input:0'),
-        outputNames = cms.vstring("output/regressed_energy:0", "output/id_probabilities:0"),
-        eid_min_cluster_energy = cms.double(1),
-        eid_n_layers = cms.int32(50),
-        eid_n_clusters = cms.int32(10),
-        doPID = cms.int32(1),
-        doRegression = cms.int32(0),
-        type = cms.string('TracksterInferenceByCNNv4')
-    ),
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
         algo_verbosity = cms.int32(0),
         onnxPIDModelPath = cms.FileInPath('RecoHGCal/TICL/data/ticlv5/onnx_models/DNN/patternrecognition/id_v0.onnx'),
@@ -69,13 +56,6 @@ ticlTrackstersCLUE3DHigh = _trackstersProducer.clone(
         doRegression = cms.int32(0),
         type = cms.string('TracksterInferenceByPFN')
     ),
-
-    pluginInferenceAlgoTracksterInferenceByANN = cms.PSet(
-      algo_verbosity = cms.int32(0),
-      type = cms.string('TracksterInferenceByANN')
-    
-    ),
-
 
 )
 
