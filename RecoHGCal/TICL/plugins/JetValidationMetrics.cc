@@ -118,29 +118,29 @@ void JetValidationMetrics::analyze(const edm::Event& iEvent, const edm::EventSet
   iEvent.getByToken(jetsToken_, jetsH);
   iEvent.getByToken(genJetsToken_, genJetsH);
 
-  if (nEvents_ == 1) {
-    std::cout
-      << "jetsTag=" << jetsTag_.encode()
-      << " valid=" << jetsH.isValid()
-      << " size=" << (jetsH.isValid() ? jetsH->size() : 0) << std::endl;
+  // if (nEvents_ == 1) {
+  //   std::cout
+  //     << "jetsTag=" << jetsTag_.encode()
+  //     << " valid=" << jetsH.isValid()
+  //     << " size=" << (jetsH.isValid() ? jetsH->size() : 0) << std::endl;
 
-    std::cout
-      << "genJetsTag=" << genJetsTag_.encode()
-      << " valid=" << genJetsH.isValid()
-      << " size=" << (genJetsH.isValid() ? genJetsH->size() : 0) << std::endl;
+  //   std::cout
+  //     << "genJetsTag=" << genJetsTag_.encode()
+  //     << " valid=" << genJetsH.isValid()
+  //     << " size=" << (genJetsH.isValid() ? genJetsH->size() : 0) << std::endl;
       
-    std::cout << "[" << moduleDescription().moduleLabel() << "] first-event jets size="
-              << (jetsH.isValid() ? jetsH->size() : 0)
-              << " genjets size=" << (genJetsH.isValid() ? genJetsH->size() : 0)
-              << std::endl;
+  //   std::cout << "[" << moduleDescription().moduleLabel() << "] first-event jets size="
+  //             << (jetsH.isValid() ? jetsH->size() : 0)
+  //             << " genjets size=" << (genJetsH.isValid() ? genJetsH->size() : 0)
+  //             << std::endl;
   
-    if (jetsH.isValid() && !jetsH->empty()) {
-      const auto& j0 = (*jetsH)[0];
-      std::cout << "[" << moduleDescription().moduleLabel() << "] first jet: pt="
-                << j0.pt() << " eta=" << j0.eta() << " phi=" << j0.phi()
-                << std::endl;
-    }
-  }
+  //   if (jetsH.isValid() && !jetsH->empty()) {
+  //     const auto& j0 = (*jetsH)[0];
+  //     std::cout << "[" << moduleDescription().moduleLabel() << "] first jet: pt="
+  //               << j0.pt() << " eta=" << j0.eta() << " phi=" << j0.phi()
+  //               << std::endl;
+  //   }
+  // }
 
   if (!jetsH.isValid() || !genJetsH.isValid()) return;
   if (jetsH->empty() || genJetsH->empty()) return;
