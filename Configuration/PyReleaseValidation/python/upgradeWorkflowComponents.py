@@ -2459,7 +2459,8 @@ class UpgradeWorkflow_HGCALNano(UpgradeWorkflow):
             stepDict[stepName][k] = merge([stepDict[step][k]])
 
     def condition(self, fragment, stepList, key, hasHarvest):
-        return fragment == "TTbar_14TeV" and 'Run4' in key
+        # Apply to ALL Run4 workflows
+        return 'Run4' in key
 
 upgradeWFs['HGCALNano'] = UpgradeWorkflow_HGCALNano(
     steps = [
@@ -2493,7 +2494,8 @@ class UpgradeWorkflow_HGCALNanoVal(UpgradeWorkflow):
             stepDict[stepName][k] = merge([stepDict[step][k]])
 
     def condition(self, fragment, stepList, key, hasHarvest):
-        return fragment == "TTbar_14TeV" and 'Run4' in key
+        # Apply to ALL Run4 workflows
+        return 'Run4' in key
 
 upgradeWFs['HGCALNanoVal'] = UpgradeWorkflow_HGCALNanoVal(
     steps = [
