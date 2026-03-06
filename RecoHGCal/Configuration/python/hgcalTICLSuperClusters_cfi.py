@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 from PhysicsTools.NanoAOD.nano_cff import nanoMetadata
+from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 
 hgcalUpgradeNanoTask = cms.Task(nanoMetadata)
 

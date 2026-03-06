@@ -5,6 +5,7 @@ from RecoHGCal.Configuration.hgcalTracksters_cfi import *
 from RecoHGCal.Configuration.hgcalTICLCandidates_cfi import *
 from RecoHGCal.Configuration.hgcalTICLSuperClusters_cfi import *
 from RecoHGCal.Configuration.hgcalLayerClusters_cfi import *
+from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5
 
 ######################################
 # Offline HGCAL NanoAOD Tables
@@ -15,7 +16,12 @@ OfflineHGCalTables = cms.Sequence(
     hgcalTrackstersTableSequence
     + ticlCandidateTable
     + ticlCandidateExtraTable
-    + ticlSuperClustersTable
+)
+
+# Add ticlSuperClustersTable only with ticl_v5 modifier
+ticl_v5.toReplaceWith(
+    OfflineHGCalTables,
+    OfflineHGCalTables.copy() + ticlSuperClustersTable
 )
 
 # Store additional validation objects (SimTracksters, LayerClusters, associations)
