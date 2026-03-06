@@ -2447,6 +2447,75 @@ upgradeWFs['ecalDevelAlpaka'] = UpgradeWorkflow_ecalDevel(
     offset = 0.612,
 )
 
+# Offline HGCAL NanoAOD workflows
+# These workflows modify step3 (RecoGlobal) to include NANO:@HGCAL or NANO:@HGCALVal
+class UpgradeWorkflow_HGCALNano(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        if 'RecoGlobal' in step:
+            # Merge our custom step3 with the base RecoGlobal
+            stepDict[stepName][k] = merge([self.step3, stepDict[step][k]])
+        else:
+            # Keep all other steps unchanged
+            stepDict[stepName][k] = merge([stepDict[step][k]])
+
+    def condition(self, fragment, stepList, key, hasHarvest):
+        return fragment == "TTbar_14TeV" and 'Run4' in key
+
+upgradeWFs['HGCALNano'] = UpgradeWorkflow_HGCALNano(
+    steps = [
+        'RecoGlobal',
+        'HARVESTGlobal',
+        'ALCAPhase2',
+    ],
+    PU = [
+        'RecoGlobal',
+        'HARVESTGlobal',
+        'ALCAPhase2',
+    ],
+    suffix = '_HGCALNano',
+    offset = 0.776,
+)
+# Define step3 to add NANO:@HGCAL to the RecoGlobal step
+upgradeWFs['HGCALNano'].step3 = {
+    '-s': 'RAW2DIGI,RECO,RECOSIM,PAT,NANO:@HGCAL,VALIDATION:@phase2Validation+@miniAODValidation,DQM:@phase2+@miniAODDQM',
+    '--datatier': 'GEN-SIM-RECO,MINIAODSIM,DQMIO,NANOAODSIM',
+    '--eventcontent': 'FEVTDEBUGHLT,MINIAODSIM,DQM,NANOEDMAODSIM'
+}
+
+# Offline HGCAL NanoAOD with validation objects (MC only)
+class UpgradeWorkflow_HGCALNanoVal(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        if 'RecoGlobal' in step:
+            # Merge our custom step3 with the base RecoGlobal
+            stepDict[stepName][k] = merge([self.step3, stepDict[step][k]])
+        else:
+            # Keep all other steps unchanged
+            stepDict[stepName][k] = merge([stepDict[step][k]])
+
+    def condition(self, fragment, stepList, key, hasHarvest):
+        return fragment == "TTbar_14TeV" and 'Run4' in key
+
+upgradeWFs['HGCALNanoVal'] = UpgradeWorkflow_HGCALNanoVal(
+    steps = [
+        'RecoGlobal',
+        'HARVESTGlobal',
+        'ALCAPhase2',
+    ],
+    PU = [
+        'RecoGlobal',
+        'HARVESTGlobal',
+        'ALCAPhase2',
+    ],
+    suffix = '_HGCALNanoVal',
+    offset = 0.777,
+)
+# Define step3 to add NANO:@HGCALVal to the RecoGlobal step
+upgradeWFs['HGCALNanoVal'].step3 = {
+    '-s': 'RAW2DIGI,RECO,RECOSIM,PAT,NANO:@HGCALVal,VALIDATION:@phase2Validation+@miniAODValidation,DQM:@phase2+@miniAODDQM',
+    '--datatier': 'GEN-SIM-RECO,MINIAODSIM,DQMIO,NANOAODSIM',
+    '--eventcontent': 'FEVTDEBUGHLT,MINIAODSIM,DQM,NANOEDMAODSIM'
+}
+
 # ECAL component
 class UpgradeWorkflow_ECalComponent(UpgradeWorkflow):
     def __init__(self, suffix, offset, ecalTPPh2, ecalMod,
