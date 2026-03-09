@@ -144,19 +144,6 @@ def createTracksterTables(ticlIterLabels, simTrackstersLabels, collectionPrefix=
         )
         producers[f"{collectionPrefix}{simLabel}TableExtraProducer"] = extraTable
 
-    # SimCluster to CaloParticle association
-    simCl2CP = cms.EDProducer(
-        "SimClusterCaloParticleFractionFlatTableProducer",
-        src=cms.InputTag("SimClusterToCaloParticleAssociation:simClusterToCaloParticleMap"),
-        name=cms.string("SimCl2CPWithFraction"),
-        doc=cms.string("Association between SimClusters and CaloParticles."),
-        variables=cms.PSet(
-            index=Var("index", "int", doc="Index of linked CaloParticle."),
-            fraction=Var("fraction", "float", doc="Fraction of linked CaloParticle."),
-        ),
-    )
-    producers[f"{collectionPrefix}SimCl2CPOneToOneFlatTable"] = simCl2CP
-
     return producers
 
 
@@ -166,6 +153,18 @@ _offlineProducers = createTracksterTables(ticlIterLabels, hgcalSimTrackstersLabe
 # Assign all producers to module globals
 for name, producer in _offlineProducers.items():
     globals()[name] = producer
+
+# SimCluster to CaloParticle association (same for offline and HLT)
+SimCl2CPOneToOneFlatTable = cms.EDProducer(
+    "SimClusterCaloParticleFractionFlatTableProducer",
+    src=cms.InputTag("SimClusterToCaloParticleAssociation:simClusterToCaloParticleMap"),
+    name=cms.string("SimCl2CPWithFraction"),
+    doc=cms.string("Association between SimClusters and CaloParticles."),
+    variables=cms.PSet(
+        index=Var("index", "int", doc="Index of linked CaloParticle."),
+        fraction=Var("fraction", "float", doc="Fraction of linked CaloParticle."),
+    ),
+)
 
 # Build sequences for organizing producers
 tracksterTableProducers = []

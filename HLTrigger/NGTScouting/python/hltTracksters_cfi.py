@@ -12,6 +12,10 @@ _hltProducers = createTracksterTables(hltTiclIterLabels, hltSimTrackstersLabels,
 for name, producer in _hltProducers.items():
     globals()[name] = producer
 
+# SimCluster to CaloParticle association (imported from offline)
+from RecoHGCal.Configuration.hgcalTracksters_cfi import SimCl2CPOneToOneFlatTable
+hltSimCl2CPOneToOneFlatTable = SimCl2CPOneToOneFlatTable
+
 # Build sequences for organizing producers
 tracksterTableProducers = []
 hltTrackstersAssociationOneToManyTableProducers = []
