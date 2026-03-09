@@ -23,11 +23,11 @@ simTracksterTableProducers = []
 
 for name, producer in _hltProducers.items():
     if "AssociationTableProducer" in name and "SimCl2CP" not in name:
-        hltTrackstersAssociationOneToManyTableProducers.append(producer)
+        hltTrackstersAssociationOneToManyTableProducers.append(globals()[name])
     elif "SimTrackster" in name or "fromCPs" in name:
-        simTracksterTableProducers.append(producer)
+        simTracksterTableProducers.append(globals()[name])
     elif "TableProducer" in name and "Association" not in name and "SimCl2CP" not in name:
-        tracksterTableProducers.append(producer)
+        tracksterTableProducers.append(globals()[name])
 
 # Create sequences
 hltTrackstersTableSequence = cms.Sequence(sum(tracksterTableProducers, cms.Sequence()))

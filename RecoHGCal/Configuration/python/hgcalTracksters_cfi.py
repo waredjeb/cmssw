@@ -152,7 +152,7 @@ _offlineProducers = createTracksterTables(ticlIterLabels, hgcalSimTrackstersLabe
 
 # Assign all producers to module globals
 for name, producer in _offlineProducers.items():
-    globals()[name] = producer
+    globals()[name] = producer.clone()
 
 # SimCluster to CaloParticle association (same for offline and HLT)
 SimCl2CPOneToOneFlatTable = cms.EDProducer(
@@ -173,11 +173,11 @@ simTracksterTableProducers = []
 
 for name, producer in _offlineProducers.items():
     if "AssociationTableProducer" in name and "SimCl2CP" not in name:
-        hgcalTrackstersAssociationOneToManyTableProducers.append(producer)
+        hgcalTrackstersAssociationOneToManyTableProducers.append(globals()[name])
     elif "SimTrackster" in name or "fromCPs" in name:
-        simTracksterTableProducers.append(producer)
+        simTracksterTableProducers.append(globals()[name])
     elif "TableProducer" in name and "Association" not in name and "SimCl2CP" not in name:
-        tracksterTableProducers.append(producer)
+        tracksterTableProducers.append(globals()[name])
 
 # Create sequences
 hgcalTrackstersTableSequence = cms.Sequence(sum(tracksterTableProducers, cms.Sequence()))

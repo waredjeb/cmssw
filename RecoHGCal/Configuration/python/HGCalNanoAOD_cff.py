@@ -18,12 +18,6 @@ OfflineHGCalTables = cms.Sequence(
     + ticlCandidateExtraTable
 )
 
-# Add ticlSuperClustersTable only with ticl_v5 modifier
-ticl_v5.toReplaceWith(
-    OfflineHGCalTables,
-    OfflineHGCalTables.copy() + ticlSuperClustersTable
-)
-
 # Store additional validation objects (SimTracksters, LayerClusters, associations)
 OfflineHGCalValidationTables = cms.Sequence(
     hgcalTiclAssociationsTableSequence

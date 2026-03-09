@@ -2480,7 +2480,7 @@ upgradeWFs['HGCALNano'] = UpgradeWorkflow_HGCALNano(
 upgradeWFs['HGCALNano'].step3 = {
     '-s': 'RAW2DIGI,RECO,RECOSIM,PAT,NANO:@HGCAL,VALIDATION:@phase2Validation+@miniAODValidation,DQM:@phase2+@miniAODDQM',
     '--datatier': 'GEN-SIM-RECO,MINIAODSIM,DQMIO,NANOAODSIM',
-    '--eventcontent': 'FEVTDEBUGHLT,MINIAODSIM,DQM,NANOEDMAODSIM'
+    '--eventcontent': 'FEVTDEBUGHLT,MINIAODSIM,DQM,NANOAODSIM'
 }
 
 # Offline HGCAL NanoAOD with validation objects (MC only)
@@ -2515,7 +2515,7 @@ upgradeWFs['HGCALNanoVal'] = UpgradeWorkflow_HGCALNanoVal(
 upgradeWFs['HGCALNanoVal'].step3 = {
     '-s': 'RAW2DIGI,RECO,RECOSIM,PAT,NANO:@HGCALVal,VALIDATION:@phase2Validation+@miniAODValidation,DQM:@phase2+@miniAODDQM',
     '--datatier': 'GEN-SIM-RECO,MINIAODSIM,DQMIO,NANOAODSIM',
-    '--eventcontent': 'FEVTDEBUGHLT,MINIAODSIM,DQM,NANOEDMAODSIM'
+    '--eventcontent': 'FEVTDEBUGHLT,MINIAODSIM,DQM,NANOAODSIM'
 }
 
 # ECAL component
