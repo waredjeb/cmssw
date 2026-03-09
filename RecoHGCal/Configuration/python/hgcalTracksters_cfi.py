@@ -7,221 +7,184 @@ hgcalUpgradeNanoTask = cms.Task(nanoMetadata)
 hgcalSimTrackstersLabels = [
     'ticlSimTracksters', 'ticlSimTrackstersfromCPs']
 
-# Offline Tracksters - reusing HLT table structure but with offline collections
-hgcalTrackstersTable = []
-hgcalSimTrackstersTable = []
-hgcalTrackstersAssociationOneToManyTableProducers = []
-tracksterTableProducers = []
 
-for iterLabel in ticlIterLabels:
-    tracksterTable = cms.EDProducer(
-        "TracksterCollectionTableProducer",
-        skipNonExistingSrc=cms.bool(True),
-        src=cms.InputTag(iterLabel),
-        cut=cms.string(""),
-        name=cms.string(iterLabel),
-        doc=cms.string(iterLabel),
-        singleton=cms.bool(False),  # the number of entries is variable
-        variables=cms.PSet(
-            raw_energy=Var("raw_energy", "float",
-                           doc="Raw Energy of the trackster [GeV]"),
-            raw_em_energy=Var("raw_em_energy", "float",
-                              doc="EM raw Energy of the trackster [GeV]"),
-            raw_pt=Var(
-                "raw_pt", "float", doc="Trackster raw pT, computed from trackster raw energy and direction [GeV]"),
-            regressed_energy=Var("regressed_energy", "float",
-                                 doc="Regressed Energy of the trackster, for the SimTrackster it corresponds to the GEN-energy"),
-            barycenter_x=Var("barycenter.x", "float",
-                             doc="Trackster barycenter x [cm]"),
-            barycenter_y=Var("barycenter.y", "float",
-                             doc="Trackster barycenter y [cm]"),
-            barycenter_z=Var("barycenter.z", "float",
-                             doc="Trackster barycenter z [cm]"),
-            barycenter_eta=Var("barycenter.eta", "float",
-                               doc="Trackster barycenter pseudorapidity"),
-            barycenter_phi=Var("barycenter.phi", "float",
-                               doc="Trackster barycenter phi"),
-            EV1=Var("eigenvalues()[0]", "float",
-                    doc="Trackster PCA eigenvalues 0"),
-            EV2=Var("eigenvalues()[1]", "float",
-                    doc="Trackster PCA eigenvalues 1"),
-            EV3=Var("eigenvalues()[2]", "float",
-                    doc="Trackster PCA eigenvalues 2"),
-            eVector0_x=Var(
-                "eigenvectors()[0].x", "float", doc="Trackster PCA principal axis, x component"),
-            eVector0_y=Var(
-                "eigenvectors()[0].z", "float", doc="Trackster PCA principal axis, y component"),
-            eVector0_z=Var(
-                "eigenvectors()[0].y", "float", doc="Trackster PCA principal axis, z component"),
-            time=Var("time", "float", doc="Trackster HGCAL time"),
-            timeError=Var("timeError", "float",
-                          doc="Trackster HGCAL time error")
-        ),
-        collectionVariables=cms.PSet(
-            tracksterVertices=cms.PSet(
-                name=cms.string(f"{iterLabel}vertices"),
-                doc=cms.string("Vertex properties"),
-                useCount=cms.bool(True),
-                useOffset=cms.bool(True),
-                variables=cms.PSet(
-                    vertices=Var("vertices", "uint",
-                                 doc="Layer clusters indices."),
-                    vertex_mult=Var(
-                        "vertex_multiplicity",
-                        "float",
-                        doc="Fraction of Layer cluster energy used by the Trackster.",
-                    ),
-                ),
-            )
-        ),
+def createTracksterTables(ticlIterLabels, simTrackstersLabels, collectionPrefix=""):
+    """
+    Factory function to create trackster table producers.
+
+    Args:
+        ticlIterLabels: List of TICL iteration labels
+        simTrackstersLabels: List of sim trackster labels
+        collectionPrefix: Prefix for InputTag collections ("" for offline, "hlt" for HLT)
+
+    Returns:
+        Dictionary mapping module names to EDProducer objects
+    """
+    producers = {}
+
+    # Reusable trackster variables PSet
+    tracksterVars = cms.PSet(
+        raw_energy=Var("raw_energy", "float", doc="Raw Energy of the trackster [GeV]"),
+        raw_em_energy=Var("raw_em_energy", "float", doc="EM raw Energy of the trackster [GeV]"),
+        raw_pt=Var("raw_pt", "float", doc="Trackster raw pT, computed from trackster raw energy and direction [GeV]"),
+        regressed_energy=Var("regressed_energy", "float", doc="Regressed Energy of the trackster, for the SimTrackster it corresponds to the GEN-energy"),
+        barycenter_x=Var("barycenter.x", "float", doc="Trackster barycenter x [cm]"),
+        barycenter_y=Var("barycenter.y", "float", doc="Trackster barycenter y [cm]"),
+        barycenter_z=Var("barycenter.z", "float", doc="Trackster barycenter z [cm]"),
+        barycenter_eta=Var("barycenter.eta", "float", doc="Trackster barycenter pseudorapidity"),
+        barycenter_phi=Var("barycenter.phi", "float", doc="Trackster barycenter phi"),
+        EV1=Var("eigenvalues()[0]", "float", doc="Trackster PCA eigenvalues 0"),
+        EV2=Var("eigenvalues()[1]", "float", doc="Trackster PCA eigenvalues 1"),
+        EV3=Var("eigenvalues()[2]", "float", doc="Trackster PCA eigenvalues 2"),
+        eVector0_x=Var("eigenvectors()[0].x", "float", doc="Trackster PCA principal axis, x component"),
+        eVector0_y=Var("eigenvectors()[0].z", "float", doc="Trackster PCA principal axis, y component"),
+        eVector0_z=Var("eigenvectors()[0].y", "float", doc="Trackster PCA principal axis, z component"),
+        time=Var("time", "float", doc="Trackster HGCAL time"),
+        timeError=Var("timeError", "float", doc="Trackster HGCAL time error")
     )
-    label = f"{iterLabel}TableProducer"
-    globals()[label] = tracksterTable.clone()
-    tracksterTableProducers.append(globals()[label])
-    for iterLabelSim in hgcalSimTrackstersLabels:
-        CP_SC_label = "CP" if "CP" in iterLabelSim else "SC"
-        trackstersAssociationOneToManyTable = cms.EDProducer(
-            "TracksterTracksterEnergyScoreFlatTableProducer",
-            src=cms.InputTag(
-                f"allTrackstersToSimTrackstersAssociationsByHits:{iterLabelSim}To{iterLabel}"
-            ),
-            name=cms.string(f"Sim{CP_SC_label}2{iterLabel}ByHits"),
-            doc=cms.string(
-                f"Association between SimTracksters and {iterLabel}, by hits."),
+
+    # Determine the association prefix based on collection
+    assocPrefix = collectionPrefix if collectionPrefix else ""
+    if assocPrefix:
+        assocPrefix += "All"
+    else:
+        assocPrefix = "all"
+
+    # Create trackster tables for each iteration
+    for iterLabel in ticlIterLabels:
+        table = cms.EDProducer(
+            "TracksterCollectionTableProducer",
+            skipNonExistingSrc=cms.bool(True),
+            src=cms.InputTag(iterLabel),
+            cut=cms.string(""),
+            name=cms.string(iterLabel),
+            doc=cms.string(iterLabel),
+            singleton=cms.bool(False),
+            variables=tracksterVars,
             collectionVariables=cms.PSet(
-                links=cms.PSet(
-                    name=cms.string(
-                        f"Sim{CP_SC_label}2{iterLabel}ByHitsLinks"),
-                    doc=cms.string("Association links."),
+                tracksterVertices=cms.PSet(
+                    name=cms.string(f"{iterLabel}vertices"),
+                    doc=cms.string("Vertex properties"),
                     useCount=cms.bool(True),
-                    useOffset=cms.bool(False),
+                    useOffset=cms.bool(True),
                     variables=cms.PSet(
-                        index=Var("index", "uint",
-                                  doc="Index of the associated Trackster."),
-                        sharedEnergy=Var(
-                            "sharedEnergy",
-                            "float",
-                            doc="Shared energy with associated Trackster.",
-                        ),
-                        score=Var("score", "float", doc="Association score."),
+                        vertices=Var("vertices", "uint", doc="Layer clusters indices."),
+                        vertex_mult=Var("vertex_multiplicity", "float", doc="Fraction of Layer cluster energy used by the Trackster."),
                     ),
-                ),
+                )
             ),
         )
-        labelAssociation = f"{iterLabelSim}To{iterLabel}AssociationTableProducer"
-        globals()[labelAssociation] = trackstersAssociationOneToManyTable.clone()
-        hgcalTrackstersAssociationOneToManyTableProducers.append(
-            globals()[labelAssociation])
+        producers[f"{collectionPrefix}{iterLabel}TableProducer"] = table
 
-hgcalTrackstersTableSequence = cms.Sequence(
-    sum(tracksterTableProducers, cms.Sequence()))
-hgcalTiclAssociationsTableSequence = cms.Sequence(
-    sum(hgcalTrackstersAssociationOneToManyTableProducers, cms.Sequence()))
-
-simTracksterTableProducers = []
-for iterLabel in hgcalSimTrackstersLabels:
-    label = iterLabel
-    objName = ""
-    if ("CP" in iterLabel):
-        label, objName = iterLabel.split("ticlSimTracksters")
-    hgcalSimTracksterTable = cms.EDProducer(
-        "TracksterCollectionTableProducer",
-        skipNonExistingSrc=cms.bool(True),
-        src=cms.InputTag(f"ticlSimTracksters", objName),
-        cut=cms.string(""),
-        name=cms.string(f"{iterLabel}"),
-        doc=cms.string(f"{iterLabel}"),
-        singleton=cms.bool(False),  # the number of entries is variable
-        variables=cms.PSet(
-            raw_energy=Var("raw_energy", "float",
-                           doc="Raw Energy of the trackster [GeV]"),
-            raw_em_energy=Var("raw_em_energy", "float",
-                              doc="EM raw Energy of the trackster [GeV]"),
-            raw_pt=Var(
-                "raw_pt", "float", doc="Trackster raw pT, computed from trackster raw energy and direction [GeV]"),
-            regressed_energy=Var("regressed_energy", "float",
-                                 doc="Regressed Energy of the trackster, for the SimTrackster it corresponds to the GEN-energy"),
-            barycenter_x=Var("barycenter.x", "float",
-                             doc="Trackster barycenter x [cm]"),
-            barycenter_y=Var("barycenter.y", "float",
-                             doc="Trackster barycenter y [cm]"),
-            barycenter_z=Var("barycenter.z", "float",
-                             doc="Trackster barycenter z [cm]"),
-            barycenter_eta=Var("barycenter.eta", "float",
-                               doc="Trackster barycenter pseudorapidity"),
-            barycenter_phi=Var("barycenter.phi", "float",
-                               doc="Trackster barycenter phi"),
-            EV1=Var("eigenvalues()[0]", "float",
-                    doc="Trackster PCA eigenvalues 0"),
-            EV2=Var("eigenvalues()[1]", "float",
-                    doc="Trackster PCA eigenvalues 1"),
-            EV3=Var("eigenvalues()[2]", "float",
-                    doc="Trackster PCA eigenvalues 2"),
-            eVector0_x=Var(
-                "eigenvectors()[0].x", "float", doc="Trackster PCA principal axis, x component"),
-            eVector0_y=Var(
-                "eigenvectors()[0].z", "float", doc="Trackster PCA principal axis, y component"),
-            eVector0_z=Var(
-                "eigenvectors()[0].y", "float", doc="Trackster PCA principal axis, z component"),
-            time=Var("time", "float", doc="Trackster HGCAL time"),
-            timeError=Var("timeError", "float",
-                          doc="Trackster HGCAL time error")
-        ),
-        collectionVariables=cms.PSet(
-            tracksterVertices=cms.PSet(
-                name=cms.string(f"{iterLabel}vertices"),
-                doc=cms.string("Vertex properties"),
-                useCount=cms.bool(True),
-                useOffset=cms.bool(True),
-                variables=cms.PSet(
-                    vertices=Var("vertices", "uint",
-                                 doc="Layer clusters indices."),
-                    vertex_mult=Var(
-                        "vertex_multiplicity",
-                        "float",
-                        doc="Fraction of Layer cluster energy used by the Trackster.",
+        # Create association tables
+        for simLabel in simTrackstersLabels:
+            CP_SC_label = "CP" if "CP" in simLabel else "SC"
+            assocTable = cms.EDProducer(
+                "TracksterTracksterEnergyScoreFlatTableProducer",
+                src=cms.InputTag(f"{assocPrefix}TrackstersToSimTrackstersAssociationsByHits:{simLabel}To{iterLabel}"),
+                name=cms.string(f"Sim{CP_SC_label}2{iterLabel}ByHits"),
+                doc=cms.string(f"Association between SimTracksters and {iterLabel}, by hits."),
+                collectionVariables=cms.PSet(
+                    links=cms.PSet(
+                        name=cms.string(f"Sim{CP_SC_label}2{iterLabel}ByHitsLinks"),
+                        doc=cms.string("Association links."),
+                        useCount=cms.bool(True),
+                        useOffset=cms.bool(False),
+                        variables=cms.PSet(
+                            index=Var("index", "uint", doc="Index of the associated Trackster."),
+                            sharedEnergy=Var("sharedEnergy", "float", doc="Shared energy with associated Trackster."),
+                            score=Var("score", "float", doc="Association score."),
+                        ),
                     ),
                 ),
             )
+            producers[f"{collectionPrefix}{simLabel}To{iterLabel}AssociationTableProducer"] = assocTable
+
+    # Create sim trackster tables
+    simCollectionName = f"{collectionPrefix}ticlSimTracksters" if collectionPrefix else "ticlSimTracksters"
+    for simLabel in simTrackstersLabels:
+        objName = ""
+        if "CP" in simLabel:
+            _, objName = simLabel.split(f"{collectionPrefix}ticlSimTracksters")
+
+        simTable = cms.EDProducer(
+            "TracksterCollectionTableProducer",
+            skipNonExistingSrc=cms.bool(True),
+            src=cms.InputTag(simCollectionName, objName),
+            cut=cms.string(""),
+            name=cms.string(simLabel),
+            doc=cms.string(simLabel),
+            singleton=cms.bool(False),
+            variables=tracksterVars,
+            collectionVariables=cms.PSet(
+                tracksterVertices=cms.PSet(
+                    name=cms.string(f"{simLabel}vertices"),
+                    doc=cms.string("Vertex properties"),
+                    useCount=cms.bool(True),
+                    useOffset=cms.bool(True),
+                    variables=cms.PSet(
+                        vertices=Var("vertices", "uint", doc="Layer clusters indices."),
+                        vertex_mult=Var("vertex_multiplicity", "float", doc="Fraction of Layer cluster energy used by the Trackster."),
+                    ),
+                )
+            ),
+        )
+        producers[f"{collectionPrefix}{simLabel}TableProducer"] = simTable
+
+        # Sim trackster extra table
+        extraTable = cms.EDProducer(
+            "SimTracksterTableProducer",
+            tableName=cms.string(simLabel),
+            skipNonExistingSrc=cms.bool(True),
+            simTracksters=cms.InputTag(simCollectionName, objName),
+            caloParticles=cms.InputTag("mix", "MergedCaloTruth"),
+            simClusters=cms.InputTag("mix", "MergedCaloTruth"),
+            caloParticleToSimClustersMap=cms.InputTag(simCollectionName),
+            precision=cms.int32(7),
+        )
+        producers[f"{collectionPrefix}{simLabel}TableExtraProducer"] = extraTable
+
+    # SimCluster to CaloParticle association
+    simCl2CP = cms.EDProducer(
+        "SimClusterCaloParticleFractionFlatTableProducer",
+        src=cms.InputTag("SimClusterToCaloParticleAssociation:simClusterToCaloParticleMap"),
+        name=cms.string("SimCl2CPWithFraction"),
+        doc=cms.string("Association between SimClusters and CaloParticles."),
+        variables=cms.PSet(
+            index=Var("index", "int", doc="Index of linked CaloParticle."),
+            fraction=Var("fraction", "float", doc="Fraction of linked CaloParticle."),
         ),
     )
-    label = f"{iterLabel}TableProducer"
-    globals()[label] = hgcalSimTracksterTable.clone()
-    simTracksterTableProducers.append(globals()[label])
+    producers[f"{collectionPrefix}SimCl2CPOneToOneFlatTable"] = simCl2CP
 
-    hgcalTiclSimTrackstersExtraTable = cms.EDProducer("SimTracksterTableProducer",
-                                                       tableName=cms.string(
-                                                           f"{iterLabel}"),
-                                                       skipNonExistingSrc=cms.bool(
-                                                           True),
-                                                       simTracksters=cms.InputTag(
-                                                           "ticlSimTracksters", objName),
-                                                       caloParticles=cms.InputTag(
-                                                           "mix", "MergedCaloTruth"),
-                                                       simClusters=cms.InputTag(
-                                                           "mix", "MergedCaloTruth"),
-                                                       caloParticleToSimClustersMap=cms.InputTag(
-                                                           "ticlSimTracksters"),
-                                                       precision=cms.int32(7),
-                                                       )
-    labelExtra = f"{iterLabel}TableExtraProducer"
-    globals()[labelExtra] = hgcalTiclSimTrackstersExtraTable.clone()
-    simTracksterTableProducers.append(globals()[labelExtra])
+    return producers
 
-hgcalSimTracksterSequence = cms.Sequence(
-    sum(simTracksterTableProducers, cms.Sequence()))
 
-# Tracksters Associators
-hgcalSimCl2CPOneToOneFlatTable = cms.EDProducer(
-    "SimClusterCaloParticleFractionFlatTableProducer",
-    src=cms.InputTag(
-        "SimClusterToCaloParticleAssociation:simClusterToCaloParticleMap"),
-    name=cms.string("SimCl2CPWithFraction"),
-    doc=cms.string("Association between SimClusters and CaloParticles."),
-    variables=cms.PSet(
-        index=Var("index", "int", doc="Index of linked CaloParticle."),
-        fraction=Var("fraction", "float",
-                     doc="Fraction of linked CaloParticle."),
-    ),
-)
+# Create offline trackster tables
+_offlineProducers = createTracksterTables(ticlIterLabels, hgcalSimTrackstersLabels, collectionPrefix="")
+
+# Assign all producers to module globals
+for name, producer in _offlineProducers.items():
+    globals()[name] = producer
+
+# Build sequences for organizing producers
+tracksterTableProducers = []
+hgcalTrackstersAssociationOneToManyTableProducers = []
+simTracksterTableProducers = []
+
+for name, producer in _offlineProducers.items():
+    if "AssociationTableProducer" in name and "SimCl2CP" not in name:
+        hgcalTrackstersAssociationOneToManyTableProducers.append(producer)
+    elif "SimTrackster" in name or "fromCPs" in name:
+        simTracksterTableProducers.append(producer)
+    elif "TableProducer" in name and "Association" not in name and "SimCl2CP" not in name:
+        tracksterTableProducers.append(producer)
+
+# Create sequences
+hgcalTrackstersTableSequence = cms.Sequence(sum(tracksterTableProducers, cms.Sequence()))
+hgcalTiclAssociationsTableSequence = cms.Sequence(sum(hgcalTrackstersAssociationOneToManyTableProducers, cms.Sequence()))
+hgcalSimTracksterSequence = cms.Sequence(sum(simTracksterTableProducers, cms.Sequence()))
+
+# Add SimCl2CP producer
+hgcalSimCl2CPOneToOneFlatTable = _offlineProducers['SimCl2CPOneToOneFlatTable']
 hgcalTiclAssociationsTableSequence += hgcalSimCl2CPOneToOneFlatTable
