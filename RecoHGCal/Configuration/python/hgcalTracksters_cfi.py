@@ -185,6 +185,5 @@ hgcalTrackstersTableSequence = cms.Sequence(sum(tracksterTableProducers, cms.Seq
 hgcalTiclAssociationsTableSequence = cms.Sequence(sum(hgcalTrackstersAssociationOneToManyTableProducers, cms.Sequence()))
 hgcalSimTracksterSequence = cms.Sequence(sum(simTracksterTableProducers, cms.Sequence()))
 
-# Add SimCl2CP producer
-hgcalSimCl2CPOneToOneFlatTable = _offlineProducers['SimCl2CPOneToOneFlatTable']
-hgcalTiclAssociationsTableSequence += hgcalSimCl2CPOneToOneFlatTable
+# Add SimCl2CP producer (already in globals from the loop above)
+hgcalTiclAssociationsTableSequence += SimCl2CPOneToOneFlatTable

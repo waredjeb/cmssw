@@ -30,6 +30,5 @@ hltTrackstersTableSequence = cms.Sequence(sum(tracksterTableProducers, cms.Seque
 hltTiclAssociationsTableSequence = cms.Sequence(sum(hltTrackstersAssociationOneToManyTableProducers, cms.Sequence()))
 hltSimTracksterSequence = cms.Sequence(sum(simTracksterTableProducers, cms.Sequence()))
 
-# Add SimCl2CP producer
-hltSimCl2CPOneToOneFlatTable = _hltProducers['hltSimCl2CPOneToOneFlatTable']
+# Add SimCl2CP producer (already in globals from the loop above)
 hltTiclAssociationsTableSequence += hltSimCl2CPOneToOneFlatTable
