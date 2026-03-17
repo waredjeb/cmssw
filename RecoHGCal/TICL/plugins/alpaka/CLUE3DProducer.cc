@@ -1,4 +1,6 @@
 #include <vector>
+#include <stack>
+#include <limits>
 #include <Eigen/Core>
 
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -12,10 +14,12 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/HGCalReco/interface/CLUE3DStateSoA.h"
 #include "DataFormats/HGCalReco/interface/alpaka/CLUE3DStateDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoAClustersDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalTilesDeviceCollection.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "HeterogeneousCore/AlpakaCore/interface/MoveToDeviceCache.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/SynchronizingEDProducer.h"
 #include "RecoHGCal/TICL/plugins/alpaka/CLUE3DKernel.h"
@@ -31,6 +35,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     namespace {
       using CLUE3DParamsCache =
           cms::alpakatools::MoveToDeviceCache<Device, PortableHostCollection<::ticl::CLUE3DParamsSoA>>;
+
+      // Tile binning constants
+      constexpr int kNEtaBins = 50;
+      constexpr int kNPhiBins = 50;
+      constexpr float kEtaMin = -3.5f;
+      constexpr float kEtaMax = 3.5f;
+      constexpr float kPhiMin = -M_PI;
+      constexpr float kPhiMax = M_PI;
+
+      inline int getEtaBin(float eta) {
+        int bin = static_cast<int>((eta - kEtaMin) / (kEtaMax - kEtaMin) * kNEtaBins);
+        return std::max(0, std::min(bin, kNEtaBins - 1));
+      }
+
+      inline int getPhiBin(float phi) {
+        int bin = static_cast<int>((phi - kPhiMin) / (kPhiMax - kPhiMin) * kNPhiBins);
+        return std::max(0, std::min(bin, kNPhiBins - 1));
+      }
     }
 
     class CLUE3DProducer : public stream::SynchronizingEDProducer<edm::GlobalCache<CLUE3DParamsCache>> {
@@ -92,7 +114,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           : SynchronizingEDProducer(config),
             inputLayerClusters_Token_{consumes(config.getParameter<edm::InputTag>("layerClusters"))},
             synchronise_(config.getParameter<bool>("synchronise")),
-            algo_verbosity_(config.getParameter<int>("algo_verbosity")) {
+            algo_verbosity_(config.getParameter<int>("algo_verbosity")),
+            minNumLayerCluster_(config.getParameter<std::vector<int>>("minNumLayerCluster")),
+            nSeedsHost_(cms::alpakatools::make_host_buffer<int>()) {
         // Initialize RecHitTools (host-side)
         rhtools_ = std::make_unique<hgcal::RecHitTools>();
 
@@ -102,47 +126,237 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         // TODO: Register output product properly
         // For now, this is a skeleton implementation without output
+        // produces<std::vector<::ticl::Trackster>>();
       }
 
       void acquire(device::Event const& event, device::EventSetup const& setup) override {
-        // TODO: For first version, this acquire method will prepare data on host
-        // In a full implementation, we'd accept device collections directly if available
-        // For now: stub that shows the structure
+        // NOTE: CaloGeometry is accessed from regular EventSetup (not device::EventSetup)
+        // For now, we hardcode geometry parameters. In production, need proper setup.
 
-        // TODO: Get geometry (needs host-side access, not available in device::EventSetup)
-        // const CaloGeometry& geom = ...;  // Need to get from regular EventSetup
-        // rhtools_->setGeometry(geom);
-        // int lastLayerPerSide = rhtools_->lastLayer(false);
+        // Get input layer clusters
+        auto const& layerClusters = event.get(inputLayerClusters_Token_);
+        nClusters_ = layerClusters.size();
 
-        // TODO: Get input layer clusters (assuming host collection for now)
-        // In full implementation, this would be a device collection or we'd transfer
-        // auto const& layerClusters = event.get(inputLayerClusters_Token_);
+        if (nClusters_ == 0) {
+          if (algo_verbosity_ > 0) {
+            edm::LogInfo("CLUE3DProducer") << "No layer clusters, skipping";
+          }
+          return;
+        }
 
-        // TODO: Build tiles structure on host, transfer to device
-        // TODO: Prepare CLUE3D state collection on device
-        // TODO: Launch kernels via CLUE3DKernel
+        // For geometry, we need lastLayerPerSide
+        // TODO: Get from rhtools_ which needs CaloGeometry
+        lastLayerPerSide_ = 50;  // Hardcoded for now
+        int nLayers = 2 * lastLayerPerSide_;
 
-        // For now, just log that acquire was called
+        // 1. ALLOCATE DEVICE STATE
+        clue3dState_.emplace(event.queue(), nClusters_);
+
+        // 2. PREPARE HOST DATA
+        // Create host mirror of state for initialization
+        PortableHostCollection<CLUE3DStateSoA> hostState(cms::alpakatools::host(), nClusters_);
+        auto hostView = hostState.view();
+
+        // Tiles on host (will be flattened)
+        std::vector<std::vector<std::vector<int>>> hostTiles(
+            nLayers, std::vector<std::vector<int>>(kNEtaBins * kNPhiBins));
+
+        layerIndices_.resize(nClusters_);
+
+        // 3. POPULATE STATE FROM LAYER CLUSTERS
+        for (int i = 0; i < nClusters_; ++i) {
+          auto const& lc = layerClusters[i];
+
+          // Determine layer (simplified - normally use rhtools_)
+          // TODO: Get from detector ID via rhtools_
+          int layer = 0;  // Placeholder
+          layerIndices_[i] = layer;
+
+          // Calculate radius (simplified version without rhtools for now)
+          float radius = 1.0f;  // TODO: Use calculateClusterRadius(lc) when geometry is available
+
+          // Fill host state
+          hostView.x(i) = lc.x();
+          hostView.y(i) = lc.y();
+          hostView.z(i) = lc.z();
+          hostView.eta(i) = lc.eta();
+          hostView.phi(i) = lc.phi();
+          hostView.r_over_absz(i) = std::sqrt(lc.x() * lc.x() + lc.y() * lc.y()) / std::abs(lc.z());
+          hostView.radius(i) = radius;
+          hostView.energy(i) = lc.energy();
+          hostView.cells(i) = lc.hitsAndFractions().size();
+          hostView.layer(i) = layer;
+          hostView.algoId(i) = lc.algo() - reco::CaloCluster::hgcal_em;  // 0, 1, or 2
+          hostView.isSilicon(i) = 1;  // TODO: Get from detector ID
+          hostView.layerClusterOriginalIdx(i) = i;
+
+          // Initialize clustering state
+          hostView.rho(i) = 0.0f;
+          hostView.z_extension(i) = 0.0f;
+          hostView.delta_dist(i) = std::numeric_limits<float>::max();
+          hostView.delta_layer(i) = std::numeric_limits<int>::max();
+          hostView.nearestHigher_layer(i) = -1;
+          hostView.nearestHigher_idx(i) = -1;
+          hostView.clusterIndex(i) = -1;
+          hostView.isSeed(i) = 0;
+          hostView.isOutlier(i) = 0;
+
+          // Add to tiles
+          int etaBin = getEtaBin(lc.eta());
+          int phiBin = getPhiBin(lc.phi());
+          hostTiles[layer][etaBin * kNPhiBins + phiBin].push_back(i);
+        }
+
+        // 4. TRANSFER STATE TO DEVICE
+        alpaka::memcpy(event.queue(), clue3dState_->buffer(), hostState.buffer());
+
+        // 5. FLATTEN AND TRANSFER TILES
+        int nTiles = nLayers * kNEtaBins * kNPhiBins;
+        std::vector<int> tileOffsets(nTiles + 1, 0);
+        std::vector<int> tileContent;
+
+        for (int layer = 0; layer < nLayers; ++layer) {
+          for (int tile = 0; tile < kNEtaBins * kNPhiBins; ++tile) {
+            int tileIdx = layer * kNEtaBins * kNPhiBins + tile;
+            tileOffsets[tileIdx + 1] = tileOffsets[tileIdx] + hostTiles[layer][tile].size();
+            tileContent.insert(
+                tileContent.end(), hostTiles[layer][tile].begin(), hostTiles[layer][tile].end());
+          }
+        }
+
+        tiles_.emplace(event.queue(), nTiles + 1);
+        // TODO: Proper tile transfer to device (needs buffer handling)
+
+        // 6. PREPARE LAYER Z POSITIONS (TODO)
+        // For now, we'll skip layer Z positions and handle in kernels differently
+        float* layersZ_ptr = nullptr;  // Placeholder
+
+        // 7. PREPARE SEED COUNTER
+        auto nSeeds_d = cms::alpakatools::make_device_buffer<int>(event.queue());
+        alpaka::memset(event.queue(), nSeeds_d, 0);
+
+        // 8. GET PARAMETERS
+        auto const& params = globalCache()->get(event.queue());
+
+        // 9. LAUNCH KERNELS
+        CLUE3DKernel kernel;
+
+        auto tilesView = tiles_->view();
+
+        kernel.calculateLocalDensity(
+            event.queue(), params.const_view(), tilesView, layersZ_ptr, *clue3dState_, nClusters_);
+
+        kernel.calculateDistanceToHigher(
+            event.queue(), params.const_view(), tilesView, *clue3dState_, nClusters_);
+
+        kernel.findAndAssignSeeds(event.queue(), params.const_view(), *clue3dState_, nClusters_, alpaka::getPtrNative(nSeeds_d));
+
+        // 10. TRANSFER SEED COUNT BACK
+        alpaka::memcpy(event.queue(), nSeedsHost_, nSeeds_d);
+        alpaka::wait(event.queue());  // Wait for seed count
+
+        nSeeds_ = *alpaka::getPtrNative(nSeedsHost_);
+
         if (algo_verbosity_ > 0) {
-          edm::LogInfo("CLUE3DProducer") << "acquire() called (skeleton)";
+          edm::LogInfo("CLUE3DProducer") << "Found " << nSeeds_ << " seeds from " << nClusters_ << " clusters";
         }
       }
 
       void produce(device::Event& event, device::EventSetup const& setup) override {
-        // TODO: Implement full produce logic:
-        // 1. Transfer results from device to host
-        // 2. Run host-side graph propagation (cluster index assignment)
-        // 3. Build Trackster objects
-        // 4. Apply filters (min layer cluster count, PID cuts)
-        // 5. Register and produce output to event
-        //
-        // NOTE: Output product registration needs to be added once the full
-        // data flow is implemented. The Alpaka producer interface requires
-        // careful handling of device vs host collections.
+        // Handle empty events
+        if (!clue3dState_ || nClusters_ == 0) {
+          // Produce empty collection
+          // TODO: Register and emit output when output token is added
+          if (synchronise_)
+            alpaka::wait(event.queue());
+          return;
+        }
+
+        // 1. TRANSFER STATE BACK TO HOST
+        PortableHostCollection<CLUE3DStateSoA> hostState(cms::alpakatools::host(), nClusters_);
+        alpaka::memcpy(event.queue(), hostState.buffer(), clue3dState_->buffer());
+        alpaka::wait(event.queue());
+
+        auto stateView = hostState.view();
+
+        // 2. BUILD FOLLOWER GRAPH ON HOST
+        std::vector<std::vector<int>> followers(nClusters_);
+        std::vector<int> tracksterSeedAlgoId;
+
+        for (int i = 0; i < nClusters_; ++i) {
+          if (!stateView.isSeed(i) && !stateView.isOutlier(i)) {
+            int higher = stateView.nearestHigher_idx(i);
+            if (higher >= 0 && higher < nClusters_) {
+              followers[higher].push_back(i);
+            }
+          }
+          if (stateView.isSeed(i)) {
+            tracksterSeedAlgoId.push_back(stateView.algoId(i));
+          }
+        }
+
+        // 3. PROPAGATE CLUSTER INDICES VIA DFS
+        std::stack<int> stack;
+        for (int i = 0; i < nClusters_; ++i) {
+          if (stateView.isSeed(i)) {
+            stack.push(i);
+          }
+        }
+
+        while (!stack.empty()) {
+          int idx = stack.top();
+          stack.pop();
+          int clusterIdx = stateView.clusterIndex(idx);
+
+          for (int follower : followers[idx]) {
+            stateView.clusterIndex(follower) = clusterIdx;
+            stack.push(follower);
+          }
+        }
+
+        // 4. BUILD TRACKSTER VERTICES AND EDGES
+        std::vector<std::vector<unsigned int>> tracksterVertices(nSeeds_);
+        std::vector<std::vector<std::array<unsigned int, 2>>> tracksterEdges(nSeeds_);
+
+        for (int i = 0; i < nClusters_; ++i) {
+          int tIdx = stateView.clusterIndex(i);
+          if (tIdx >= 0 && tIdx < nSeeds_) {
+            int origIdx = stateView.layerClusterOriginalIdx(i);
+            tracksterVertices[tIdx].push_back(origIdx);
+
+            // Add edges to followers
+            for (int followerLocal : followers[i]) {
+              int followerOrig = stateView.layerClusterOriginalIdx(followerLocal);
+              tracksterEdges[tIdx].push_back(
+                  {{static_cast<unsigned int>(origIdx), static_cast<unsigned int>(followerOrig)}});
+            }
+          }
+        }
+
+        // 5. CREATE TRACKSTER OBJECTS
+        std::vector<::ticl::Trackster> tracksters;
+        for (int t = 0; t < nSeeds_; ++t) {
+          int algoId = tracksterSeedAlgoId[t];
+          if (tracksterVertices[t].size() >= static_cast<size_t>(minNumLayerCluster_[algoId])) {
+            ::ticl::Trackster trackster;
+            trackster.vertices() = tracksterVertices[t];
+            trackster.vertex_multiplicity().resize(tracksterVertices[t].size(), 1);
+            trackster.edges() = tracksterEdges[t];
+
+            tracksters.push_back(trackster);
+          }
+        }
 
         if (algo_verbosity_ > 0) {
-          edm::LogInfo("CLUE3DProducer") << "produce() called (skeleton - no output yet)";
+          edm::LogInfo("CLUE3DProducer") << "Created " << tracksters.size() << " tracksters";
         }
+
+        // 6. COMPUTE PCA (TODO)
+        // This requires access to layer clusters
+        // For now, tracksters have vertices and edges but no PCA properties
+
+        // 7. OUTPUT (TODO)
+        // event.emplace(outputToken, std::move(tracksters));
 
         if (synchronise_)
           alpaka::wait(event.queue());
@@ -200,12 +414,54 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const edm::EDGetTokenT<std::vector<reco::CaloCluster>> inputLayerClusters_Token_;
       const bool synchronise_;
       const int algo_verbosity_;
+      const std::vector<int> minNumLayerCluster_;
 
       std::unique_ptr<hgcal::RecHitTools> rhtools_;
 
       // Device collections (created per-event in acquire)
       std::optional<CLUE3DStateDeviceCollection> clue3dState_;
       std::optional<HGCalTilesDeviceCollection> tiles_;
+
+      // Per-event state
+      int nSeeds_ = 0;
+      int nClusters_ = 0;
+      int lastLayerPerSide_ = 0;
+      std::vector<int> layerIndices_;
+
+      // Host buffers
+      cms::alpakatools::host_buffer<int> nSeedsHost_;
+
+      // Helper method
+      float calculateClusterRadius(const reco::CaloCluster& lc) const {
+        float sum_x = 0.f, sum_y = 0.f, sum_sqr_x = 0.f, sum_sqr_y = 0.f;
+        float ref_x = lc.x(), ref_y = lc.y();
+        float invClsize = 1.f / lc.hitsAndFractions().size();
+
+        for (auto const& hf : lc.hitsAndFractions()) {
+          auto const& point = rhtools_->getPosition(hf.first);
+          sum_x += point.x() - ref_x;
+          sum_sqr_x += (point.x() - ref_x) * (point.x() - ref_x);
+          sum_y += point.y() - ref_y;
+          sum_sqr_y += (point.y() - ref_y) * (point.y() - ref_y);
+        }
+
+        float radius_x = std::sqrt((sum_sqr_x - (sum_x * sum_x) * invClsize) * invClsize);
+        float radius_y = std::sqrt((sum_sqr_y - (sum_y * sum_y) * invClsize) * invClsize);
+
+        // Handle single-cell clusters
+        if (invClsize == 1.f) {
+          auto detId = lc.hitsAndFractions()[0].first;
+          if (rhtools_->isSilicon(detId)) {
+            radius_x = radius_y = rhtools_->getRadiusToSide(detId);
+          } else {
+            auto const& point = rhtools_->getPosition(detId);
+            auto const& eta_phi_window = rhtools_->getScintDEtaDPhi(detId);
+            radius_x = radius_y = point.perp() * eta_phi_window.second;
+          }
+        }
+
+        return radius_x + radius_y;
+      }
 
       // TODO: Add CaloGeometry token (needs host-side access)
       // TODO: Add output token when implementing full data flow
