@@ -2,7 +2,7 @@
 #define RecoHGCal_TICL_plugins_alpaka_CLUE3DKernel_h
 
 #include "DataFormats/HGCalReco/interface/alpaka/CLUE3DStateDeviceCollection.h"
-#include "DataFormats/HGCalReco/interface/alpaka/HGCalTilesDeviceCollection.h"
+#include "RecoHGCal/TICL/plugins/alpaka/HGCalTiles.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "RecoHGCal/TICL/interface/alpaka/CLUE3DParamsSoA.h"
 
@@ -16,7 +16,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // Calculate local density for all clusters
       void calculateLocalDensity(Queue& queue,
                                   const ::ticl::CLUE3DParamsSoA::ConstView params,
-                                  const HGCalTilesSoA::ConstView tiles,
+                                  const HGCalTilesView& tiles,
                                   const float* layersPosZ,  // array of Z positions per layer
                                   CLUE3DStateDeviceCollection& state,
                                   int nClusters);
@@ -24,7 +24,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // Calculate distance to nearest higher density cluster
       void calculateDistanceToHigher(Queue& queue,
                                       const ::ticl::CLUE3DParamsSoA::ConstView params,
-                                      const HGCalTilesSoA::ConstView tiles,
+                                      const HGCalTilesView& tiles,
                                       CLUE3DStateDeviceCollection& state,
                                       int nClusters);
 

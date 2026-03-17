@@ -80,7 +80,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       template <typename TAcc>
       ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     const ::ticl::CLUE3DParamsSoA::ConstView params,
-                                    const HGCalTilesSoA::ConstView tiles,
+                                    const HGCalTilesView tiles,
                                     const float* layersPosZ,
                                     CLUE3DStateSoA::View state,
                                     int nClusters) const {
@@ -138,12 +138,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
                 // Get tile range
                 int tileIdx = getTileIndex(currentLayer, ieta, iphi, params.nEtaBins(), params.nPhiBins());
-                int tileStart = tiles.tileOffsets(tileIdx);
-                int tileEnd = tiles.tileOffsets(tileIdx + 1);
+                int tileStart = tiles.offsets[tileIdx];
+                int tileEnd = tiles.offsets[tileIdx + 1];
 
                 // Loop over clusters in tile
                 for (int tilePos = tileStart; tilePos < tileEnd; ++tilePos) {
-                  int otherClusterIdx = tiles.tileContent(tilePos);
+                  int otherClusterIdx = tiles.indexes[tilePos];
 
                   // Skip masked clusters (marked with layer == -1)
                   if (state.layer(otherClusterIdx) == -1)
@@ -214,7 +214,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       template <typename TAcc>
       ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     const ::ticl::CLUE3DParamsSoA::ConstView params,
-                                    const HGCalTilesSoA::ConstView tiles,
+                                    const HGCalTilesView tiles,
                                     CLUE3DStateSoA::View state,
                                     int nClusters) const {
         constexpr float maxDelta = std::numeric_limits<float>::max();
@@ -274,11 +274,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 int iphi = ((iphi_it % params.nPhiBins() + params.nPhiBins()) % params.nPhiBins());
 
                 int tileIdx = getTileIndex(currentLayer, ieta, iphi, params.nEtaBins(), params.nPhiBins());
-                int tileStart = tiles.tileOffsets(tileIdx);
-                int tileEnd = tiles.tileOffsets(tileIdx + 1);
+                int tileStart = tiles.offsets[tileIdx];
+                int tileEnd = tiles.offsets[tileIdx + 1];
 
                 for (int tilePos = tileStart; tilePos < tileEnd; ++tilePos) {
-                  int otherClusterIdx = tiles.tileContent(tilePos);
+                  int otherClusterIdx = tiles.indexes[tilePos];
 
                   if (state.layer(otherClusterIdx) == -1)
                     continue;
@@ -396,7 +396,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     void CLUE3DKernel::calculateLocalDensity(Queue& queue,
                                               const ::ticl::CLUE3DParamsSoA::ConstView params,
-                                              const HGCalTilesSoA::ConstView tiles,
+                                              const HGCalTilesView& tiles,
                                               const float* layersPosZ,
                                               CLUE3DStateDeviceCollection& state,
                                               int nClusters) {
@@ -406,7 +406,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     void CLUE3DKernel::calculateDistanceToHigher(Queue& queue,
                                                   const ::ticl::CLUE3DParamsSoA::ConstView params,
-                                                  const HGCalTilesSoA::ConstView tiles,
+                                                  const HGCalTilesView& tiles,
                                                   CLUE3DStateDeviceCollection& state,
                                                   int nClusters) {
       auto workDiv = make_workdiv<Acc1D>(nClusters, 256);

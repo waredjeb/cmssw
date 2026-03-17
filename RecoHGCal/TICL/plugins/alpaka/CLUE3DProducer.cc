@@ -17,12 +17,12 @@
 #include "DataFormats/HGCalReco/interface/CLUE3DStateSoA.h"
 #include "DataFormats/HGCalReco/interface/alpaka/CLUE3DStateDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoAClustersDeviceCollection.h"
-#include "DataFormats/HGCalReco/interface/alpaka/HGCalTilesDeviceCollection.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "HeterogeneousCore/AlpakaCore/interface/MoveToDeviceCache.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/SynchronizingEDProducer.h"
 #include "RecoHGCal/TICL/plugins/alpaka/CLUE3DKernel.h"
+#include "RecoHGCal/TICL/plugins/alpaka/HGCalTiles.h"
 #include "RecoHGCal/TICL/interface/alpaka/CLUE3DParamsSoA.h"
 
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
@@ -157,10 +157,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         PortableHostCollection<CLUE3DStateSoA> hostState(cms::alpakatools::host(), nClusters_);
         auto hostView = hostState.view();
 
-        // Tiles on host (will be flattened)
-        std::vector<std::vector<std::vector<int>>> hostTiles(
-            nLayers, std::vector<std::vector<int>>(kNEtaBins * kNPhiBins));
-
         layerIndices_.resize(nClusters_);
 
         // 3. POPULATE STATE FROM LAYER CLUSTERS
@@ -200,32 +196,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           hostView.clusterIndex(i) = -1;
           hostView.isSeed(i) = 0;
           hostView.isOutlier(i) = 0;
-
-          // Add to tiles
-          int etaBin = getEtaBin(lc.eta());
-          int phiBin = getPhiBin(lc.phi());
-          hostTiles[layer][etaBin * kNPhiBins + phiBin].push_back(i);
         }
 
         // 4. TRANSFER STATE TO DEVICE
         alpaka::memcpy(event.queue(), clue3dState_->buffer(), hostState.buffer());
 
-        // 5. FLATTEN AND TRANSFER TILES
-        int nTiles = nLayers * kNEtaBins * kNPhiBins;
-        std::vector<int> tileOffsets(nTiles + 1, 0);
-        std::vector<int> tileContent;
-
-        for (int layer = 0; layer < nLayers; ++layer) {
-          for (int tile = 0; tile < kNEtaBins * kNPhiBins; ++tile) {
-            int tileIdx = layer * kNEtaBins * kNPhiBins + tile;
-            tileOffsets[tileIdx + 1] = tileOffsets[tileIdx] + hostTiles[layer][tile].size();
-            tileContent.insert(
-                tileContent.end(), hostTiles[layer][tile].begin(), hostTiles[layer][tile].end());
-          }
-        }
-
-        tiles_.emplace(event.queue(), nTiles + 1);
-        // TODO: Proper tile transfer to device (needs buffer handling)
+        // 5. CREATE AND FILL TILES ON DEVICE
+        tiles_.emplace(event.queue(), nClusters_, nLayers, kNEtaBins, kNPhiBins);
+        tiles_->fill(event.queue(), *clue3dState_, nClusters_);
 
         // 6. PREPARE LAYER Z POSITIONS (TODO)
         // For now, we'll skip layer Z positions and handle in kernels differently
@@ -241,7 +219,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // 9. LAUNCH KERNELS
         CLUE3DKernel kernel;
 
-        auto tilesView = tiles_->view();
+        const auto& tilesView = tiles_->view();
 
         kernel.calculateLocalDensity(
             event.queue(), params.const_view(), tilesView, layersZ_ptr, *clue3dState_, nClusters_);
@@ -420,7 +398,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // Device collections (created per-event in acquire)
       std::optional<CLUE3DStateDeviceCollection> clue3dState_;
-      std::optional<HGCalTilesDeviceCollection> tiles_;
+      std::optional<HGCalTiles> tiles_;
 
       // Per-event state
       int nSeeds_ = 0;
