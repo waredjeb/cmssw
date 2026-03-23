@@ -20,7 +20,7 @@ HitToLayerClusterAssociatorProducer::HitToLayerClusterAssociatorProducer(const e
   for (const auto &tag : hitsTags) {
     hitsTokens_.push_back(consumes<HGCRecHitCollection>(tag));
   }
-  produces<ticl::AssociationMap<ticl::mapWithFraction>>("hitToLayerClusterMap");
+  produces<ticl::TICLAssociationMap<ticl::mapWithFraction>>("hitToLayerClusterMap");
 }
 
 HitToLayerClusterAssociatorProducer::~HitToLayerClusterAssociatorProducer() {}
@@ -44,7 +44,7 @@ void HitToLayerClusterAssociatorProducer::produce(edm::StreamID,
   }
 
   // Create association map
-  auto hitToLayerClusterMap = std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
+  auto hitToLayerClusterMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
 
   // Loop over layer clusters
   for (unsigned int lcId = 0; lcId < layer_clusters->size(); ++lcId) {

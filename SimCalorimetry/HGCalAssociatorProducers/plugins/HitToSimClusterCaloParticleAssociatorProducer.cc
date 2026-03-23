@@ -22,8 +22,8 @@ HitToSimClusterCaloParticleAssociatorProducer::HitToSimClusterCaloParticleAssoci
       caloParticleToken_(consumes<std::vector<CaloParticle>>(pset.getParameter<edm::InputTag>("caloParticles"))),
       hitMapToken_(consumes<std::unordered_map<DetId, const unsigned int>>(pset.getParameter<edm::InputTag>("hitMap"))),
       hitsToken_(consumes<edm::RefProdVector<HGCRecHitCollection>>(pset.getParameter<edm::InputTag>("hits"))) {
-  produces<ticl::AssociationMap<ticl::mapWithFraction>>("hitToSimClusterMap");
-  produces<ticl::AssociationMap<ticl::mapWithFraction>>("hitToCaloParticleMap");
+  produces<ticl::TICLAssociationMap<ticl::mapWithFraction>>("hitToSimClusterMap");
+  produces<ticl::TICLAssociationMap<ticl::mapWithFraction>>("hitToCaloParticleMap");
 }
 
 void HitToSimClusterCaloParticleAssociatorProducer::produce(edm::StreamID,
@@ -44,8 +44,8 @@ void HitToSimClusterCaloParticleAssociatorProducer::produce(edm::StreamID,
     edm::LogWarning("HitToSimClusterCaloParticleAssociatorProducer")
         << "No valid HGCRecHitCollections found. Association maps will be empty.";
     // Store empty maps in the event
-    iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitToSimClusterMap");
-    iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitToCaloParticleMap");
+    iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitToSimClusterMap");
+    iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitToCaloParticleMap");
     return;
   }
 
@@ -65,14 +65,14 @@ void HitToSimClusterCaloParticleAssociatorProducer::produce(edm::StreamID,
     edm::LogWarning("HitToSimClusterCaloParticleAssociatorProducer")
         << "No valid HGCRecHitCollections found. Association maps will be empty.";
     // Store empty maps in the event
-    iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitToSimClusterMap");
-    iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitToCaloParticleMap");
+    iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitToSimClusterMap");
+    iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitToCaloParticleMap");
     return;
   }
 
   // Create association maps
-  auto hitToSimClusterMap = std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
-  auto hitToCaloParticleMap = std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
+  auto hitToSimClusterMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
+  auto hitToCaloParticleMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
 
   // Loop over caloParticles
   for (unsigned int cpId = 0; cpId < caloParticles.size(); ++cpId) {
