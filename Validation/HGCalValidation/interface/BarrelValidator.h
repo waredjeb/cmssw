@@ -41,9 +41,9 @@ class BarrelValidator : public DQMGlobalEDAnalyzer<BarrelValidatorHistograms> {
 public:
   using Histograms = BarrelValidatorHistograms;
   using TracksterToTracksterMap =
-      ticl::AssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
+      ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
   using SimClusterToCaloParticleMap =
-      ticl::AssociationMap<ticl::oneToOneMapWithFraction, std::vector<SimCluster>, std::vector<CaloParticle>>;
+      ticl::TICLAssociationMap<ticl::oneToOneMapWithFraction, std::vector<SimCluster>, std::vector<CaloParticle>>;
 
   /// Constructor
   BarrelValidator(const edm::ParameterSet& pset);

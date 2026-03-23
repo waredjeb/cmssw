@@ -40,8 +40,8 @@ AllHitToTracksterAssociatorsProducer::AllHitToTracksterAssociatorsProducer(const
   }
 
   for (const auto& tracksterToken : tracksterCollectionTokens_) {
-    produces<ticl::AssociationMap<ticl::mapWithFraction>>("hitTo" + tracksterToken.first);
-    produces<ticl::AssociationMap<ticl::mapWithFraction>>(tracksterToken.first + "ToHit");
+    produces<ticl::TICLAssociationMap<ticl::mapWithFraction>>("hitTo" + tracksterToken.first);
+    produces<ticl::TICLAssociationMap<ticl::mapWithFraction>>(tracksterToken.first + "ToHit");
   }
 }
 
@@ -54,8 +54,8 @@ void AllHitToTracksterAssociatorsProducer::produce(edm::StreamID, edm::Event& iE
   if (!layer_clusters.isValid()) {
     edm::LogWarning("AllHitToTracksterAssociatorsProducer") << "Missing LayerCluster collection.";
     for (const auto& tracksterToken : tracksterCollectionTokens_) {
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
     }
     return;
   }
@@ -66,8 +66,8 @@ void AllHitToTracksterAssociatorsProducer::produce(edm::StreamID, edm::Event& iE
   if (!iEvent.getHandle(hitsToken_)) {
     edm::LogWarning("AllHitToTracksterAssociatorsProducer") << "Missing edm::RefProdVector<HGCRecHitCollection>.";
     for (const auto& tracksterToken : tracksterCollectionTokens_) {
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
     }
     return;
   }
@@ -87,8 +87,8 @@ void AllHitToTracksterAssociatorsProducer::produce(edm::StreamID, edm::Event& iE
     edm::LogWarning("HitToSimClusterCaloParticleAssociatorProducer")
         << "No valid HGCRecHitCollections found. Association maps will be empty.";
     for (const auto& tracksterToken : tracksterCollectionTokens_) {
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
     }
     return;
   }
@@ -99,13 +99,13 @@ void AllHitToTracksterAssociatorsProducer::produce(edm::StreamID, edm::Event& iE
 
     if (!tracksters.isValid()) {
       edm::LogWarning("AllHitToTracksterAssociatorsProducer") << "Missing Tracksters for one of the hitsTokens.";
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), "hitTo" + tracksterToken.first);
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(), tracksterToken.first + "ToHit");
       continue;
     }
 
-    auto hitToTracksterMap = std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
-    auto tracksterToHitMap = std::make_unique<ticl::AssociationMap<ticl::mapWithFraction>>(tracksters->size());
+    auto hitToTracksterMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(rechitSpan.size());
+    auto tracksterToHitMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithFraction>>(tracksters->size());
 
     for (unsigned int tracksterId = 0; tracksterId < tracksters->size(); ++tracksterId) {
       const auto& trackster = (*tracksters)[tracksterId];

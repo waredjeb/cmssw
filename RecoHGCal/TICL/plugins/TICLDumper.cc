@@ -65,7 +65,7 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 using TracksterToTracksterMap =
-    ticl::AssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
+    ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
 // Helper class for geometry, magnetic field, etc
 class DetectorTools {
 public:

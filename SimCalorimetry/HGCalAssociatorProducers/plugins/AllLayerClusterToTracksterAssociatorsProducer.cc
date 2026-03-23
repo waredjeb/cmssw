@@ -41,7 +41,7 @@ AllLayerClusterToTracksterAssociatorsProducer::AllLayerClusterToTracksterAssocia
   // Produce separate association maps for each trackster collection using the trackster label
   for (const auto& tracksterToken : tracksterCollectionTokens_) {
     produces<
-        ticl::AssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
+        ticl::TICLAssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
         tracksterToken.first);
   }
 }
@@ -58,7 +58,7 @@ void AllLayerClusterToTracksterAssociatorsProducer::produce(edm::StreamID,
   if (!layerClustersHandle.isValid()) {
     edm::LogWarning("MissingInput") << "Layer clusters collection not found. Producing empty maps.";
     for (const auto& tracksterToken : tracksterCollectionTokens_) {
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithSharedEnergy,
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergy,
                                                        std::vector<reco::CaloCluster>,
                                                        std::vector<ticl::Trackster>>>(),
                  tracksterToken.first);
@@ -71,7 +71,7 @@ void AllLayerClusterToTracksterAssociatorsProducer::produce(edm::StreamID,
     // If tracksters collection is missing, produce empty map and continue
     if (!trackstersHandle.isValid()) {
       edm::LogWarning("MissingInput") << "Tracksters collection '" << tracksterToken.first << "' not found.";
-      iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithSharedEnergy,
+      iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergy,
                                                        std::vector<reco::CaloCluster>,
                                                        std::vector<ticl::Trackster>>>(),
                  tracksterToken.first);
@@ -80,7 +80,7 @@ void AllLayerClusterToTracksterAssociatorsProducer::produce(edm::StreamID,
 
     // Create association map
     auto lcToTracksterMap = std::make_unique<
-        ticl::AssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
+        ticl::TICLAssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
         layerClustersHandle, trackstersHandle, iEvent);
 
     // Loop over tracksters

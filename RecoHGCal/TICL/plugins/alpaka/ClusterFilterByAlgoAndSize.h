@@ -2,7 +2,6 @@
 #pragma once
 
 #include "DataFormats/CaloRecHit/interface/alpaka/CaloClusterDeviceCollection.h"
-#include "DataFormats/TICL/interface/alpaka/AlgoNumberDevice.h"
 #include "DataFormats/TICL/interface/alpaka/ClusterMaskDevice.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
