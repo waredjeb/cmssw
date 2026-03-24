@@ -1,4 +1,16 @@
 <lcgdict>
+  <!-- ClusterMask -->
+  <class name="PortableHostCollection<ticl::ClusterMask>" rntupleStreamerMode="true"/>
+  <class name="PortableHostCollection<ticl::ClusterMask>::Layout"/>
   <class name="ticl::ClusterMask"/>
-  <class name="ticl::ClusterMaskHost"/>
+  <class name="ticl::ClusterMask::View"/>
+  <class name="edm::Wrapper<ticl::ClusterMaskHost>" splitLevel="0"/>
+
+  <!-- HitsAndFractionsHost -->
+  <class name="ticl::HitAndFraction"/>
+  <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>"/>
+  <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>::Layout<128, false>"/>
+  <class name="PortableHostCollection<ticl::AssociationMapLayout<int, ticl::HitAndFraction>::Layout<128, false> >" rntupleStreamerMode="true"/>
+  <class name="PortableHostCollection<ticl::AssociationMapLayout<int, ticl::HitAndFraction>::Layout<128, false> >::Layout"/>
+  <class name="edm::Wrapper<PortableHostCollection<ticl::AssociationMapLayout<int, ticl::HitAndFraction>::Layout<128, false> > >" splitLevel="0"/>
 </lcgdict>

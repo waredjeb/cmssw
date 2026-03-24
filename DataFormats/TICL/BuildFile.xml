@@ -6,8 +6,9 @@
 <use name="DataFormats/Portable"/>
 <use name="DataFormats/Provenance"/>
 <use name="DataFormats/SoATemplate"/>
-<use name="DataFormats/TrackReco"/>
+<use name="DataFormats/DetId"/>
 <use name="HeterogeneousCore/AlpakaInterface"/>
+
 <export>
   <lib name="1"/>
 </export>
