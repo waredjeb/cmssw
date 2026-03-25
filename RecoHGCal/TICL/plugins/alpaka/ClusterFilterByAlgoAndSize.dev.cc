@@ -17,7 +17,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
       reco::CaloClusterDeviceCollection::ConstView layerClusters,
       std::span<int32_t> algoNumber,
       ticl::ClusterMaskDevice::View layerClusterMask,
-      uint32_t minClusterSize,
+      uint32_t /* minClusterSize */,
       uint32_t maxClusterSize) const {
     for (auto lcIdx : alpaka::uniformElements(acc, layerClusters.position().metadata().size())) {
       bool foundAlgoNumber = false;
@@ -26,7 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
           foundAlgoNumber = true;
       }
       const auto layerClusterSize = static_cast<uint32_t>(layerClusters.position()[lcIdx].cells());
-      if (foundAlgoNumber && (layerClusterSize < minClusterSize) || (layerClusterSize > maxClusterSize))
+      if (foundAlgoNumber || (layerClusterSize > maxClusterSize))
         layerClusterMask[lcIdx] = 0.f;
     }
   }
