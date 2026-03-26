@@ -55,7 +55,7 @@ namespace ticl::associator::detail {
     alpaka::exec<TAcc>(queue, workdiv, KernelComputeAssociationSizes{}, keys, keys_counts.data(), nvalues);
 
     // prepare for prefix scan
-    auto block_counter = make_device_buffer<TKey>(queue);
+    auto block_counter = make_device_buffer<int32_t>(queue);
     alpaka::memset(queue, block_counter, 0);
     auto temp_offsets = make_device_buffer<TKey[]>(queue, nkeys + 1);
     alpaka::memset(queue, temp_offsets, 0);

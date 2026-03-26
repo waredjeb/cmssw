@@ -1,9 +1,10 @@
 
 #pragma once
 
+#include "DataFormats/HGCalReco/interface/LayerTileConcept.h"
+#include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "DataFormats/TICL/interface/AssociationMap.h"
 #include "DataFormats/TICL/interface/FillAssociator.h"
-#include "DataFormats/HGCalReco/interface/LayerTileConcept.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
@@ -16,6 +17,7 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
 
   namespace concepts = ::ticl::concepts;
+  namespace associator = ::ticl::associator;
 
   template <concepts::LayerTile T>
   class LayerTilesView {
@@ -102,18 +104,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
         : m_associations(cms::alpakatools::host(), nvalues, nkeys) {}
 
     ALPAKA_FN_HOST void fill(Queue& queue,
-                             std::span<float> etas,
-                             std::span<float> phis,
-                             std::span<uint32_t> layer_cluster_ids) {
+                             std::span<const float> etas,
+                             std::span<const float> phis,
+                             std::span<const uint32_t> layer_cluster_ids) {
       auto associations = cms::alpakatools::make_device_buffer<uint32_t[]>(queue, etas.size());
 
       const auto blocksize = 1024u;
       const auto gridsize = cms::alpakatools::divide_up_by(etas.size(), blocksize);
-      auto work_division = cms::alpakatools::make_workdiv(gridsize, blocksize);
+      auto work_division = cms::alpakatools::make_workdiv<Acc1D>(gridsize, blocksize);
       alpaka::exec<Acc1D>(queue, work_division, KernelTilesAssociations{}, etas, phis, associations.data());
 
       associator::fill<Acc1D>(
-          queue, m_associations.view(), layer_cluster_ids, std::span<uint32_t>(associations.data(), etas.size()));
+          queue, m_associations.view(), std::span<const uint32_t>(associations.data(), etas.size()), layer_cluster_ids);
     }
 
     ALPAKA_FN_HOST auto view() const { return View(m_associations.view()); }
@@ -122,7 +124,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
     void clear(Queue& queue);
 
   private:
-    PortableCollection<Device, ::ticl::AssociationMap<>> m_associations;
+    PortableCollection<::ticl::AssociationMap<>> m_associations;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
@@ -130,6 +132,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
 namespace ticl {
 
   template <concepts::LayerTile T>
-  using LayerTilesHost = alpaka_serial_sync::LayerTiles<T>;
+  using LayerTilesHost = alpaka_serial_sync::ticl::LayerTiles<T>;
 
 }  // namespace ticl
