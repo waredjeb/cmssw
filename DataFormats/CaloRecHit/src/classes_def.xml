@@ -32,6 +32,13 @@
   <class name="edm::Wrapper<edm::ValueMap<reco::CaloClusterPtr> >" />
   <class name="edm::Wrapper<edm::ValueMap<reco::CaloClusterPtrVector> >" />
 
-  <class name="reco::CaloClusterSoA"/>
   <class name="reco::CaloClusterHostCollection"/>
+  <class name="reco::CaloClusterHostCollection::Layout"/>
+  <class name="reco::CaloClusterSoA"/>
+  <class name="reco::CaloClusterSoAPosition<128, false>"/>
+  <class name="reco::CaloClusterSoAEnergy<128, false>"/>
+  <class name="reco::CaloClusterSoAIndexes<128, false>"/>
+  <class name="reco::CaloClusterSoATiming<128, false>"/>
+
+  <class name="edm::Wrapper<reco::CaloClusterHostCollection>" splitLevel="0"/>
 </lcgdict>
