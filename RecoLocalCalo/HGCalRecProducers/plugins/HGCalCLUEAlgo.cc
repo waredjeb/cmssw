@@ -107,6 +107,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::makeClusters() {
       float delta_r = vecDeltas_[3];
       delta = delta_r;
     }
+    cells_[l].clusterIndex.resize(cells_[l].dim1.size());
 
     auto clusterer = clue::Clusterer<2>(delta, kappa_);
     auto queue = clue::get_queue(0u);
