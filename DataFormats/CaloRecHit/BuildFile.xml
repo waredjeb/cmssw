@@ -4,6 +4,7 @@
 <use name="FWCore/Utilities"/>
 <use name="rootmath"/>
 <use name="eigen"/>
+<use name="xtd"/>
 <use name="DataFormats/SoATemplate"/>
 <use name="DataFormats/Portable"/>
 <use name="HeterogeneousCore/AlpakaInterface"/>
