@@ -11,8 +11,12 @@
 
 namespace reco {
 
-  GENERATE_SOA_LAYOUT(
-      CaloClusterSoAPosition, SOA_COLUMN(float, x), SOA_COLUMN(float, y), SOA_COLUMN(float, z), SOA_COLUMN(int, cells))
+  GENERATE_SOA_LAYOUT(CaloClusterSoAPosition,
+                      SOA_COLUMN(float, x),
+                      SOA_COLUMN(float, y),
+                      SOA_COLUMN(float, z),
+                      SOA_COLUMN(int, layer),
+                      SOA_COLUMN(int, cells))
 
   GENERATE_SOA_LAYOUT(CaloClusterSoAEnergy,
                       SOA_COLUMN(float, energy),
