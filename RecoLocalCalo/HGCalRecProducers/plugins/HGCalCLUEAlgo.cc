@@ -214,12 +214,13 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
       layer_clusters_view.indexes().flags()[globalClusterIndex] = 0;
     }
   }
-  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
-  ticl::associator::fill<alpaka_serial_sync::Acc1D>(
-      queue,
-      clusters_and_associations.hits_and_fractions->view(),
-      static_cast<std::span<const int>>(cluster_hit_associations),
-      static_cast<std::span<const ticl::HitAndFraction>>(detid_and_fractions));
+  // TESTING: Skip hits_and_fractions construction
+  // alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  // ticl::associator::fill<alpaka_serial_sync::Acc1D>(
+  //     queue,
+  //     clusters_and_associations.hits_and_fractions->view(),
+  //     static_cast<std::span<const int>>(cluster_hit_associations),
+  //     static_cast<std::span<const ticl::HitAndFraction>>(detid_and_fractions));
 
   return clusters_and_associations;
 }

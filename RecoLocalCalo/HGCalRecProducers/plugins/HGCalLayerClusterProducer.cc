@@ -201,12 +201,14 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
 
   auto clusters_and_associations = algo_->getClusters(false);
   auto clusters = std::move(clusters_and_associations.layer_clusters);
-  auto hits_and_fractions = std::move(clusters_and_associations.hits_and_fractions);
+  // TESTING: Don't use hits_and_fractions
+  // auto hits_and_fractions = std::move(clusters_and_associations.hits_and_fractions);
 
   std::vector<std::pair<float, float>> times;
   times.reserve(clusters->view().position().metadata().size());
 
-  calculateTime(hitmap, clusters->view(), hits_and_fractions->view());
+  // TESTING: Skip calculateTime call that needs hits_and_fractions
+  // calculateTime(hitmap, clusters->view(), hits_and_fractions->view());
   // for (unsigned i = 0; i < legacy_clusters->size(); ++i) {
   //   reco::CaloCluster& sCl = (*legacy_clusters)[i];
   //   if (detector_ != "BH") {
@@ -238,7 +240,8 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   // evt.put(std::move(timeCl), timeClname_);
 
   evt.put(std::move(clusters));
-  evt.put(std::move(hits_and_fractions));
+  // TESTING: Don't put hits_and_fractions
+  // evt.put(std::move(hits_and_fractions));
 
   algo_->reset();
 }
