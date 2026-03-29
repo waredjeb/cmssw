@@ -131,6 +131,7 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
 
   produces<std::vector<float>>("InitialLayerClustersMask");
   produces<reco::CaloClusterHostCollection>();
+  produces<ticl::HitsAndFractionsHost>();
   // produces<std::vector<reco::BasicCluster>>();
   //time for layer clusters
   // produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
@@ -203,10 +204,11 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   auto clusters = std::move(clusters_and_associations.layer_clusters);
   auto hits_and_fractions = std::move(clusters_and_associations.hits_and_fractions);
 
-  std::vector<std::pair<float, float>> times;
-  times.reserve(clusters->view().position().metadata().size());
+  // std::vector<std::pair<float, float>> times;
+  // times.reserve(clusters->view().position().metadata().size());
 
-  calculateTime(hitmap, clusters->view(), hits_and_fractions->view());
+  if (clusters->view().timing().metadata().size() > 0)
+    calculateTime(hitmap, clusters->view(), hits_and_fractions->view());
   // for (unsigned i = 0; i < legacy_clusters->size(); ++i) {
   //   reco::CaloCluster& sCl = (*legacy_clusters)[i];
   //   if (detector_ != "BH") {
