@@ -90,7 +90,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::populate(const HGCRecHitCollection &hits) {
 // input (reset should be called between events)
 template <typename T, typename STRATEGY>
 void HGCalCLUEAlgoT<T, STRATEGY>::makeClusters() {
-  for (auto l = 0u; l < maxlayer_; ++l) {
+  for (auto l = 0u; l < 2 * maxlayer_ + 2; ++l) {
     float delta;
     if constexpr (std::is_same_v<STRATEGY, HGCalSiliconStrategy>) {
       // maximum search distance (critical distance) for local density
@@ -107,15 +107,21 @@ void HGCalCLUEAlgoT<T, STRATEGY>::makeClusters() {
       float delta_r = vecDeltas_[3];
       delta = delta_r;
     }
-    cells_[l].clusterIndex.resize(cells_[l].dim1.size());
 
-    auto clusterer = clue::Clusterer<2>(delta, kappa_);
-    auto queue = clue::get_queue(0u);
-    auto points = clue::PointsHost<2>(
-        queue, cells_[l].dim1.size(), cells_[l].dim1, cells_[l].dim2, cells_[l].weight, cells_[l].clusterIndex);
-    points.set_density_uncertainty(cells_[l].sigmaNoise);
-    clusterer.make_clusters(points);
-    numberOfClustersPerLayer_[l] = points.n_clusters();
+    const auto nhits = cells_[l].dim1.size();
+    cells_[l].clusterIndex.resize(nhits);
+    if (nhits > 0u) {
+      auto clusterer = clue::Clusterer<2>(delta, kappa_);
+      auto queue = clue::get_queue(0u);
+      auto points = clue::PointsHost<2>(
+          queue, cells_[l].dim1.size(), cells_[l].dim1, cells_[l].dim2, cells_[l].weight, cells_[l].clusterIndex);
+      points.set_density_uncertainty(cells_[l].sigmaNoise);
+      clusterer.make_clusters(points);
+      numberOfClustersPerLayer_[l] = points.n_clusters();
+
+      auto seeds = clusterer.getSeeds();
+      std::ranges::copy(seeds, std::back_inserter(cells_[l].seeds));
+    }
   }
 #if DEBUG_CLUSTERS_ALPAKA
   hgcalUtils::DumpLegacySoA dumperLegacySoA;
@@ -154,10 +160,18 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
                                       cells_[layerId].dim2,
                                       cells_[layerId].weight,
                                       cells_[layerId].clusterIndex);
+    if (points.size() <= 0)
+      continue;
 
     std::ranges::copy(points.clusterIndexes(), std::back_inserter(cluster_hit_associations));
 
     auto clusters = clue::get_clusters(points);
+    // for (auto cl = 0u; cl < clusters.size(); ++cl) {
+    //   for (auto p : clusters[cl]) {
+    //     auto detid = cells_[layerId].detid[p];
+    //     detid_and_fractions.push_back(ticl::HitAndFraction{detid, -1.f});
+    //   }
+    // }
     auto to_hit_and_fraction = [&](auto idx) { return ticl::HitAndFraction{cells_[layerId].detid[idx], -1.f}; };
     std::ranges::copy(clusters | std::views::transform(to_hit_and_fraction), std::back_inserter(detid_and_fractions));
     for (auto cl = 0u; cl < clusters.size(); ++cl) {
@@ -211,8 +225,7 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
       layer_clusters_view.energy().correctedEnergyUncertainty()[globalClusterIndex] = -1.f;
       layer_clusters_view.indexes().caloID()[globalClusterIndex] = reco::CaloID::DET_HGCAL_ENDCAP;
       layer_clusters_view.indexes().algoID()[globalClusterIndex] = algoId_;
-      // TODO: do we really care about the seed?
-      // layer_clusters.view().indexes().seedID()[globalClusterIndex] = seedDetId;
+      layer_clusters_view.indexes().seedID()[globalClusterIndex] = cells_[layerId].seeds[cl];
       layer_clusters_view.indexes().flags()[globalClusterIndex] = 0;
     }
   }
