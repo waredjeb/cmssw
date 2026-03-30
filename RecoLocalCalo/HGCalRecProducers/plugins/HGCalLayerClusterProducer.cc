@@ -131,7 +131,7 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
 
   produces<std::vector<float>>("InitialLayerClustersMask");
   produces<reco::CaloClusterHostCollection>();
-  produces<ticl::HitsAndFractionsHost>();
+  // produces<ticl::HitsAndFractionsHost>();
   // produces<std::vector<reco::BasicCluster>>();
   //time for layer clusters
   // produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
@@ -240,7 +240,7 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   // evt.put(std::move(timeCl), timeClname_);
 
   evt.put(std::move(clusters));
-  evt.put(std::move(hits_and_fractions));
+  // evt.put(std::move(hits_and_fractions));
 
   algo_->reset();
 }
