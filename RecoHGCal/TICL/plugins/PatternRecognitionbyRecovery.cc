@@ -34,7 +34,8 @@ void PatternRecognitionbyRecovery<TILES>::makeTracksters(
   result.clear();
 
   // Iterate over all layer clusters
-  for (size_t i = 0; i < input.layerClusters.size(); ++i) {
+  auto clusters = input.layerClusters.view();
+  for (auto i = 0; i < input.layerClusters.size()[0]; ++i) {
     if (input.mask[i] == 0.f) {
       continue;  // Skip masked clusters
     }
@@ -43,14 +44,14 @@ void PatternRecognitionbyRecovery<TILES>::makeTracksters(
     Trackster trackster;
     trackster.vertices().push_back(i);
     trackster.vertex_multiplicity().push_back(1);
-    const auto &lc = input.layerClusters[i];
     trackster.setTimeAndError(input.layerClustersTime.get(i).first, input.layerClustersTime.get(i).second);
-    trackster.setRawEnergy(lc.energy());
-    trackster.setBarycenter({float(lc.x()), float(lc.y()), float(lc.z())});
+    trackster.setRawEnergy(clusters.energy()[i].energy());
+    trackster.setBarycenter(
+        {float(clusters.position()[i].x()), float(clusters.position()[i].y()), float(clusters.position()[i].z())});
     trackster.calculateRawPt();
 
-    if (std::abs(lc.z()) <= z_limit_em) {
-      trackster.setRawEmEnergy(lc.energy());
+    if (std::abs(clusters.position()[i].z()) <= z_limit_em) {
+      trackster.setRawEmEnergy(clusters.energy()[i].energy());
       trackster.calculateRawEmPt();
     }
 

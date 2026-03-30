@@ -80,6 +80,7 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
     const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input,
     std::vector<Trackster> &result,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) {
+  auto clusters = input.layerClusters.view();
   // Protect from events with no seeding regions
   if (input.regions.empty())
     return;
@@ -121,11 +122,12 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
             continue;
           }
           // Should we correct for the position of the PV?
-          auto const &cl = input.layerClusters[clusterIdx];
-          math::XYZVector direction(cl.x(), cl.y(), cl.z());
+          math::XYZVector direction(clusters.position()[clusterIdx].x(),
+                                    clusters.position()[clusterIdx].y(),
+                                    clusters.position()[clusterIdx].z());
           direction = direction.Unit();
-          direction *= cl.energy();
-          auto fpj = fastjet::PseudoJet(direction.X(), direction.Y(), direction.Z(), cl.energy());
+          direction *= clusters.energy()[clusterIdx].energy();
+          auto fpj = fastjet::PseudoJet(direction.X(), direction.Y(), direction.Z(), clusters.energy()[clusterIdx].energy());
           fpj.set_user_index(clusterIdx);
           fjInputs.push_back(fpj);
         }  // End of loop on the clusters on currentLayer

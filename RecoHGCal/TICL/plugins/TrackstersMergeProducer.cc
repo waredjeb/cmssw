@@ -11,7 +11,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -72,7 +72,7 @@ private:
 
   void fillTile(TICLTracksterTiles &, const std::vector<Trackster> &, TracksterIterIndex);
 
-  void energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
+  void energyRegressionAndID(const reco::CaloClusterHostCollection &layerClusters,
                              const tensorflow::Session *,
                              std::vector<Trackster> &result) const;
   void printTrackstersDebug(const std::vector<Trackster> &, const char *label) const;
@@ -82,7 +82,7 @@ private:
   std::unique_ptr<LinkingAlgoBase> linkingAlgo_;
 
   const edm::EDGetTokenT<std::vector<Trackster>> tracksters_clue3d_token_;
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  const edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<reco::Track>> tracks_token_;
   edm::EDGetTokenT<edm::ValueMap<float>> tracks_time_token_;
@@ -139,7 +139,7 @@ private:
 
 TrackstersMergeProducer::TrackstersMergeProducer(const edm::ParameterSet &ps)
     : tracksters_clue3d_token_(consumes<std::vector<Trackster>>(ps.getParameter<edm::InputTag>("trackstersclue3d"))),
-      clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
+      clusters_token_(consumes<reco::CaloClusterHostCollection>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
@@ -421,7 +421,7 @@ void TrackstersMergeProducer::produce(edm::Event &evt, const edm::EventSetup &es
   evt.put(std::move(resultCandidates));
 }
 
-void TrackstersMergeProducer::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
+void TrackstersMergeProducer::energyRegressionAndID(const reco::CaloClusterHostCollection &layerClusters,
                                                     const tensorflow::Session *eidSession,
                                                     std::vector<Trackster> &tracksters) const {
   // Energy regression and particle identification strategy:
@@ -471,6 +471,7 @@ void TrackstersMergeProducer::energyRegressionAndID(const std::vector<reco::Calo
     outputNames.push_back(eidOutputNameId_);
   }
 
+  auto clusters = layerClusters.view();
   // fill input tensor (5)
   for (int i = 0; i < batchSize; i++) {
     const Trackster &trackster = tracksters[i];
@@ -483,8 +484,8 @@ void TrackstersMergeProducer::energyRegressionAndID(const std::vector<reco::Calo
     for (int k = 0; k < (int)trackster.vertices().size(); k++) {
       clusterIndices[k] = k;
     }
-    sort(clusterIndices.begin(), clusterIndices.end(), [&layerClusters, &trackster](const int &a, const int &b) {
-      return layerClusters[trackster.vertices(a)].energy() > layerClusters[trackster.vertices(b)].energy();
+    sort(clusterIndices.begin(), clusterIndices.end(), [&clusters, &trackster](const int &a, const int &b) {
+      return clusters.energy()[trackster.vertices(a)].energy() > clusters.energy()[trackster.vertices(b)].energy();
     });
 
     // keep track of the number of seen clusters per layer
@@ -493,16 +494,15 @@ void TrackstersMergeProducer::energyRegressionAndID(const std::vector<reco::Calo
     // loop through clusters by descending energy
     for (const int &k : clusterIndices) {
       // get features per layer and cluster and store the values directly in the input tensor
-      const reco::CaloCluster &cluster = layerClusters[trackster.vertices(k)];
-      int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
+      int j = rhtools_.getLayerWithOffset(clusters.indexes()[k].seedID()) - 1;
       if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
         // get the pointer to the first feature value for the current batch, layer and cluster
         float *features = &input.tensor<float, inputDimension>()(i, j, seenClusters[j], 0);
 
         // fill features
-        *(features++) = float(cluster.energy() / float(trackster.vertex_multiplicity(k)));
-        *(features++) = float(std::abs(cluster.eta()));
-        *(features) = float(cluster.phi());
+        *(features++) = float(clusters.energy()[k].energy() / float(trackster.vertex_multiplicity(k)));
+        *(features++) = float(std::abs(clusters.eta(k)));
+        *(features) = float(clusters.phi(k));
 
         // increment seen clusters
         seenClusters[j]++;

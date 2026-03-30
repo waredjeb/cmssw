@@ -203,7 +203,7 @@ std::vector<float> GNNInterpretationAlgo::padFeatures(const std::vector<float>& 
 void GNNInterpretationAlgo::buildGraphFromNodes(const std::tuple<Vector, AlgebraicMatrix55, int>& TrackInfo,
                                                 const reco::Track& track,
                                                 const edm::MultiSpan<Trackster>& tracksters,
-                                                const std::vector<reco::CaloCluster>& clusters,
+                                                const reco::CaloClusterHostCollection& clusters,
                                                 const std::vector<ticl::Node>& nodeVec,
                                                 GraphData& outGraphData) {
   outGraphData = {};  // clear previous data

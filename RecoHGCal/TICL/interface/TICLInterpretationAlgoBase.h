@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <vector>
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/MtdHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
@@ -39,7 +39,7 @@ namespace ticl {
     struct Inputs {
       const edm::Event& ev;
       const edm::EventSetup& es;
-      const std::vector<reco::CaloCluster>& layerClusters;
+      const reco::CaloClusterHostCollection& layerClusters;
       const edm::ValueMap<std::pair<float, float>>& layerClustersTime;
       const edm::MultiSpan<Trackster>& tracksters;
       const std::vector<std::vector<unsigned int>>& linkedResultTracksters;

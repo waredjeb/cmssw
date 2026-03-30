@@ -13,7 +13,7 @@
 
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/TICLCandidate.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
@@ -27,7 +27,7 @@ namespace ticl {
         : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
     virtual ~TracksterInferenceAlgoBase() {}
 
-    virtual void inputData(const std::vector<reco::CaloCluster>& layerClusters,
+    virtual void inputData(const reco::CaloClusterHostCollection& layerClusters,
                            std::vector<Trackster>& tracksters,
                            const hgcal::RecHitTools& rhtools) = 0;
     virtual void runInference(std::vector<Trackster>& tracksters) = 0;

@@ -16,7 +16,7 @@
 
 #include "DataFormats/Common/interface/OrphanHandle.h"
 
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -68,7 +68,7 @@ private:
   std::string algoType_;
 
   std::vector<edm::EDGetTokenT<std::vector<Trackster>>> tracksters_tokens_;
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  const edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
 
   const bool regressionAndPid_;
@@ -89,7 +89,7 @@ private:
 
 TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, const ONNXRuntime *onnxRuntime)
     : algoType_(ps.getParameter<edm::ParameterSet>("linkingPSet").getParameter<std::string>("type")),
-      clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
+      clusters_token_(consumes<reco::CaloClusterHostCollection>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       clustersTime_token_(
           consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
       regressionAndPid_(ps.getParameter<bool>("regressionAndPid")),
@@ -192,7 +192,7 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
 
   // loop over the original_masks_tokens_ and get the original masks collections and multiply them
   // to get the global mask
-  std::vector<float> original_global_mask(layerClusters.size(), 1.f);
+  std::vector<float> original_global_mask(layerClusters.size()[0], 1.f);
   for (unsigned int i = 0; i < original_masks_tokens_.size(); ++i) {
     const auto &tmp_mask = evt.get(original_masks_tokens_[i]);
     for (unsigned int j = 0; j < tmp_mask.size(); ++j) {

@@ -71,7 +71,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
 
   std::vector<HGCDoublet::HGCntuplet> foundNtuplets;
   std::vector<int> seedIndices;
-  std::vector<uint8_t> layer_cluster_usage(input.layerClusters.size(), 0);
+  std::vector<uint8_t> layer_cluster_usage(input.layerClusters.size()[0], 0);
   theGraph_->makeAndConnectDoublets(input.tiles,
                                     input.regions,
                                     nEtaBin,
@@ -114,12 +114,12 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
 
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
         LogDebug("HGCPatternRecoByCA") << " New doublet " << doublet << " for trackster: " << result.size()
-                                       << " InnerCl " << innerCluster << " " << input.layerClusters[innerCluster].x()
-                                       << " " << input.layerClusters[innerCluster].y() << " "
-                                       << input.layerClusters[innerCluster].z() << " OuterCl " << outerCluster << " "
-                                       << input.layerClusters[outerCluster].x() << " "
-                                       << input.layerClusters[outerCluster].y() << " "
-                                       << input.layerClusters[outerCluster].z() << " " << tracksterId << std::endl;
+                                       << " InnerCl " << innerCluster << " " << input.layerClusters.view().position()[innerCluster].x()
+                                       << " " << input.layerClusters.view().position()[innerCluster].y() << " "
+                                       << input.layerClusters.view().position()[innerCluster].z() << " OuterCl " << outerCluster << " "
+                                       << input.layerClusters.view().position()[outerCluster].x() << " "
+                                       << input.layerClusters.view().position()[outerCluster].y() << " "
+                                       << input.layerClusters.view().position()[outerCluster].z() << " " << tracksterId << std::endl;
       }
     }
     unsigned showerMinLayerId = 99999;
@@ -128,8 +128,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
     std::vector<std::pair<unsigned int, unsigned int>> lcIdAndLayer;
     lcIdAndLayer.reserve(effective_cluster_idx.size());
     for (auto const i : effective_cluster_idx) {
-      auto const &haf = input.layerClusters[i].hitsAndFractions();
-      auto layerId = rhtools_.getLayerWithOffset(haf[0].first);
+      auto layerId = rhtools_.getLayerWithOffset(input.layerClusters.view().indexes()[i].seedID());
       showerMinLayerId = std::min(layerId, showerMinLayerId);
       uniqueLayerIds.push_back(layerId);
       lcIdAndLayer.emplace_back(i, layerId);
@@ -240,7 +239,7 @@ void PatternRecognitionbyCA<TILES>::filter(std::vector<Trackster> &output,
 template <typename TILES>
 void PatternRecognitionbyCA<TILES>::mergeTrackstersTRK(
     const std::vector<Trackster> &input,
-    const std::vector<reco::CaloCluster> &layerClusters,
+    const reco::CaloClusterHostCollection &layerClusters,
     std::vector<Trackster> &output,
     std::unordered_map<int, std::vector<int>> &seedToTracksterAssociation) const {
   output.reserve(input.size());

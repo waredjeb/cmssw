@@ -9,7 +9,7 @@ namespace ticl {
     // Load ANN model
   }
 
-  void TracksterInferenceByANN::inputData(const std::vector<reco::CaloCluster>& layerClusters,
+  void TracksterInferenceByANN::inputData(const reco::CaloClusterHostCollection& layerClusters,
                                           std::vector<Trackster>& tracksters,
                                           const hgcal::RecHitTools& rhtools) {
     // Prepare data for inference
