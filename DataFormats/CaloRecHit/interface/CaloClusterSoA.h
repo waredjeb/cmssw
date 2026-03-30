@@ -39,6 +39,11 @@ namespace reco {
                       SOA_BLOCK(indexes, CaloClusterSoAIndexes),
                       SOA_BLOCK(timing, CaloClusterSoATiming),
                       SOA_CONST_VIEW_METHODS(
+                        SOA_HOST_DEVICE auto r(std::integral auto idx) const {
+                          const auto x = this->position()[idx].x();
+                          const auto y = this->position()[idx].y();
+                          return xtd::sqrt(x * x + y * y);
+                        }
                         SOA_HOST_DEVICE auto phi(std::integral auto idx) const {
                           const auto x = this->position()[idx].x();
                           const auto y = this->position()[idx].y();
