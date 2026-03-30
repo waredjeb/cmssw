@@ -188,7 +188,6 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   auto linkedResultTracksters = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   const auto &layerClusters = evt.get(clusters_token_);
-  const auto &layerClustersTimes = evt.get(clustersTime_token_);
 
   // loop over the original_masks_tokens_ and get the original masks collections and multiply them
   // to get the global mask
@@ -211,7 +210,7 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   }
 
   // Linking
-  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
+  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, trackstersManager);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   // LinkTracksters will produce a vector of vector of indices of tracksters that:
@@ -232,7 +231,6 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
 
   assignPCAtoTracksters(*resultTracksters,
                         layerClusters,
-                        layerClustersTimes,
                         rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
                         rhtools_,
                         true);

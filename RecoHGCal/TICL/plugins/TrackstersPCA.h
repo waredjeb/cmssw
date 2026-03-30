@@ -20,7 +20,6 @@ namespace ticl {
    */
   void assignPCAtoTracksters(std::vector<Trackster> &tracksters,
                              const reco::CaloClusterHostCollection &layerClusters,
-                             const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
                              double z_limit_em,
                              hgcal::RecHitTools const &rhTools,
                              bool computeLocalTime = false,
@@ -29,12 +28,11 @@ namespace ticl {
                              int minLayer = 10,
                              int maxLayer = 10);
   std::pair<float, float> computeLocalTracksterTime(const Trackster &trackster,
-                                                    const reco::CaloClusterHostCollection &layerClusters,
-                                                    const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                                                    const reco::CaloClusterHostCollection::ConstView &layerClusters,
                                                     const Eigen::Vector3f &barycenter,
                                                     size_t N);
   std::pair<float, float> computeTracksterTime(const Trackster &trackster,
-                                               const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                                               const reco::CaloClusterHostCollection::ConstView &layerClusters,
                                                size_t N);
 
   inline unsigned getLayerFromLC(const reco::CaloClusterHostCollection::ConstView &clusters, const hgcal::RecHitTools &rhtools) {

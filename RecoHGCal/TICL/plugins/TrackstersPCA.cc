@@ -1,5 +1,5 @@
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "DataFormats/Common/interface/ValueMap.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/ComputeClusterTime.h"
 #include "TrackstersPCA.h"
 
@@ -8,24 +8,21 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <vector>
 #include <functional>
+#include <vector>
 
-void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
-                                 const reco::CaloClusterHostCollection &layerClusters,
-                                 const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
-                                 double z_limit_em,
-                                 const hgcal::RecHitTools &rhtools,
-                                 bool computeLocalTime,
-                                 bool energyWeight,
-                                 bool clean,
-                                 int minLayer,
-                                 int maxLayer) {
+void ticl::assignPCAtoTracksters(
+    std::vector<Trackster> &tracksters,
+    const reco::CaloClusterHostCollection &layerClusters, double z_limit_em,
+    const hgcal::RecHitTools &rhtools, bool computeLocalTime, bool energyWeight,
+    bool clean, int minLayer, int maxLayer) {
   auto clusters = layerClusters.view();
   LogDebug("TrackstersPCA_Eigen") << "------- Eigen -------" << std::endl;
 
   for (auto &trackster : tracksters) {
-    LogDebug("TrackstersPCA_Eigen") << "start testing teackster with size:" << trackster.vertices().size() << std::endl;
+    LogDebug("TrackstersPCA_Eigen")
+        << "start testing teackster with size:" << trackster.vertices().size()
+        << std::endl;
 
     Eigen::Vector3f point;
     point << 0., 0., 0.;
@@ -34,12 +31,12 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
     Eigen::Vector3f filtered_barycenter;
     filtered_barycenter << 0., 0., 0.;
 
-    auto fillPoint =
-        [&](const reco::CaloClusterHostCollection::ConstView &c, std::integral auto idx, const float weight = 1.f) {
-          point[0] = weight * c.position()[idx].x();
-          point[1] = weight * c.position()[idx].y();
-          point[2] = weight * c.position()[idx].z();
-        };
+    auto fillPoint = [&](const reco::CaloClusterHostCollection::ConstView &c,
+                         std::integral auto idx, const float weight = 1.f) {
+      point[0] = weight * c.position()[idx].x();
+      point[1] = weight * c.position()[idx].y();
+      point[2] = weight * c.position()[idx].z();
+    };
 
     // Initialize this trackster with default, dummy values
     trackster.setRawEnergy(0.f);
@@ -47,7 +44,8 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
     trackster.setRawPt(0.f);
     trackster.setRawEmPt(0.f);
 
-    size_t N = trackster.vertices().size();  ///< Number of layer clusters in trackster
+    size_t N =
+        trackster.vertices().size(); ///< Number of layer clusters in trackster
     if (N == 0)
       continue;
     float weight = 1.f / N;
@@ -57,9 +55,12 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
 
     for (size_t i = 0; i < N; ++i) {
       auto fraction = 1.f / trackster.vertex_multiplicity(i);
-      trackster.addToRawEnergy(clusters.energy()[trackster.vertices(i)].energy() * fraction);
-      if (std::abs(clusters.position()[trackster.vertices(i)].z()) <= z_limit_em)
-        trackster.addToRawEmEnergy(clusters.energy()[trackster.vertices(i)].energy() * fraction);
+      trackster.addToRawEnergy(
+          clusters.energy()[trackster.vertices(i)].energy() * fraction);
+      if (std::abs(clusters.position()[trackster.vertices(i)].z()) <=
+          z_limit_em)
+        trackster.addToRawEmEnergy(
+            clusters.energy()[trackster.vertices(i)].energy() * fraction);
 
       // Compute the weighted barycenter.
       if (energyWeight)
@@ -68,7 +69,8 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
       for (size_t j = 0; j < 3; ++j)
         barycenter[j] += point[j];
 
-      layerClusterEnergies.push_back(clusters.energy()[trackster.vertices(i)].energy());
+      layerClusterEnergies.push_back(
+          clusters.energy()[trackster.vertices(i)].energy());
     }
     float raw_energy = trackster.raw_energy();
     float inv_raw_energy = 1.f / raw_energy;
@@ -81,13 +83,16 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
 
     LogDebug("TrackstersPCA_Eigen") << "cleaning is  :" << clean << std::endl;
 
-    std::vector<unsigned> filtered_idx;  // indices of layer clusters to consider for cleaned PCA
+    std::vector<unsigned>
+        filtered_idx; // indices of layer clusters to consider for cleaned PCA
     float filtered_energy = 0;
     float inv_filtered_energy = 0;
     if (clean) {
       // Filter layerclusters for the cleaned PCA
-      auto maxE_vertex = std::distance(layerClusterEnergies.begin(),
-                                       std::max_element(layerClusterEnergies.begin(), layerClusterEnergies.end()));
+      auto maxE_vertex =
+          std::distance(layerClusterEnergies.begin(),
+                        std::max_element(layerClusterEnergies.begin(),
+                                         layerClusterEnergies.end()));
       auto maxE_layer = getLayerFromLC(clusters, rhtools);
 
       auto vertices_by_layer = sortByLayer(trackster, clusters, rhtools);
@@ -99,20 +104,25 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
 
         std::vector<float> energies_in_layer;
         for (auto vrt : vertices_in_layer)
-          energies_in_layer.push_back(clusters.energy()[trackster.vertices(vrt)].energy());
+          energies_in_layer.push_back(
+              clusters.energy()[trackster.vertices(vrt)].energy());
 
-        unsigned maxEid_inLayer = std::distance(energies_in_layer.begin(),
-                                                std::max_element(energies_in_layer.begin(), energies_in_layer.end()));
+        unsigned maxEid_inLayer =
+            std::distance(energies_in_layer.begin(),
+                          std::max_element(energies_in_layer.begin(),
+                                           energies_in_layer.end()));
 
         // layer based filtering of what goes into the PCA
-        if ((int)i >= (int)maxE_layer - minLayer && (int)i <= (int)maxE_layer + maxLayer) {
+        if ((int)i >= (int)maxE_layer - minLayer &&
+            (int)i <= (int)maxE_layer + maxLayer) {
           auto filtered_vert = vertices_in_layer[maxEid_inLayer];
           filtered_idx.push_back(filtered_vert);
 
-          const auto max_energy = clusters.energy()[trackster.vertices(filtered_vert)].energy();
-          fillPoint(clusters,
-                    trackster.vertices(filtered_vert),
-                    max_energy * (1.f / trackster.vertex_multiplicity(filtered_vert)));
+          const auto max_energy =
+              clusters.energy()[trackster.vertices(filtered_vert)].energy();
+          fillPoint(clusters, trackster.vertices(filtered_vert),
+                    max_energy *
+                        (1.f / trackster.vertex_multiplicity(filtered_vert)));
           for (size_t j = 0; j < 3; ++j)
             filtered_barycenter[j] += point[j];
           filtered_energy += max_energy;
@@ -121,23 +131,29 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
       inv_filtered_energy = 1. / filtered_energy;
       filtered_barycenter *= inv_filtered_energy;
     }
-    LogDebug("TrackstersPCA_Eigen") << "min, max " << minLayer << "  " << maxLayer << std::endl;
+    LogDebug("TrackstersPCA_Eigen")
+        << "min, max " << minLayer << "  " << maxLayer << std::endl;
 
     std::pair<float, float> timeTrackster;
     if (computeLocalTime)
-      timeTrackster = ticl::computeLocalTracksterTime(trackster, layerClusters, layerClustersTime, barycenter, N);
+      timeTrackster =
+          ticl::computeLocalTracksterTime(trackster, clusters, barycenter, N);
     else
-      timeTrackster = ticl::computeTracksterTime(trackster, layerClustersTime, N);
+      timeTrackster = ticl::computeTracksterTime(trackster, clusters, N);
 
     trackster.setTimeAndError(timeTrackster.first, timeTrackster.second);
-    LogDebug("TrackstersPCA") << "Use energy weighting: " << energyWeight << std::endl;
+    LogDebug("TrackstersPCA")
+        << "Use energy weighting: " << energyWeight << std::endl;
     LogDebug("TrackstersPCA") << "\nTrackster characteristics: " << std::endl;
     LogDebug("TrackstersPCA") << "Size: " << N << std::endl;
-    LogDebug("TrackstersPCA") << "Energy: " << trackster.raw_energy() << std::endl;
+    LogDebug("TrackstersPCA")
+        << "Energy: " << trackster.raw_energy() << std::endl;
     LogDebug("TrackstersPCA") << "raw_pt: " << trackster.raw_pt() << std::endl;
-    LogDebug("TrackstersPCA") << "Means:          " << barycenter[0] << ", " << barycenter[1] << ", " << barycenter[2]
-                              << std::endl;
-    LogDebug("TrackstersPCA") << "Time:          " << trackster.time() << " +/- " << trackster.timeError() << std::endl;
+    LogDebug("TrackstersPCA")
+        << "Means:          " << barycenter[0] << ", " << barycenter[1] << ", "
+        << barycenter[2] << std::endl;
+    LogDebug("TrackstersPCA") << "Time:          " << trackster.time()
+                              << " +/- " << trackster.timeError() << std::endl;
 
     if (N > 2) {
       Eigen::Vector3f sigmas;
@@ -152,17 +168,21 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
       auto calc_covM = [&](size_t i) {
         fillPoint(clusters, trackster.vertices(i));
         if (energyWeight && trackster.raw_energy()) {
-          weight = (clusters.energy()[trackster.vertices(i)].energy() / trackster.vertex_multiplicity(i)) *
+          weight = (clusters.energy()[trackster.vertices(i)].energy() /
+                    trackster.vertex_multiplicity(i)) *
                    (clean ? inv_filtered_energy : inv_raw_energy);
           if (trackster.vertex_multiplicity(i) > 1)
             LogDebug("TrackstersPCA_Eigen")
-                << "trackster.vertex_multiplicity(i)   :" << trackster.vertex_multiplicity(i);
+                << "trackster.vertex_multiplicity(i)   :"
+                << trackster.vertex_multiplicity(i);
         }
         weights2_sum += weight * weight;
         for (size_t x = 0; x < 3; ++x) {
           for (size_t y = 0; y <= x; ++y) {
-            covM(x, y) += weight * (point[x] - (clean ? filtered_barycenter[x] : barycenter[x])) *
-                          (point[y] - (clean ? filtered_barycenter[y] : barycenter[y]));
+            covM(x, y) +=
+                weight *
+                (point[x] - (clean ? filtered_barycenter[x] : barycenter[x])) *
+                (point[y] - (clean ? filtered_barycenter[y] : barycenter[y]));
             covM(y, x) = covM(x, y);
           }
         }
@@ -180,8 +200,10 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
       covM *= 1.f / (1.f - weights2_sum);
 
       // Perform the actual decomposition
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f>::RealVectorType eigenvalues_fromEigen;
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f>::EigenvectorsType eigenvectors_fromEigen;
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f>::RealVectorType
+          eigenvalues_fromEigen;
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f>::EigenvectorsType
+          eigenvectors_fromEigen;
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigensolver(covM);
       if (eigensolver.info() != Eigen::Success) {
         eigenvalues_fromEigen = eigenvalues_fromEigen.Zero();
@@ -194,11 +216,15 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
       // Compute the spread in the both spaces.
       auto calc_spread = [&](size_t i) {
         fillPoint(clusters, trackster.vertices(i));
-        sigmas += weight * (point - (clean ? filtered_barycenter : barycenter)).cwiseAbs2();
+        sigmas +=
+            weight *
+            (point - (clean ? filtered_barycenter : barycenter)).cwiseAbs2();
         Eigen::Vector3f point_transformed =
-            eigenvectors_fromEigen * (point - (clean ? filtered_barycenter : barycenter));
+            eigenvectors_fromEigen *
+            (point - (clean ? filtered_barycenter : barycenter));
         if (energyWeight && raw_energy)
-          weight = (clusters.energy()[trackster.vertices(i)].energy() / trackster.vertex_multiplicity(i)) *
+          weight = (clusters.energy()[trackster.vertices(i)].energy() /
+                    trackster.vertex_multiplicity(i)) *
                    (clean ? inv_filtered_energy : inv_raw_energy);
         sigmasEigen += weight * (point_transformed.cwiseAbs2());
       };
@@ -216,43 +242,51 @@ void ticl::assignPCAtoTracksters(std::vector<Trackster> &tracksters,
       sigmas /= (1.f - weights2_sum);
       sigmasEigen /= (1.f - weights2_sum);
 
-      trackster.fillPCAVariables(eigenvalues_fromEigen,
-                                 eigenvectors_fromEigen,
-                                 sigmas,
-                                 sigmasEigen,
-                                 3,
+      trackster.fillPCAVariables(eigenvalues_fromEigen, eigenvectors_fromEigen,
+                                 sigmas, sigmasEigen, 3,
                                  ticl::Trackster::PCAOrdering::ascending);
 
-      LogDebug("TrackstersPCA") << "EigenValues from Eigen/Tr(cov): " << eigenvalues_fromEigen[2] / covM.trace() << ", "
-                                << eigenvalues_fromEigen[1] / covM.trace() << ", "
-                                << eigenvalues_fromEigen[0] / covM.trace() << std::endl;
-      LogDebug("TrackstersPCA") << "EigenValues from Eigen:         " << eigenvalues_fromEigen[2] << ", "
-                                << eigenvalues_fromEigen[1] << ", " << eigenvalues_fromEigen[0] << std::endl;
-      LogDebug("TrackstersPCA") << "EigenVector 3 from Eigen: " << eigenvectors_fromEigen(0, 2) << ", "
-                                << eigenvectors_fromEigen(1, 2) << ", " << eigenvectors_fromEigen(2, 2) << std::endl;
-      LogDebug("TrackstersPCA") << "EigenVector 2 from Eigen: " << eigenvectors_fromEigen(0, 1) << ", "
-                                << eigenvectors_fromEigen(1, 1) << ", " << eigenvectors_fromEigen(2, 1) << std::endl;
-      LogDebug("TrackstersPCA") << "EigenVector 1 from Eigen: " << eigenvectors_fromEigen(0, 0) << ", "
-                                << eigenvectors_fromEigen(1, 0) << ", " << eigenvectors_fromEigen(2, 0) << std::endl;
-      LogDebug("TrackstersPCA") << "Original sigmas:          " << sigmas[0] << ", " << sigmas[1] << ", " << sigmas[2]
-                                << std::endl;
-      LogDebug("TrackstersPCA") << "SigmasEigen in PCA space: " << sigmasEigen[2] << ", " << sigmasEigen[1] << ", "
-                                << sigmasEigen[0] << std::endl;
+      LogDebug("TrackstersPCA")
+          << "EigenValues from Eigen/Tr(cov): "
+          << eigenvalues_fromEigen[2] / covM.trace() << ", "
+          << eigenvalues_fromEigen[1] / covM.trace() << ", "
+          << eigenvalues_fromEigen[0] / covM.trace() << std::endl;
+      LogDebug("TrackstersPCA")
+          << "EigenValues from Eigen:         " << eigenvalues_fromEigen[2]
+          << ", " << eigenvalues_fromEigen[1] << ", "
+          << eigenvalues_fromEigen[0] << std::endl;
+      LogDebug("TrackstersPCA")
+          << "EigenVector 3 from Eigen: " << eigenvectors_fromEigen(0, 2)
+          << ", " << eigenvectors_fromEigen(1, 2) << ", "
+          << eigenvectors_fromEigen(2, 2) << std::endl;
+      LogDebug("TrackstersPCA")
+          << "EigenVector 2 from Eigen: " << eigenvectors_fromEigen(0, 1)
+          << ", " << eigenvectors_fromEigen(1, 1) << ", "
+          << eigenvectors_fromEigen(2, 1) << std::endl;
+      LogDebug("TrackstersPCA")
+          << "EigenVector 1 from Eigen: " << eigenvectors_fromEigen(0, 0)
+          << ", " << eigenvectors_fromEigen(1, 0) << ", "
+          << eigenvectors_fromEigen(2, 0) << std::endl;
+      LogDebug("TrackstersPCA")
+          << "Original sigmas:          " << sigmas[0] << ", " << sigmas[1]
+          << ", " << sigmas[2] << std::endl;
+      LogDebug("TrackstersPCA")
+          << "SigmasEigen in PCA space: " << sigmasEigen[2] << ", "
+          << sigmasEigen[1] << ", " << sigmasEigen[0] << std::endl;
       LogDebug("TrackstersPCA") << "covM:     \n" << covM << std::endl;
     }
   }
 }
 
-std::pair<float, float> ticl::computeLocalTracksterTime(const Trackster &trackster,
-                                                        const reco::CaloClusterHostCollection &layerClusters,
-                                                        const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
-                                                        const Eigen::Vector3f &barycenter,
-                                                        size_t N) {
-  auto clusters = layerClusters.view();
+std::pair<float, float> ticl::computeLocalTracksterTime(
+    const Trackster &trackster,
+    const reco::CaloClusterHostCollection::ConstView &layerClusters,
+    const Eigen::Vector3f &barycenter, size_t N) {
   float tracksterTime = 0.;
   float tracksterTimeErr = 0.;
 
-  auto project_lc_to_pca = [](const std::array<float, 3> &point, const std::array<float, 3> &segment_end) {
+  auto project_lc_to_pca = [](const std::array<float, 3> &point,
+                              const std::array<float, 3> &segment_end) {
     float dot_product = 0.0;
     float segment_dot = 0.0;
 
@@ -278,24 +312,29 @@ std::pair<float, float> ticl::computeLocalTracksterTime(const Trackster &trackst
     return distanceSquared;
   };
 
-  constexpr float c = 29.9792458;  // cm/ns
+  constexpr float c = 29.9792458; // cm/ns
   for (size_t i = 0; i < N; ++i) {
     // Add timing from layerClusters not already used
-    float timeE = layerClustersTime.get(trackster.vertices(i)).second;
+    float timeE = layerClusters.timing()[trackster.vertices(i)].timeError();
     if (timeE > 0.f) {
-      float time = layerClustersTime.get(trackster.vertices(i)).first;
+      float time = layerClusters.timing()[trackster.vertices(i)].time();
       timeE = 1.f / pow(timeE, 2);
-      float x = clusters.position()[trackster.vertices(i)].x();
-      float y = clusters.position()[trackster.vertices(i)].y();
-      float z = clusters.position()[trackster.vertices(i)].z();
+      float x = layerClusters.position()[trackster.vertices(i)].x();
+      float y = layerClusters.position()[trackster.vertices(i)].y();
+      float z = layerClusters.position()[trackster.vertices(i)].z();
 
-      if (project_lc_to_pca({{x, y, z}}, {{barycenter[0], barycenter[1], barycenter[2]}}) < 9.f) {  // set MR to 3
+      if (project_lc_to_pca({{x, y, z}},
+                            {{barycenter[0], barycenter[1], barycenter[2]}}) <
+          9.f) { // set MR to 3
         float invz = 1.f / z;
         float deltaT = 1.f / c *
-                       std::sqrt(((barycenter[2] * invz - 1.f) * x) * ((barycenter[2] * invz - 1.f) * x) +
-                                 ((barycenter[2] * invz - 1.f) * y) * ((barycenter[2] * invz - 1.f) * y) +
+                       std::sqrt(((barycenter[2] * invz - 1.f) * x) *
+                                     ((barycenter[2] * invz - 1.f) * x) +
+                                 ((barycenter[2] * invz - 1.f) * y) *
+                                     ((barycenter[2] * invz - 1.f) * y) +
                                  (barycenter[2] - z) * (barycenter[2] - z));
-        time = std::abs(barycenter[2]) < std::abs(z) ? time - deltaT : time + deltaT;
+        time = std::abs(barycenter[2]) < std::abs(z) ? time - deltaT
+                                                     : time + deltaT;
 
         tracksterTime += time * timeE;
         tracksterTimeErr += timeE;
@@ -303,21 +342,22 @@ std::pair<float, float> ticl::computeLocalTracksterTime(const Trackster &trackst
     }
   }
   if (tracksterTimeErr > 0.f)
-    return {tracksterTime / tracksterTimeErr, 1.f / std::sqrt(tracksterTimeErr)};
+    return {tracksterTime / tracksterTimeErr,
+            1.f / std::sqrt(tracksterTimeErr)};
   else
     return {-99.f, -1.f};
 }
 
-std::pair<float, float> ticl::computeTracksterTime(const Trackster &trackster,
-                                                   const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
-                                                   size_t N) {
+std::pair<float, float> ticl::computeTracksterTime(
+    const Trackster &trackster,
+    const reco::CaloClusterHostCollection::ConstView &layerClusters, size_t N) {
   std::vector<float> times;
   std::vector<float> timeErrors;
 
   for (size_t i = 0; i < N; ++i) {
-    float timeE = layerClustersTime.get(trackster.vertices(i)).second;
+    float timeE = layerClusters.timing()[trackster.vertices(i)].timeError();
     if (timeE > 0.f) {
-      times.push_back(layerClustersTime.get(trackster.vertices(i)).first);
+      times.push_back(layerClusters.timing()[trackster.vertices(i)].time());
       timeErrors.push_back(1.f / pow(timeE, 2));
     }
   }
