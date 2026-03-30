@@ -138,45 +138,46 @@ std::array<ticl::Vector, 3> TracksterLinkingbySkeletons::findSkeletonNodes(
     const ticl::Trackster &trackster,
     float lower_percentage,
     float upper_percentage,
-    const std::vector<reco::CaloCluster> &layerClusters,
+    const reco::CaloClusterHostCollection &layerClusters,
     const hgcal::RecHitTools &rhtools) {
+  auto clusters = layerClusters.view();
   auto const &vertices = trackster.vertices();
   auto const trackster_raw_energy = trackster.raw_energy();
   // sort vertices by layerId
   std::array<ticl::Vector, 3> skeleton;
   if (trackster.vertices().size() < 3) {
-    const auto &v = layerClusters[trackster.vertices()[0]];
-    const Vector intersection(v.x(), v.y(), v.z());
+    const Vector intersection(clusters.position()[trackster.vertices()[0]].x(),
+                              clusters.position()[trackster.vertices()[0]].y(),
+                              clusters.position()[trackster.vertices()[0]].z());
     skeleton = {{intersection, intersection, intersection}};
     return skeleton;
   }
 
   std::vector<unsigned int> sortedVertices(vertices);
-  std::sort(sortedVertices.begin(), sortedVertices.end(), [&layerClusters](unsigned int i, unsigned int j) {
-    return std::abs(layerClusters[i].z()) < std::abs(layerClusters[j].z());
+  std::sort(sortedVertices.begin(), sortedVertices.end(), [&clusters](unsigned int i, unsigned int j) {
+    return std::abs(clusters.position()[i].z()) < std::abs(clusters.position()[j].z());
   });
 
   // now loop over sortedVertices and find the layerId that contains the lower_percentage of the energy
   // and the layerId that contains the upper_percentage of the energy
   float cumulativeEnergyFraction = 0.f;
-  int innerLayerId = rhtools.getLayerWithOffset(layerClusters[sortedVertices[0]].hitsAndFractions()[0].first);
-  float innerLayerZ = layerClusters[sortedVertices[0]].z();
-  int outerLayerId = rhtools.getLayerWithOffset(layerClusters[sortedVertices.back()].hitsAndFractions()[0].first);
-  float outerLayerZ = layerClusters[sortedVertices.back()].z();
+  int innerLayerId = rhtools.getLayerWithOffset(clusters.indexes()[sortedVertices[0]].seedID());
+  float innerLayerZ = clusters.position()[sortedVertices[0]].z();
+  int outerLayerId = rhtools.getLayerWithOffset(clusters.indexes()[sortedVertices.back()].seedID());
+  float outerLayerZ = clusters.position()[sortedVertices.back()].z();
   bool foundInnerLayer = false;
   bool foundOuterLayer = false;
   for (auto const &v : sortedVertices) {
-    auto const &lc = layerClusters[v];
-    auto const &n_lay = rhtools.getLayerWithOffset(lc.hitsAndFractions()[0].first);
-    cumulativeEnergyFraction += lc.energy() / trackster_raw_energy;
+    auto const &n_lay = rhtools.getLayerWithOffset(clusters.indexes()[v].seedID());
+    cumulativeEnergyFraction += clusters.energy()[v].energy() / trackster_raw_energy;
     if (cumulativeEnergyFraction >= lower_percentage and not foundInnerLayer) {
       innerLayerId = n_lay;
-      innerLayerZ = lc.z();
+      innerLayerZ = clusters.position()[v].z();
       foundInnerLayer = true;
     }
     if (cumulativeEnergyFraction >= upper_percentage and not foundOuterLayer) {
       outerLayerId = n_lay;
-      outerLayerZ = lc.z();
+      outerLayerZ = clusters.position()[v].z();
       foundOuterLayer = true;
     }
   }

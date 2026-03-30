@@ -9,7 +9,8 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
-#include "DataFormats/EgammaReco/interface/BasicCluster.h"
+#include "DataFormats/TICL/interface/CaloClusterHostCollection.h"
+// #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 
 class MergeClusterProducer : public edm::stream::EDProducer<> {
@@ -38,7 +39,7 @@ public:
   void produce(edm::Event &, const edm::EventSetup &) override;
 
 private:
-  std::vector<edm::EDGetTokenT<std::vector<reco::CaloCluster>>> tokens_;
+  std::vector<edm::EDGetTokenT<reco::CaloClusterHostCollection>> tokens_;
 
   std::vector<edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>>> time_tokens_;
   std::string timeClname_;
@@ -50,7 +51,9 @@ private:
    * @param[in] HSi vector for Hardon silicon
    * @param[in] ESci vector for hadron scintillator
   */
-  void mergeTogether(std::vector<reco::CaloCluster> &merge, std::vector<std::vector<reco::CaloCluster>> &clusters);
+  void mergeTogether(reco::CaloClusterHostCollection::View &merged,
+                     const reco::CaloClusterHostCollection::ConstView &input,
+                     uint32_t &start);
 
   /**
    * @brief copy all values from vm to to
@@ -111,7 +114,7 @@ MergeClusterProducer::MergeClusterProducer(const edm::ParameterSet &ps)
     : timeClname_(ps.getParameter<std::string>("timeClname")) {
   std::vector<edm::InputTag> tags = ps.getParameter<std::vector<edm::InputTag>>("layerClusters");
   for (auto &tag : tags) {
-    tokens_.push_back(consumes<std::vector<reco::CaloCluster>>(tag));
+    tokens_.push_back(consumes<reco::CaloClusterHostCollection>(tag));
   }
   std::vector<edm::InputTag> time_tags = ps.getParameter<std::vector<edm::InputTag>>("time_layerclusters");
   for (auto &tag : time_tags) {
@@ -119,8 +122,8 @@ MergeClusterProducer::MergeClusterProducer(const edm::ParameterSet &ps)
   }
 
   produces<std::vector<float>>("InitialLayerClustersMask");
-  produces<std::vector<reco::BasicCluster>>();
-  produces<std::vector<reco::BasicCluster>>("sharing");
+  produces<reco::CaloClusterHostCollection>();
+  produces<reco::CaloClusterHostCollection>("sharing");
   //time for layer clusters
   produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
 }
@@ -144,39 +147,57 @@ void MergeClusterProducer::fillDescriptions(edm::ConfigurationDescriptions &desc
 
 void MergeClusterProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   //merge clusters
-  std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
-  createMerge(evt, tokens_, *clusters);
+  std::vector<edm::Handle<reco::CaloClusterHostCollection>> handles;
+  auto total_layer_clusters = 0u;
+  for (auto token : tokens_) {
+    edm::Handle<reco::CaloClusterHostCollection> handle;
+    evt.getByToken(token, handle);
+    total_layer_clusters += handle->view().position().metadata().size();
+    handles.push_back(handle);
+  }
+  auto merged = std::make_unique<reco::CaloClusterHostCollection>(
+      cms::alpakatools::host(), total_layer_clusters, total_layer_clusters, total_layer_clusters, total_layer_clusters);
+  auto start = 0u;
+  for (auto handle : handles) {
+    mergeTogether(merged->view(), handle->view(), start);
+  }
   //put new clusters to event
-  auto clusterHandle = evt.put(std::move(clusters));
 
   //create layer cluster mask
   std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-  layerClustersMask->resize(clusterHandle->size(), 1.0);
-  //put it into event
+  layerClustersMask->resize(merged->view().position().metadata().size(), 1.0);
+
+  evt.put(std::move(merged));
   evt.put(std::move(layerClustersMask), "InitialLayerClustersMask");
 
   //time
-  std::vector<std::pair<float, float>> times;
-  mergeTime(evt, clusterHandle->size(), times);
+  // std::vector<std::pair<float, float>> times;
+  // mergeTime(evt, clusterHandle->size(), times);
 
-  auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
-  edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
-  filler.insert(clusterHandle, times.begin(), times.end());
-  filler.fill();
-  evt.put(std::move(timeCl), timeClname_);
+  // auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
+  // edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
+  // filler.insert(clusterHandle, times.begin(), times.end());
+  // filler.fill();
+  // evt.put(std::move(timeCl), timeClname_);
 }
 
-void MergeClusterProducer::mergeTogether(std::vector<reco::CaloCluster> &merge,
-                                         std::vector<std::vector<reco::CaloCluster>> &clusters) {
-  size_t clusterSize = 0;
-  for (auto &cl : clusters) {
-    clusterSize += cl.size();
+void MergeClusterProducer::mergeTogether(reco::CaloClusterHostCollection::View &merged,
+                                         const reco::CaloClusterHostCollection::ConstView &input,
+                                         uint32_t &start) {
+  for (auto idx = 0; idx < input.position().metadata().size(); ++idx) {
+    const auto cumulative_index = idx + start;
+    merged.position().x()[cumulative_index] = input.position().x()[idx];
+    merged.position().y()[cumulative_index] = input.position().y()[idx];
+    merged.position().z()[cumulative_index] = input.position().z()[idx];
+    merged.energy().energy()[cumulative_index] = input.energy().energy()[idx];
+    merged.energy().correctedEnergy()[cumulative_index] = input.energy().correctedEnergy()[idx];
+    merged.energy().correctedEnergyUncertainty()[cumulative_index] = input.energy().correctedEnergyUncertainty()[idx];
+    merged.indexes().caloID()[cumulative_index] = input.indexes().caloID()[idx];
+    merged.indexes().algoID()[cumulative_index] = input.indexes().algoID()[idx];
+    merged.indexes().seedID()[cumulative_index] = input.indexes().seedID()[idx];
+    merged.indexes().flags()[cumulative_index] = input.indexes().flags()[idx];
   }
-  merge.reserve(clusterSize);
-
-  for (auto &cl : clusters) {
-    merge.insert(merge.end(), cl.begin(), cl.end());
-  }
+  start = input.position().metadata().size();
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"

@@ -25,7 +25,7 @@ namespace ticl {
                 const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
                 std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) override;
 
-    void energyRegressionAndID(const std::vector<reco::CaloCluster>& layerClusters,
+    void energyRegressionAndID(const reco::CaloClusterHostCollection& layerClusters,
                                const tensorflow::Session*,
                                std::vector<Trackster>& result);
     void emptyTrackstersFromSeedsTRK(std::vector<Trackster>& tracksters,
@@ -36,7 +36,7 @@ namespace ticl {
 
   private:
     void mergeTrackstersTRK(const std::vector<Trackster>&,
-                            const std::vector<reco::CaloCluster>&,
+                            const reco::CaloClusterHostCollection&,
                             std::vector<Trackster>&,
                             std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) const;
     edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;

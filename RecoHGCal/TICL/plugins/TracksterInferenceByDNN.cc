@@ -32,16 +32,17 @@ namespace ticl {
   }
 
   // Method to process input data and prepare it for inference
-  void TracksterInferenceByDNN::inputData(const std::vector<reco::CaloCluster>& layerClusters,
+  void TracksterInferenceByDNN::inputData(const reco::CaloClusterHostCollection& layerClusters,
                                           std::vector<Trackster>& tracksters,
                                           const hgcal::RecHitTools& rhtools) {
+    auto clusters = layerClusters.view();
     tracksterIndices_.clear();  // Clear previous indices
     for (int i = 0; i < static_cast<int>(tracksters.size()); i++) {
       float sumClusterEnergy = 0.;
       for (const unsigned int& vertex : tracksters[i].vertices()) {
-        if (rhtools.isBarrel(layerClusters[vertex].seed()))
+        if (rhtools.isBarrel(clusters.indexes()[vertex].seedID()))
           continue;
-        sumClusterEnergy += static_cast<float>(layerClusters[vertex].energy());
+        sumClusterEnergy += static_cast<float>(clusters.energy()[vertex].energy());
         if (sumClusterEnergy >= eidMinClusterEnergy_) {
           tracksters[i].setRegressedEnergy(0.f);  // Set regressed energy to 0
           tracksters[i].zeroProbabilities();      // Zero out probabilities
@@ -71,22 +72,21 @@ namespace ticl {
         clusterIndices[k] = k;
       }
 
-      std::sort(clusterIndices.begin(), clusterIndices.end(), [&layerClusters, &trackster](const int& a, const int& b) {
-        return layerClusters[trackster.vertices(a)].energy() > layerClusters[trackster.vertices(b)].energy();
+      std::sort(clusterIndices.begin(), clusterIndices.end(), [&clusters, &trackster](const int& a, const int& b) {
+        return clusters.energy()[trackster.vertices(a)].energy() > clusters.energy()[trackster.vertices(b)].energy();
       });
 
       std::vector<int> seenClusters(eidNLayers_, 0);
 
       // Fill input data with cluster information
       for (const int& k : clusterIndices) {
-        const reco::CaloCluster& cluster = layerClusters[trackster.vertices(k)];
-        int j = rhtools.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
+        int j = rhtools.getLayerWithOffset(clusters.indexes()[k].seedID()) - 1;
         if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
           auto index = (i * eidNLayers_ + j) * eidNFeatures_ * eidNClusters_ + seenClusters[j] * eidNFeatures_;
           input_Data_[0][index] =
-              static_cast<float>(cluster.energy() / static_cast<float>(trackster.vertex_multiplicity(k)));
-          input_Data_[0][index + 1] = static_cast<float>(std::abs(cluster.eta()));
-          input_Data_[0][index + 2] = static_cast<float>(cluster.phi());
+              static_cast<float>(clusters.energy()[k].energy() / static_cast<float>(trackster.vertex_multiplicity(k)));
+          input_Data_[0][index + 1] = static_cast<float>(std::abs(clusters.eta(k)));
+          input_Data_[0][index + 2] = static_cast<float>(clusters.phi(k));
           seenClusters[j]++;
         }
       }

@@ -177,9 +177,10 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
   clusters_.resize(2 * rhtools_.lastLayer(false));
   std::vector<std::pair<int, int>> layerIdx2layerandSoa;  //used everywhere also to propagate cluster masking
 
-  layerIdx2layerandSoa.reserve(input.layerClusters.size());
+  layerIdx2layerandSoa.reserve(input.layerClusters.size()[0]);
+  auto clusters = input.layerClusters.view();
   unsigned int layerIdx = 0;
-  for (auto const &lc : input.layerClusters) {
+  for (auto idx = 0; idx < input.layerClusters.size()[0]; ++idx) {
     if (input.mask[layerIdx] == 0.) {
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
         edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Skipping masked cluster: " << layerIdx;
@@ -188,39 +189,41 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
       layerIdx++;
       continue;
     }
-    const auto firstHitDetId = lc.hitsAndFractions()[0].first;
-    int layer = rhtools_.getLayerWithOffset(firstHitDetId) - 1 +
-                rhtools_.lastLayer(false) * ((rhtools_.zside(firstHitDetId) + 1) >> 1);
+    const auto seed_id = clusters.indexes()[idx].seedID();
+    int layer = rhtools_.getLayerWithOffset(seed_id) - 1 +
+                rhtools_.lastLayer(false) * ((rhtools_.zside(seed_id) + 1) >> 1);
     assert(layer >= 0);
-    auto detId = lc.hitsAndFractions()[0].first;
+    const auto detId = seed_id;
     int layerClusterIndexInLayer = clusters_[layer].x.size();
     layerIdx2layerandSoa.emplace_back(layer, layerClusterIndexInLayer);
     float sum_x = 0.;
     float sum_y = 0.;
     float sum_sqr_x = 0.;
     float sum_sqr_y = 0.;
-    float ref_x = lc.x();
-    float ref_y = lc.y();
-    float invClsize = 1. / lc.hitsAndFractions().size();
-    for (auto const &hitsAndFractions : lc.hitsAndFractions()) {
-      auto const &point = rhtools_.getPosition(hitsAndFractions.first);
-      sum_x += point.x() - ref_x;
-      sum_sqr_x += (point.x() - ref_x) * (point.x() - ref_x);
-      sum_y += point.y() - ref_y;
-      sum_sqr_y += (point.y() - ref_y) * (point.y() - ref_y);
-    }
+    float ref_x = clusters.position()[idx].x();
+    float ref_y = clusters.position()[idx].y();
+    float invClsize = 1. / clusters.position()[idx].cells();
+    // for (auto const &hitsAndFractions : lc.hitsAndFractions()) {
+    //   auto const &point = rhtools_.getPosition(hitsAndFractions.first);
+    //   sum_x += point.x() - ref_x;
+    //   sum_sqr_x += (point.x() - ref_x) * (point.x() - ref_x);
+    //   sum_y += point.y() - ref_y;
+    //   sum_sqr_y += (point.y() - ref_y) * (point.y() - ref_y);
+    // }
     // The variance of X for X uniform in circle of radius R is R^2/4,
     // therefore we multiply the sqrt(var) by 2 to have a rough estimate of the
     // radius. On the other hand, while averaging the x and y radius, we would
     // end up dividing by 2. Hence we omit the value here and in the average
     // below, too.
-    float radius_x = sqrt((sum_sqr_x - (sum_x * sum_x) * invClsize) * invClsize);
-    float radius_y = sqrt((sum_sqr_y - (sum_y * sum_y) * invClsize) * invClsize);
+    // float radius_x = sqrt((sum_sqr_x - (sum_x * sum_x) * invClsize) * invClsize);
+    // float radius_y = sqrt((sum_sqr_y - (sum_y * sum_y) * invClsize) * invClsize);
+    float radius_x = 0.f;
+    float radius_y = 0.f;
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
       edm::LogVerbatim("PatternRecognitionbyCLUE3D")
           << "cluster rx: " << std::setw(5) << radius_x << ", ry: " << std::setw(5) << radius_y
           << ", r:  " << std::setw(5) << (radius_x + radius_y) << ", cells: " << std::setw(4)
-          << lc.hitsAndFractions().size();
+          << clusters.position()[idx].cells();
     }
 
     // The case of single cell layer clusters has to be handled differently.
@@ -247,17 +250,17 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     }
 
     // Maybe check if these vectors can be reserved beforehands
-    clusters_[layer].x.emplace_back(lc.x());
-    clusters_[layer].y.emplace_back(lc.y());
-    clusters_[layer].z.emplace_back(lc.z());
-    clusters_[layer].r_over_absz.emplace_back(sqrt(lc.x() * lc.x() + lc.y() * lc.y()) / std::abs(lc.z()));
+    clusters_[layer].x.emplace_back(clusters.position()[idx].x());
+    clusters_[layer].y.emplace_back(clusters.position()[idx].y());
+    clusters_[layer].z.emplace_back(clusters.position()[idx].z());
+    clusters_[layer].r_over_absz.emplace_back(clusters.r(idx) / std::abs(clusters.position()[idx].z()));
     clusters_[layer].radius.emplace_back(radius_x + radius_y);
-    clusters_[layer].eta.emplace_back(lc.eta());
-    clusters_[layer].phi.emplace_back(lc.phi());
-    clusters_[layer].cells.push_back(lc.hitsAndFractions().size());
-    clusters_[layer].algoId.push_back(lc.algo() - reco::CaloCluster::hgcal_em);
+    clusters_[layer].eta.emplace_back(clusters.eta(idx));
+    clusters_[layer].phi.emplace_back(clusters.phi(idx));
+    clusters_[layer].cells.push_back(clusters.position()[idx].cells());
+    clusters_[layer].algoId.push_back(clusters.indexes()[idx].algoID() - reco::CaloCluster::hgcal_em);
     clusters_[layer].isSilicon.push_back(rhtools_.isSilicon(detId));
-    clusters_[layer].energy.emplace_back(lc.energy());
+    clusters_[layer].energy.emplace_back(clusters.energy()[idx].energy());
     clusters_[layer].isSeed.push_back(false);
     clusters_[layer].clusterIndex.emplace_back(-1);
     clusters_[layer].layerClusterOriginalIdx.emplace_back(layerIdx++);

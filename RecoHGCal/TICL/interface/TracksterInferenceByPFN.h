@@ -9,7 +9,7 @@ namespace ticl {
   class TracksterInferenceByPFN : public TracksterInferenceAlgoBase {
   public:
     explicit TracksterInferenceByPFN(const edm::ParameterSet& conf);
-    void inputData(const std::vector<reco::CaloCluster>& layerClusters,
+    void inputData(const reco::CaloClusterHostCollection& layerClusters,
                    std::vector<Trackster>& tracksters,
                    const hgcal::RecHitTools& rhtools) override;
     void runInference(std::vector<Trackster>& tracksters) override;

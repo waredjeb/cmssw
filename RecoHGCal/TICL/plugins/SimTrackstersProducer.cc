@@ -14,6 +14,7 @@
 #include "DataFormats/Common/interface/OrphanHandle.h"
 
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/TICL/interface/CaloClusterHostCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -82,7 +83,7 @@ private:
   std::string detector_;
   const bool doNose_ = false;
   const bool computeLocalTime_;
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  const edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
   const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
 
@@ -286,15 +287,15 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto& layerClustersTimes = *layerClustersTimesHandle;
   const auto& inputClusterMask = *inputClusterMaskHandle;
 
-  output_mask->resize(layerClusters.size(), 1.f);
-  output_mask_fromCP->resize(layerClusters.size(), 1.f);
+  output_mask->resize(layerClusters.size()[0], 1.f);
+  output_mask_fromCP->resize(layerClusters.size()[0], 1.f);
 
   const auto& simclusters = evt.get(simclusters_token_);
   edm::Handle<std::vector<CaloParticle>> caloParticles_h;
   evt.getByToken(caloparticles_token_, caloParticles_h);
   if (!caloParticles_h.isValid()) {
     edm::LogWarning("SimTrackstersProducer") << "Missing CaloParticles.";
-    this->returnEmptyCollections(evt, layerClusters.size());
+    this->returnEmptyCollections(evt, layerClusters.size()[0]);
     return;
   }
   const auto& caloparticles = *caloParticles_h;
@@ -314,7 +315,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto TPtoRecoTrackMapHandle = evt.getHandle(associatormapStRsToken_);
   if (!TPtoRecoTrackMapHandle.isValid()) {
     edm::LogWarning("SimTrackstersProducer") << "Missing TP->RecoTrack association.";
-    this->returnEmptyCollections(evt, layerClusters.size());
+    this->returnEmptyCollections(evt, layerClusters.size()[0]);
     return;
   }
   const auto& TPtoRecoTrackMap = *TPtoRecoTrackMapHandle;

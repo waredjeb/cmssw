@@ -4,6 +4,7 @@
 <use name="FWCore/ParameterSet"/>
 <use name="Geometry/HGCalGeometry"/>
 <use name="RecoLocalCalo/HGCalRecAlgos"/>
+<use name="xtd"/>
 <export>
   <lib name="1"/>
 </export>

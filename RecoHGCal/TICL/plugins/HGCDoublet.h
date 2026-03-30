@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/TICL/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
 
 class HGCDoublet {
@@ -18,21 +18,21 @@ public:
   HGCDoublet(const int innerClusterId,
              const int outerClusterId,
              const int doubletId,
-             const std::vector<reco::CaloCluster> *layerClusters,
+             const reco::CaloClusterHostCollection *layerClusters,
              const int seedIndex,
              bool areSiblingClusters = false)
       : layerClusters_(layerClusters),
         theDoubletId_(doubletId),
         innerClusterId_(innerClusterId),
         outerClusterId_(outerClusterId),
-        innerR_((*layerClusters)[innerClusterId].position().r()),
-        outerR_((*layerClusters)[outerClusterId].position().r()),
-        innerX_((*layerClusters)[innerClusterId].x()),
-        outerX_((*layerClusters)[outerClusterId].x()),
-        innerY_((*layerClusters)[innerClusterId].y()),
-        outerY_((*layerClusters)[outerClusterId].y()),
-        innerZ_((*layerClusters)[innerClusterId].z()),
-        outerZ_((*layerClusters)[outerClusterId].z()),
+        innerR_(layerClusters->view().r(innerClusterId)),
+        outerR_(layerClusters->view().r(outerClusterId)),
+        innerX_(layerClusters->view().position()[innerClusterId].x()),
+        outerX_(layerClusters->view().position()[outerClusterId].x()),
+        innerY_(layerClusters->view().position()[innerClusterId].y()),
+        outerY_(layerClusters->view().position()[outerClusterId].y()),
+        innerZ_(layerClusters->view().position()[innerClusterId].z()),
+        outerZ_(layerClusters->view().position()[outerClusterId].z()),
         seedIndex_(seedIndex),
         alreadyVisited_(false),
         areSiblingClusters_(areSiblingClusters) {}
@@ -94,7 +94,7 @@ public:
   void setVisited(bool visited) { alreadyVisited_ = visited; }
 
 private:
-  const std::vector<reco::CaloCluster> *layerClusters_;
+  const reco::CaloClusterHostCollection *layerClusters_;
   std::vector<int> outerNeighbors_;
   std::vector<int> innerNeighbors_;
 
