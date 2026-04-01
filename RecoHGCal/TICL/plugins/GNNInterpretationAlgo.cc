@@ -329,8 +329,8 @@ void GNNInterpretationAlgo::buildGraphFromNodes(const std::tuple<Vector, Algebra
     float min_dist = std::numeric_limits<float>::max();
     float max_dist = 0.f;
 
+    auto cl = clusters.view();
     for (const auto& vtx : vertices) {
-      const auto& cl = clusters.view();
       const float dist = std::sqrt(std::pow(cl.position()[vtx].x() - src_feats[4], 2) + std::pow(cl.position()[vtx].y() - src_feats[5], 2) +
                                    std::pow(std::abs(cl.position()[vtx].z()) - src_feats[6], 2));
       min_dist = std::min(min_dist, dist);

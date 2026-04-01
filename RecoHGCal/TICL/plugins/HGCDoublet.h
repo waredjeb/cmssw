@@ -7,9 +7,9 @@
 #include <cmath>
 #include <vector>
 
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "DataFormats/TICL/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 class HGCDoublet {
 public:
@@ -18,23 +18,21 @@ public:
   HGCDoublet(const int innerClusterId,
              const int outerClusterId,
              const int doubletId,
-             const reco::CaloClusterHostCollection *layerClusters,
+             const reco::CaloClusterHostCollection::ConstView layerClusters,
              const int seedIndex,
              bool areSiblingClusters = false)
-      : layerClusters_(layerClusters),
-        theDoubletId_(doubletId),
+      : theDoubletId_(doubletId),
         innerClusterId_(innerClusterId),
         outerClusterId_(outerClusterId),
-        innerR_(layerClusters->view().r(innerClusterId)),
-        outerR_(layerClusters->view().r(outerClusterId)),
-        innerX_(layerClusters->view().position()[innerClusterId].x()),
-        outerX_(layerClusters->view().position()[outerClusterId].x()),
-        innerY_(layerClusters->view().position()[innerClusterId].y()),
-        outerY_(layerClusters->view().position()[outerClusterId].y()),
-        innerZ_(layerClusters->view().position()[innerClusterId].z()),
-        outerZ_(layerClusters->view().position()[outerClusterId].z()),
-        seedIndex_(seedIndex),
-        alreadyVisited_(false),
+        innerR_(layerClusters.r(innerClusterId)),
+        outerR_(layerClusters.r(outerClusterId)),
+        innerX_(layerClusters.position()[innerClusterId].x()),
+        outerX_(layerClusters.position()[outerClusterId].x()),
+        innerY_(layerClusters.position()[innerClusterId].y()),
+        outerY_(layerClusters.position()[outerClusterId].y()),
+        innerZ_(layerClusters.position()[innerClusterId].z()),
+        outerZ_(layerClusters.position()[outerClusterId].z()),
+        seedIndex_(seedIndex), alreadyVisited_(false),    
         areSiblingClusters_(areSiblingClusters) {}
 
   double innerX() const { return innerX_; }

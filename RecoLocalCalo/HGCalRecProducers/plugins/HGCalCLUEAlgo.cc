@@ -161,7 +161,7 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
                                       cells_[layerId].dim2,
                                       cells_[layerId].weight,
                                       cells_[layerId].clusterIndex);
-    if (points.size() <= 0)
+    if (points.size() <= 0 || numberOfClustersPerLayer_[layerId] == 0)
       continue;
 
     std::ranges::copy(points.clusterIndexes(), std::back_inserter(cluster_hit_associations));

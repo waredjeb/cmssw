@@ -76,9 +76,8 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     input.regions,
                                     nEtaBin,
                                     nPhiBin,
-                                    input.layerClusters,
+                                    input.layerClusters.view(),
                                     input.mask,
-                                    input.layerClustersTime,
                                     1,
                                     1,
                                     min_cos_theta_,
@@ -173,7 +172,6 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
   }
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
-                              input.layerClustersTime,
                               rhtools_.getPositionLayer(rhtools_.lastLayerEE(isHFnose), isHFnose).z(),
                               rhtools_,
                               computeLocalTime_);

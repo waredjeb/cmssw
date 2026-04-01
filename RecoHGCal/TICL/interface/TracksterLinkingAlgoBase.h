@@ -52,15 +52,13 @@ namespace ticl {
       const edm::Event& ev;
       const edm::EventSetup& es;
       const reco::CaloClusterHostCollection& layerClusters;
-      const edm::ValueMap<std::pair<float, float>>& layerClustersTime;
       const edm::MultiSpan<Trackster>& tracksters;
 
       Inputs(const edm::Event& eV,
              const edm::EventSetup& eS,
              const reco::CaloClusterHostCollection& lC,
-             const edm::ValueMap<std::pair<float, float>>& lT,
              const edm::MultiSpan<Trackster>& tS)
-          : ev(eV), es(eS), layerClusters(lC), layerClustersTime(lT), tracksters(tS) {}
+          : ev(eV), es(eS), layerClusters(lC), tracksters(tS) {}
     };
 
     virtual void linkTracksters(const Inputs& input,

@@ -103,5 +103,4 @@ hltTiclTrackstersRecoveryL1Seeded = cms.EDProducer("TrackstersProducer",
     
     ),
     seeding_regions = cms.InputTag("hltTiclSeedingL1"),
-    time_layerclusters = cms.InputTag("hltMergeLayerClustersL1Seeded","timeLayerCluster")
 )

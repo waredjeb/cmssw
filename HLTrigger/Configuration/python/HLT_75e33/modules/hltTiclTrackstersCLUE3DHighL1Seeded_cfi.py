@@ -150,7 +150,6 @@ hltTiclTrackstersCLUE3DHighL1Seeded = cms.EDProducer("TrackstersProducer",
     
     ),
     seeding_regions = cms.InputTag("hltTiclSeedingL1"),
-    time_layerclusters = cms.InputTag("hltMergeLayerClustersL1Seeded","timeLayerCluster"),
 )
 
 from Configuration.ProcessModifiers.ticl_v5_cff import ticl_v5

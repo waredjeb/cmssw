@@ -10,45 +10,34 @@
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
 #include "HGCDoublet.h"
 
-template <typename TILES>
-class HGCGraphT {
+template <typename TILES> class HGCGraphT {
 public:
-  void makeAndConnectDoublets(const TILES &h,
-                              const std::vector<TICLSeedingRegion> &regions,
-                              int nEtaBins,
-                              int nPhiBins,
-                              const reco::CaloClusterHostCollection &layerClusters,
-                              const std::vector<float> &mask,
-                              const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
-                              int deltaIEta,
-                              int deltaIPhi,
-                              float minCosThetai,
-                              float maxCosPointing,
-                              float root_doublet_max_distance_from_seed_squared,
-                              float etaLimitIncreaseWindow,
-                              int skip_layers,
-                              int maxNumberOfLayers,
-                              float maxDeltaTime,
-                              int lastLayerEE,
-                              int lastLayerFH,
-                              const std::vector<double> &siblings_maxRSquared);
+  void makeAndConnectDoublets(
+      const TILES &h, const std::vector<TICLSeedingRegion> &regions,
+      int nEtaBins, int nPhiBins,
+      const reco::CaloClusterHostCollection::ConstView &layerClusters,
+      const std::vector<float> &mask, int deltaIEta, int deltaIPhi,
+      float minCosThetai, float maxCosPointing,
+      float root_doublet_max_distance_from_seed_squared,
+      float etaLimitIncreaseWindow, int skip_layers, int maxNumberOfLayers,
+      float maxDeltaTime, int lastLayerEE, int lastLayerFH,
+      const std::vector<double> &siblings_maxRSquared);
 
-  bool areTimeCompatible(int innerIdx,
-                         int outerIdx,
-                         const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
-                         float maxDeltaTime);
+  bool areTimeCompatible(
+      int innerIdx, int outerIdx,
+      const reco::CaloClusterHostCollection::ConstView &layerClusters,
+      float maxDeltaTime);
 
-  bool areOverlappingOnSiblingLayers(int innerIdx,
-                                     int outerIdx,
-                                     const reco::CaloClusterHostCollection &layerClusters,
-                                     float maxRSquared);
+  bool areOverlappingOnSiblingLayers(
+      int innerIdx, int outerIdx,
+      const reco::CaloClusterHostCollection::ConstView &layerClusters,
+      float maxRSquared);
 
   std::vector<HGCDoublet> &getAllDoublets() { return allDoublets_; }
   void findNtuplets(std::vector<HGCDoublet::HGCntuplet> &foundNtuplets,
                     std::vector<int> &seedIndices,
                     const unsigned int minClustersPerNtuplet,
-                    const bool outInDFS,
-                    const unsigned int maxOutInHops);
+                    const bool outInDFS, const unsigned int maxOutInHops);
   void clear() {
     allDoublets_.clear();
     theRootDoublets_.clear();

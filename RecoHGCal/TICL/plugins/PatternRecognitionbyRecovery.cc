@@ -44,7 +44,7 @@ void PatternRecognitionbyRecovery<TILES>::makeTracksters(
     Trackster trackster;
     trackster.vertices().push_back(i);
     trackster.vertex_multiplicity().push_back(1);
-    trackster.setTimeAndError(input.layerClustersTime.get(i).first, input.layerClustersTime.get(i).second);
+    trackster.setTimeAndError(clusters.timing()[i].time(), clusters.timing()[i].timeError());
     trackster.setRawEnergy(clusters.energy()[i].energy());
     trackster.setBarycenter(
         {float(clusters.position()[i].x()), float(clusters.position()[i].y()), float(clusters.position()[i].z())});

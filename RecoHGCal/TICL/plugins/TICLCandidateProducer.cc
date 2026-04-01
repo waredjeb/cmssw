@@ -87,7 +87,6 @@ private:
   std::vector<edm::EDGetTokenT<std::vector<std::vector<unsigned>>>> general_tracksterlinks_tokens_;
 
   const edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
-  const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
   const bool regressionAndPid_;
   std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;
 
@@ -123,8 +122,6 @@ private:
 
 TICLCandidateProducer::TICLCandidateProducer(const edm::ParameterSet &ps, const ONNXRuntime *)
     : clusters_token_(consumes<reco::CaloClusterHostCollection>(ps.getParameter<edm::InputTag>("layer_clusters"))),
-      clustersTime_token_(
-          consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
       regressionAndPid_(ps.getParameter<bool>("regressionAndPid")),
       tracks_token_(consumes<std::vector<reco::Track>>(ps.getParameter<edm::InputTag>("tracks"))),
       muons_token_(consumes<std::vector<reco::Muon>>(ps.getParameter<edm::InputTag>("muons"))),
@@ -250,7 +247,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
   auto linkedResultTracksters = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   const auto &layerClusters = evt.get(clusters_token_);
-  const auto &layerClustersTimes = evt.get(clustersTime_token_);
   edm::Handle<reco::MuonCollection> muons_h;
   evt.getByToken(muons_token_, muons_h);
 
@@ -310,7 +306,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
   const typename TICLInterpretationAlgoBase<reco::Track>::Inputs input(evt,
                                                                        es,
                                                                        layerClusters,
-                                                                       layerClustersTimes,
                                                                        generalTrackstersSpan,
                                                                        generalTracksterLinksGlobalId,
                                                                        tracks_h,
@@ -327,7 +322,6 @@ void TICLCandidateProducer::produce(edm::Event &evt, const edm::EventSetup &es) 
 
   assignPCAtoTracksters(*resultTracksters,
                         layerClusters,
-                        layerClustersTimes,
                         rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
                         rhtools_,
                         true);
@@ -524,7 +518,6 @@ void TICLCandidateProducer::fillDescriptions(edm::ConfigurationDescriptions &des
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
-  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("timingSoA", edm::InputTag("mtdSoA"));
   desc.add<edm::InputTag>("muons", edm::InputTag("muons1stStep"));
