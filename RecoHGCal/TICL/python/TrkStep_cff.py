@@ -61,7 +61,6 @@ ticlTrackstersHFNoseTrk = ticlTrackstersTrk.clone(
     original_mask = 'ticlTrackstersHFNoseEM',
     filtered_mask = "filteredLayerClustersHFNoseTrk:Trkn",
     seeding_regions = "ticlSeedingTrkHFNose",
-    time_layerclusters = "hgcalLayerClustersHFNose:timeLayerCluster",
     pluginPatternRecognitionByCA = dict(
         filter_on_categories = [2, 4], # filter muons and charged hadrons
         pid_threshold = 0.0,

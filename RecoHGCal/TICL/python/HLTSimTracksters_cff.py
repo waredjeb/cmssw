@@ -24,7 +24,6 @@ hltTiclSimTracksters = _simTrackstersProducer.clone(
     layerClusterSimClusterAssociator = cms.InputTag("hltLayerClusterSimClusterAssociationProducer"),
     filtered_mask = cms.InputTag("hltFilteredLayerClustersSimTracksters","hltTiclSimTracksters"),
     layer_clusters = cms.InputTag("hltMergeLayerClusters"),
-    time_layerclusters = cms.InputTag("hltMergeLayerClusters","timeLayerCluster"),
     simTrackToTPMap = cms.InputTag("simHitTPAssocProducer","simTrackToTP"),
     recoTracks = cms.InputTag("hltGeneralTracks"),
     simclusters = cms.InputTag("mix","MergedCaloTruth"),

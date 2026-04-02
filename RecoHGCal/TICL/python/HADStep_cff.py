@@ -59,7 +59,6 @@ ticlTrackstersHFNoseHAD = ticlTrackstersHAD.clone(
     original_mask = "ticlTrackstersHFNoseTrk",
     filtered_mask = "filteredLayerClustersHFNoseHAD:HADn",
     seeding_regions = "ticlSeedingGlobalHFNose",
-    time_layerclusters = "hgcalLayerClustersHFNose:timeLayerCluster",
     pluginPatternRecognitionByCA = dict(
        pid_threshold = 0.,
        skip_layers = 1,
