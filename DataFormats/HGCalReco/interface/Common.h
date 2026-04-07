@@ -9,12 +9,12 @@
 
 namespace ticl {
   struct TileConstants {
-    static constexpr float minEta = 1.5f;
-    static constexpr float maxEta = 3.2f;
-    static constexpr int nEtaBins = 34;
-    static constexpr int nPhiBins = 126;
-    static constexpr int nLayers = 104;
-    static constexpr int iterations = 4;
+    static constexpr float minEta = 1.4f;
+    static constexpr float maxEta = 1.8f;
+    static constexpr int nEtaBins = 4;
+    static constexpr int nPhiBins = 4;
+    static constexpr int nLayers = 20;
+    static constexpr int iterations = 1;
     static constexpr int nBins = nEtaBins * nPhiBins;
   };
 

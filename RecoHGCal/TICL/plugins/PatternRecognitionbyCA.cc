@@ -86,7 +86,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                                     root_doublet_max_distance_from_seed_squared_,
                                     etaLimitIncreaseWindow_,
                                     skip_layers_,
-                                    rhtools_.lastLayer(isHFnose),
+                                    10, //max number of layers
                                     max_delta_time_,
                                     rhtools_.lastLayerEE(isHFnose),
                                     rhtools_.lastLayerFH(),
