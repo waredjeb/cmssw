@@ -26,6 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         }
         auto clIdx = input_clusters_soa[i].clusterIndex();
         alpaka::atomicAdd(acc, &outputs[clIdx].energy(), input_rechits_soa[i].energy());
+        alpaka::atomicAdd(acc, &outputs[clIdx].mipEnergy(), input_rechits_soa[i].mipEnergy());
         alpaka::atomicAdd(acc, &outputs[clIdx].cells(), 1);
         if (input_clusters_soa[i].isSeed() == 1) {
           outputs[clIdx].seed() = input_rechits_soa[i].detid();
@@ -157,6 +158,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::memset(queue, y, 0x0);
     auto energy = cms::alpakatools::make_device_view<float>(queue, outputs.energy(), size);
     alpaka::memset(queue, energy, 0x0);
+    auto mipEnergy = cms::alpakatools::make_device_view<float>(queue, outputs.mipEnergy(), size);
+    alpaka::memset(queue, mipEnergy, 0x0);
     auto cells = cms::alpakatools::make_device_view<int>(queue, outputs.cells(), size);
     alpaka::memset(queue, cells, 0x0);
     auto total_weight = cms::alpakatools::make_device_view<float>(queue, outputs_service.total_weight(), size);

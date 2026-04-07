@@ -104,7 +104,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       };
 
       auto toa_tw_corr = [&](uint32_t toa, float energy, hgcalrechit::Vector3f p) {
-        return toa - ((energy > p[2]) ? (p[0] + p[1] * std::log(energy - p[2])) : 0.f);
+	return toa - ((energy > p[2]) ? (p[0] + p[1] / (energy - p[2])) : 0.f);
       };
 
       for (auto idx : uniform_elements(acc, digis.metadata().size())) {
@@ -115,12 +115,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         bool isAvailable((digiflags != ::hgcal::DIGI_FLAG::Invalid) &&
                          (digiflags != ::hgcal::DIGI_FLAG::NotAvailable) && calibvalid);
         bool isToAavailable((digiflags != ::hgcal::DIGI_FLAG::ZS_ToA) &&
-                            (digiflags != ::hgcal::DIGI_FLAG::ZS_ToA_ADCm1));
+			    (digiflags != ::hgcal::DIGI_FLAG::ZS_ToA_ADCm1) &&
+			    (digi.toa()!=0));
         bool isGood(isAvailable && isToAavailable);
         // INL correction
-        auto toa = isGood * toa_inl_corr(digi.toa(), calib.TOA_CTDC(), calib.TOA_FTDC());
+	float toa = isGood * toa_inl_corr(digi.toa(), calib.TOA_CTDC(), calib.TOA_FTDC());
         // timewalk correction
-        toa = isGood * toa_tw_corr(toa, recHits[idx].energy(), calib.TOA_TW());
+	toa = isGood * toa_tw_corr(toa, recHits[idx].mipEnergy()/calib.MIPS_scale(), calib.TOA_TW());
         // toa to ps
         recHits[idx].time() = toa * hgcalrechit::TOAtops;
         recHits[idx].timeError() = 0.;
@@ -177,8 +178,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         bool is_negative_surr_energy(recHits[idx + offset].energy() < 0);
         auto negative_energy_correction = (-1.0 * recHits[idx + offset].energy()) * is_negative_surr_energy;
+        auto negative_mipEnergy_correction = (-1.0 * recHits[idx + offset].mipEnergy()) * is_negative_surr_energy;
 
         recHits[idx + offset].energy() += (negative_energy_correction + recHits[idx].energy());
+        recHits[idx + offset].mipEnergy() += (negative_mipEnergy_correction + recHits[idx].mipEnergy());
+        float quadratic_noise_sum = sqrt(recHits[idx].sigmaNoise() * recHits[idx].sigmaNoise() +
+                                         recHits[idx + offset].sigmaNoise() * recHits[idx + offset].sigmaNoise());
+        recHits[idx + offset].sigmaNoise() = quadratic_noise_sum;
       }
     }
   };
