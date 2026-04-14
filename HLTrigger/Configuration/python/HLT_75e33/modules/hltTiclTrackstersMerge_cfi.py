@@ -13,7 +13,6 @@ hltTiclTrackstersMerge = cms.EDProducer("TrackstersMergeProducer",
     eta_bin_window = cms.int32(1),
     halo_max_distance2 = cms.double(4),
     layer_clusters = cms.InputTag("hltMergeLayerClusters"),
-    layer_clustersTime = cms.InputTag("hltMergeLayerClusters","timeLayerCluster"),
     linkingPSet = cms.PSet(
         algo_verbosity = cms.int32(0),
         cutTk = cms.string('1.48 < abs(eta) < 3.0 && pt > 1. && quality("highPurity") && hitPattern().numberOfLostHits("MISSING_OUTER_HITS") < 5'),
