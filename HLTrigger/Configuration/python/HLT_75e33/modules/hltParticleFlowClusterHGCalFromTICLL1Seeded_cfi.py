@@ -6,7 +6,7 @@ hltParticleFlowClusterHGCalFromTICLL1Seeded = cms.EDProducer("PFClusterProducer"
     ),
     initialClusteringStep = cms.PSet(
         algoName = cms.string('PFClusterFromHGCalTrackster'),
-        clusterSrc = cms.InputTag("hltMergeLayerClustersL1Seeded"),
+        clusterSrc = cms.InputTag("hltHgCalLayerClustersFromSoAProducer"),
         filterByTracksterIteration = cms.bool(False),
         filterByTracksterPID = cms.bool(True),
         filter_on_categories = cms.vint32(0, 1),
