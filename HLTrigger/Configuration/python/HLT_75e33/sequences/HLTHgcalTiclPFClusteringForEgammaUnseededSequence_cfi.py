@@ -29,6 +29,18 @@ _HgcalLocalRecoUnseededSequence = cms.Sequence(hltHgcalDigis+hltHGCalUncalibRecH
                                                hltHgcalLayerClustersHSi+
                                                hltMergeLayerClusters)
 
+_HgcalLocalRecoUnseededSequence_heterogeneous  = cms.Sequence(hltHgcalDigis+hltHGCalUncalibRecHit+
+                                               hltHGCalRecHit+hltParticleFlowRecHitHGC+
+                                               hltHGCalRecHit+
+                                               hltHgcalSoARecHitsProducer+
+                                               hltHgcalSoARecHitsLayerClustersProducer+
+                                               hltHgcalSoALayerClustersProducer+
+                                               hltHgCalLayerClustersFromSoAProducer+
+                                               hltHgcalLayerClustersHSci+
+                                               hltHgcalLayerClustersHSi+
+                                               hltMergeLayerClusters)
+
+
 _HgcalTICLPatternRecognitionUnseededSequence = cms.Sequence(hltFilteredLayerClustersCLUE3DHigh+
                                                             hltTiclSeedingGlobal+hltTiclLayerTileProducer+
                                                             hltTiclTrackstersCLUE3DHigh)

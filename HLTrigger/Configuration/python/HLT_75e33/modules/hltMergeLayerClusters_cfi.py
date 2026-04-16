@@ -23,8 +23,8 @@ from Configuration.ProcessModifiers.alpaka_cff import alpaka
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 
 (alpaka & ~ticl_barrel).toModify(hltMergeLayerClusters,
-    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClusters],
-    time_layerclusters = ["hltHgCalLayerClustersFromSoAProducer:timeLayerCluster", *ceh_time_layerClusters]
+    layerClusters = ["hltHgcalSoALayerClustersProducer", *ceh_layerClusters],
+    time_layerclusters = ["hltHgcalSoALayerClustersProducer:timeLayerCluster", *ceh_time_layerClusters]
 )
 
 (ticl_barrel & ~alpaka).toModify(hltMergeLayerClusters,

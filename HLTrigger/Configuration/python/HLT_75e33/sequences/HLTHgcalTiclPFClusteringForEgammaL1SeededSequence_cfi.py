@@ -16,10 +16,13 @@ from ..modules.hltParticleFlowRecHitHGCL1Seeded_cfi import *
 from ..modules.hltParticleFlowSuperClusterHGCalFromTICLL1Seeded_cfi import *
 from ..modules.hltTiclLayerTileProducerL1Seeded_cfi import *
 from ..modules.hltTiclSeedingL1_cfi import *
+from ..modules.hltHgcalSoARecHitsProducer_cfi import *
+from ..modules.hltHgcalSoARecHitsLayerClustersProducer_cfi import *
+from ..modules.hltHgcalSoALayerClustersProducer_cfi import *
+from ..modules.hltHgcalLayerClustersFromSoAProducer_cfi import *
 from ..modules.hltTiclTrackstersCLUE3DHighL1Seeded_cfi import *
 from ..modules.hltTiclTracksterLinksL1Seeded_cfi import *
 from ..modules.hltBarrelLayerClustersEBL1Seeded_cfi import *
-
 _HgcalLocalRecoL1SeededSequence = cms.Sequence(hltHgcalDigis+
                                                hltL1TEGammaHGCFilteredCollectionProducer+
                                                hltHgcalDigisL1Seeded+
@@ -43,6 +46,24 @@ _SuperclusteringL1SeededSequence = cms.Sequence(hltParticleFlowClusterHGCalFromT
 # The baseline sequence
 HLTHgcalTiclPFClusteringForEgammaL1SeededSequence = cms.Sequence(_HgcalLocalRecoL1SeededSequence + _HgcalTICLPatternRecognitionL1SeededSequence + _SuperclusteringL1SeededSequence)
 
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+alpaka.toReplaceWith(_HgcalLocalRecoL1SeededSequence, 
+                     cms.Sequence(hltHgcalDigis
+                                  + hltL1TEGammaHGCFilteredCollectionProducer
+                                  + hltHgcalDigisL1Seeded
+                                  + hltHGCalUncalibRecHitL1Seeded
+                                  + hltHGCalRecHitL1Seeded
+                                  + hltParticleFlowRecHitHGCL1Seeded
+                                  + hltRechitInRegionsHGCAL
+                                  + hltHgcalSoARecHitsProducerL1Seeded
+                                  + hltHgcalSoARecHitsLayerClustersProducerL1Seeded
+                                  + hltHgcalSoALayerClustersProducerL1Seeded
+                                  + hltHgCalLayerClustersFromSoAProducerL1Seeded
+                                  + hltHgcalLayerClustersHSciL1Seeded
+                                  + hltHgcalLayerClustersHSiL1Seeded
+                                  + hltMergeLayerClustersL1Seeded 
+                     ) 
+)
 # Enable EGammaSuperClusterProducer at HLT in ticl v5
 hltTiclTracksterLinksSuperclusteringDNNL1Seeded = hltTiclTracksterLinksL1Seeded.clone(
     linkingPSet = cms.PSet(
