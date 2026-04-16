@@ -132,16 +132,16 @@ public:
     dumperSoA.dumpInfos(deviceSoARecHitsExtra, moduleLabel_, runNumber, lumiNumber, evtNumber);
 #endif
 
-    auto clusterHandle = iEvent.put(std::move(clusters));
-
-    std::vector<std::pair<float, float>> times(clusters->size());
-    for (auto i = 0u; i < clusters->size(); ++i) {
+    auto clustersHandle = iEvent.put(std::move(clusters));
+    const auto clustersSize = clustersHandle->size();
+    std::vector<std::pair<float, float>> times(clustersSize);
+    for (auto i = 0u; i < clustersSize; ++i) {
       times[i].first = deviceView.timing()[i].time();
       times[i].second = deviceView.timing()[i].timeError();
     }
     auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
     edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
-    filler.insert(clusterHandle, times.begin(), times.end());
+    filler.insert(clustersHandle, times.begin(), times.end());
     filler.fill();
     iEvent.put(std::move(timeCl), timeClname_);
 
@@ -152,7 +152,7 @@ public:
     // layerClustersMask directly here.
     if (detector_ == "HFNose") {
       std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-      layerClustersMask->resize(clusterHandle->size(), 1.0);
+      layerClustersMask->resize(clustersHandle->size(), 1.0);
       iEvent.put(std::move(layerClustersMask), "InitialLayerClustersMask");
     }
   }

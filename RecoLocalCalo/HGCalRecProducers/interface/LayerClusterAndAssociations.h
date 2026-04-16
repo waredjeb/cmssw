@@ -15,7 +15,7 @@ namespace ticl {
         : layer_clusters{std::make_unique<reco::CaloClusterHostCollection>(
               cms::alpakatools::host(), number_of_clusters, number_of_clusters, number_of_clusters, number_of_clusters)},
           hits_and_fractions{
-              std::make_unique<HitsAndFractionsHost>(cms::alpakatools::host(), number_of_clusters, total_rechits)} {}
+              std::make_unique<HitsAndFractionsHost>(cms::alpakatools::host(), total_rechits, number_of_clusters)} {}
   };
 
 }  // namespace ticl
