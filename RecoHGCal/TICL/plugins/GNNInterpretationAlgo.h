@@ -6,9 +6,12 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "RecoHGCal/TICL/interface/TICLInterpretationAlgoBase.h"
+#include "RecoHGCal/TICL/interface/TilesCoordinates.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
+#include "DataFormats/HGCalReco/interface/TilesHost.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "RecoHGCal/TICL/interface/TilesCoordinates.h"
 #include "RecoHGCal/TICL/plugins/TICLGraph.h"
 #include "TMatrixDSym.h"
 #include "TMatrixD.h"
@@ -61,10 +64,8 @@ namespace ticl {
     const std::vector<std::string> inputNames_;
     const std::vector<std::string> output_;
 
-    Vector propagateTrackster(const Trackster &t,
-                              const unsigned idx,
-                              float zVal,
-                              std::array<TICLLayerTile, 2> &tracksterTiles);
+    void propagateTracksters(
+        const Trackster &t, std::size_t idx, float zVal, ticl::TilesCoordinates &coords, std::vector<Vector> &props);
 
     std::pair<float, float> calculateTrackstersError(const Trackster &trackster);
     std::vector<float> padFeatures(const std::vector<float> &core_feats,
@@ -73,7 +74,7 @@ namespace ticl {
                                    bool isTrack);
     void constructNodeFromWindow(const edm::MultiSpan<Trackster> &tracksters,
                                  const std::vector<std::tuple<Vector, unsigned, AlgebraicMatrix55>> &seeding,
-                                 const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                 const ticl::TICLTracksterLinkingTilesHost &tracksterTiles,
                                  const std::vector<Vector> &tracksterPropPoints,
                                  float delta,
                                  unsigned trackstersSize,

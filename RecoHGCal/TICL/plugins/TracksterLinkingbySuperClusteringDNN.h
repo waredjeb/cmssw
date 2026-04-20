@@ -21,6 +21,7 @@ namespace cms {
   }
 }  // namespace cms
 
+#include "DataFormats/HGCalReco/interface/TilesHost.h"
 #include "RecoHGCal/TICL/interface/TracksterLinkingAlgoBase.h"
 #include "RecoHGCal/TICL/interface/SuperclusteringDNNInputs.h"
 #include "DataFormats/HGCalReco/interface/TracksterFwd.h"

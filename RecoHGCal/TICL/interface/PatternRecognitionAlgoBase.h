@@ -10,8 +10,7 @@
 #include <algorithm>
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
-#include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
-#include "DataFormats/HGCalReco/interface/alpaka/TICLHeterogeneousTiles.h"
+#include "DataFormats/HGCalReco/interface/TilesHost.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DataFormats/Common/interface/ValueMap.h"

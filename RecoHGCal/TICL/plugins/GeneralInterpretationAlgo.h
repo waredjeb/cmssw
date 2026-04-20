@@ -6,8 +6,10 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "RecoHGCal/TICL/interface/TICLInterpretationAlgoBase.h"
+#include "RecoHGCal/TICL/interface/TilesCoordinates.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
+#include "DataFormats/HGCalReco/interface/TilesHost.h"
 
 namespace ticl {
 
@@ -32,14 +34,15 @@ namespace ticl {
   private:
     void buildLayers();
 
-    Vector propagateTrackster(const Trackster &t,
-                              const unsigned idx,
-                              float zVal,
-                              std::array<TICLLayerTile, 2> &tracksterTiles);
+    void propagateTracksters(const Trackster &t,
+                            std::size_t idx,
+                            float zVal,
+                            ticl::TilesCoordinates &coords,
+                            std::vector<Vector> &props);
 
     void findTrackstersInWindow(const edm::MultiSpan<Trackster> &tracksters,
                                 const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
-                                const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                const ticl::TICLTracksterLinkingTilesHost &tracksterTiles,
                                 const std::vector<Vector> &tracksterPropPoints,
                                 float delta,
                                 unsigned trackstersSize,

@@ -3,8 +3,10 @@
 
 #include <memory>
 #include <array>
+#include "RecoHGCal/TICL/interface/TilesCoordinates.h"
 #include "RecoHGCal/TICL/plugins/LinkingAlgoBase.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
+#include "DataFormats/HGCalReco/interface/TilesHost.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -13,7 +15,6 @@
 
 #include "DataFormats/Math/interface/Vector3D.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
-#include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 
 #include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
 
@@ -23,6 +24,7 @@
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 
 namespace ticl {
+
   class LinkingAlgoByDirectionGeometric final : public LinkingAlgoBase {
   public:
     LinkingAlgoByDirectionGeometric(const edm::ParameterSet &conf);
@@ -50,13 +52,12 @@ namespace ticl {
 
     void buildLayers();
 
-    Vector propagateTrackster(const Trackster &t,
-                              const unsigned idx,
-                              float zVal,
-                              std::array<TICLLayerTile, 2> &tracksterTiles);
+    void propagateTracksters(const Trackster &t, std::size_t idx, float zVal, TilesCoordinates &coords);
+    void propagateTracksters(
+        const Trackster &t, std::size_t idx, float zVal, TilesCoordinates &coords, std::vector<Vector> &props);
 
     void findTrackstersInWindow(const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
-                                const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                const ticl::TICLTracksterLinkingTilesHost &tracksterTiles,
                                 const std::vector<Vector> &tracksterPropPoints,
                                 float delta,
                                 unsigned trackstersSize,

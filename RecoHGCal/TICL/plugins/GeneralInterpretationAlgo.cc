@@ -52,14 +52,12 @@ void GeneralInterpretationAlgo::buildLayers() {
             .get());
   }
 }
-Vector GeneralInterpretationAlgo::propagateTrackster(const Trackster &t,
-                                                     const unsigned idx,
-                                                     float zVal,
-                                                     std::array<TICLLayerTile, 2> &tracksterTiles) {
+void GeneralInterpretationAlgo::propagateTracksters(
+    const Trackster &t, std::size_t idx, float zVal, ticl::TilesCoordinates &coords, std::vector<Vector> &props) {
   // needs only the positive Z co-ordinate of the surface to propagate to
   // the correct sign is calculated inside according to the barycenter of trackster
-  Vector const &baryc = t.barycenter();
-  Vector directnv = t.eigenvectors(0);
+  const auto &baryc = t.barycenter();
+  auto directnv = t.eigenvectors(0);
 
   // barycenter as direction for tracksters w/ poor PCA
   // propagation still done to get the cartesian coords
@@ -70,22 +68,26 @@ Vector GeneralInterpretationAlgo::propagateTrackster(const Trackster &t,
   // if (t.eigenvalues()[0] / t.eigenvalues()[1] < 20)
   directnv = baryc.unit();
   zVal *= (baryc.Z() > 0) ? 1 : -1;
-  float par = (zVal - baryc.Z()) / directnv.Z();
-  float xOnSurface = par * directnv.X() + baryc.X();
-  float yOnSurface = par * directnv.Y() + baryc.Y();
+  auto par = (zVal - baryc.Z()) / directnv.Z();
+  auto xOnSurface = par * directnv.X() + baryc.X();
+  auto yOnSurface = par * directnv.Y() + baryc.Y();
   Vector tPoint(xOnSurface, yOnSurface, zVal);
   if (tPoint.Eta() > 0) {
-    tracksterTiles[1].fill(tPoint.Eta(), tPoint.Phi(), idx);
+    coords.etas_pos.push_back(tPoint.Eta());
+    coords.phis_pos.push_back(tPoint.Phi());
+    coords.ids_pos.push_back(idx);
   } else if (tPoint.Eta() < 0) {
-    tracksterTiles[0].fill(tPoint.Eta(), tPoint.Phi(), idx);
+    coords.etas_neg.push_back(tPoint.Eta());
+    coords.phis_neg.push_back(tPoint.Phi());
+    coords.ids_neg.push_back(idx);
   }
 
-  return tPoint;
+  props.push_back(tPoint);
 }
 
 void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trackster> &tracksters,
                                                        const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
-                                                       const std::array<TICLLayerTile, 2> &tracksterTiles,
+                                                       const ticl::TICLTracksterLinkingTilesHost &tracksterTiles,
                                                        const std::vector<Vector> &tracksterPropPoints,
                                                        const float delta,
                                                        unsigned trackstersSize,
@@ -104,12 +106,12 @@ void GeneralInterpretationAlgo::findTrackstersInWindow(const edm::MultiSpan<Trac
     float seed_phi = i.first.Phi();
     unsigned seedId = i.second;
     auto sideZ = seed_eta > 0;  //forward or backward region
-    const TICLLayerTile &tile = tracksterTiles[sideZ];
+    auto tile = tracksterTiles[sideZ].view();
     float eta_min = std::max(std::fabs(seed_eta) - delta, (float)TileConstants::minEta);
     float eta_max = std::min(std::fabs(seed_eta) + delta, (float)TileConstants::maxEta);
 
     // get range of bins touched by delta
-    std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
+    std::array<int, 4> search_box = tile.searchBox(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
 
     std::vector<unsigned> in_delta;
     // std::vector<float> distances2;
@@ -206,6 +208,8 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
                                                edm::Handle<MtdHostCollection> inputTiming_h,
                                                std::vector<Trackster> &resultTracksters,
                                                std::vector<int> &resultCandidate) {
+  using Acc = alpaka_serial_sync::Acc1D;
+
   bool useMTDTiming = inputTiming_h.isValid();
   const auto tkH = input.tracksHandle;
   const auto maskTracks = input.maskedTracks;
@@ -223,9 +227,6 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
 
   trackPColl.reserve(tracks.size());
   tkPropIntColl.reserve(tracks.size());
-
-  std::array<TICLLayerTile, 2> tracksterPropTiles = {};  // all Tracksters, propagated to layer 1
-  std::array<TICLLayerTile, 2> tsPropIntTiles = {};      // all Tracksters, propagated to lastLayerEE
 
   if (TICLInterpretationAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
     LogDebug("GeneralInterpretationAlgo") << "------- Geometric Linking ------- \n";
@@ -285,6 +286,8 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
   tsAllPropInt.reserve(tracksters.size());
   // Propagate tracksters
 
+  ticl::TilesCoordinates tiles_front_coords(tracksters.size());
+  ticl::TilesCoordinates tiles_inner_coords(tracksters.size());
   for (unsigned i = 0; i < tracksters.size(); ++i) {
     const auto &t = tracksters[i];
     if (TICLInterpretationAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
@@ -294,15 +297,27 @@ void GeneralInterpretationAlgo::makeCandidates(const Inputs &input,
 
     // to HGCal front
     float zVal = hgcons_->waferZ(1, true);
-    auto tsP = propagateTrackster(t, i, zVal, tracksterPropTiles);
-    tsAllProp.emplace_back(tsP);
+    propagateTracksters(t, i, zVal, tiles_front_coords, tsAllProp);
 
     // to lastLayerEE
     zVal = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
-    tsP = propagateTrackster(t, i, zVal, tsPropIntTiles);
-    tsAllPropInt.emplace_back(tsP);
-
+    propagateTracksters(t, i, zVal, tiles_inner_coords, tsAllPropInt);
   }  // TS
+
+  ticl::TICLTracksterLinkingTilesHost tracksterPropTiles(
+      tiles_front_coords.size());  // all Tracksters, propagated to layer 1
+  ticl::TICLTracksterLinkingTilesHost tsPropIntTiles(
+      tiles_inner_coords.size());  // all Tracksters, propagated to lastLayerEE
+
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  tracksterPropTiles[0].template fill<Acc>(
+      queue, tiles_front_coords.etas_neg, tiles_front_coords.phis_neg, tiles_front_coords.ids_neg);
+  tracksterPropTiles[1].template fill<Acc>(
+      queue, tiles_front_coords.etas_pos, tiles_front_coords.phis_pos, tiles_front_coords.ids_pos);
+  tsPropIntTiles[0].template fill<Acc>(
+      queue, tiles_inner_coords.etas_neg, tiles_inner_coords.phis_neg, tiles_inner_coords.ids_neg);
+  tsPropIntTiles[1].template fill<Acc>(
+      queue, tiles_inner_coords.etas_pos, tiles_inner_coords.phis_pos, tiles_inner_coords.ids_pos);
 
   // step 1: tracks -> all tracksters, at firstLayerEE
   std::vector<std::vector<unsigned>> tsNearTk(tracks.size());

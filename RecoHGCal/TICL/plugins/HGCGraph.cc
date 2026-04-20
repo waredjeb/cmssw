@@ -50,7 +50,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
       origin_phi = 0;
     } else {
       auto firstLayerOnZSide = maxNumberOfLayers * zSide;
-      const auto &firstLayerHisto = histo[firstLayerOnZSide];
+      const auto &firstLayerHisto = histo[firstLayerOnZSide].view();
       origin_eta = r.origin.eta();
       origin_phi = r.origin.phi();
       int entryEtaBin = firstLayerHisto.etaBin(origin_eta);
@@ -90,8 +90,8 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
       for (int outer_layer = 0; outer_layer < std::min(1 + skip_layers, maxNumberOfLayers - 1 - il); ++outer_layer) {
         int currentInnerLayerId = il + maxNumberOfLayers * zSide;
         int currentOuterLayerId = currentInnerLayerId + 1 + outer_layer;
-        auto const &outerLayerHisto = histo[currentOuterLayerId];
-        auto const &innerLayerHisto = histo[currentInnerLayerId];
+        auto const &outerLayerHisto = histo[currentOuterLayerId].view();
+        auto const &innerLayerHisto = histo[currentInnerLayerId].view();
         maxRSquared = (il <= lastLayerEE)   ? siblings_maxRSquared[0]
                       : (il <= lastLayerFH) ? siblings_maxRSquared[1]
                                             : siblings_maxRSquared[2];
@@ -280,5 +280,5 @@ void HGCGraphT<TILES>::findNtuplets(std::vector<HGCDoublet::HGCntuplet> &foundNt
   }
 }
 
-template class HGCGraphT<TICLLayerTiles>;
-template class HGCGraphT<TICLLayerTilesHFNose>;
+template class HGCGraphT<ticl::TICLLayerTilesHost>;
+template class HGCGraphT<ticl::TICLLayerTilesHFNoseHost>;

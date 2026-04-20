@@ -35,9 +35,10 @@ Date: 07/2025
 #include "FWCore/Utilities/interface/FileInPath.h"
 #include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
 
-#include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "RecoHGCal/TICL/plugins/TracksterLinkingbySuperClusteringDNN.h"
+
+#include <cstdint>
 
 using namespace ticl;
 
@@ -107,6 +108,8 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
     std::vector<Trackster>& resultTracksters,
     std::vector<std::vector<unsigned int>>& outputSuperclusters,
     std::vector<std::vector<unsigned int>>& linkedTracksterIdToInputTracksterId) {
+  using Acc = alpaka_serial_sync::Acc1D;
+
   // For now we use all input tracksters for superclustering. At some point there might be a filter here for EM tracksters (electromagnetic identification with DNN ?)
   auto const& inputTracksters = input.tracksters;
   const unsigned int tracksterCount = inputTracksters.size();
@@ -138,11 +141,30 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
   std::vector<std::vector<std::pair<unsigned int, unsigned int>>> tracksterIndicesUsedInDNN;
 
   // Use TracksterTiles to speed up search of tracksters in eta-phi window. One per endcap
-  std::array<TICLLayerTile, 2> tracksterTilesBothEndcaps_pt;  // one per endcap
+  std::vector<float> etas_fw(trackstersIndicesPt.size());
+  std::vector<float> etas_bw(trackstersIndicesPt.size());
+  std::vector<float> phis_fw(trackstersIndicesPt.size());
+  std::vector<float> phis_bw(trackstersIndicesPt.size());
+  std::vector<uint32_t> ids_fw(trackstersIndicesPt.size());
+  std::vector<uint32_t> ids_bw(trackstersIndicesPt.size());
   for (unsigned int i_pt = 0; i_pt < trackstersIndicesPt.size(); ++i_pt) {
     Trackster const& ts = inputTracksters[trackstersIndicesPt[i_pt]];
-    tracksterTilesBothEndcaps_pt[ts.barycenter().eta() > 0.].fill(ts.barycenter().eta(), ts.barycenter().phi(), i_pt);
+    if (ts.barycenter().eta() > 0.) {
+      etas_fw.push_back(ts.barycenter().eta());
+      phis_fw.push_back(ts.barycenter().phi());
+      ids_fw.push_back(i_pt);
+    } else {
+      etas_bw.push_back(ts.barycenter().eta());
+      phis_bw.push_back(ts.barycenter().phi());
+      ids_bw.push_back(i_pt);
+    }
   }
+  ticl::TICLTracksterLinkingTilesHost tracksterTilesBothEndcaps_pt(
+      std::array<std::size_t, 2>{etas_bw.size(), etas_fw.size()});
+
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  tracksterTilesBothEndcaps_pt[0].template fill<Acc>(queue, etas_fw, phis_fw, ids_fw);
+  tracksterTilesBothEndcaps_pt[1].template fill<Acc>(queue, etas_bw, phis_bw, ids_bw);
 
   // First loop on candidate tracksters (start at 1 since the highest pt trackster can only be a seed, not a candidate)
   for (unsigned int ts_cand_idx_pt = 1; ts_cand_idx_pt < tracksterCount; ts_cand_idx_pt++) {
@@ -153,11 +175,11 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
         !checkExplainedVarianceRatioCut(ts_cand))  //   || !trackstersPassesPIDCut(ts_cand))
       continue;
 
-    auto& tracksterTiles = tracksterTilesBothEndcaps_pt[ts_cand.barycenter().eta() > 0];
-    std::array<int, 4> search_box = tracksterTiles.searchBoxEtaPhi(ts_cand.barycenter().Eta() - deltaEtaWindow_,
-                                                                   ts_cand.barycenter().Eta() + deltaEtaWindow_,
-                                                                   ts_cand.barycenter().Phi() - deltaPhiWindow_,
-                                                                   ts_cand.barycenter().Phi() + deltaPhiWindow_);
+    auto tracksterTiles = tracksterTilesBothEndcaps_pt[ts_cand.barycenter().eta() > 0].view();
+    std::array<int, 4> search_box = tracksterTiles.searchBox(ts_cand.barycenter().Eta() - deltaEtaWindow_,
+                                                             ts_cand.barycenter().Eta() + deltaEtaWindow_,
+                                                             ts_cand.barycenter().Phi() - deltaPhiWindow_,
+                                                             ts_cand.barycenter().Phi() + deltaPhiWindow_);
     // Look for seed trackster
     for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
       for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {

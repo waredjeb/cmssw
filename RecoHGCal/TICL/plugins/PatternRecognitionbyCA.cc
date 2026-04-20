@@ -65,9 +65,9 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
     LogDebug("HGCPatternRecoByCA") << "Making Tracksters with CA" << std::endl;
   }
 
-  constexpr auto isHFnose = std::is_same<TILES, TICLLayerTilesHFNose>::value;
-  constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
-  constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
+  constexpr auto isHFnose = std::is_same<TILES, ticl::TICLLayerTilesHFNoseHost>::value;
+  constexpr int nEtaBin = TILES::TilesType::nEtaBins;
+  constexpr int nPhiBin = TILES::TilesType::nPhiBins;
 
   std::vector<HGCDoublet::HGCntuplet> foundNtuplets;
   std::vector<int> seedIndices;
@@ -298,5 +298,5 @@ void PatternRecognitionbyCA<TILES>::fillPSetDescription(edm::ParameterSetDescrip
   iDesc.add<std::vector<double>>("siblings_maxRSquared", {6e-4, 6e-4, 6e-4});
 }
 
-template class ticl::PatternRecognitionbyCA<TICLLayerTiles>;
-template class ticl::PatternRecognitionbyCA<TICLLayerTilesHFNose>;
+template class ticl::PatternRecognitionbyCA<ticl::TICLLayerTilesHost>;
+template class ticl::PatternRecognitionbyCA<ticl::TICLLayerTilesHFNoseHost>;

@@ -13,7 +13,6 @@
 
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
-#include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
@@ -67,7 +66,7 @@ private:
   typedef ticl::Trackster::IterationIndex TracksterIterIndex;
   typedef ticl::Vector Vector;
 
-  void fillTile(TICLTracksterTiles &, const std::vector<Trackster> &, TracksterIterIndex);
+  void fillTile(ticl::TICLTracksterTilesHost &, const std::vector<Trackster> &, TracksterIterIndex);
 
   void energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
                              const tensorflow::Session *,
@@ -206,19 +205,28 @@ void TrackstersMergeProducer::beginRun(edm::Run const &iEvent, edm::EventSetup c
   linkingAlgo_->initialize(hgcons_, rhtools_, bfield, propagator);
 };
 
-void TrackstersMergeProducer::fillTile(TICLTracksterTiles &tracksterTile,
+void TrackstersMergeProducer::fillTile(ticl::TICLTracksterTilesHost &tracksterTile,
                                        const std::vector<Trackster> &tracksters,
                                        TracksterIterIndex tracksterIteration) {
+  using Acc = alpaka_serial_sync::Acc1D;
+
   int tracksterId = 0;
+  std::vector<float> etas(tracksters.size());
+  std::vector<float> phis(tracksters.size());
+  std::vector<uint32_t> ids(tracksters.size());
   for (auto const &t : tracksters) {
-    tracksterTile.fill(tracksterIteration, t.barycenter().eta(), t.barycenter().phi(), tracksterId);
+    etas.push_back(t.barycenter().eta());
+    phis.push_back(t.barycenter().phi());
+    ids.push_back(tracksterId);
     LogDebug("TrackstersMergeProducer") << "Adding tracksterId: " << tracksterId << " into bin [eta,phi]: [ "
-                                        << tracksterTile[tracksterIteration].etaBin(t.barycenter().eta()) << ", "
-                                        << tracksterTile[tracksterIteration].phiBin(t.barycenter().phi())
+                                        << tracksterTile[tracksterIteration].view().etaBin(t.barycenter().eta()) << ", "
+                                        << tracksterTile[tracksterIteration].view().phiBin(t.barycenter().phi())
                                         << "] for iteration: " << tracksterIteration << std::endl;
 
     tracksterId++;
   }
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  tracksterTile[tracksterIteration].template fill<Acc>(queue, etas, phis, ids);
 }
 
 void TrackstersMergeProducer::dumpTrackster(const Trackster &t) const {

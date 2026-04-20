@@ -1,5 +1,7 @@
 #include <cmath>
+#include <concepts>
 #include <string>
+#include <vector>
 #include "RecoHGCal/TICL/plugins/LinkingAlgoByDirectionGeometric.h"
 
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
@@ -37,42 +39,60 @@ void LinkingAlgoByDirectionGeometric::initialize(const HGCalDDDConstants *hgcons
   propagator_ = propH;
 }
 
-Vector LinkingAlgoByDirectionGeometric::propagateTrackster(const Trackster &t,
-                                                           const unsigned idx,
-                                                           float zVal,
-                                                           std::array<TICLLayerTile, 2> &tracksterTiles) {
-  // needs only the positive Z co-ordinate of the surface to propagate to
-  // the correct sign is calculated inside according to the barycenter of trackster
-  Vector const &baryc = t.barycenter();
-  Vector directnv = t.eigenvectors(0);
+void LinkingAlgoByDirectionGeometric::propagateTracksters(
+    const Trackster &t, std::size_t idx, float zVal, TilesCoordinates &coords) {
+  const auto &baryc = t.barycenter();
+  auto directnv = t.eigenvectors(0);
 
-  // barycenter as direction for tracksters w/ poor PCA
-  // propagation still done to get the cartesian coords
-  // which are anyway converted to eta, phi in linking
-  // -> can be simplified later
-
-  //FP: disable PCA propagation for the moment and fallback to barycenter position
-  // if (t.eigenvalues()[0] / t.eigenvalues()[1] < 20)
   directnv = baryc.unit();
 
   zVal *= (baryc.Z() > 0) ? 1 : -1;
+  const auto par = (zVal - baryc.Z()) / directnv.Z();
+  const auto xOnSurface = par * directnv.X() + baryc.X();
+  const auto yOnSurface = par * directnv.Y() + baryc.Y();
 
-  float par = (zVal - baryc.Z()) / directnv.Z();
-  float xOnSurface = par * directnv.X() + baryc.X();
-  float yOnSurface = par * directnv.Y() + baryc.Y();
   Vector tPoint(xOnSurface, yOnSurface, zVal);
-  if (tPoint.Eta() > 0)
-    tracksterTiles[1].fill(tPoint.Eta(), tPoint.Phi(), idx);
+  if (tPoint.Eta() > 0) {
+    coords.etas_pos.push_back(tPoint.Eta());
+    coords.phis_pos.push_back(tPoint.Phi());
+    coords.ids_pos.push_back(idx);
+  } else if (tPoint.Eta() < 0) {
+    coords.etas_neg.push_back(tPoint.Eta());
+    coords.phis_neg.push_back(tPoint.Phi());
+    coords.ids_neg.push_back(idx);
+  }
+}
 
-  else if (tPoint.Eta() < 0)
-    tracksterTiles[0].fill(tPoint.Eta(), tPoint.Phi(), idx);
 
-  return tPoint;
+void LinkingAlgoByDirectionGeometric::propagateTracksters(
+    const Trackster &t, std::size_t idx, float zVal, TilesCoordinates &coords, std::vector<Vector> &prop) {
+  const auto &baryc = t.barycenter();
+  auto directnv = t.eigenvectors(0);
+
+  directnv = baryc.unit();
+
+  zVal *= (baryc.Z() > 0) ? 1 : -1;
+  const auto par = (zVal - baryc.Z()) / directnv.Z();
+  const auto xOnSurface = par * directnv.X() + baryc.X();
+  const auto yOnSurface = par * directnv.Y() + baryc.Y();
+
+  Vector tPoint(xOnSurface, yOnSurface, zVal);
+  if (tPoint.Eta() > 0) {
+    coords.etas_pos.push_back(tPoint.Eta());
+    coords.phis_pos.push_back(tPoint.Phi());
+    coords.ids_pos.push_back(idx);
+  } else if (tPoint.Eta() < 0) {
+    coords.etas_neg.push_back(tPoint.Eta());
+    coords.phis_neg.push_back(tPoint.Phi());
+    coords.ids_neg.push_back(idx);
+  }
+
+  prop.push_back(tPoint);
 }
 
 void LinkingAlgoByDirectionGeometric::findTrackstersInWindow(
     const std::vector<std::pair<Vector, unsigned>> &seedingCollection,
-    const std::array<TICLLayerTile, 2> &tracksterTiles,
+    const ticl::TICLTracksterLinkingTilesHost &tracksterTiles,
     const std::vector<Vector> &tracksterPropPoints,
     float delta,
     unsigned trackstersSize,
@@ -91,12 +111,12 @@ void LinkingAlgoByDirectionGeometric::findTrackstersInWindow(
     float seed_phi = i.first.Phi();
     unsigned seedId = i.second;
     auto sideZ = seed_eta > 0;  //forward or backward region
-    const TICLLayerTile &tile = tracksterTiles[sideZ];
+    const auto &tile = tracksterTiles[sideZ].view();
     float eta_min = std::max(abs(seed_eta) - delta, (float)TileConstants::minEta);
     float eta_max = std::min(abs(seed_eta) + delta, (float)TileConstants::maxEta);
 
     // get range of bins touched by delta
-    std::array<int, 4> search_box = tile.searchBoxEtaPhi(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
+    std::array<int, 4> search_box = tile.searchBox(eta_min, eta_max, seed_phi - delta, seed_phi + delta);
 
     std::vector<unsigned> in_delta;
     std::vector<float> distances2;
@@ -239,6 +259,8 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
                                                      const bool useMTDTiming,
                                                      std::vector<TICLCandidate> &resultLinked,
                                                      std::vector<TICLCandidate> &chargedHadronsFromTk) {
+  using Acc = alpaka_serial_sync::Acc1D;
+
   const auto &tracks = *tkH;
   const auto &tracksters = *tsH;
 
@@ -256,10 +278,6 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   tkPropIntColl.reserve(tracks.size());
   tsPropIntColl.reserve(tracksters.size());
   tsHadPropIntColl.reserve(tracksters.size());
-  // tiles, element 0 is bw, 1 is fw
-  std::array<TICLLayerTile, 2> tracksterPropTiles = {};  // all Tracksters, propagated to layer 1
-  std::array<TICLLayerTile, 2> tsPropIntTiles = {};      // all Tracksters, propagated to lastLayerEE
-  std::array<TICLLayerTile, 2> tsHadPropIntTiles = {};   // Tracksters in CE-H, propagated to lastLayerEE
 
   // linking : trackster is hadronic if its barycenter is in CE-H
   auto isHadron = [&](const Trackster &t) -> bool {
@@ -331,8 +349,12 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
   tsAllProp.reserve(tracksters.size());
   tsAllPropInt.reserve(tracksters.size());
 
+  TilesCoordinates tiles_front_coords(tracksters.size());
+  TilesCoordinates tiles_hadron_coords(tracksters.size());
+  TilesCoordinates tiles_ee_coords(tracksters.size());
   for (unsigned i = 0; i < tracksters.size(); ++i) {
     const auto &t = tracksters[i];
+
     if (LinkingAlgoBase::algo_verbosity_ > VerbosityLevel::Advanced)
       LogDebug("LinkingAlgoByDirectionGeometric")
           << "trackster " << i << " - eta " << t.barycenter().eta() << " phi " << t.barycenter().phi() << " time "
@@ -340,21 +362,41 @@ void LinkingAlgoByDirectionGeometric::linkTracksters(const edm::Handle<std::vect
 
     // to HGCal front
     float zVal = hgcons_->waferZ(1, true);
-    auto tsP = propagateTrackster(t, i, zVal, tracksterPropTiles);
-    tsAllProp.emplace_back(tsP);
+    propagateTracksters(t, i, zVal, tiles_front_coords, tsAllProp);
 
     // to lastLayerEE
     zVal = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
-    tsP = propagateTrackster(t, i, zVal, tsPropIntTiles);
-    tsAllPropInt.emplace_back(tsP);
+    propagateTracksters(t, i, zVal, tiles_ee_coords, tsAllPropInt);
 
-    if (!isHadron(t))  // EM tracksters
-      tsPropIntColl.emplace_back(tsP, i);
-    else {  // HAD
-      tsHadPropIntTiles[(t.barycenter().Z() > 0) ? 1 : 0].fill(tsP.Eta(), tsP.Phi(), i);
-      tsHadPropIntColl.emplace_back(tsP, i);
+    if (isHadron(t)) {  // EM tracksters
+      propagateTracksters(t, i, zVal, tiles_hadron_coords);
+      tsHadPropIntColl.emplace_back(tsAllPropInt[i], i);
+    } else {
+      tsPropIntColl.emplace_back(tsAllPropInt[i], i);
     }
   }  // TS
+
+  // tiles, element 0 is bw, 1 is fw
+  ticl::TICLTracksterLinkingTilesHost tracksterPropTiles(
+      tiles_front_coords.size());  // all Tracksters, propagated to layer 1
+  ticl::TICLTracksterLinkingTilesHost tsPropIntTiles(
+      tiles_ee_coords.size());  // all Tracksters, propagated to lastLayerEE
+  ticl::TICLTracksterLinkingTilesHost tsHadPropIntTiles(
+      tiles_hadron_coords.size());  // Tracksters in CE-H, propagated to lastLayerEE
+
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  tracksterPropTiles[0].template fill<Acc>(
+      queue, tiles_front_coords.etas_neg, tiles_front_coords.phis_neg, tiles_front_coords.ids_neg);
+  tracksterPropTiles[1].template fill<Acc>(
+      queue, tiles_front_coords.etas_pos, tiles_front_coords.phis_pos, tiles_front_coords.ids_pos);
+  tsPropIntTiles[0].template fill<Acc>(
+      queue, tiles_ee_coords.etas_neg, tiles_ee_coords.phis_neg, tiles_ee_coords.ids_neg);
+  tsPropIntTiles[1].template fill<Acc>(
+      queue, tiles_ee_coords.etas_pos, tiles_ee_coords.phis_pos, tiles_ee_coords.ids_pos);
+  tsHadPropIntTiles[0].template fill<Acc>(
+      queue, tiles_hadron_coords.etas_neg, tiles_hadron_coords.phis_neg, tiles_hadron_coords.ids_neg);
+  tsHadPropIntTiles[1].template fill<Acc>(
+      queue, tiles_hadron_coords.etas_pos, tiles_hadron_coords.phis_pos, tiles_hadron_coords.ids_pos);
   tsPropIntColl.shrink_to_fit();
   tsHadPropIntColl.shrink_to_fit();
 

@@ -69,10 +69,8 @@ void GNNInterpretationAlgo::buildLayers() {
 }
 
 // Trackster propagation
-Vector GNNInterpretationAlgo::propagateTrackster(const Trackster& t,
-                                                 unsigned idx,
-                                                 float zVal,
-                                                 std::array<TICLLayerTile, 2>& tracksterTiles) {
+void GNNInterpretationAlgo::propagateTracksters(
+    const Trackster& t, std::size_t idx, float zVal, ticl::TilesCoordinates& coords, std::vector<Vector>& props) {
   // needs only the positive Z co-ordinate of the surface to propagate to
   // the correct sign is calculated inside according to the barycenter of trackster
 
@@ -93,14 +91,21 @@ Vector GNNInterpretationAlgo::propagateTrackster(const Trackster& t,
   // Ensure correct Z-side propagation
   zVal *= (barycenter.Z() > 0.f ? 1.f : -1.f);
 
-  const float scale = (zVal - barycenter.Z()) / direction.Z();
+  const auto scale = (zVal - barycenter.Z()) / direction.Z();
   const Vector propPoint(scale * direction.X() + barycenter.X(), scale * direction.Y() + barycenter.Y(), zVal);
 
   // Fill spatial tiles for fast lookup
   const bool isPositiveZ = (propPoint.Eta() > 0.f);
-  tracksterTiles[isPositiveZ].fill(propPoint.Eta(), propPoint.Phi(), idx);
-
-  return propPoint;
+  if (isPositiveZ) {
+    coords.etas_pos.push_back(propPoint.Eta());
+    coords.phis_pos.push_back(propPoint.Phi());
+    coords.ids_pos.push_back(idx);
+  } else {
+    coords.etas_neg.push_back(propPoint.Eta());
+    coords.phis_neg.push_back(propPoint.Phi());
+    coords.ids_neg.push_back(idx);
+  }
+  props.push_back(propPoint);
 }
 
 std::pair<float, float> GNNInterpretationAlgo::calculateTrackstersError(const Trackster& trackster) {
@@ -140,7 +145,7 @@ std::pair<float, float> GNNInterpretationAlgo::calculateTrackstersError(const Tr
 void GNNInterpretationAlgo::constructNodeFromWindow(
     const edm::MultiSpan<Trackster>& tracksters,
     const std::vector<std::tuple<Vector, unsigned, AlgebraicMatrix55>>& seeding,
-    const std::array<TICLLayerTile, 2>& tracksterTiles,
+    const ticl::TICLTracksterLinkingTilesHost& tracksterTiles,
     const std::vector<Vector>& tracksterPropPoints,
     float delta2,
     unsigned trackstersSize,
@@ -148,16 +153,16 @@ void GNNInterpretationAlgo::constructNodeFromWindow(
   const float delta = 0.5f * delta2;
 
   for (const auto& [seedPos, seedIdx, _] : seeding) {
-    const float seedEta = seedPos.Eta();
-    const float seedPhi = seedPos.Phi();
+    const auto seedEta = seedPos.Eta();
+    const auto seedPhi = seedPos.Phi();
     const bool isPositiveZ = (seedEta > 0.0f);
 
-    const TICLLayerTile& tile = tracksterTiles[isPositiveZ];
+    const auto& tile = tracksterTiles[isPositiveZ].view();
 
-    const float etaMin = std::max(std::abs(seedEta) - delta, static_cast<float>(TileConstants::minEta));
-    const float etaMax = std::min(std::abs(seedEta) + delta, static_cast<float>(TileConstants::maxEta));
+    const auto etaMin = std::max(std::abs(seedEta) - delta, static_cast<float>(TileConstants::minEta));
+    const auto etaMax = std::min(std::abs(seedEta) + delta, static_cast<float>(TileConstants::maxEta));
 
-    const auto searchBox = tile.searchBoxEtaPhi(etaMin, etaMax, seedPhi - delta, seedPhi + delta);
+    const auto searchBox = tile.searchBox(etaMin, etaMax, seedPhi - delta, seedPhi + delta);
 
     ticl::Node node(seedIdx, false);
 
@@ -167,11 +172,11 @@ void GNNInterpretationAlgo::constructNodeFromWindow(
 
         const auto& candidates = tile[globalBin];
 
-        for (const unsigned tsIdx : candidates) {
+        for (auto tsIdx : candidates) {
           if (tsIdx >= trackstersSize)
             continue;
 
-          const float sep2 =
+          const auto sep2 =
               reco::deltaR2(tracksterPropPoints[tsIdx].Eta(), tracksterPropPoints[tsIdx].Phi(), seedEta, seedPhi);
           if (sep2 < delta2) {
             node.addOuterNeighbour(tsIdx);
@@ -184,8 +189,8 @@ void GNNInterpretationAlgo::constructNodeFromWindow(
 }
 
 std::vector<float> GNNInterpretationAlgo::padFeatures(const std::vector<float>& core_feats,
-                                                      size_t track_block_size,
-                                                      size_t trackster_block_size,
+                                                      std::size_t track_block_size,
+                                                      std::size_t trackster_block_size,
                                                       bool isTrack) {
   std::vector<float> out;
   out.reserve(track_block_size + trackster_block_size);
@@ -346,6 +351,8 @@ void GNNInterpretationAlgo::makeCandidates(const Inputs& input,
                                            edm::Handle<MtdHostCollection> inputTiming_h,
                                            std::vector<Trackster>& resultTracksters,
                                            std::vector<int>& resultCandidate) {
+  using Acc = alpaka_serial_sync::Acc1D;
+
   const auto& tracks = *input.tracksHandle;
   const auto& maskTracks = input.maskedTracks;
   const auto& tracksters = input.tracksters;
@@ -411,26 +418,34 @@ void GNNInterpretationAlgo::makeCandidates(const Inputs& input,
   tkPropFront.shrink_to_fit();
   tkPropInt.shrink_to_fit();
   candidateTrackIds.shrink_to_fit();
-  // Propagate tracksters
-  // Record postions of all tracksters propagated to layer 1 and lastLayerEE,
-  // to be used later for distance calculation in the link finding stage
-  // indexed by trackster index in event collection
-  std::array<TICLLayerTile, 2> tsTilesFront = {};
-  std::array<TICLLayerTile, 2> tsTilesInt = {};
 
   std::vector<Vector> tsPropFront, tsPropInt;
   tsPropFront.reserve(tracksters.size());
   tsPropInt.reserve(tracksters.size());
 
+  TilesCoordinates tiles_front_coords(tracksters.size());
+  TilesCoordinates tiles_inner_coords(tracksters.size());
   for (unsigned i = 0; i < tracksters.size(); ++i) {
     const auto& ts = tracksters[i];
 
-    float zFront = hgcons_->waferZ(1, true);
-    tsPropFront.emplace_back(propagateTrackster(ts, i, zFront, tsTilesFront));
+    const auto zFront = hgcons_->waferZ(1, true);
+    propagateTracksters(ts, i, zFront, tiles_front_coords, tsPropFront);
 
-    float zInt = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
-    tsPropInt.emplace_back(propagateTrackster(ts, i, zInt, tsTilesInt));
+    const auto zInt = rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z();
+    propagateTracksters(ts, i, zInt, tiles_inner_coords, tsPropInt);
   }
+  ticl::TICLTracksterLinkingTilesHost tsTilesFront(tiles_front_coords.size());
+  ticl::TICLTracksterLinkingTilesHost tsTilesInt(tiles_inner_coords.size());
+
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  tsTilesFront[0].template fill<Acc>(
+      queue, tiles_front_coords.etas_neg, tiles_front_coords.phis_neg, tiles_front_coords.ids_neg);
+  tsTilesFront[1].template fill<Acc>(
+      queue, tiles_front_coords.etas_pos, tiles_front_coords.phis_pos, tiles_front_coords.ids_pos);
+  tsTilesInt[0].template fill<Acc>(
+      queue, tiles_inner_coords.etas_neg, tiles_inner_coords.phis_neg, tiles_inner_coords.ids_neg);
+  tsTilesInt[1].template fill<Acc>(
+      queue, tiles_inner_coords.etas_pos, tiles_inner_coords.phis_pos, tiles_inner_coords.ids_pos);
 
   // Step 1: Construct nodes from tracksters and tracks
   std::vector<ticl::Node> nodesFront, nodesInt;

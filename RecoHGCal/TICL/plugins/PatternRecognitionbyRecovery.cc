@@ -78,5 +78,5 @@ void PatternRecognitionbyRecovery<TILES>::fillPSetDescription(edm::ParameterSetD
 }
 
 // Explicitly instantiate the templates
-template class ticl::PatternRecognitionbyRecovery<TICLLayerTiles>;
-template class ticl::PatternRecognitionbyRecovery<TICLLayerTilesHFNose>;
+template class ticl::PatternRecognitionbyRecovery<ticl::TICLLayerTilesHost>;
+template class ticl::PatternRecognitionbyRecovery<ticl::TICLLayerTilesHFNoseHost>;

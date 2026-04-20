@@ -43,19 +43,20 @@ PatternRecognitionbyCLUE3D<TILES>::PatternRecognitionbyCLUE3D(const edm::Paramet
       usePCACleaning_(conf.getParameter<bool>("usePCACleaning")){};
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::dumpTiles(const TILES &tiles) const {
-  constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
-  constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
+  constexpr int nEtaBin = TILES::TilesType::nEtaBins;
+  constexpr int nPhiBin = TILES::TilesType::nPhiBins;
   auto lastLayerPerSide = static_cast<int>(rhtools_.lastLayer(false));
   int maxLayer = 2 * lastLayerPerSide - 1;
   for (int layer = 0; layer <= maxLayer; layer++) {
+    auto layer_tiles = tiles[layer].view();
     for (int ieta = 0; ieta < nEtaBin; ieta++) {
       auto offset = ieta * nPhiBin;
       for (int phi = 0; phi < nPhiBin; phi++) {
         int iphi = ((phi % nPhiBin + nPhiBin) % nPhiBin);
-        if (!tiles[layer][offset + iphi].empty()) {
+        if (layer_tiles.contains(offset + iphi)) {
           if (this->algo_verbosity_ > VerbosityLevel::Advanced) {
             edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Layer: " << layer << " ieta: " << ieta << " phi: " << phi
-                                                           << " " << tiles[layer][offset + iphi].size();
+                                                           << " " << tiles[layer].view().count(offset + iphi);
           }
         }
       }
@@ -118,9 +119,9 @@ void PatternRecognitionbyCLUE3D<TILES>::dumpClusters(const TILES &tiles,
             << std::setw(4) << eventNumber << ", " << std::setw(3) << layer << ", " << std::setw(4)
             << thisLayer.isSeed[num] << ", " << std::setprecision(3) << std::fixed << v << ", " << thisLayer.y[num]
             << ", " << thisLayer.z[num] << ", " << thisLayer.r_over_absz[num] << ", " << thisLayer.eta[num] << ", "
-            << thisLayer.phi[num] << ", " << std::setw(5) << tiles[layer].etaBin(thisLayer.eta[num]) << ", "
-            << std::setw(5) << tiles[layer].phiBin(thisLayer.phi[num]) << ", " << std::setw(4) << thisLayer.cells[num]
-            << ", " << std::setprecision(3) << thisLayer.energy[num] << ", "
+            << thisLayer.phi[num] << ", " << std::setw(5) << tiles[layer].view().etaBin(thisLayer.eta[num]) << ", "
+            << std::setw(5) << tiles[layer].view().phiBin(thisLayer.phi[num]) << ", " << std::setw(4)
+            << thisLayer.cells[num] << ", " << std::setprecision(3) << thisLayer.energy[num] << ", "
             << (thisLayer.energy[num] / thisLayer.rho[num]) << ", " << thisLayer.rho[num] << ", "
             << thisLayer.z_extension[num] << ", " << std::scientific << thisLayer.delta[num].first << ", "
             << std::setw(10) << thisLayer.delta[num].second << ", " << std::setw(5)
@@ -380,8 +381,8 @@ void PatternRecognitionbyCLUE3D<TILES>::filter(std::vector<Trackster> &output,
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::calculateLocalDensity(
     const TILES &tiles, const int layerId, const std::vector<std::pair<int, int>> &layerIdx2layerandSoa) {
-  constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
-  constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
+  constexpr int nEtaBin = TILES::TilesType::nEtaBins;
+  constexpr int nPhiBin = TILES::TilesType::nPhiBins;
   auto &clustersOnLayer = clusters_[layerId];
   unsigned int numberOfClusters = clustersOnLayer.x.size();
 
@@ -413,7 +414,7 @@ void PatternRecognitionbyCLUE3D<TILES>::calculateLocalDensity(
         edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "RefLayer: " << layerId << " SoaIDX: " << i;
         edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "NextLayer: " << currentLayer;
       }
-      const auto &tileOnLayer = tiles[currentLayer];
+      const auto &tileOnLayer = tiles[currentLayer].view();
       bool onSameLayer = (currentLayer == layerId);
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
         edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "onSameLayer: " << onSameLayer;
@@ -546,8 +547,8 @@ void PatternRecognitionbyCLUE3D<TILES>::calculateLocalDensity(
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::calculateDistanceToHigher(
     const TILES &tiles, const int layerId, const std::vector<std::pair<int, int>> &layerIdx2layerandSoa) {
-  constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
-  constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
+  constexpr int nEtaBin = TILES::TilesType::nEtaBins;
+  constexpr int nPhiBin = TILES::TilesType::nPhiBins;
   auto &clustersOnLayer = clusters_[layerId];
   unsigned int numberOfClusters = clustersOnLayer.x.size();
 
@@ -560,8 +561,8 @@ void PatternRecognitionbyCLUE3D<TILES>::calculateDistanceToHigher(
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
       edm::LogVerbatim("PatternRecognitionbyCLUE3D")
           << "Starting searching nearestHigher on " << layerId << " with rho: " << clustersOnLayer.rho[i]
-          << " at eta, phi: " << tiles[layerId].etaBin(clustersOnLayer.eta[i]) << ", "
-          << tiles[layerId].phiBin(clustersOnLayer.phi[i]);
+          << " at eta, phi: " << tiles[layerId].view().etaBin(clustersOnLayer.eta[i]) << ", "
+          << tiles[layerId].view().phiBin(clustersOnLayer.phi[i]);
     }
     // We need to partition the two sides of the HGCAL detector
     auto lastLayerPerSide = static_cast<int>(rhtools_.lastLayer(false));
@@ -582,7 +583,7 @@ void PatternRecognitionbyCLUE3D<TILES>::calculateDistanceToHigher(
     for (int currentLayer = minLayer; currentLayer <= maxLayer; currentLayer++) {
       if (!nearestHigherOnSameLayer_ && (layerId == currentLayer))
         continue;
-      const auto &tileOnLayer = tiles[currentLayer];
+      const auto &tileOnLayer = tiles[currentLayer].view();
       int etaWindow = 1;
       int phiWindow = 1;
       int etaBinMin = std::max(tileOnLayer.etaBin(clustersOnLayer.eta[i]) - etaWindow, 0);
@@ -765,5 +766,5 @@ void PatternRecognitionbyCLUE3D<TILES>::fillPSetDescription(edm::ParameterSetDes
   iDesc.add<bool>("usePCACleaning", false)->setComment("Enable PCA cleaning alorithm");
 }
 
-template class ticl::PatternRecognitionbyCLUE3D<TICLLayerTiles>;
-template class ticl::PatternRecognitionbyCLUE3D<TICLLayerTilesHFNose>;
+template class ticl::PatternRecognitionbyCLUE3D<ticl::TICLLayerTilesHost>;
+template class ticl::PatternRecognitionbyCLUE3D<ticl::TICLLayerTilesHFNoseHost>;

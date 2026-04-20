@@ -422,6 +422,8 @@ void TracksterLinkingbySkeletons::linkTracksters(
     std::vector<Trackster> &resultTracksters,
     std::vector<std::vector<unsigned int>> &linkedResultTracksters,
     std::vector<std::vector<unsigned int>> &linkedTracksterIdToInputTracksterId) {
+  using Acc = alpaka_serial_sync::Acc1D;
+
   const auto &tracksters = input.tracksters;
   const auto &layerClusters = input.layerClusters;
 
@@ -431,19 +433,29 @@ void TracksterLinkingbySkeletons::linkTracksters(
   std::sort(sortedTracksters.begin(), sortedTracksters.end(), [&tracksters](unsigned int i, unsigned int j) {
     return tracksters[i].raw_energy() > tracksters[j].raw_energy();
   });
-  // fill tiles for trackster linking
-  // tile 0 for negative eta
-  // tile 1 for positive eta
-  std::array<TICLLayerTile, 2> tracksterTile;
   // loop over tracksters sorted by energy and calculate skeletons
   // fill tiles for trackster linking
+  ticl::TilesCoordinates tiles_coords(sortedTracksters.size());
   std::vector<std::array<ticl::Vector, 3>> skeletons(tracksters.size());
   for (auto const t_idx : sortedTracksters) {
     const auto &trackster = tracksters[t_idx];
     skeletons[t_idx] = findSkeletonNodes(tracksters[t_idx], 0.1, 0.9, layerClusters, rhtools_);
-    tracksterTile[trackster.barycenter().eta() > 0.f].fill(
-        trackster.barycenter().eta(), trackster.barycenter().phi(), t_idx);
+    if (trackster.barycenter().eta() > 0.f) {
+      tiles_coords.etas_pos.push_back(trackster.barycenter().eta());
+      tiles_coords.phis_pos.push_back(trackster.barycenter().phi());
+      tiles_coords.ids_pos.push_back(t_idx);
+    } else {
+      tiles_coords.etas_neg.push_back(trackster.barycenter().eta());
+      tiles_coords.phis_neg.push_back(trackster.barycenter().phi());
+      tiles_coords.ids_neg.push_back(t_idx);
+    }
   }
+  ticl::TICLTracksterLinkingTilesHost tracksterTile(tiles_coords.size());
+
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  tracksterTile[0].template fill<Acc>(queue, tiles_coords.etas_neg, tiles_coords.phis_neg, tiles_coords.ids_neg);
+  tracksterTile[1].template fill<Acc>(queue, tiles_coords.etas_pos, tiles_coords.phis_pos, tiles_coords.ids_pos);
+
   std::vector<int> maskReceivedLink(tracksters.size(), 1);
   std::vector<int> isRootTracksters(tracksters.size(), 1);
 
@@ -460,11 +472,11 @@ void TracksterLinkingbySkeletons::linkTracksters(
 
     auto const &bary = trackster.barycenter();
     int tileIndex = bary.eta() > 0.f;
-    const auto &tiles = tracksterTile[tileIndex];
+    auto tiles = tracksterTile[tileIndex].view();
     auto const window = eta_windows_[tiles.etaBin(bary.eta())];
     float eta_min = std::max(abs(bary.eta()) - window, TileConstants::minEta);
     float eta_max = std::min(abs(bary.eta()) + window, TileConstants::maxEta);
-    std::array<int, 4> search_box = tiles.searchBoxEtaPhi(eta_min, eta_max, bary.phi() - window, bary.phi() + window);
+    std::array<int, 4> search_box = tiles.searchBox(eta_min, eta_max, bary.phi() - window, bary.phi() + window);
 
     if (search_box[2] > search_box[3]) {
       search_box[3] += TileConstants::nPhiBins;
@@ -472,7 +484,7 @@ void TracksterLinkingbySkeletons::linkTracksters(
 
     for (int eta_i = search_box[0]; eta_i <= search_box[1]; ++eta_i) {
       for (int phi_i = search_box[2]; phi_i <= search_box[3]; ++phi_i) {
-        auto &neighbours = tiles[tiles.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
+        auto neighbours = tiles[tiles.globalBin(eta_i, (phi_i % TileConstants::nPhiBins))];
         for (auto n : neighbours) {
           if (t_idx == n)
             continue;

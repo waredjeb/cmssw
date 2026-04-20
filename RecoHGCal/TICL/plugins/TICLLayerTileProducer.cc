@@ -10,7 +10,7 @@
 #include "FWCore/Utilities/interface/ESGetToken.h"
 
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
-#include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
+#include "DataFormats/HGCalReco/interface/TilesHost.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
@@ -40,11 +40,11 @@ TICLLayerTileProducer::TICLLayerTileProducer(const edm::ParameterSet &ps)
   if (doNose_) {
     clusters_HFNose_token_ =
         consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_HFNose_clusters"));
-    produces<TICLLayerTilesHFNose>();
+    produces<ticl::TICLLayerTilesHFNoseHost>();
   } else {
     clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"));
-    produces<TICLLayerTiles>();
-    produces<TICLLayerTilesBarrel>("ticlLayerTilesBarrel");
+    produces<ticl::TICLLayerTilesHost>();
+    produces<ticl::TICLLayerTilesBarrelHost>("ticlLayerTilesBarrel");
   }
 }
 
@@ -54,15 +54,10 @@ void TICLLayerTileProducer::beginRun(edm::Run const &, edm::EventSetup const &es
 }
 
 void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
-  std::unique_ptr<TICLLayerTilesHFNose> resultHFNose;
-  std::unique_ptr<TICLLayerTiles> result;
-  std::unique_ptr<TICLLayerTilesBarrel> resultBarrel;
-  if (doNose_) {
-    resultHFNose = std::make_unique<TICLLayerTilesHFNose>();
-  } else {
-    resultBarrel = std::make_unique<TICLLayerTilesBarrel>();
-    result = std::make_unique<TICLLayerTiles>();
-  }
+  using Acc = alpaka_serial_sync::Acc1D;
+  // std::unique_ptr<ticl::TICLLayerTilesHFNoseHost> resultHFNose;
+  // std::unique_ptr<ticl::TICLLayerTilesHost> result;
+  // std::unique_ptr<ticl::TICLLayerTilesBarrelHost> resultBarrel;
 
   edm::Handle<std::vector<reco::CaloCluster>> cluster_h;
   if (doNose_)
@@ -71,31 +66,66 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
     evt.getByToken(clusters_token_, cluster_h);
 
   const auto &layerClusters = *cluster_h;
-  int lcId = 0;
+
+  std::array<std::vector<float>, ticl::TICLLayerTilesHost::TilesType::nLayers> etas;
+  std::array<std::vector<float>, ticl::TICLLayerTilesHost::TilesType::nLayers> phis;
+  std::array<std::vector<uint32_t>, ticl::TICLLayerTilesHost::TilesType::nLayers> lcIds;
+  std::array<std::vector<float>, ticl::TICLLayerTilesBarrelHost::TilesType::nLayers> barrel_etas;
+  std::array<std::vector<float>, ticl::TICLLayerTilesBarrelHost::TilesType::nLayers> barrel_phis;
+  std::array<std::vector<uint32_t>, ticl::TICLLayerTilesBarrelHost::TilesType::nLayers> barrel_lcIds;
+  // std::array<std::vector<float>, ticl::TICLLayerTilesHFNoseHost::TilesType::nLayers> nose_etas;
+  // std::array<std::vector<float>, ticl::TICLLayerTilesHFNoseHost::TilesType::nLayers> nose_phis;
+  // std::array<std::vector<uint32_t>, ticl::TICLLayerTilesHFNoseHost::TilesType::nLayers> nose_lcIds;
+  auto lcId = 0;
   for (auto const &lc : layerClusters) {
     const auto firstHitDetId = lc.hitsAndFractions()[0].first;
-    int layer = rhtools_.getLayerWithOffset(firstHitDetId);
+    const auto layer = rhtools_.getLayerWithOffset(firstHitDetId);
     bool isBarrelLC = rhtools_.isBarrel(firstHitDetId);
-    if (!isBarrelLC) {
-      layer += rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
-    }
-    assert(layer >= 0);
+    // if (!isBarrelLC) {
+    //   layer += rhtools_.lastLayer(doNose_) * ((rhtools_.zside(firstHitDetId) + 1) >> 1) - 1;
+    // }
+    // assert(layer >= 0);
 
-    if (doNose_) {
-      resultHFNose->fill(layer, lc.eta(), lc.phi(), lcId);
-    } else if (isBarrelLC) {
-      resultBarrel->fill(layer, lc.eta(), lc.phi(), lcId);
+    if (isBarrelLC) {
+      barrel_etas[layer].push_back(lc.eta());
+      barrel_phis[layer].push_back(lc.phi());
+      barrel_lcIds[layer].push_back(lcId);
     } else {
-      result->fill(layer, lc.eta(), lc.phi(), lcId);
+      etas[layer].push_back(lc.eta());
+      phis[layer].push_back(lc.phi());
+      lcIds[layer].push_back(lcId);
     }
-    LogDebug("TICLLayerTileProducer") << "Adding layerClusterId: " << lcId << " into bin [eta,phi]: [ "
-                                      << (*result)[layer].etaBin(lc.eta()) << ", " << (*result)[layer].phiBin(lc.phi())
-                                      << "] for layer: " << layer << std::endl;
-    lcId++;
   }
-  if (doNose_)
+
+  alpaka_serial_sync::Queue queue(cms::alpakatools::host());
+  if (doNose_) {
+    std::array<int, ticl::TICLLayerTilesHFNoseHost::TilesType::nLayers> nose_sizes;
+    std::transform(etas.begin(),
+                   etas.begin() + ticl::TICLLayerTilesHFNoseHost::TilesType::nLayers,
+                   nose_sizes.begin(),
+                   [](const auto &layer) { return layer.size(); });
+
+    auto resultHFNose = std::make_unique<ticl::TICLLayerTilesHFNoseHost>(nose_sizes);
+    for (auto layer = 0; layer < ticl::TICLLayerTilesHFNoseHost::TilesType::nLayers; ++layer) {
+      (*resultHFNose)[layer].template fill<Acc>(queue, etas[layer], phis[layer], lcIds[layer]);
+    }
     evt.put(std::move(resultHFNose));
-  else {
+  } else {
+    std::array<int, ticl::TICLLayerTilesBarrelHost::TilesType::nLayers> barrel_sizes;
+    std::array<int, ticl::TICLLayerTilesHost::TilesType::nLayers> sizes;
+    std::ranges::transform(etas, sizes.begin(), [](const auto &layer) { return layer.size(); });
+    std::ranges::transform(barrel_etas, barrel_sizes.begin(), [](const auto &layer) { return layer.size(); });
+
+    auto resultBarrel = std::make_unique<ticl::TICLLayerTilesBarrelHost>(barrel_sizes);
+    auto result = std::make_unique<ticl::TICLLayerTilesHost>(sizes);
+
+    for (auto layer = 0; layer < ticl::TICLLayerTilesHost::TilesType::nLayers; ++layer) {
+      (*result)[layer].template fill<Acc>(queue, etas[layer], phis[layer], lcIds[layer]);
+    }
+    for (auto barrel_layer = 0; barrel_layer < ticl::TICLLayerTilesBarrelHost::TilesType::nLayers; ++barrel_layer) {
+      (*resultBarrel)[barrel_layer].template fill<Acc>(
+          queue, barrel_etas[barrel_layer], barrel_phis[barrel_layer], barrel_lcIds[barrel_layer]);
+    }
     evt.put(std::move(resultBarrel), "ticlLayerTilesBarrel");
     evt.put(std::move(result));
   }

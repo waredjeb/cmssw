@@ -88,9 +88,9 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
   const CaloGeometry &geom = es.getData(caloGeomToken_);
   rhtools_.setGeometry(geom);
 
-  constexpr auto isHFnose = std::is_same<TILES, TICLLayerTilesHFNose>::value;
-  constexpr int nEtaBin = TILES::constants_type_t::nEtaBins;
-  constexpr int nPhiBin = TILES::constants_type_t::nPhiBins;
+  constexpr auto isHFnose = std::is_same<TILES, TICLLayerTilesHFNoseHost>::value;
+  constexpr int nEtaBin = TILES::TilesType::nEtaBins;
+  constexpr int nPhiBin = TILES::TilesType::nPhiBins;
 
   // We need to partition the two sides of the HGCAL detector
   auto lastLayerPerSide = static_cast<unsigned int>(rhtools_.lastLayer(isHFnose)) - 1;
@@ -101,7 +101,7 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
     if (currentLayer == lastLayerPerSide) {
       buildJetAndTracksters(fjInputs, result);
     }
-    const auto &tileOnLayer = input.tiles[currentLayer];
+    const auto &tileOnLayer = input.tiles[currentLayer].view();
     for (int ieta = 0; ieta <= nEtaBin; ++ieta) {
       auto offset = ieta * nPhiBin;
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
@@ -110,7 +110,7 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
       for (int iphi = 0; iphi <= nPhiBin; ++iphi) {
         if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
           edm::LogVerbatim("PatternRecogntionbyFastJet") << "iphi: " << iphi;
-          edm::LogVerbatim("PatternRecogntionbyFastJet") << "Entries in tileBin: " << tileOnLayer[offset + iphi].size();
+          edm::LogVerbatim("PatternRecogntionbyFastJet") << "Entries in tileBin: " << tileOnLayer.contains(offset + iphi);
         }
         for (auto clusterIdx : tileOnLayer[offset + iphi]) {
           // Skip masked layer clusters
@@ -170,4 +170,4 @@ void PatternRecognitionbyFastJet<TILES>::fillPSetDescription(edm::ParameterSetDe
   iDesc.add<bool>("computeLocalTime", false);
 }
 
-template class ticl::PatternRecognitionbyFastJet<TICLLayerTiles>;
+template class ticl::PatternRecognitionbyFastJet<ticl::TICLLayerTilesHost>;
