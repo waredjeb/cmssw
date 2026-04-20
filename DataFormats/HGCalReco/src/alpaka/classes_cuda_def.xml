@@ -10,4 +10,35 @@
   <class name="alpaka_cuda_async::HGCalSoAClustersDeviceCollection" persistent="false"/>
   <class name="edm::DeviceProduct<alpaka_cuda_async::HGCalSoAClustersDeviceCollection>" persistent="false"/>
   <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::HGCalSoAClustersDeviceCollection>>" persistent="false"/>
+  
+  <!-- <!-1- Tiles -1-> -->
+  <!-- <class name="alpaka_cuda_async::Tiles<>" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::Tiles<>>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::Tiles<>>>" persistent="false"/> -->
+
+  <!-- <class name="alpaka_cuda_async::Tiles<>" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::Tiles<>>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::Tiles<>>>" persistent="false"/> -->
+
+  <!-- <class name="alpaka_cuda_async::Tiles<>" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::Tiles<>>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::Tiles<>>>" persistent="false"/> -->
+
+  <!-- <class name="alpaka_cuda_async::Tiles<>" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::Tiles<>>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::Tiles<>>>" persistent="false"/> -->
+
+  <!-- <class name="alpaka_cuda_async::Tiles<>" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::Tiles<>>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::Tiles<>>>" persistent="false"/> -->
+
+  <!-- <!-1- LayerTiles -1-> -->
+  <!-- <class name="alpaka_cuda_async::LayerTiles<>" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::LayerTiles<>>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::LayerTiles<>>>" persistent="false"/> -->
+
+  <!-- <!-1- Tiles Associator -1-> -->
+  <!-- <class name="alpaka_cuda_async::LayerTilesAssociations" persistent="false"/> -->
+  <!-- <class name="edm::DeviceProduct<alpaka_cuda_async::LayerTilesAssociations>" persistent="false"/> -->
+  <!-- <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::LayerTilesAssociations>>" persistent="false"/> -->
 </lcgdict>

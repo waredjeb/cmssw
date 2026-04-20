@@ -10,6 +10,8 @@ namespace ticl::concepts {
     T::maxEta;
     T::nPhiBins;
     T::nBins;
+    T::nLayers;
+    T::iterations;
   };
 
 }
