@@ -123,4 +123,11 @@
   <class name="ticl::TICLTracksterLinkingTilesHost::LayerTilesType"/>
   <class name="ticl::TICLTracksterLinkingTilesHost::Collection"/>
 
+  <class name="edm::Wrapper<ticl::TICLLayerTilesHost>" splitLevel="0"/>
+  <class name="edm::Wrapper<ticl::TICLTracksterTilesHost>" splitLevel="0"/>
+  <class name="edm::Wrapper<ticl::TICLLayerTilesHFNoseHost>" splitLevel="0"/>
+  <class name="edm::Wrapper<ticl::TICLTracksterTilesHFNoseHost>" splitLevel="0"/>
+  <class name="edm::Wrapper<ticl::TICLLayerTilesBarrelHost>" splitLevel="0"/>
+  <class name="edm::Wrapper<ticl::TICLTracksterTilesBarrelHost>" splitLevel="0"/>
+  <class name="edm::Wrapper<ticl::TICLTracksterLinkingTilesHost>" splitLevel="0"/>
 </lcgdict>
