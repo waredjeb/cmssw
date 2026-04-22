@@ -95,6 +95,7 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
       phis[layer].push_back(lc.phi());
       lcIds[layer].push_back(lcId);
     }
+    ++lcId;
   }
 
   alpaka_serial_sync::Queue queue(cms::alpakatools::host());
