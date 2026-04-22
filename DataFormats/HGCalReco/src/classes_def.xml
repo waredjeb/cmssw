@@ -101,17 +101,26 @@
   <class name="HGCalSoAClusters"/>
   <class name="edm::Wrapper<HGCalSoAClustersHostCollection>" splitLevel="0"/>
 
-  <class name="ticl::TICLLayerTilesHost" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLLayerTilesHost::LayerTilesType" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLTracksterTilesHost" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLTracksterTilesHost::LayerTilesType" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLLayerTilesHFNoseHost" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLLayerTilesHFNoseHost::LayerTilesType" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLTracksterTilesHFNoseHost" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLTracksterTilesHFNoseHost::LayerTilesType" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLLayerTilesBarrelHost" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLLayerTilesBarrelHost::LayerTilesType" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLTracksterTilesBarrelHost" rntupleStreamerMode="true"/>
-  <class name="ticl::TICLTracksterTilesBarrelHost::LayerTilesType" rntupleStreamerMode="true"/>
+  <class name="ticl::TICLLayerTilesHost"/>
+  <class name="ticl::TICLLayerTilesHost::LayerTilesType"/>
+  <class name="ticl::TICLLayerTilesHost::Collection"/>
+  <class name="ticl::TICLTracksterTilesHost"/>
+  <class name="ticl::TICLTracksterTilesHost::LayerTilesType"/>
+  <class name="ticl::TICLTracksterTilesHost::Collection"/>
+  <class name="ticl::TICLLayerTilesHFNoseHost"/>
+  <class name="ticl::TICLLayerTilesHFNoseHost::LayerTilesType"/>
+  <class name="ticl::TICLLayerTilesHFNoseHost::Collection"/>
+  <class name="ticl::TICLTracksterTilesHFNoseHost"/>
+  <class name="ticl::TICLTracksterTilesHFNoseHost::LayerTilesType"/>
+  <class name="ticl::TICLTracksterTilesHFNoseHost::Collection"/>
+  <class name="ticl::TICLLayerTilesBarrelHost"/>
+  <class name="ticl::TICLLayerTilesBarrelHost::LayerTilesType"/>
+  <class name="ticl::TICLLayerTilesBarrelHost::Collection"/>
+  <class name="ticl::TICLTracksterTilesBarrelHost"/>
+  <class name="ticl::TICLTracksterTilesBarrelHost::LayerTilesType"/>
+  <class name="ticl::TICLTracksterTilesBarrelHost::Collection"/>
+  <class name="ticl::TICLTracksterLinkingTilesHost"/>
+  <class name="ticl::TICLTracksterLinkingTilesHost::LayerTilesType"/>
+  <class name="ticl::TICLTracksterLinkingTilesHost::Collection"/>
 
 </lcgdict>
