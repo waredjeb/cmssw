@@ -19,7 +19,7 @@
 
 namespace ticl {
 
-  template <concepts::LayerTile T>
+  template <typename T>
   class LayerTilesView {
   private:
     ::ticl::AssociationMapConstView<> associations;
@@ -95,10 +95,11 @@ namespace ticl {
   };
 
   // TODO: check consistensy of integer signedness
-  template <concepts::LayerTile T, typename TDev>
+  template <typename T, typename TDev>
   class LayerTiles {
   public:
     using View = LayerTilesView<T>;
+    using Container = PortableCollection<TDev, ::ticl::AssociationMap<>>;
     using TilesType = T;
 
     explicit LayerTiles() noexcept : m_associations(edm::Uninitialized{}) {}
@@ -141,6 +142,7 @@ namespace ticl {
   public:
     using View = LayerTiles::View;
     using LayerTilesType = LayerTiles;
+    using Collection = LayerTilesType::Container;
     using TilesType = LayerTiles::TilesType;
 
     explicit Tiles(edm::Uninitialized init) noexcept {

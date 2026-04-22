@@ -8,7 +8,7 @@
 
 namespace ticl {
 
-  template <concepts::LayerTile T>
+  template <typename T>
   using LayerTilesHost = ticl::LayerTiles<T, alpaka::DevCpu>;
 
   using TICLLayerTilesHost = Tiles<LayerTilesHost<TileConstants>, TileConstants::nLayers>;
