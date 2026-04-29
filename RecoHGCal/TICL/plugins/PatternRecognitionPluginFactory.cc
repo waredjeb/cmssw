@@ -8,8 +8,7 @@
 
 EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionFactory, "PatternRecognitionFactory");
 EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionHFNoseFactory, "PatternRecognitionHFNoseFactory");
-// Register backend-independent Alpaka factory ONCE
-EDM_REGISTER_VALIDATED_PLUGINFACTORY(PatternRecognitionFactoryPortable, "PatternRecognitionFactoryPortable");
+// Note: PatternRecognitionFactoryPortable is registered in src/PatternRecognitionFactoryPortable.cc
 
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory, ticl::PatternRecognitionbyCA<ticl::TICLLayerTilesHost>, "CA");
 DEFINE_EDM_VALIDATED_PLUGIN(PatternRecognitionFactory,
