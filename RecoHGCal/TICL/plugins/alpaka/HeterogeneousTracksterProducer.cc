@@ -11,21 +11,25 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/PluginDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Utilities/interface/stringize.h"
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 #include "FWCore/Utilities/interface/EDPutToken.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "RecoHGCal/TICL/interface/alpaka/PatternRecognitionAlgoBase.h"
-#include "RecoHGCal/TICL/plugins/alpaka/PatternRecognitionByCLUEstering.h"
-#include "RecoHGCal/TICL/plugins/alpaka/PatternRecognitionPluginFactory.h"
+#include "RecoHGCal/TICL/plugins/PatternRecognitionPluginFactory.h"
 #include "CLUEstering/CLUEstering.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <memory>
+#include <string>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
+  // Forward declaration of wrapper class
+  class PatternRecognitionByCLUEsteringWrapper;
 
   class HeterogeneousTracksterProducer : public stream::EDProducer<> {
   public:
@@ -39,8 +43,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   {
       auto plugin = config.getParameter<std::string>("patternRecognitionBy");
       auto pluginPSet = config.getParameter<edm::ParameterSet>("pluginPatternRecognitionBy" + plugin);
-      algo_ = PatternRecognitionFactoryAlpaka::get()->create(config.getParameter<std::string>("patternRecognitionBy"),
-                                                             pluginPSet);
+
+      // Construct backend-specific plugin name: "alpaka_serial_sync::CLUEstering" or "alpaka_cuda_async::CLUEstering"
+      std::string backendSpecificName = std::string(EDM_STRINGIZE(ALPAKA_ACCELERATOR_NAMESPACE)) + "::" + plugin;
+
+      // Use backend-independent factory with backend-specific plugin name
+      auto algoWrapper = PatternRecognitionFactoryPortable::get()->create(backendSpecificName, pluginPSet);
+
+      // Cast to wrapper to get backend-specific implementation
+      auto* wrapper = dynamic_cast<PatternRecognitionByCLUEsteringWrapper*>(algoWrapper.release());
+      if (!wrapper) {
+        throw cms::Exception("HeterogeneousTracksterProducer")
+            << "Failed to cast pattern recognition algorithm to wrapper type";
+      }
+      algo_.reset(wrapper->getImpl());
     }
     ~HeterogeneousTracksterProducer() override = default;
 
@@ -54,7 +70,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<std::string>("patternRecognitionBy", "CLUEstering");
 
       edm::ParameterSetDescription pluginDesc;
-      pluginDesc.addNode(edm::PluginDescription<PatternRecognitionFactoryAlpaka>("type", "CLUEstering", true));
+      // Use backend-independent factory with backend-specific type name
+      std::string backendSpecificType = std::string(EDM_STRINGIZE(ALPAKA_ACCELERATOR_NAMESPACE)) + "::CLUEstering";
+      pluginDesc.addNode(edm::PluginDescription<PatternRecognitionFactoryPortable>("type", backendSpecificType, true));
       desc.add<edm::InputTag>("layer_clusters_tiles", edm::InputTag("ticlLayerTileProducer"));
       desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCLUEstering", pluginDesc);
 

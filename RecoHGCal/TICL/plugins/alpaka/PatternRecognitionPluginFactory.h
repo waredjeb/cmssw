@@ -1,17 +1,14 @@
-#ifndef RecoHGCal_TICL_PatternRecognitionPluginFactory_H
-#define RecoHGCal_TICL_PatternRecognitionPluginFactory_H
+#ifndef RecoHGCal_TICL_PatternRecognitionPluginFactory_Alpaka_H
+#define RecoHGCal_TICL_PatternRecognitionPluginFactory_Alpaka_H
 
-#include "FWCore/PluginManager/interface/PluginFactory.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/Framework/interface/ConsumesCollector.h"
-#include "RecoHGCal/TICL/interface/alpaka/PatternRecognitionAlgoBase.h"
-#include "RecoHGCal/TICL/interface/GlobalCache.h"
+// This file is kept for backward compatibility but is no longer used.
+// Pattern recognition algorithms now register with the backend-independent
+// PatternRecognitionFactoryPortable defined in RecoHGCal/TICL/plugins/PatternRecognitionPluginFactory.h
+//
+// Each Alpaka backend registers its implementations with backend-specific names
+// (e.g., "alpaka_serial_sync::CLUEstering", "alpaka_cuda_async::CLUEstering")
+// to avoid plugin name conflicts.
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE { 
-using PatternRecognitionFactoryAlpaka =
-    ::edmplugin::PluginFactory<PatternRecognitionAlgoBase*(const edm::ParameterSet&)>;
-// using PatternRecognitionHFNoseFactoryAlpaka =
-//     edmplugin::PluginFactory<ALPAKA_ACCELERATOR_NAMESPACE::PatternRecognitionAlgoBase*(const edm::ParameterSet&)>;
-}
+#include "RecoHGCal/TICL/plugins/PatternRecognitionPluginFactory.h"
 
 #endif
