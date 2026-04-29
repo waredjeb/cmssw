@@ -141,30 +141,24 @@ void TracksterLinkingbySuperClusteringDNN::linkTracksters(
   std::vector<std::vector<std::pair<unsigned int, unsigned int>>> tracksterIndicesUsedInDNN;
 
   // Use TracksterTiles to speed up search of tracksters in eta-phi window. One per endcap
-  std::vector<float> etas_fw(trackstersIndicesPt.size());
-  std::vector<float> etas_bw(trackstersIndicesPt.size());
-  std::vector<float> phis_fw(trackstersIndicesPt.size());
-  std::vector<float> phis_bw(trackstersIndicesPt.size());
-  std::vector<uint32_t> ids_fw(trackstersIndicesPt.size());
-  std::vector<uint32_t> ids_bw(trackstersIndicesPt.size());
+  ticl::TilesCoordinates tiles_coords(trackstersIndicesPt.size());
   for (unsigned int i_pt = 0; i_pt < trackstersIndicesPt.size(); ++i_pt) {
     Trackster const& ts = inputTracksters[trackstersIndicesPt[i_pt]];
     if (ts.barycenter().eta() > 0.) {
-      etas_fw.push_back(ts.barycenter().eta());
-      phis_fw.push_back(ts.barycenter().phi());
-      ids_fw.push_back(i_pt);
+      tiles_coords.etas_pos.push_back(ts.barycenter().eta());
+      tiles_coords.phis_pos.push_back(ts.barycenter().phi());
+      tiles_coords.ids_pos.push_back(i_pt);
     } else {
-      etas_bw.push_back(ts.barycenter().eta());
-      phis_bw.push_back(ts.barycenter().phi());
-      ids_bw.push_back(i_pt);
+      tiles_coords.etas_neg.push_back(ts.barycenter().eta());
+      tiles_coords.phis_neg.push_back(ts.barycenter().phi());
+      tiles_coords.ids_neg.push_back(i_pt);
     }
   }
-  ticl::TICLTracksterLinkingTilesHost tracksterTilesBothEndcaps_pt(
-      std::array<std::size_t, 2>{etas_bw.size(), etas_fw.size()});
+  ticl::TICLTracksterLinkingTilesHost tracksterTilesBothEndcaps_pt(tiles_coords.size());
 
   alpaka_serial_sync::Queue queue(cms::alpakatools::host());
-  tracksterTilesBothEndcaps_pt[0].template fill<Acc>(queue, etas_fw, phis_fw, ids_fw);
-  tracksterTilesBothEndcaps_pt[1].template fill<Acc>(queue, etas_bw, phis_bw, ids_bw);
+  tracksterTilesBothEndcaps_pt[0].template fill<Acc>(queue, tiles_coords.etas_pos, tiles_coords.phis_pos, tiles_coords.ids_pos);
+  tracksterTilesBothEndcaps_pt[1].template fill<Acc>(queue, tiles_coords.etas_neg, tiles_coords.phis_neg, tiles_coords.ids_neg);
 
   // First loop on candidate tracksters (start at 1 since the highest pt trackster can only be a seed, not a candidate)
   for (unsigned int ts_cand_idx_pt = 1; ts_cand_idx_pt < tracksterCount; ts_cand_idx_pt++) {
