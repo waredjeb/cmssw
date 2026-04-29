@@ -19,6 +19,7 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "RecoHGCal/TICL/interface/alpaka/PatternRecognitionAlgoBase.h"
 #include "RecoHGCal/TICL/plugins/PatternRecognitionPluginFactory.h"
+#include "RecoHGCal/TICL/plugins/alpaka/PatternRecognitionByCLUEsteringWrapper.h"
 #include "CLUEstering/CLUEstering.hpp"
 
 #include <Eigen/Core>
@@ -27,9 +28,6 @@
 #include <string>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-
-  // Forward declaration of wrapper class
-  class PatternRecognitionByCLUEsteringWrapper;
 
   class HeterogeneousTracksterProducer : public stream::EDProducer<> {
   public:
