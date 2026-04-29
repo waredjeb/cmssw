@@ -40,8 +40,8 @@ struct BarrelValidatorHistograms {
 class BarrelValidator : public DQMGlobalEDAnalyzer<BarrelValidatorHistograms> {
 public:
   using Histograms = BarrelValidatorHistograms;
-  using TracksterToTracksterMap =
-      ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
+  using TracksterToTracksterMap = ticl::
+      TICLAssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
   using SimClusterToCaloParticleMap =
       ticl::TICLAssociationMap<ticl::oneToOneMapWithFraction, std::vector<SimCluster>, std::vector<CaloParticle>>;
 

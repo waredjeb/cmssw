@@ -7,7 +7,8 @@
 typedef AssociationOneToOneFlatTableProducer<TICLAssociationMapOneToOneFraction<SimCluster, CaloParticle>>
     SimClusterCaloParticleFractionFlatTableProducer;
 
-typedef AssociationOneToManyFlatTableProducer<TICLAssociationMapOneToManySharedEnergyScore<ticl::Trackster, ticl::Trackster>>
+typedef AssociationOneToManyFlatTableProducer<
+    TICLAssociationMapOneToManySharedEnergyScore<ticl::Trackster, ticl::Trackster>>
     TracksterTracksterEnergyScoreFlatTableProducer;
 
 #include "FWCore/Framework/interface/MakerMacros.h"

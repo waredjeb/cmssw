@@ -110,7 +110,8 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
       for (int iphi = 0; iphi <= nPhiBin; ++iphi) {
         if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
           edm::LogVerbatim("PatternRecogntionbyFastJet") << "iphi: " << iphi;
-          edm::LogVerbatim("PatternRecogntionbyFastJet") << "Entries in tileBin: " << tileOnLayer.contains(offset + iphi);
+          edm::LogVerbatim("PatternRecogntionbyFastJet")
+              << "Entries in tileBin: " << tileOnLayer.contains(offset + iphi);
         }
         for (auto clusterIdx : tileOnLayer[offset + iphi]) {
           // Skip masked layer clusters

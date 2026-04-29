@@ -48,8 +48,8 @@ struct HGCalValidatorHistograms {
 class HGCalValidator : public DQMGlobalEDAnalyzer<HGCalValidatorHistograms> {
 public:
   using Histograms = HGCalValidatorHistograms;
-  using TracksterToTracksterMap =
-      ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
+  using TracksterToTracksterMap = ticl::
+      TICLAssociationMap<ticl::mapWithSharedEnergyAndScore, std::vector<ticl::Trackster>, std::vector<ticl::Trackster>>;
   using SimClusterToCaloParticleMap =
       ticl::TICLAssociationMap<ticl::oneToOneMapWithFraction, std::vector<SimCluster>, std::vector<CaloParticle>>;
 

@@ -236,46 +236,50 @@ protected:
 
 // OneToOne, Fraction and Fraction with Score
 template <typename Source, typename Target>
-using TICLAssociationMapOneToOneFraction =
-    ticl::TICLAssociationMap<vector<ticl::AssociationElement<ticl::FractionType>>, std::vector<Source>, std::vector<Target>>;
+using TICLAssociationMapOneToOneFraction = ticl::
+    TICLAssociationMap<vector<ticl::AssociationElement<ticl::FractionType>>, std::vector<Source>, std::vector<Target>>;
 
 template <typename Source, typename Target>
 using TICLAssociationMapOneToOneFractionScore =
     ticl::TICLAssociationMap<vector<ticl::AssociationElement<std::pair<ticl::FractionType, float>>>,
-                         std::vector<Source>,
-                         std::vector<Target>>;
+                             std::vector<Source>,
+                             std::vector<Target>>;
 
 // OneToOne, SharedEnergy and SharedEnergy with Score
 template <typename Source, typename Target>
-using TICLAssociationMapOneToOneSharedEnergy = ticl::
-    TICLAssociationMap<vector<ticl::AssociationElement<ticl::SharedEnergyType>>, std::vector<Source>, std::vector<Target>>;
+using TICLAssociationMapOneToOneSharedEnergy =
+    ticl::TICLAssociationMap<vector<ticl::AssociationElement<ticl::SharedEnergyType>>,
+                             std::vector<Source>,
+                             std::vector<Target>>;
 
 template <typename Source, typename Target>
 using TICLAssociationMapOneToOneSharedEnergyScore =
     ticl::TICLAssociationMap<vector<ticl::AssociationElement<std::pair<ticl::SharedEnergyType, float>>>,
-                         std::vector<Source>,
-                         std::vector<Target>>;
+                             std::vector<Source>,
+                             std::vector<Target>>;
 
 // OneToMany, Fraction and Fraction with Score
 template <typename Source, typename Target>
-using TICLAssociationMapOneToManyFraction =
-    ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<ticl::FractionType>>>, vector<Source>, vector<Target>>;
+using TICLAssociationMapOneToManyFraction = ticl::
+    TICLAssociationMap<vector<vector<ticl::AssociationElement<ticl::FractionType>>>, vector<Source>, vector<Target>>;
 
 template <typename Source, typename Target>
 using TICLAssociationMapOneToManyFractionScore =
     ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<pair<ticl::FractionType, float>>>>,
-                         vector<Source>,
-                         vector<Target>>;
+                             vector<Source>,
+                             vector<Target>>;
 
 // OneToMany, SharedEnergy and SharedEnergy with Score
 template <typename Source, typename Target>
-using TICLAssociationMapOneToManySharedEnergy = ticl::
-    TICLAssociationMap<vector<vector<ticl::AssociationElement<ticl::SharedEnergyType>>>, vector<Source>, vector<Target>>;
+using TICLAssociationMapOneToManySharedEnergy =
+    ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<ticl::SharedEnergyType>>>,
+                             vector<Source>,
+                             vector<Target>>;
 
 template <typename Source, typename Target>
 using TICLAssociationMapOneToManySharedEnergyScore =
     ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<pair<ticl::SharedEnergyType, float>>>>,
-                         vector<Source>,
-                         vector<Target>>;
+                             vector<Source>,
+                             vector<Target>>;
 
 #endif

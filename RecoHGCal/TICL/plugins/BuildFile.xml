@@ -37,21 +37,19 @@
 <use name="TrackingTools/Records"/>
 <use name="TrackingTools/TrajectoryState"/>
 <use name="fastjet"/>
-<flags ALPAKA_BACKENDS="serial"/>
 <library file="*.cc" name="RecoHGCalTICLPlugins">
   <flags EDM_PLUGIN="1"/>
+  <flags ALPAKA_BACKENDS="serial"/>
 </library>
 
 <library file="alpaka/*.cc" name="HeterogeneousTrackstersPluginsPortable">
-  <use name="alpaka"/>
   <use name="CLUEstering"/>
   <use name="CondFormats/DataRecord"/>
   <use name="CondFormats/HGCalObjects"/>
-  <use name="CUDADataFormats/HGCal"/>
   <use name="DataFormats/Portable"/>
   <use name="Geometry/HGCalGeometry"/>
   <use name="HeterogeneousCore/AlpakaCore"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="1"/>
   <flags EDM_PLUGIN="1"/>
+  <flags ALPAKA_BACKENDS="serial"/>
 </library>

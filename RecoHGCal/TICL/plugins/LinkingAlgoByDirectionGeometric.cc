@@ -39,8 +39,10 @@ void LinkingAlgoByDirectionGeometric::initialize(const HGCalDDDConstants *hgcons
   propagator_ = propH;
 }
 
-void LinkingAlgoByDirectionGeometric::propagateTracksters(
-    const Trackster &t, std::size_t idx, float zVal, TilesCoordinates &coords) {
+void LinkingAlgoByDirectionGeometric::propagateTracksters(const Trackster &t,
+                                                          std::size_t idx,
+                                                          float zVal,
+                                                          TilesCoordinates &coords) {
   const auto &baryc = t.barycenter();
   auto directnv = t.eigenvectors(0);
 
@@ -62,7 +64,6 @@ void LinkingAlgoByDirectionGeometric::propagateTracksters(
     coords.ids_neg.push_back(idx);
   }
 }
-
 
 void LinkingAlgoByDirectionGeometric::propagateTracksters(
     const Trackster &t, std::size_t idx, float zVal, TilesCoordinates &coords, std::vector<Vector> &prop) {

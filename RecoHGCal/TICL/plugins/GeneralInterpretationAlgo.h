@@ -34,11 +34,8 @@ namespace ticl {
   private:
     void buildLayers();
 
-    void propagateTracksters(const Trackster &t,
-                            std::size_t idx,
-                            float zVal,
-                            ticl::TilesCoordinates &coords,
-                            std::vector<Vector> &props);
+    void propagateTracksters(
+        const Trackster &t, std::size_t idx, float zVal, ticl::TilesCoordinates &coords, std::vector<Vector> &props);
 
     void findTrackstersInWindow(const edm::MultiSpan<Trackster> &tracksters,
                                 const std::vector<std::pair<Vector, unsigned>> &seedingCollection,

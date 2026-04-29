@@ -62,9 +62,11 @@ AllTracksterToSimTracksterAssociatorsByHitsProducer::AllTracksterToSimTracksterA
     }
     tracksterCollectionTokens_.emplace_back(label, consumes<std::vector<ticl::Trackster>>(tag));
     hitToTracksterMapTokens_.emplace_back(
-        label, consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, "hitTo" + label)));
+        label,
+        consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, "hitTo" + label)));
     tracksterToHitMapTokens_.emplace_back(
-        label, consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, label + "ToHit")));
+        label,
+        consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, label + "ToHit")));
   }
 
   const auto& simTracksterCollections = pset.getParameter<std::vector<edm::InputTag>>("simTracksterCollections");
@@ -75,9 +77,11 @@ AllTracksterToSimTracksterAssociatorsByHitsProducer::AllTracksterToSimTracksterA
     }
     simTracksterCollectionTokens_.emplace_back(label, consumes<std::vector<ticl::Trackster>>(tag));
     hitToSimTracksterMapTokens_.emplace_back(
-        label, consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, "hitTo" + label)));
+        label,
+        consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, "hitTo" + label)));
     simTracksterToHitMapTokens_.emplace_back(
-        label, consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, label + "ToHit")));
+        label,
+        consumes<ticl::TICLAssociationMap<ticl::mapWithFraction>>(edm::InputTag(allHitToTSAccoc, label + "ToHit")));
   }
 
   // Produce separate association maps for each trackster-simTrackster combination
@@ -85,12 +89,12 @@ AllTracksterToSimTracksterAssociatorsByHitsProducer::AllTracksterToSimTracksterA
     for (const auto& simTracksterToken : simTracksterCollectionTokens_) {
       std::string instanceLabel = tracksterToken.first + "To" + simTracksterToken.first;
       produces<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                    std::vector<ticl::Trackster>,
-                                    std::vector<ticl::Trackster>>>(instanceLabel);
+                                        std::vector<ticl::Trackster>,
+                                        std::vector<ticl::Trackster>>>(instanceLabel);
       std::string reverseInstanceLabel = simTracksterToken.first + "To" + tracksterToken.first;
       produces<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                    std::vector<ticl::Trackster>,
-                                    std::vector<ticl::Trackster>>>(reverseInstanceLabel);
+                                        std::vector<ticl::Trackster>,
+                                        std::vector<ticl::Trackster>>>(reverseInstanceLabel);
     }
   }
 }
@@ -105,12 +109,12 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer::produce(edm::StreamID,
     for (const auto& tracksterToken : tracksterCollectionTokens_) {
       for (const auto& simTracksterToken : simTracksterCollectionTokens_) {
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    tracksterToken.first + "To" + simTracksterToken.first);
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    simTracksterToken.first + "To" + tracksterToken.first);
       }
     }
@@ -136,12 +140,12 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer::produce(edm::StreamID,
     for (const auto& tracksterToken : tracksterCollectionTokens_) {
       for (const auto& simTracksterToken : simTracksterCollectionTokens_) {
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    tracksterToken.first + "To" + simTracksterToken.first);
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    simTracksterToken.first + "To" + tracksterToken.first);
       }
     }
@@ -170,12 +174,12 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer::produce(edm::StreamID,
         Handle<std::vector<ticl::Trackster>> simTrackstersHandle;
 
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    tracksterToken.first + "To" + simTracksterToken.first);
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    simTracksterToken.first + "To" + tracksterToken.first);
       }
       continue;
@@ -217,12 +221,12 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer::produce(edm::StreamID,
 
       if (!simTrackstersHandle.isValid()) {
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    tracksterToken.first + "To" + simTracksterToken.first);
         iEvent.put(std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                         std::vector<ticl::Trackster>,
-                                                         std::vector<ticl::Trackster>>>(),
+                                                             std::vector<ticl::Trackster>,
+                                                             std::vector<ticl::Trackster>>>(),
                    simTracksterToken.first + "To" + tracksterToken.first);
         continue;
       }
@@ -253,12 +257,12 @@ void AllTracksterToSimTracksterAssociatorsByHitsProducer::produce(edm::StreamID,
 
       // Create the association maps
       auto tracksterToSimTracksterMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                                              std::vector<ticl::Trackster>,
-                                                                              std::vector<ticl::Trackster>>>(
+                                                                                  std::vector<ticl::Trackster>,
+                                                                                  std::vector<ticl::Trackster>>>(
           recoTrackstersHandle, simTrackstersHandle, iEvent);
       auto simTracksterToTracksterMap = std::make_unique<ticl::TICLAssociationMap<ticl::mapWithSharedEnergyAndScore,
-                                                                              std::vector<ticl::Trackster>,
-                                                                              std::vector<ticl::Trackster>>>(
+                                                                                  std::vector<ticl::Trackster>,
+                                                                                  std::vector<ticl::Trackster>>>(
           simTrackstersHandle, recoTrackstersHandle, iEvent);
 
       for (unsigned int tracksterIndex = 0; tracksterIndex < recoTracksters.size(); ++tracksterIndex) {

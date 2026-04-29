@@ -13,7 +13,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PatternRecognitionAlgoBase {
   protected:
-
   public:
     PatternRecognitionAlgoBase(const edm::ParameterSet& conf) {}
     virtual ~PatternRecognitionAlgoBase() = default;

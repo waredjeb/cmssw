@@ -16,6 +16,7 @@
 #include <concepts>
 #include <cstdint>
 #include <span>
+#include <cstddef>
 
 namespace ticl {
 
@@ -157,6 +158,18 @@ namespace ticl {
 
     const auto& operator[](std::size_t idx) const { return m_layer_tiles[idx]; }
     auto& operator[](std::size_t idx) { return m_layer_tiles[idx]; }
+
+    auto view() const {
+      std::array<View, N> views;
+      std::ranges::transform(m_layer_tiles, views.begin(), [](auto& layerTile) { return layerTile.view(); });
+      return views;
+    }
+
+//    auto view() const {
+//      std::array<la, N> views;
+//      std::ranges::transform(m_layer_tiles, views.begin(), [](const auto& layerTile) { return layerTile.view(); });
+//      return views;
+//    }
 
   private:
     std::array<LayerTiles, N> m_layer_tiles;

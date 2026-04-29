@@ -14,4 +14,4 @@ namespace ticl::concepts {
     T::iterations;
   };
 
-}
+}  // namespace ticl::concepts
