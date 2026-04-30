@@ -35,6 +35,8 @@ namespace ticl {
     ALPAKA_FN_ACC auto contains(std::size_t idx) const { return associations.contains(idx); }
     ALPAKA_FN_ACC auto count(std::size_t idx) const { return associations.count(idx); }
 
+    ALPAKA_FN_HOST_ACC auto size() const { return associations.content().metadata().size(); }
+
     ALPAKA_FN_ACC auto phiBin(float phi) const {
       const auto normPhi = normalizedPhi(phi);
       const auto r = T::nPhiBins * M_1_PI * 0.5f;
@@ -136,43 +138,80 @@ namespace ticl {
 
   private:
     PortableCollection<TDev, ::ticl::AssociationMap<>> m_associations;
+
+    template <typename _LT, std::size_t _N>
+    friend struct ::cms::alpakatools::CopyToDevice;
   };
 
-  template <typename LayerTiles, std::size_t N>
+  template <concepts::LayerTile LayerTile, std::size_t N, typename TDev>
   class Tiles {
   public:
-    using View = LayerTiles::View;
-    using LayerTilesType = LayerTiles;
+    using LayerTilesType = LayerTiles<LayerTile, TDev>;
+    using View = LayerTilesType::View;
     using Collection = LayerTilesType::Container;
-    using TilesType = LayerTiles::TilesType;
+    using TilesType = LayerTile;
 
     explicit Tiles(edm::Uninitialized init) noexcept {
       for (auto dim = 0u; dim < N; ++dim)
         m_layer_tiles[dim] = LayerTilesType(init);
     }
     template <std::integral SizeType>
-    Tiles(std::array<SizeType, N> sizes) {
+    Tiles(std::array<SizeType, N> sizes)
+      requires std::same_as<TDev, alpaka::DevCpu>
+    {
       for (auto dim = 0u; dim < N; ++dim)
         m_layer_tiles[dim] = LayerTilesType(sizes[dim]);
+    }
+    template <typename TQueue, std::integral SizeType>
+    Tiles(TQueue& queue, std::array<SizeType, N> sizes) {
+      for (auto dim = 0u; dim < N; ++dim)
+        m_layer_tiles[dim] = LayerTilesType(queue, sizes[dim]);
     }
 
     const auto& operator[](std::size_t idx) const { return m_layer_tiles[idx]; }
     auto& operator[](std::size_t idx) { return m_layer_tiles[idx]; }
 
+    auto extents() const {
+      std::array<uint32_t, N> sizes;
+      std::ranges::transform(
+          m_layer_tiles, sizes.begin(), [](const auto& layer_tile) { return layer_tile.view().size(); });
+      return sizes;
+    }
+
     auto view() const {
       std::array<View, N> views;
-      std::ranges::transform(m_layer_tiles, views.begin(), [](auto& layerTile) { return layerTile.view(); });
+      std::ranges::transform(m_layer_tiles, views.begin(), [](const auto& layerTile) { return layerTile.view(); });
       return views;
     }
 
-//    auto view() const {
-//      std::array<la, N> views;
-//      std::ranges::transform(m_layer_tiles, views.begin(), [](const auto& layerTile) { return layerTile.view(); });
-//      return views;
-//    }
+    //    auto view() const {
+    //      std::array<la, N> views;
+    //      std::ranges::transform(m_layer_tiles, views.begin(), [](const auto& layerTile) { return layerTile.view(); });
+    //      return views;
+    //    }
 
   private:
-    std::array<LayerTiles, N> m_layer_tiles;
+    std::array<LayerTilesType, N> m_layer_tiles;
+
+    template <typename _LT, std::size_t _N>
+    friend struct ::cms::alpakatools::CopyToDevice;
   };
 
 }  // namespace ticl
+
+namespace cms::alpakatools {
+
+  template <typename LayerTiles, std::size_t N>
+  struct CopyToDevice<ticl::Tiles<LayerTiles, N, alpaka::DevCpu>> {
+    template <typename TQueue>
+    static auto copyAsync(TQueue& queue, const ticl::Tiles<LayerTiles, N, alpaka::DevCpu>& src) {
+      using Device = alpaka::Dev<TQueue>;
+      auto dst = ticl::Tiles<LayerTiles, N, Device>(queue, src.extents());
+      for (auto i = 0u; i < N; ++i)
+        alpaka::memcpy(queue, dst[i].m_associations.buffer(), src[i].m_associations.buffer());
+
+      return dst;
+    }
+  };
+
+}  // namespace cms::alpakatools

@@ -18,14 +18,11 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
 
-  template <concepts::LayerTile T>
-  using LayerTilesDevice = ticl::LayerTiles<T, Device>;
-
-  using TICLLayerTilesHost = Tiles<LayerTilesDevice<TileConstants>, TileConstants::nLayers>;
-  using TICLTracksterTilesHost = Tiles<LayerTilesDevice<TileConstants>, TileConstants::iterations>;
-  using TICLLayerTilesHFNoseHost = Tiles<LayerTilesDevice<TileConstantsHFNose>, TileConstantsHFNose::nLayers>;
-  using TICLTracksterTilesHFNoseHost = Tiles<LayerTilesDevice<TileConstantsHFNose>, TileConstantsHFNose::iterations>;
-  using TICLLayerTilesBarrelHost = Tiles<LayerTilesDevice<TileConstantsBarrel>, TileConstantsBarrel::nLayers>;
-  using TICLTracksterTilesBarrelHost = Tiles<LayerTilesDevice<TileConstantsBarrel>, TileConstantsBarrel::iterations>;
+  using TICLLayerTilesHost = Tiles<TileConstants, TileConstants::nLayers, Device>;
+  using TICLTracksterTilesHost = Tiles<TileConstants, TileConstants::iterations, Device>;
+  using TICLLayerTilesHFNoseHost = Tiles<TileConstantsHFNose, TileConstantsHFNose::nLayers, Device>;
+  using TICLTracksterTilesHFNoseHost = Tiles<TileConstantsHFNose, TileConstantsHFNose::iterations, Device>;
+  using TICLLayerTilesBarrelHost = Tiles<TileConstantsBarrel, TileConstantsBarrel::nLayers, Device>;
+  using TICLTracksterTilesBarrelHost = Tiles<TileConstantsBarrel, TileConstantsBarrel::iterations, Device>;
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl

@@ -8,15 +8,12 @@
 
 namespace ticl {
 
-  template <typename T>
-  using LayerTilesHost = ticl::LayerTiles<T, alpaka::DevCpu>;
-
-  using TICLLayerTilesHost = Tiles<LayerTilesHost<TileConstants>, TileConstants::nLayers>;
-  using TICLTracksterTilesHost = Tiles<LayerTilesHost<TileConstants>, TileConstants::iterations>;
-  using TICLLayerTilesHFNoseHost = Tiles<LayerTilesHost<TileConstantsHFNose>, TileConstantsHFNose::nLayers>;
-  using TICLTracksterTilesHFNoseHost = Tiles<LayerTilesHost<TileConstantsHFNose>, TileConstantsHFNose::iterations>;
-  using TICLLayerTilesBarrelHost = Tiles<LayerTilesHost<TileConstantsBarrel>, TileConstantsBarrel::nLayers>;
-  using TICLTracksterTilesBarrelHost = Tiles<LayerTilesHost<TileConstantsBarrel>, TileConstantsBarrel::iterations>;
-  using TICLTracksterLinkingTilesHost = Tiles<LayerTilesHost<TileConstants>, 2>;
+  using TICLLayerTilesHost = Tiles<TileConstants, TileConstants::nLayers, alpaka::DevCpu>;
+  using TICLTracksterTilesHost = Tiles<TileConstants, TileConstants::iterations, alpaka::DevCpu>;
+  using TICLLayerTilesHFNoseHost = Tiles<TileConstantsHFNose, TileConstantsHFNose::nLayers, alpaka::DevCpu>;
+  using TICLTracksterTilesHFNoseHost = Tiles<TileConstantsHFNose, TileConstantsHFNose::iterations, alpaka::DevCpu>;
+  using TICLLayerTilesBarrelHost = Tiles<TileConstantsBarrel, TileConstantsBarrel::nLayers, alpaka::DevCpu>;
+  using TICLTracksterTilesBarrelHost = Tiles<TileConstantsBarrel, TileConstantsBarrel::iterations, alpaka::DevCpu>;
+  using TICLTracksterLinkingTilesHost = Tiles<TileConstants, 2, alpaka::DevCpu>;
 
 }  // namespace ticl
