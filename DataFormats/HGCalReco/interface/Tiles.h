@@ -143,7 +143,7 @@ namespace ticl {
     friend struct ::cms::alpakatools::CopyToDevice;
   };
 
-  template <concepts::LayerTile LayerTile, std::size_t N, typename TDev>
+  template <typename LayerTile, std::size_t N, typename TDev>
   class Tiles {
   public:
     using LayerTilesType = LayerTiles<LayerTile, TDev>;

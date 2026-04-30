@@ -3,6 +3,7 @@
 
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "DataFormats/HGCalReco/interface/LayerTileConcept.h"
+#include "DataFormats/HGCalReco/interface/Tiles.h"
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "DataFormats/TICL/interface/AssociationMap.h"
 #include "DataFormats/TICL/interface/FillAssociator.h"
@@ -18,11 +19,11 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
 
-  using TICLLayerTilesDevice = Tiles<TileConstants, TileConstants::nLayers, Device>;
-  using TICLTracksterTilesDevice = Tiles<TileConstants, TileConstants::iterations, Device>;
-  using TICLLayerTilesHFNoseDevice = Tiles<TileConstantsHFNose, TileConstantsHFNose::nLayers, Device>;
-  using TICLTracksterTilesHFNoseDevice = Tiles<TileConstantsHFNose, TileConstantsHFNose::iterations, Device>;
-  using TICLLayerTilesBarrelDevice = Tiles<TileConstantsBarrel, TileConstantsBarrel::nLayers, Device>;
-  using TICLTracksterTilesBarrelDevice = Tiles<TileConstantsBarrel, TileConstantsBarrel::iterations, Device>;
+  using TICLLayerTilesDevice = ::ticl::Tiles<::ticl::TileConstants, ::ticl::TileConstants::nLayers, Device>;
+  using TICLTracksterTilesDevice = ::ticl::Tiles<::ticl::TileConstants, ::ticl::TileConstants::iterations, Device>;
+  using TICLLayerTilesHFNoseDevice = ::ticl::Tiles<::ticl::TileConstantsHFNose, ::ticl::TileConstantsHFNose::nLayers, Device>;
+  using TICLTracksterTilesHFNoseDevice = ::ticl::Tiles<::ticl::TileConstantsHFNose, ::ticl::TileConstantsHFNose::iterations, Device>;
+  using TICLLayerTilesBarrelDevice = ::ticl::Tiles<::ticl::TileConstantsBarrel, ::ticl::TileConstantsBarrel::nLayers, Device>;
+  using TICLTracksterTilesBarrelDevice = ::ticl::Tiles<::ticl::TileConstantsBarrel, ::ticl::TileConstantsBarrel::iterations, Device>;
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
