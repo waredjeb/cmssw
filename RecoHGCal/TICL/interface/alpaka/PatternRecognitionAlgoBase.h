@@ -19,7 +19,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     virtual ~PatternRecognitionAlgoBase() = default;
 
     // Tiles view type - array of LayerTileViews
-    using TilesView = ::ticl::TICLLayerTilesHost::TilesType::View;
+    using TilesView = ::ticl::LayerTilesHost<::ticl::TileConstants>::View;
     using TilesConstViewArray = std::array<TilesView, ::ticl::TileConstants::nLayers>;
 
     virtual void makeTracksters(Queue& queue,
