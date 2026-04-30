@@ -52,5 +52,5 @@
   <use name="HeterogeneousCore/AlpakaInterface"/>
   <use name="RecoHGCal/TICL"/>
   <flags EDM_PLUGIN="1"/>
-  <flags ALPAKA_BACKENDS="serial"/>
+  <flags ALPAKA_BACKENDS="1"/>
 </library>
