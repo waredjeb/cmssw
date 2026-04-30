@@ -8,6 +8,7 @@
 #include "CLUEstering/CLUEstering.hpp"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 
 #include "RecoHGCal/TICL/plugins/alpaka/PatternRecognitionByCLUEstering.h"
 
@@ -19,10 +20,77 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace ticl = ::ticl;
 
+  // Debug kernel to print tiles information
+  struct PrintTilesKernel {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc,
+                                  TilesConstViewArray tiles,
+                                  int nLayers) const {
+      // Only one thread prints to avoid spam
+      if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
+        printf("\n=== Tiles Debug Info ===\n");
+        printf("Total layers: %d\n", nLayers);
+
+        for (int layer = 0; layer < nLayers; ++layer) {
+          auto layerTiles = tiles[layer];
+          int totalClusters = 0;
+          int nonEmptyTiles = 0;
+
+          // Count clusters and non-empty tiles
+          constexpr int nEtaBins = ::ticl::TileConstants::nEtaBins;
+          constexpr int nPhiBins = ::ticl::TileConstants::nPhiBins;
+          constexpr int nBins = nEtaBins * nPhiBins;
+
+          for (int bin = 0; bin < nBins; ++bin) {
+            if (layerTiles.contains(bin)) {
+              int count = layerTiles.count(bin);
+              if (count > 0) {
+                totalClusters += count;
+                nonEmptyTiles++;
+              }
+            }
+          }
+
+          if (totalClusters > 0) {
+            printf("Layer %3d: %4d clusters in %3d tiles (out of %d bins)\n",
+                   layer,
+                   totalClusters,
+                   nonEmptyTiles,
+                   nBins);
+
+            // Print first few non-empty tiles as examples
+            int printedTiles = 0;
+            for (int bin = 0; bin < nBins && printedTiles < 3; ++bin) {
+              if (layerTiles.contains(bin) && layerTiles.count(bin) > 0) {
+                int etaBin = bin / nPhiBins;
+                int phiBin = bin % nPhiBins;
+                printf("  - Bin %4d (eta=%2d, phi=%2d): %d clusters\n",
+                       bin,
+                       etaBin,
+                       phiBin,
+                       layerTiles.count(bin));
+                printedTiles++;
+              }
+            }
+          }
+        }
+        printf("========================\n\n");
+      }
+    }
+  };
+
+
   void PatternRecognitionByCLUEstering::makeTracksters(Queue& queue,
                                                        const HGCalSoAClustersDeviceCollection& lc,
                                                        const TilesConstViewArray& tiles,
                                                        std::vector<ticl::Trackster>& tracksters) {
+    // Debug: Print tiles information
+    {
+      auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 1);  // Single thread
+      alpaka::exec<Acc1D>(queue, workDiv, PrintTilesKernel{}, tiles, ::ticl::TileConstants::nLayers);
+      alpaka::wait(queue);  // Wait for print to complete
+    }
+
     auto* x = const_cast<float*>(lc.view().x().data());
     auto* y = const_cast<float*>(lc.view().y().data());
     auto* z = const_cast<float*>(lc.view().z().data());
