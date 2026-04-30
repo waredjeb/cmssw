@@ -20,6 +20,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace ticl = ::ticl;
 
+  // Type alias for tiles view array (needed in kernel scope)
+  using TilesView = ::ticl::LayerTilesHost<::ticl::TileConstants>::View;
+  using TilesConstViewArray = std::array<TilesView, ::ticl::TileConstants::nLayers>;
+
   // Debug kernel to print tiles information
   struct PrintTilesKernel {
     template <typename TAcc>
