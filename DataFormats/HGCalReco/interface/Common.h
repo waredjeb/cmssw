@@ -13,7 +13,7 @@ namespace ticl {
     static constexpr float maxEta = 3.2f;
     static constexpr int nEtaBins = 34;
     static constexpr int nPhiBins = 126;
-    static constexpr int nLayers = 104;
+    static constexpr int nLayers = 96;
     static constexpr int iterations = 4;
     static constexpr int nBins = nEtaBins * nPhiBins;
   };
