@@ -35,6 +35,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     void makeTracksters(Queue& queue,
                         const HGCalSoAClustersDeviceCollection& lc,
+                        const TilesConstViewArray& tiles,
                         std::vector<ticl::Trackster>& tracksters) override;
 
     static void fillPSetDescription(::edm::ParameterSetDescription& iDesc);

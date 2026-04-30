@@ -21,6 +21,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void PatternRecognitionByCLUEstering::makeTracksters(Queue& queue,
                                                        const HGCalSoAClustersDeviceCollection& lc,
+                                                       const TilesConstViewArray& tiles,
                                                        std::vector<ticl::Trackster>& tracksters) {
     auto* x = const_cast<float*>(lc.view().x().data());
     auto* y = const_cast<float*>(lc.view().y().data());

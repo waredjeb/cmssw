@@ -81,8 +81,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const auto& lc = iEvent.get(deviceTokenSoAClusters_);
       const auto& tiles = iEvent.get(layer_clusters_tiles_token_);
 
+      // Get tiles view - this is a lightweight object that can be passed to device
       auto tilesView = tiles.view();
 
+      // Debug: print tile information
       for(int currentLayer = 1; currentLayer < ticl::TICLLayerTilesHost::TilesType::nLayers; currentLayer++){
         auto const layerTile = tilesView[currentLayer];
         for(int currentTile = 0; currentTile < ticl::TICLLayerTilesHost::TilesType::nBins; currentTile++) {
@@ -90,10 +92,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             std::cout << "LayerTile on layer " << currentLayer << " Has " << layerTile.count(currentTile) << " For tile " << currentTile << std::endl;
        }
       }
-      
+
       auto tracksters = std::vector<ticl::Trackster>();
       auto& queue = iEvent.queue();
-      algo_->makeTracksters(queue, lc, tracksters);
+
+      // Pass tiles view to the algorithm - views are device-compatible
+      algo_->makeTracksters(queue, lc, tilesView, tracksters);
 
       iEvent.emplace(legacyTrackstersToken_, std::move(tracksters));
     }
