@@ -18,11 +18,11 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl {
 
-  using TICLLayerTilesHost = Tiles<TileConstants, TileConstants::nLayers, Device>;
-  using TICLTracksterTilesHost = Tiles<TileConstants, TileConstants::iterations, Device>;
-  using TICLLayerTilesHFNoseHost = Tiles<TileConstantsHFNose, TileConstantsHFNose::nLayers, Device>;
-  using TICLTracksterTilesHFNoseHost = Tiles<TileConstantsHFNose, TileConstantsHFNose::iterations, Device>;
-  using TICLLayerTilesBarrelHost = Tiles<TileConstantsBarrel, TileConstantsBarrel::nLayers, Device>;
-  using TICLTracksterTilesBarrelHost = Tiles<TileConstantsBarrel, TileConstantsBarrel::iterations, Device>;
+  using TICLLayerTilesDevice = Tiles<TileConstants, TileConstants::nLayers, Device>;
+  using TICLTracksterTilesDevice = Tiles<TileConstants, TileConstants::iterations, Device>;
+  using TICLLayerTilesHFNoseDevice = Tiles<TileConstantsHFNose, TileConstantsHFNose::nLayers, Device>;
+  using TICLTracksterTilesHFNoseDevice = Tiles<TileConstantsHFNose, TileConstantsHFNose::iterations, Device>;
+  using TICLLayerTilesBarrelDevice = Tiles<TileConstantsBarrel, TileConstantsBarrel::nLayers, Device>;
+  using TICLTracksterTilesBarrelDevice = Tiles<TileConstantsBarrel, TileConstantsBarrel::iterations, Device>;
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::ticl
