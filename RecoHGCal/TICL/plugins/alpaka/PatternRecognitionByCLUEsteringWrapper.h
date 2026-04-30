@@ -11,13 +11,13 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   // Wrapper class that adapts backend-specific implementation to backend-independent interface
-  class PatternRecognitionByCLUEsteringWrapper final : public ticl::PatternRecognitionAlgoBasePortable {
+  class PatternRecognitionByCLUEsteringWrapper final : public ::ticl::PatternRecognitionAlgoBasePortable {
   private:
     std::unique_ptr<PatternRecognitionAlgoBase> impl_;
 
   public:
     PatternRecognitionByCLUEsteringWrapper(const edm::ParameterSet& config)
-        : ticl::PatternRecognitionAlgoBasePortable(config),
+        : ::ticl::PatternRecognitionAlgoBasePortable(config),
           impl_(std::make_unique<PatternRecognitionByCLUEstering>(config)) {}
 
     ~PatternRecognitionByCLUEsteringWrapper() override = default;

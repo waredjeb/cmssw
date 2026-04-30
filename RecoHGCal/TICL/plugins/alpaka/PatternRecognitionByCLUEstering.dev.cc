@@ -8,6 +8,7 @@
 #include "CLUEstering/CLUEstering.hpp"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "alpaka/exec/UniformElements.hpp"
 
 #include "RecoHGCal/TICL/plugins/alpaka/PatternRecognitionByCLUEstering.h"
 
@@ -17,11 +18,28 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  namespace ticl = ::ticl;
+  struct PrintTiles {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc& acc, std::array<ticl::TICLLayerTilesDevice::View, 96> dTiles) const {
+      for (auto currentLayer = 0; currentLayer < 96; ++currentLayer) {
+        auto const layerTile = dTiles[currentLayer];
+        for (auto currentTile = 0; currentTile < ticl::TICLLayerTilesDevice::TilesType::nBins; ++currentTile) {
+          if (layerTile.count(currentTile) > 0) {
+            printf("From GPU LayerTile on layer %d has %d for tile %d \n",
+                   currentTile,
+                   layerTile.count(currentTile),
+                   currentTile);
+          }
+        }
+      }
+    }
+  };
 
   void PatternRecognitionByCLUEstering::makeTracksters(Queue& queue,
                                                        const HGCalSoAClustersDeviceCollection& lc,
-                                                       std::vector<ticl::Trackster>& tracksters) {
+                                                       std::vector<::ticl::Trackster>& tracksters,
+                                                       std::array<ticl::TICLLayerTilesDevice::View, 96> dTiles) {
+    using namespace cms::alpakatools;
     auto* x = const_cast<float*>(lc.view().x().data());
     auto* y = const_cast<float*>(lc.view().y().data());
     auto* z = const_cast<float*>(lc.view().z().data());
@@ -31,6 +49,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // for (int i = 0; i < lc->metadata().size(); ++i) {
     //   map[z[i]].push_back(i);
     // }
+
+    auto workDiv = make_workdiv<Acc1D>(1, 1);
+    alpaka::exec<Acc1D>(queue, workDiv, PrintTiles{}, dTiles);
+
+    alpaka::wait(queue);
 
     const int32_t n = static_cast<int32_t>(lc->metadata().size());
     if (n > 0) {
@@ -140,7 +163,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         float inv_raw_energy = 1.f / raw_energy;
         if (energyWeight)
           barycenter *= inv_raw_energy;
-        trackster.setBarycenter(ticl::Trackster::Vector(barycenter));
+        trackster.setBarycenter(::ticl::Trackster::Vector(barycenter));
 
         trackster.calculateRawPt();
         trackster.calculateRawEmPt();

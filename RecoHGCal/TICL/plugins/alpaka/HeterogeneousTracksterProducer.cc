@@ -36,7 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // detector_(config.getParameter<std::string>("detector")),
           // doNose_(detector_ == "HFNose"),
           deviceTokenSoAClusters_{consumes(config.getParameter<edm::InputTag>("layerClusters"))},
-          layer_clusters_tiles_token_(consumes<ticl::TICLLayerTilesHost>(config.getParameter<edm::InputTag>("layer_clusters_tiles"))),
+          layer_clusters_tiles_token_(consumes<::ticl::TICLLayerTilesHost>(config.getParameter<edm::InputTag>("layer_clusters_tiles"))),
           legacyTrackstersToken_{produces()}
   {
       auto plugin = config.getParameter<std::string>("patternRecognitionBy");
@@ -79,21 +79,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     void produce(device::Event& iEvent, device::EventSetup const& iSetup) override {
       const auto& lc = iEvent.get(deviceTokenSoAClusters_);
-      const auto& tiles = iEvent.get(layer_clusters_tiles_token_);
+      const auto& hostTiles = iEvent.get(layer_clusters_tiles_token_);
 
-      auto tilesView = tiles.view();
+//      auto tilesView = hostTiles.view();
 
-      for(int currentLayer = 1; currentLayer < ticl::TICLLayerTilesHost::TilesType::nLayers; currentLayer++){
-        auto const layerTile = tilesView[currentLayer];
-        for(int currentTile = 0; currentTile < ticl::TICLLayerTilesHost::TilesType::nBins; currentTile++) {
-          if(layerTile.count(currentTile) > 0)
-            std::cout << "LayerTile on layer " << currentLayer << " Has " << layerTile.count(currentTile) << " For tile " << currentTile << std::endl;
-       }
-      }
+//      for(int currentLayer = 1; currentLayer < ::ticl::TICLLayerTilesHost::TilesType::nLayers; currentLayer++){
+//        auto const layerTile = tilesView[currentLayer];
+//        for(int currentTile = 0; currentTile < ::ticl::TICLLayerTilesHost::TilesType::nBins; currentTile++) {
+//          if(layerTile.count(currentTile) > 0)
+//            std::cout << "LayerTile on layer " << currentLayer << " Has " << layerTile.count(currentTile) << " For tile " << currentTile << std::endl;
+//       }
+//      }
+
+      auto deviceTiles = cms::alpakatools::CopyToDevice<::ticl::TICLLayerTilesHost>::copyAsync(iEvent.queue(), hostTiles);
+
       
-      auto tracksters = std::vector<ticl::Trackster>();
+      auto tracksters = std::vector<::ticl::Trackster>();
       auto& queue = iEvent.queue();
-      algo_->makeTracksters(queue, lc, tracksters);
+      algo_->makeTracksters(queue, lc, tracksters, deviceTiles.view());
 
       iEvent.emplace(legacyTrackstersToken_, std::move(tracksters));
     }
@@ -102,8 +105,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // std::string detector_;
     // bool doNose_;
     device::EDGetToken<HGCalSoAClustersDeviceCollection> const deviceTokenSoAClusters_;
-    edm::EDGetTokenT<ticl::TICLLayerTilesHost> layer_clusters_tiles_token_;
-    edm::EDPutTokenT<std::vector<ticl::Trackster>> const legacyTrackstersToken_;
+    edm::EDGetTokenT<::ticl::TICLLayerTilesHost> layer_clusters_tiles_token_;
+    edm::EDPutTokenT<std::vector<::ticl::Trackster>> const legacyTrackstersToken_;
     std::unique_ptr<PatternRecognitionAlgoBase> algo_;
     std::unique_ptr<PatternRecognitionAlgoBase> myAlgoHFNose_;
   };

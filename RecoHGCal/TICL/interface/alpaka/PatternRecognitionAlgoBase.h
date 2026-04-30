@@ -5,6 +5,7 @@
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoAClustersDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoARecHitsExtraDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/HGCalReco/interface/alpaka/TilesDevice.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include <vector>
@@ -19,6 +20,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     virtual void makeTracksters(Queue& queue,
                                 const HGCalSoAClustersDeviceCollection& layerClusters,
-                                std::vector<ticl::Trackster>& result) = 0;
+                                std::vector<::ticl::Trackster>& result,
+                                std::array<ticl::TICLLayerTilesDevice::View, 96> tiles) = 0;
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
