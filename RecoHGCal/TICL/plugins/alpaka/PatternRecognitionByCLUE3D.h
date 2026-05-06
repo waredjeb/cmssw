@@ -1,7 +1,5 @@
-
 #pragma once
 
-#include "CondCore/CondDB/interface/Exception.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoAClusters.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoAClustersDeviceCollection.h"
@@ -15,28 +13,41 @@
 
 #include <algorithm>
 #include <array>
-#include <ranges>
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  class PatternRecognitionByCLUEstering final : public PatternRecognitionAlgoBase {
+  class PatternRecognitionByCLUE3D final : public PatternRecognitionAlgoBase {
   private:
-    float m_rhoc;
-    float m_dc;
-    float m_dm;
+    // Algorithm parameters
+    std::vector<double> criticalDensity_;
+    std::vector<double> criticalSelfDensity_;
+    std::vector<int> densitySiblingLayers_;
+    std::vector<double> densityEtaPhiDistanceSqr_;
+    std::vector<double> densityXYDistanceSqr_;
+    std::vector<double> kernelDensityFactor_;
+    bool densityOnSameLayer_;
+    bool nearestHigherOnSameLayer_;
+    bool useAbsoluteProjectiveScale_;
+    bool useClusterDimensionXY_;
+    bool rescaleDensityByZ_;
+    std::vector<double> criticalEtaPhiDistance_;
+    std::vector<double> criticalXYDistance_;
+    std::vector<int> criticalZDistanceLyr_;
+    std::vector<double> outlierMultiplier_;
+    std::vector<int> minNumLayerCluster_;
+    bool doPidCut_;
+    float cutHadProb_;
+    bool computeLocalTime_;
+    bool usePCACleaning_;
 
   public:
-    PatternRecognitionByCLUEstering(const edm::ParameterSet& config)
-        : PatternRecognitionAlgoBase(config),
-          m_rhoc(config.getParameter<double>("rho_c")),
-          m_dc(config.getParameter<double>("dc")),
-          m_dm(config.getParameter<double>("dm")) {}
-    ~PatternRecognitionByCLUEstering() override = default;
+    PatternRecognitionByCLUE3D(const edm::ParameterSet& config);
+    ~PatternRecognitionByCLUE3D() override = default;
 
     void makeTracksters(Queue& queue,
-                        const HGCalSoAClustersDeviceCollection& lc,
+                        const HGCalSoAClustersDeviceCollection& layerClusters,
                         std::vector<::ticl::Trackster>& tracksters,
                         std::array<ticl::TICLLayerTilesDevice::View, 96> tiles) override;
 
