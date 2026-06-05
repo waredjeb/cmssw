@@ -86,11 +86,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             uint32_t detid = module_row.detid();
 
             //get the appropriate geometry
-            DetId::Detector det = DetId(detid).det();
+            DetId::Detector det = isSiPM ? DetId::Detector::HGCalHSc : DetId(detid).det();
             int subdet = ForwardSubdetector::ForwardEmpty;
             const HGCalGeometry* hgcal_geom =
                 static_cast<const HGCalGeometry*>(geo.getSubdetectorGeometry(det, subdet));
-
+            
             //get the offset to start reading the cell info from sequential
             uint32_t cellInfoOffset = cellIndexer.offsets_[typeidx];
 
