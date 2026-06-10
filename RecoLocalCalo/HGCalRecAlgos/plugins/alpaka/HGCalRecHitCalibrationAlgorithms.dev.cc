@@ -149,13 +149,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       };
 
       for (auto idx : uniform_elements(acc, digis.metadata().size())) {
-
         auto cellIndex = index[idx].cellInfoIdx();
 
         //only applies to Si
         bool isSiPM(maps[cellIndex].isSiPM());
-        if(isSiPM) continue;
-        
+        if (isSiPM)
+          continue;
+
         auto calib = calibs[idx];
         bool calibvalid = calib.valid();
         auto digi = digis[idx];
@@ -252,8 +252,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   double k_noise = 0.) const {
       for (auto idx : uniform_elements(acc, recHits.metadata().size())) {
         if (!recHits[idx].flags() && recHits[idx].energy() > k_noise * recHits[idx].sigmaNoise() &&
-            recHits[idx].layer() != 0)
+            recHits[idx].layer() != 0 && recHits[idx].dim3() < 0.0f) {
           sidx[alpaka::atomicAdd(acc, nsel, 1)] = idx;
+        }
       }
     }
   };
