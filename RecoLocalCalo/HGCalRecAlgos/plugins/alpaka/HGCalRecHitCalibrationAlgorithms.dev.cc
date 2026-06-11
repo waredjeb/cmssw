@@ -259,6 +259,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
+  struct HGCalRecHitCalibrationKernel_countRecHitsSplit {
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+                                  int32_t* __restrict__ nsel_silicon,
+                                  int32_t* __restrict__ sidx_silicon,
+                                  int32_t* __restrict__ nsel_scintillator,
+                                  int32_t* __restrict__ sidx_scintillator,
+                                  HGCalSoARecHitsDeviceCollection::ConstView recHits,
+                                  double k_noise = 0.) const {
+      for (auto idx : uniform_elements(acc, recHits.metadata().size())) {
+        if (!recHits[idx].flags() && recHits[idx].energy() > k_noise * recHits[idx].sigmaNoise() &&
+            recHits[idx].layer() != 0 && recHits[idx].dim3() < 0.0f) {
+          // Split based on layer: scintillator (layer == 44) vs silicon (layer != 44)
+          if (recHits[idx].layer() == 44) {
+            sidx_scintillator[alpaka::atomicAdd(acc, nsel_scintillator, 1)] = idx;
+          } else {
+            sidx_silicon[alpaka::atomicAdd(acc, nsel_silicon, 1)] = idx;
+          }
+        }
+      }
+    }
+  };
+
   //
   struct HGCalRecHitCalibrationKernel_copyRecHits {
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
@@ -338,6 +360,93 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // select rec hits
     alpaka::exec<Acc1D>(
         queue, grid, HGCalRecHitCalibrationKernel_countRecHits{}, nsel, sidx, device_recHits.const_view(), k_noise);
+
+    return device_recHits;
+  }
+
+  // @short apply all calibration kernels and split into silicon and scintillator
+  HGCalSoARecHitsDeviceCollection HGCalRecHitCalibrationAlgorithms::calibrate_split(
+      Queue& queue,
+      int32_t* __restrict__ nsel,
+      int32_t* __restrict__ sidx,
+      int32_t* __restrict__ nsel_silicon,
+      int32_t* __restrict__ sidx_silicon,
+      int32_t* __restrict__ nsel_scintillator,
+      int32_t* __restrict__ sidx_scintillator,
+      HGCalDigiHost const& host_digis,
+      HGCalCalibParamDevice const& device_calib,
+      HGCalMappingModuleParamDevice const& device_mapmod,
+      HGCalMappingCellParamDevice const& device_mapping,
+      HGCalDenseIndexInfoDevice const& device_index,
+      double k_noise) const {
+    LogDebug("HGCalRecHitCalibrationAlgorithms") << "\n\nINFO -- Start of calibrate_split\n\n" << std::endl;
+
+    LogDebug("HGCalRecHitCalibrationAlgorithms") << "\n\nINFO -- Copying the digis to the device\n\n" << std::endl;
+    auto const ndigis = host_digis.view().metadata().size();
+    HGCalDigiDevice device_digis(queue, ndigis);
+    alpaka::memcpy(queue, device_digis.buffer(), host_digis.const_buffer());
+
+    LogDebug("HGCalRecHitCalibrationAlgorithms")
+        << "\n\nINFO -- Allocating rechits buffer and initiating values" << std::endl;
+    HGCalSoARecHitsDeviceCollection device_recHits(queue, ndigis);
+
+    // number of items per group
+    uint32_t items = n_threads_;
+    // use as many groups as needed to cover the whole problem
+    uint32_t groups = divide_up_by(ndigis, items);
+    // map items to
+    //   - threads with a single element per thread on a GPU backend
+    //   - elements within a single thread on a CPU backend
+    auto grid = make_workdiv<Acc1D>(groups, items);
+    LogDebug("HGCalRecHitCalibrationAlgorithms") << "N groups: " << groups << "\tN items: " << items << std::endl;
+
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        HGCalRecHitCalibrationKernel_flagRecHits{},
+                        device_recHits.view(),
+                        device_digis.const_view(),
+                        device_calib.const_view());
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        HGCalRecHitCalibrationKernel_adcToEnergy{},
+                        device_recHits.view(),
+                        device_digis.const_view(),
+                        device_calib.const_view());
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        HGCalRecHitCalibrationKernel_toaToTime{},
+                        device_recHits.view(),
+                        device_digis.const_view(),
+                        device_calib.const_view());
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        HGCalRecHitCalibrationKernel_handleCalibCell{},
+                        device_recHits.view(),
+                        device_digis.const_view(),
+                        device_calib.const_view(),
+                        device_mapping.const_view(),
+                        device_index.const_view());
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        HGCalRecHitCalibrationKernel_metaData{},
+                        device_recHits.view(),
+                        device_mapmod.const_view(),
+                        device_index.const_view());
+
+    // select all rec hits
+    alpaka::exec<Acc1D>(
+        queue, grid, HGCalRecHitCalibrationKernel_countRecHits{}, nsel, sidx, device_recHits.const_view(), k_noise);
+
+    // select rec hits and split into silicon and scintillator
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        HGCalRecHitCalibrationKernel_countRecHitsSplit{},
+                        nsel_silicon,
+                        sidx_silicon,
+                        nsel_scintillator,
+                        sidx_scintillator,
+                        device_recHits.const_view(),
+                        k_noise);
 
     return device_recHits;
   }
