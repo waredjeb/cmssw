@@ -59,12 +59,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const device::ESGetToken<hgcal::HGCalDenseIndexInfoDevice, HGCalDenseIndexInfoRcd> indexingToken_;
     const device::ESGetToken<hgcal::HGCalMappingModuleParamDevice, HGCalElectronicsMappingRcd> moduleToken_;
     const device::EDPutToken<HGCalSoARecHitsDeviceCollection> recHitsToken_;
+    const device::EDPutToken<HGCalSoARecHitsDeviceCollection> recHitsSiliconToken_;
+    const device::EDPutToken<HGCalSoARecHitsDeviceCollection> recHitsScintillatorToken_;
     const HGCalRecHitCalibrationAlgorithms calibrator_;
     const double k_noise_;
     const int n_hits_scale_;
     int ndigis_;
     cms::alpakatools::host_buffer<int32_t> nsel_;
+    cms::alpakatools::host_buffer<int32_t> nsel_silicon_;
+    cms::alpakatools::host_buffer<int32_t> nsel_scintillator_;
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> sidx_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> sidx_silicon_;
+    std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> sidx_scintillator_;
     std::optional<HGCalSoARecHitsDeviceCollection> recHits_;
   };
 
@@ -76,10 +82,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         indexingToken_{esConsumes(iConfig.getParameter<edm::ESInputTag>("indexingSource"))},
         moduleToken_{esConsumes()},
         recHitsToken_{produces()},
+        recHitsSiliconToken_{produces("Silicon")},
+        recHitsScintillatorToken_{produces("Scintillator")},
         calibrator_{iConfig.getParameter<int>("n_blocks"), iConfig.getParameter<int>("n_threads")},
         k_noise_{iConfig.getParameter<double>("k_noise")},
         n_hits_scale_{iConfig.getParameter<int>("n_hits_scale")},
-        nsel_{cms::alpakatools::make_host_buffer<int32_t, Platform>()} {
+        nsel_{cms::alpakatools::make_host_buffer<int32_t, Platform>()},
+        nsel_silicon_{cms::alpakatools::make_host_buffer<int32_t, Platform>()},
+        nsel_scintillator_{cms::alpakatools::make_host_buffer<int32_t, Platform>()} {
 #ifndef HGCAL_PERF_TEST
     if (n_hits_scale_ > 1) {
       throw cms::Exception("RuntimeError") << "Build with `HGCAL_PERF_TEST` flag to activate `n_hits_scale`.";
@@ -97,6 +107,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     desc.add<int>("n_blocks", -1);
     desc.add<int>("n_threads", -1);
     desc.add<int>("n_hits_scale", -1);
+    desc.setComment(
+        "Produces three collections: default (all hits), 'Silicon' (layer != 44), and 'Scintillator' (layer == 44)");
     descriptions.addWithDefaultLabel(desc);
   }
 
@@ -177,17 +189,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::memcpy(queue, recHits.buffer(), tmpRecHits.const_buffer(), oldSize);
 #else
     *nsel_ = 0;
+    *nsel_silicon_ = 0;
+    *nsel_scintillator_ = 0;
     ndigis_ = hostDigis.view().metadata().size();
     sidx_ = cms::alpakatools::make_device_buffer<int32_t[]>(queue, ndigis_);
-    recHits_ = calibrator_.calibrate(queue,
-                                     nsel_.data(),
-                                     sidx_->data(),
-                                     hostDigis,
-                                     deviceCalibParam,
-                                     deviceModuleInfoProvider,
-                                     deviceMappingCellParamProvider,
-                                     deviceIndexingParamProvider,
-                                     k_noise_);
+    sidx_silicon_ = cms::alpakatools::make_device_buffer<int32_t[]>(queue, ndigis_);
+    sidx_scintillator_ = cms::alpakatools::make_device_buffer<int32_t[]>(queue, ndigis_);
+    recHits_ = calibrator_.calibrate_split(queue,
+                                           nsel_.data(),
+                                           sidx_->data(),
+                                           nsel_silicon_.data(),
+                                           sidx_silicon_->data(),
+                                           nsel_scintillator_.data(),
+                                           sidx_scintillator_->data(),
+                                           hostDigis,
+                                           deviceCalibParam,
+                                           deviceModuleInfoProvider,
+                                           deviceMappingCellParamProvider,
+                                           deviceIndexingParamProvider,
+                                           k_noise_);
 #endif
 
 #ifdef EDM_ML_DEBUG
@@ -200,11 +220,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   void HGCalRecHitsProducer::produce(device::Event& iEvent, device::EventSetup const& iSetup) {
+    // Select all hits
     auto recHits = calibrator_.select(iEvent.queue(), ndigis_, nsel_.data(), sidx_->data(), *recHits_);
     sidx_.reset();
 
-    LogDebug("HGCalRecHitsProducer") << "\n\nINFO -- storing rec hits in the event";  //<< std::endl;
+    // Select silicon hits
+    auto recHitsSilicon =
+        calibrator_.select(iEvent.queue(), ndigis_, nsel_silicon_.data(), sidx_silicon_->data(), *recHits_);
+    sidx_silicon_.reset();
+
+    // Select scintillator hits
+    auto recHitsScintillator =
+        calibrator_.select(iEvent.queue(), ndigis_, nsel_scintillator_.data(), sidx_scintillator_->data(), *recHits_);
+    sidx_scintillator_.reset();
+
+    LogDebug("HGCalRecHitsProducer") << "\n\nINFO -- storing rec hits - all: " << *nsel_ << ", silicon: " << *nsel_silicon_
+                                     << ", scintillator: " << *nsel_scintillator_ << " in the event";
     iEvent.emplace(recHitsToken_, std::move(recHits));
+    iEvent.emplace(recHitsSiliconToken_, std::move(recHitsSilicon));
+    iEvent.emplace(recHitsScintillatorToken_, std::move(recHitsScintillator));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

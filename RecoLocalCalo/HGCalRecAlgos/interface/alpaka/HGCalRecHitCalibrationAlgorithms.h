@@ -39,6 +39,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                               HGCalDenseIndexInfoDevice const& device_index,
                                               double k_noise) const;
 
+    HGCalSoARecHitsDeviceCollection calibrate_split(Queue& queue,
+                                                    int32_t* __restrict__ nsel,
+                                                    int32_t* __restrict__ sidx,
+                                                    int32_t* __restrict__ nsel_silicon,
+                                                    int32_t* __restrict__ sidx_silicon,
+                                                    int32_t* __restrict__ nsel_scintillator,
+                                                    int32_t* __restrict__ sidx_scintillator,
+                                                    HGCalDigiHost const& host_digis,
+                                                    HGCalCalibParamDevice const& device_calib,
+                                                    HGCalMappingModuleParamDevice const& device_mapmod,
+                                                    HGCalMappingCellParamDevice const& device_mapping,
+                                                    HGCalDenseIndexInfoDevice const& device_index,
+                                                    double k_noise) const;
+
     HGCalSoARecHitsDeviceCollection select(Queue& queue,
                                            int const ndigis,
                                            int32_t const* __restrict__ nsel,
