@@ -259,6 +259,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
+  // @short count RecHits and split into silicon and scintillator collections
   struct HGCalRecHitCalibrationKernel_countRecHitsSplit {
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
                                   int32_t* __restrict__ nsel_silicon,
@@ -448,26 +449,30 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         device_recHits.const_view(),
                         k_noise);
 
+
     return device_recHits;
   }
 
-  // @short select rechits
   HGCalSoARecHitsDeviceCollection HGCalRecHitCalibrationAlgorithms::select(
       Queue& queue,
       int const ndigis,
       int32_t const* __restrict__ nsel,
       int32_t const* __restrict__ sidx,
       HGCalSoARecHitsDeviceCollection const& device_recHits) const {
+    HGCalSoARecHitsDeviceCollection device_selRecHits(queue, *nsel);
+
+    if (*nsel == 0) {
+      return device_selRecHits;
+    }
+
     // number of items per group
     uint32_t items = n_threads_;
-    // use as many groups as needed to cover the whole problem
-    uint32_t groups = divide_up_by(ndigis, items);
+    uint32_t groups = divide_up_by(*nsel, items);
     // map items to
     //   - threads with a single element per thread on a GPU backend
     //   - elements within a single thread on a CPU backend
     auto grid = make_workdiv<Acc1D>(groups, items);
 
-    HGCalSoARecHitsDeviceCollection device_selRecHits(queue, *nsel);
     alpaka::exec<Acc1D>(queue,
                         grid,
                         HGCalRecHitCalibrationKernel_copyRecHits{},
