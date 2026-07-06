@@ -11,6 +11,9 @@ from Validation.HGCalValidation.HLTHGCalValidator_cff import hltHgcalValidator a
 hltPrefix = 'HLT/HGCAL/HGCalValidator/'
 hltTracksterLabels = _hltTiclIterLabelsPSet.labels.copy()
 hltTracksterLabels.extend(['hltTiclSimTracksters', 'hltTiclSimTracksters_fromCPs'])
+# L1-seeded SimTracksters validated (byHits only) vs the unseeded SimTracksters:
+# their efficiency/response plots live under the unseeded validator's dir too.
+hltTracksterLabels.extend(['hltTiclSimTrackstersL1Seeded', 'hltTiclSimTrackstersL1Seeded_fromCPs'])
 
 hltLcToCP_linking = _hltHgcalValidator.label_LCToCPLinking.value()
 hltPostProcessorHGCALlayerclusters = _postProcessorHGCALlayerclusters.clone(
@@ -50,5 +53,37 @@ hltHcalValidatorPostProcessor = cms.Sequence(
     hltPostProcessorHGCALlayerclusters+
     hltPostProcessorHGCALsimclusters+
     hltPostProcessorHGCALTracksters+
-    hltPostProcessorHGCALCandidates        
+    hltPostProcessorHGCALCandidates
+)
+
+# --- L1-seeded validator harvesting ---------------------------------------
+# Same clients, pointed at the L1-seeded validator's dirName and trackster set
+# (candidate plots are off in the L1-seeded validator, so no candidates client).
+from Validation.HGCalValidation.HLTHGCalValidator_cff import hltHgcalValidatorL1Seeded as _hltHgcalValidatorL1Seeded
+hltPrefixL1S = 'HLT/HGCAL/HGCalValidatorL1Seeded/'
+hltTracksterLabelsL1S = [l for l in _hltTiclIterLabelsPSet.labels if l.endswith("L1Seeded")]
+hltTracksterLabelsL1S.extend(['hltTiclSimTrackstersL1Seeded', 'hltTiclSimTrackstersL1Seeded_fromCPs'])
+
+hltPostProcessorHGCALlayerclustersL1Seeded = _postProcessorHGCALlayerclusters.clone(
+    subDirs = cms.untracked.vstring(hltPrefixL1S + _hltHgcalValidatorL1Seeded.label_layerClustersPlots.value() + '/' + hltLcToCP_linking),
+)
+
+hltSubdirsSimL1S = [hltPrefixL1S + _hltHgcalValidatorL1Seeded.label_SimClusters.value() + '/'+iteration+'/' for iteration in hltTracksterLabelsL1S]
+hltPostProcessorHGCALsimclustersL1Seeded = _postProcessorHGCALsimclusters.clone(
+    subDirs = cms.untracked.vstring(hltSubdirsSimL1S)
+)
+
+hltSubdirsTrackstersL1S = [hltPrefixL1S+iteration+'/'+hltTSbyHits_CP for iteration in hltTracksterLabelsL1S]
+hltSubdirsTrackstersL1S.extend(hltPrefixL1S+iteration+'/'+hltTSbyLCs for iteration in hltTracksterLabelsL1S)
+hltSubdirsTrackstersL1S.extend(hltPrefixL1S+iteration+'/'+hltTSbyLCs_CP for iteration in hltTracksterLabelsL1S)
+hltSubdirsTrackstersL1S.extend(hltPrefixL1S+iteration+'/'+hltTSbyHits for iteration in hltTracksterLabelsL1S)
+
+hltPostProcessorHGCALTrackstersL1Seeded = _postProcessorHGCALTracksters.clone(
+    subDirs = cms.untracked.vstring(hltSubdirsTrackstersL1S)
+)
+
+hltHcalValidatorL1SeededPostProcessor = cms.Sequence(
+    hltPostProcessorHGCALlayerclustersL1Seeded+
+    hltPostProcessorHGCALsimclustersL1Seeded+
+    hltPostProcessorHGCALTrackstersL1Seeded
 )

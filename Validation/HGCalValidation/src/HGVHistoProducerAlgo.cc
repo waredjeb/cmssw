@@ -2710,7 +2710,8 @@ void HGVHistoProducerAlgo::fill_trackster_histos(
     std::unordered_map<DetId, const unsigned int> const& hitMap,
     unsigned int layers,
     edm::MultiSpan<HGCRecHit> const& hits,
-    bool mapsFound,
+    bool mapsFoundByLCs,
+    bool mapsFoundByHits,
     const edm::Handle<TracksterToTracksterMap>& trackstersToSimTrackstersByLCsMapH,
     const edm::Handle<TracksterToTracksterMap>& simTrackstersToTrackstersByLCsMapH,
     const edm::Handle<TracksterToTracksterMap>& trackstersToSimTrackstersFromCPsByLCsMapH,
@@ -2887,15 +2888,15 @@ void HGVHistoProducerAlgo::fill_trackster_histos(
   histograms.h_tracksternum[count]->Fill(totNTstZm + totNTstZp);
   histograms.h_conttracksternum[count]->Fill(totNContTstZp + totNContTstZm);
   histograms.h_nonconttracksternum[count]->Fill(totNNotContTstZp + totNNotContTstZm);
-  if (mapsFound) {
+  // byLCs and byHits association plots are filled independently, so a trackster
+  // collection that only has a byHits association (e.g. one compared across a
+  // different layer-cluster collection, where byLCs is not meaningful) is still
+  // validated by hits without requiring the byLCs maps.
+  if (mapsFoundByLCs) {
     const auto& trackstersToSimTrackstersByLCsMap = *trackstersToSimTrackstersByLCsMapH;
     const auto& simTrackstersToTrackstersByLCsMap = *simTrackstersToTrackstersByLCsMapH;
     const auto& trackstersToSimTrackstersFromCPsByLCsMap = *trackstersToSimTrackstersFromCPsByLCsMapH;
     const auto& simTrackstersFromCPsToTrackstersByLCsMap = *simTrackstersFromCPsToTrackstersByLCsMapH;
-    const auto& trackstersToSimTrackstersByHitsMap = *trackstersToSimTrackstersByHitsMapH;
-    const auto& simTrackstersToTrackstersByHitsMap = *simTrackstersToTrackstersByHitsMapH;
-    const auto& trackstersToSimTrackstersFromCPsByHitsMap = *trackstersToSimTrackstersFromCPsByHitsMapH;
-    const auto& simTrackstersFromCPsToTrackstersByHitsMap = *simTrackstersFromCPsToTrackstersByHitsMapH;
 
     tracksters_to_SimTracksters_fp(histograms,
                                    count,
@@ -2916,6 +2917,13 @@ void HGVHistoProducerAlgo::fill_trackster_histos(
                                    cPIndices,
                                    cPSelectedIndices,
                                    cPHandle_id);
+  }
+
+  if (mapsFoundByHits) {
+    const auto& trackstersToSimTrackstersByHitsMap = *trackstersToSimTrackstersByHitsMapH;
+    const auto& simTrackstersToTrackstersByHitsMap = *simTrackstersToTrackstersByHitsMapH;
+    const auto& trackstersToSimTrackstersFromCPsByHitsMap = *trackstersToSimTrackstersFromCPsByHitsMapH;
+    const auto& simTrackstersFromCPsToTrackstersByHitsMap = *simTrackstersFromCPsToTrackstersByHitsMapH;
 
     tracksters_to_SimTracksters_fp(histograms,
                                    count,

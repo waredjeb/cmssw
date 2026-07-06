@@ -4,7 +4,10 @@
 <use name="DataFormats/GeometrySurface"/>
 <use name="DataFormats/GsfTrackReco"/>
 <use name="DataFormats/HGCalReco"/>
+<use name="DataFormats/HGCDigi"/>
+<use name="DataFormats/HGCRecHit"/>
 <use name="DataFormats/L1TCorrelator"/>
+<use name="DataFormats/L1Trigger"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/ParticleFlowCandidate"/>
 <use name="DataFormats/ParticleFlowReco"/>

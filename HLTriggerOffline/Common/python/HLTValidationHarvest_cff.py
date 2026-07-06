@@ -58,6 +58,7 @@ _phase2_hltpostvalidation =  hltpostvalidation.copyAndExclude([HLTTauPostVal,
                                                                HltBTagPostVal])
 # Add HGCal validation
 _phase2_hltpostvalidation += hltHcalValidatorPostProcessor
+_phase2_hltpostvalidation += hltHcalValidatorL1SeededPostProcessor
 
 # Add HLT gen validation
 _phase2_hltpostvalidation += hltGenValidationClient

@@ -6,6 +6,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Utilities/interface/Exception.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "SimDataFormats/Associations/interface/TICLAssociationMap.h"
@@ -22,6 +23,9 @@ private:
   void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
 
   edm::EDGetTokenT<std::vector<reco::CaloCluster>> layerClustersToken_;
+  // Optional per-trackster-collection layer clusters (parallel to
+  // tracksterCollectionTokens_). Empty => use the single layer_clusters.
+  std::vector<edm::EDGetTokenT<std::vector<reco::CaloCluster>>> layerClustersByCollectionTokens_;
   std::vector<std::pair<std::string, edm::EDGetTokenT<std::vector<ticl::Trackster>>>> tracksterCollectionTokens_;
 };
 
@@ -36,6 +40,21 @@ AllLayerClusterToTracksterAssociatorsProducer::AllLayerClusterToTracksterAssocia
       label += tag.instance();
     }
     tracksterCollectionTokens_.emplace_back(label, consumes<std::vector<ticl::Trackster>>(tag));
+  }
+
+  // Optional per-collection layer clusters, one-to-one with tracksterCollections.
+  const auto& layerClustersByCollection =
+      pset.getParameter<std::vector<edm::InputTag>>("layerClustersByCollection");
+  if (!layerClustersByCollection.empty()) {
+    if (layerClustersByCollection.size() != tracksterCollections.size()) {
+      throw cms::Exception("Configuration")
+          << "AllLayerClusterToTracksterAssociatorsProducer: 'layerClustersByCollection' has "
+          << layerClustersByCollection.size() << " entries but 'tracksterCollections' has "
+          << tracksterCollections.size() << ". They must match one-to-one.";
+    }
+    for (const auto& tag : layerClustersByCollection) {
+      layerClustersByCollectionTokens_.emplace_back(consumes<std::vector<reco::CaloCluster>>(tag));
+    }
   }
 
   // Produce separate association maps for each trackster collection using the trackster label
@@ -66,7 +85,8 @@ void AllLayerClusterToTracksterAssociatorsProducer::produce(edm::StreamID,
     return;
   }
 
-  for (const auto& tracksterToken : tracksterCollectionTokens_) {
+  for (unsigned int ic = 0; ic < tracksterCollectionTokens_.size(); ++ic) {
+    const auto& tracksterToken = tracksterCollectionTokens_[ic];
     const auto& trackstersHandle = iEvent.getHandle(tracksterToken.second);
     // If tracksters collection is missing, produce empty map and continue
     if (!trackstersHandle.isValid()) {
@@ -78,10 +98,27 @@ void AllLayerClusterToTracksterAssociatorsProducer::produce(edm::StreamID,
       continue;
     }
 
+    // Resolve this collection's vertices against its own layer clusters when a
+    // per-collection collection was configured, otherwise the shared one. The
+    // association map is keyed by this layer-cluster collection.
+    auto lcHandle = layerClustersHandle;
+    if (!layerClustersByCollectionTokens_.empty()) {
+      lcHandle = iEvent.getHandle(layerClustersByCollectionTokens_[ic]);
+      if (!lcHandle.isValid()) {
+        edm::LogWarning("MissingInput")
+            << "Per-collection layer clusters for '" << tracksterToken.first << "' not found.";
+        iEvent.put(std::make_unique<ticl::AssociationMap<ticl::mapWithSharedEnergy,
+                                                         std::vector<reco::CaloCluster>,
+                                                         std::vector<ticl::Trackster>>>(),
+                   tracksterToken.first);
+        continue;
+      }
+    }
+
     // Create association map
     auto lcToTracksterMap = std::make_unique<
         ticl::AssociationMap<ticl::mapWithSharedEnergy, std::vector<reco::CaloCluster>, std::vector<ticl::Trackster>>>(
-        layerClustersHandle, trackstersHandle, iEvent);
+        lcHandle, trackstersHandle, iEvent);
 
     // Loop over tracksters
     for (unsigned int tracksterId = 0; tracksterId < trackstersHandle->size(); ++tracksterId) {
@@ -89,9 +126,9 @@ void AllLayerClusterToTracksterAssociatorsProducer::produce(edm::StreamID,
       // Loop over vertices in trackster
       for (unsigned int i = 0; i < trackster.vertices().size(); ++i) {
         // Get layerCluster
-        const auto& lc = (*layerClustersHandle)[trackster.vertices()[i]];
+        const auto& lc = (*lcHandle)[trackster.vertices()[i]];
         float sharedEnergy = lc.energy() / trackster.vertex_multiplicity()[i];
-        edm::Ref<std::vector<reco::CaloCluster>> lcRef(layerClustersHandle, trackster.vertices()[i]);
+        edm::Ref<std::vector<reco::CaloCluster>> lcRef(lcHandle, trackster.vertices()[i]);
         edm::Ref<std::vector<ticl::Trackster>> tracksterRef(trackstersHandle, tracksterId);
         lcToTracksterMap->insert(lcRef, tracksterRef, sharedEnergy);
       }
@@ -108,6 +145,9 @@ void AllLayerClusterToTracksterAssociatorsProducer::fillDescriptions(edm::Config
                                         edm::InputTag("ticlTrackstersLinks"),
                                         edm::InputTag("ticlCandidate")});
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+  // Optional per-trackster-collection layer clusters (parallel to
+  // tracksterCollections). Empty by default => use the single 'layer_clusters'.
+  desc.add<std::vector<edm::InputTag>>("layerClustersByCollection", {});
   descriptions.add("AllLayerClusterToTracksterAssociatorsProducer", desc);
 }
 

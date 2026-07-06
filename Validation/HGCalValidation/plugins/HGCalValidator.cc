@@ -31,6 +31,11 @@ namespace {
       return false;
     }
     for (const auto& handle : tracksterToTracksterMapsHandles) {
+      // Skip association maps that were not produced (e.g. a byLCs map for a
+      // trackster compared across a different layer-cluster collection). Without
+      // this, dereferencing an invalid handle below would throw.
+      if (not handle.isValid())
+        continue;
       const auto& firstID = handle->getCollectionIDs().first.id();
       const auto& secondID = handle->getCollectionIDs().second.id();
 
@@ -592,23 +597,26 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
           trackstersToSimTrackstersByHitsMapH, simTrackstersToTrackstersByHitsMapH,
           trackstersToSimTrackstersFromCPsByHitsMapH, simTrackstersFromCPsToTrackstersByHitsMapH;
 
-      bool mapsFound = assignTracksterMaps(tracksterHandle,
-                                           simTracksterHandle,
-                                           simTracksterFromCPHandle,
-                                           tracksterToTracksterMapsHandles,
-                                           trackstersToSimTrackstersMapH,
-                                           simTrackstersToTrackstersMapH,
-                                           trackstersToSimTrackstersFromCPsMapH,
-                                           simTrackstersFromCPsToTrackstersMapH);
+      // byLCs and byHits maps are resolved and used independently, so a trackster
+      // collection with only one of the two (e.g. byHits-only across a different
+      // layer-cluster collection) is still validated for the available type.
+      bool mapsFoundByLCs = assignTracksterMaps(tracksterHandle,
+                                                simTracksterHandle,
+                                                simTracksterFromCPHandle,
+                                                tracksterToTracksterMapsHandles,
+                                                trackstersToSimTrackstersMapH,
+                                                simTrackstersToTrackstersMapH,
+                                                trackstersToSimTrackstersFromCPsMapH,
+                                                simTrackstersFromCPsToTrackstersMapH);
 
-      mapsFound = mapsFound and assignTracksterMaps(tracksterHandle,
-                                                    simTracksterHandle,
-                                                    simTracksterFromCPHandle,
-                                                    tracksterToTracksterByHitsMapsHandles,
-                                                    trackstersToSimTrackstersByHitsMapH,
-                                                    simTrackstersToTrackstersByHitsMapH,
-                                                    trackstersToSimTrackstersFromCPsByHitsMapH,
-                                                    simTrackstersFromCPsToTrackstersByHitsMapH);
+      bool mapsFoundByHits = assignTracksterMaps(tracksterHandle,
+                                                 simTracksterHandle,
+                                                 simTracksterFromCPHandle,
+                                                 tracksterToTracksterByHitsMapsHandles,
+                                                 trackstersToSimTrackstersByHitsMapH,
+                                                 simTrackstersToTrackstersByHitsMapH,
+                                                 trackstersToSimTrackstersFromCPsByHitsMapH,
+                                                 simTrackstersFromCPsToTrackstersByHitsMapH);
 
       histoProducerAlgo_->fill_trackster_histos(histograms.histoProducerAlgo,
                                                 wml,
@@ -625,7 +633,8 @@ void HGCalValidator::dqmAnalyze(const edm::Event& event,
                                                 hitMap,
                                                 totallayers_to_monitor_,
                                                 rechitSpan,
-                                                mapsFound,
+                                                mapsFoundByLCs,
+                                                mapsFoundByHits,
                                                 trackstersToSimTrackstersMapH,
                                                 simTrackstersToTrackstersMapH,
                                                 trackstersToSimTrackstersFromCPsMapH,
