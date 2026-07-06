@@ -25,7 +25,6 @@ namespace ticl {
       return findInner != innerNeighboursId_.end();
     }
     inline bool alreadyVisited() const { return alreadyVisited_; }
-    inline bool isTrackster() const { return isTrackster_; }
 
     ~Node() = default;
 
@@ -49,21 +48,20 @@ public:
   TICLGraph(std::vector<ticl::Node>& nodes);
   inline const std::vector<ticl::Node>& getNodes() const { return nodes_; }
   inline const ticl::Node& getNode(int i) const { return nodes_[i]; }
+  inline ticl::Node& adaptNode(int i) { return nodes_[i]; }
   inline std::vector<ticl::Node> getRootNodes() const { return rootNodes_; }
-  inline void findRootNodes();
+  void findRootNodes();
+  size_t getNumberOfEdges() const;
 
   std::vector<std::vector<unsigned int>> findSubComponents();
   std::vector<std::vector<unsigned int>> findSubComponents(std::vector<ticl::Node>& rootNodes);
 
   ~TICLGraph() = default;
-
-  std::vector<std::vector<unsigned int>> getConnectedComponents() const;
   bool isGraphOk();
 
 private:
   std::vector<ticl::Node> nodes_;
   std::vector<ticl::Node> rootNodes_;
-  std::vector<int> isRootNode_;
 };
 
 #endif
