@@ -41,16 +41,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // get data
     auto &inputs = const_cast<TrackstersSoADeviceCollection &>(event.get(inputs_token_));
-    const size_t numNodes = inputs.const_view<GNNNodeSoA>().metadata().size();
-    const size_t numEdges = inputs.const_view<GNNEdgeSoA>().metadata().size();
-    auto outputs = TrackstersGNNOutputSoADeviceCollection(numEdges, event.queue());
+    const size_t numNodes = inputs.const_view().nodes().metadata().size();
+    const size_t numEdges = inputs.const_view().edges().metadata().size();
+    auto outputs = TrackstersGNNOutputSoADeviceCollection(event.queue(), numEdges);
     outputs.zeroInitialise(event.queue());
 
     if (numNodes > 0) {
       // metadata for automatic tensor conversion
-      auto node_records = inputs.view<GNNNodeSoA>().records();
-      auto edge_feature_records = inputs.view<GNNEdgeSoA>().records();
-      auto edge_index_records = inputs.view<GNNEdgeIndexSoA>().records();
+      auto node_records = inputs.view().nodes().records();
+      auto edge_feature_records = inputs.view().edges().records();
+      auto edge_index_records = inputs.view().edgeIndex().records();
       auto output_records = outputs.view().records();
 	  cms::torch::alpakatools::TensorCollection<Queue> inputs_collection(numNodes);
 

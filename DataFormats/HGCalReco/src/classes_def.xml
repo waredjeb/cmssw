@@ -92,4 +92,35 @@
   <class name="HGCalSoAClusters"/>
   <class name="edm::Wrapper<HGCalSoAClustersHostCollection>" splitLevel="0"/>
 
+  <class name="ticl::Node">
+  </class>
+  <class name="std::vector<ticl::Node>" />
+  <class name="edm::Wrapper<ticl::Node>" />
+  <class name="edm::Wrapper<std::vector<ticl::Node> >" />
+
+  <class name="TICLGraph">
+  </class>
+  <class name="std::vector<TICLGraph>" />
+  <class name="edm::Wrapper<TICLGraph>" />
+  <class name="edm::Wrapper<std::vector<TICLGraph> >" />
+
+
+  <!-- SoA-by-blocks trackster GNN input collection -->
+  <class name="TrackstersSoAHostCollection" rntupleStreamerMode="true"/>
+  <!-- TrackstersSoAHostCollection::Layout must be listed before the aliased-to type, see #48824 -->
+  <class name="TrackstersSoAHostCollection::Layout"/>
+  <class name="GNNTrackstersBlocks"/>
+  <class name="GNNTrackstersBlocks::View"/>
+  <class name="GNNNodeSoALayout<128, false>"/>
+  <class name="GNNEdgeSoALayout<128, false>"/>
+  <class name="GNNEdgeIndexSoALayout<128, false>"/>
+  <class name="edm::Wrapper<TrackstersSoAHostCollection>" splitLevel="0"/>
+
+  <!-- single-layout GNN output collection -->
+  <class name="TrackstersGNNOutputSoAHostCollection" rntupleStreamerMode="true"/>
+  <class name="TrackstersGNNOutputSoAHostCollection::Layout"/>
+  <class name="GNNOutputSoALayout<128, false>"/>
+  <class name="edm::Wrapper<TrackstersGNNOutputSoAHostCollection>" splitLevel="0"/>
+
+
 </lcgdict>

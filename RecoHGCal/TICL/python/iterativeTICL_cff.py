@@ -20,7 +20,13 @@ from RecoHGCal.TICL.superclustering_cff import *
 from RecoHGCal.TICL.ticlCandidateProducer_cfi import ticlCandidateProducer as _ticlCandidateProducer
 
 from RecoHGCal.TICL.mtdSoAProducer_cfi import mtdSoAProducer as _mtdSoAProducer
+from RecoHGCal.TICL.ticlGraphProducer_cfi import ticlGraphProducer as _ticlGraphProducer
 from Configuration.ProcessModifiers.ticlv5_TrackLinkingGNN_cff import ticlv5_TrackLinkingGNN
+
+# alpaka/PyTorch GNN trackster-linking chain (ported from chrisizeh:gnn-inference)
+from RecoHGCal.TICL.TracksterSoAProducer_alpaka import TracksterSoAProducer_alpaka
+from RecoHGCal.TICL.MergedGNNTracksterProducer_alpaka import MergedGNNTracksterProducer_alpaka
+from RecoHGCal.TICL.TracksterLinkingByGNNProducer_alpaka import TracksterLinkingByGNNProducer_alpaka
 
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_pf_cff import ticl_superclustering_mustache_pf
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
@@ -168,6 +174,35 @@ mergeTICLTask = cms.Task(
     ticlLayerTileTask,
     ticlIterationsTask,
     ticlTracksterLinksTask
+)
+
+# --- alpaka/PyTorch GNN trackster-linking chain (ported from chrisizeh:gnn-inference) ---
+# Building blocks defined here; NOT wired into the default mergeTICLTask so that the
+# standard reconstruction is unchanged (coexist mode). Enable via a process modifier
+# or by adding gnnTracksterLinkingTask to mergeTICLTask and repointing ticlCandidate.
+ticlGraph = _ticlGraphProducer.clone()
+ticlGraphTask = cms.Task(ticlGraph)
+
+ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(ticlGraph = cms.InputTag("ticlGraph"))
+ticlTracksterSoATask = cms.Task(ticlTracksterSoAProducer)
+
+ticlTrackstersLinkingByGNNProducer = TracksterLinkingByGNNProducer_alpaka(
+    inputs = cms.InputTag("ticlTracksterSoAProducer"),
+    modelPath = cms.FileInPath("RecoHGCal/TICL/models/0002_model_large_contr_att.pt"),
+)
+ticlTrackstersLinkingByGNNProducerTask = cms.Task(ticlTrackstersLinkingByGNNProducer)
+
+ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
+    gnnOutput = cms.InputTag("ticlTrackstersLinkingByGNNProducer"),
+    gnnInput = cms.InputTag("ticlTracksterSoAProducer")
+)
+ticlMergedGNNTrackstersProducerTask = cms.Task(ticlMergedGNNTrackstersProducer)
+
+gnnTracksterLinkingTask = cms.Task(
+    ticlGraphTask,
+    ticlTracksterSoATask,
+    ticlTrackstersLinkingByGNNProducerTask,
+    ticlMergedGNNTrackstersProducerTask
 )
 
 
