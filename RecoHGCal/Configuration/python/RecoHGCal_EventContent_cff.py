@@ -20,6 +20,7 @@ TICL_RECO = cms.PSet(
        'keep *_ticlTrackstersHFNoseMerge_*_*',
        'keep *_ticlCandidate_*_*',
        'keep *_ticlTracksterLinks*_*_*',
+       'keep *_ticlGraph_*_*',
        'keep *_pfTICL_*_*',
        'keep CaloParticles_mix_*_*', 
        'keep SimClusters_mix_*_*', 
@@ -40,7 +41,8 @@ TICL_FEVT = cms.PSet(
       'keep *_ticlSimTICLCandidates_*_*',
       'keep *_ticlSimTrackstersFromCP_*_*',
       'keep *_SimTau*_*_*',
-      'keep *_allTrackstersToSimTrackstersAssociations*_*_*'
+      'keep *_allTrackstersToSimTrackstersAssociations*_*_*',
+      'keep *_ticlGraph_*_*'
       )
 )
 TICL_FEVT.outputCommands.extend(TICL_RECO.outputCommands)

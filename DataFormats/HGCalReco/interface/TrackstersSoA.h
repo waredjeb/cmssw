@@ -3,6 +3,7 @@
 
 #include "DataFormats/SoATemplate/interface/SoACommon.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
+#include "DataFormats/SoATemplate/interface/SoABlocks.h"
 
 GENERATE_SOA_LAYOUT(GNNNodeSoALayout,
                     // columns: one value per element
@@ -46,6 +47,13 @@ GENERATE_SOA_LAYOUT(GNNEdgeSoALayout,
 
 GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout, SOA_COLUMN(long, in), SOA_COLUMN(long, out));
 
+// SoA-by-blocks layout combining the node, edge and edge-index blocks into a single
+// portable product (replaces the removed PortableMultiCollection<node, edge, edgeIndex>).
+GENERATE_SOA_BLOCKS(GNNTrackstersBlocksLayout,
+                    SOA_BLOCK(nodes, GNNNodeSoALayout),
+                    SOA_BLOCK(edges, GNNEdgeSoALayout),
+                    SOA_BLOCK(edgeIndex, GNNEdgeIndexSoALayout))
+
 GENERATE_SOA_LAYOUT(GNNOutputSoALayout, SOA_COLUMN(float, score));
 
 GENERATE_SOA_LAYOUT(GNNPostprocessingSoALayout,
@@ -57,6 +65,7 @@ GENERATE_SOA_LAYOUT(GNNPostprocessingSoALayout,
 using GNNNodeSoA = GNNNodeSoALayout<>;
 using GNNEdgeSoA = GNNEdgeSoALayout<>;
 using GNNEdgeIndexSoA = GNNEdgeIndexSoALayout<>;
+using GNNTrackstersBlocks = GNNTrackstersBlocksLayout<>;
 using GNNOutputSoA = GNNOutputSoALayout<>;
 using GNNPostprocessingSoA = GNNPostprocessingSoALayout<>;
 

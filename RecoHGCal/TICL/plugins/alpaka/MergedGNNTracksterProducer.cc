@@ -6,6 +6,7 @@
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
+#include "FWCore/Framework/interface/stream/moduleAbilities.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -30,7 +31,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  class MergedGNNTracksterProducer : public stream::EDProducer<> {
+  class MergedGNNTracksterProducer : public stream::EDProducer<edm::stream::WatchRuns> {
   public:
     MergedGNNTracksterProducer(const edm::ParameterSet &params);
 
@@ -59,7 +60,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   MergedGNNTracksterProducer::MergedGNNTracksterProducer(edm::ParameterSet const &params)
-      : EDProducer<>(params),
+      : EDProducer<edm::stream::WatchRuns>(params),
         tracksters_token_(consumes<std::vector<ticl::Trackster>>(params.getParameter<edm::InputTag>("tracksters"))),
         gnn_input_token_{consumes(params.getParameter<edm::InputTag>("gnnInput"))},
         gnn_output_token_(consumes(params.getParameter<edm::InputTag>("gnnOutput"))),
@@ -97,15 +98,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const auto &layerClustersTimes = event.get(clustersTime_token_);
 
     auto numEdges = gnn_output.view().metadata().size();
-    auto edge_index_records = gnn_input.const_view<GNNEdgeIndexSoA>().records();
-    auto edge_feature_records = gnn_input.const_view<GNNEdgeSoA>().records();
+    auto edge_index_records = gnn_input.const_view().edgeIndex().records();
+    auto edge_feature_records = gnn_input.const_view().edges().records();
     GNNPostprocessingSoA::ConstView merged_view(gnn_output.const_view().records().score(),
                                                 edge_index_records.in(),
                                                 edge_index_records.out(),
                                                 edge_feature_records.max_raw_energy());
 
-    TrackstersGNNPostprocessingSoAHostCollection gnn_post_host(numEdges, event.queue());
-    gnn_post_host.deepCopy(merged_view, event.queue());
+    TrackstersGNNPostprocessingSoAHostCollection gnn_post_host(event.queue(), numEdges);
+    gnn_post_host.deepCopy(event.queue(), merged_view);
     alpaka::wait(event.queue());
     auto post_view = gnn_post_host.view();
 

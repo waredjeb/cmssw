@@ -4,7 +4,7 @@
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/HGCalReco/interface/TrackstersSoA.h"
 
-using TrackstersSoAHostCollection = PortableMultiCollection<alpaka::DevCpu, GNNNodeSoA, GNNEdgeSoA, GNNEdgeIndexSoA>;
+using TrackstersSoAHostCollection = PortableHostCollection<GNNTrackstersBlocks>;
 using TrackstersGNNOutputSoAHostCollection = PortableHostCollection<GNNOutputSoA>;
 using TrackstersGNNPostprocessingSoAHostCollection = PortableHostCollection<GNNPostprocessingSoA>;
 

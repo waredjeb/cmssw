@@ -32,7 +32,7 @@
 
 using namespace ticl;
 
-class TICLGraphProducer : public edm::stream::EDProducer<> {
+class TICLGraphProducer : public edm::stream::EDProducer<edm::stream::WatchRuns> {
 public:
   explicit TICLGraphProducer(const edm::ParameterSet &ps);
   ~TICLGraphProducer() override {};
@@ -42,7 +42,7 @@ public:
   void beginJob();
   void endJob();
 
-  void beginRun(edm::Run const &iEvent, edm::EventSetup const &es) override;
+  void beginRun(edm::Run const&, edm::EventSetup const&) override;
 
 private:
   typedef math::XYZVector Vector;
@@ -80,7 +80,7 @@ void TICLGraphProducer::beginJob() {}
 
 void TICLGraphProducer::endJob() {};
 
-void TICLGraphProducer::beginRun(edm::Run const &iEvent, edm::EventSetup const &es) {
+void TICLGraphProducer::beginRun(edm::Run const&, edm::EventSetup const& es) {
   edm::ESHandle<HGCalDDDConstants> hdc = es.getHandle(hdc_token_);
   hgcons_ = hdc.product();
 

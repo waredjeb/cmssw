@@ -55,14 +55,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int numEdges = ticlGraph.getNumberOfEdges();
     std::array<int, 3> const sizes{{numTrackster, numEdges, numEdges}};
 
-    auto hostCollection = TrackstersSoAHostCollection(sizes, event.queue());
+    auto hostCollection = TrackstersSoAHostCollection(event.queue(), sizes);
     hostCollection.zeroInitialise(event.queue());
     alpaka::wait(event.queue());
 
-    auto deviceCollection = TrackstersSoADeviceCollection(sizes, event.queue());
-    auto& nodeView = hostCollection.view<GNNNodeSoA>();
-    auto& edgeView = hostCollection.view<GNNEdgeSoA>();
-    auto& edgeIndexView = hostCollection.view<GNNEdgeIndexSoA>();
+    auto deviceCollection = TrackstersSoADeviceCollection(event.queue(), sizes);
+    auto trackstersView = hostCollection.view();
+    auto nodeView = trackstersView.nodes();
+    auto edgeView = trackstersView.edges();
+    auto edgeIndexView = trackstersView.edgeIndex();
 
     std::cout << "(TracksterSoAProducer) Num Trackster: " << numTrackster << std::endl;
     std::cout << "(TracksterSoAProducer) Num Edges: " << numEdges << std::endl;

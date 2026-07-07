@@ -37,3 +37,19 @@
 <library file="*.cc" name="RecoHGCalTICLPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>
+<library file="alpaka/*.cc" name="RecoHGCalTICLPluginsPortable">
+  <use name="alpaka"/>
+  <use name="boost_filesystem"/>
+  <use name="cppunit"/>
+  <use name="eigen"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="PhysicsTools/PyTorchAlpaka"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial"/>
+  <!-- ROCm backend not yet supported, see: https://github.com/pytorch/pytorch/blob/main/aten/CMakeLists.txt#L75 -->
+  <!-- <flags ALPAKA_BACKENDS="rocm"/> -->
+  <flags EDM_PLUGIN="1"/>
+ </library>

@@ -16,6 +16,7 @@ namespace ticl {
     inline void addInnerNeighbour(unsigned int trackster_id) { innerNeighboursId_.push_back(trackster_id); }
 
     inline const unsigned int getId() const { return index_; }
+    inline bool isTrackster() const { return isTrackster_; }
     const std::vector<unsigned int>& getOuterNeighbours() const { return outerNeighboursId_; }
     const std::vector<unsigned int>& getInnerNeighbours() const { return innerNeighboursId_; }
     void findSubComponents(std::vector<Node>& graph, std::vector<unsigned int>& subComponent);

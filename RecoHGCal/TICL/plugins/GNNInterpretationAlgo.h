@@ -9,7 +9,7 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/GeometrySurface/interface/BoundDisk.h"
 #include "DataFormats/Math/interface/deltaR.h"
-#include "RecoHGCal/TICL/plugins/TICLGraph.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "TMatrixDSym.h"
 #include "TMatrixD.h"
 

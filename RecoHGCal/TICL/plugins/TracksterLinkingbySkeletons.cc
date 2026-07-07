@@ -8,7 +8,7 @@
 #include "RecoParticleFlow/PFProducer/interface/PFMuonAlgo.h"
 #include "RecoHGCal/TICL/interface/TracksterLinkingAlgoBase.h"
 #include "RecoHGCal/TICL/plugins/TracksterLinkingbySkeletons.h"
-#include "TICLGraph.h"
+#include "DataFormats/HGCalReco/interface/TICLGraph.h"
 
 namespace {
   bool isRoundTrackster(std::array<ticl::Vector, 3> skeleton) { return (skeleton[0].Z() == skeleton[2].Z()); }
