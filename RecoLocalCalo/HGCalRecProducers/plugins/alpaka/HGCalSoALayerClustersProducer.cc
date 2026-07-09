@@ -61,6 +61,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       reco::CaloClusterDeviceCollection output(
           iEvent.queue(), num_clusters_, num_clusters_, num_clusters_, num_clusters_);
+      // Zero-initialise the whole buffer: run() only writes a subset of the
+      // columns (position, energy, seedID), so this guarantees the remaining
+      // columns (corrected energies, caloID/algoID/flags, timing) hold a
+      // defined value instead of uninitialised device memory.
+      output.zeroInitialise(iEvent.queue());
       auto output_v = output.view();
       // Allocate workspace SoA cluster
       HGCalSoAClustersExtraDeviceCollection outputWorkspace(iEvent.queue(), num_clusters_);
