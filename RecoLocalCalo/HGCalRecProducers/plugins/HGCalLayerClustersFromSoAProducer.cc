@@ -13,7 +13,7 @@
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Math/interface/Point3D.h"
 #include "DataFormats/EgammaReco/interface/BasicClusterFwd.h"
-#include "DataFormats/HGCalReco/interface/HGCalSoAClustersHostCollection.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsExtraHostCollection.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 
@@ -62,27 +62,31 @@ public:
     auto const soaCells_v = deviceSoACells.view();
 
     auto const deviceView = deviceData.view();
+    auto const position_v = deviceView.position();
+    auto const energy_v = deviceView.energy();
+    auto const indexes_v = deviceView.indexes();
+    const int numberOfClusters = position_v.metadata().size();
 
     std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
-    clusters->reserve(deviceData->metadata().size());
+    clusters->reserve(numberOfClusters);
 
     // Create a vector of <clusters> locations, where each location holds a
     // vector of <nCells> floats. These vectors are used to compute the time for
     // each cluster.
-    std::vector<std::vector<float>> times(deviceData->metadata().size());
-    std::vector<std::vector<float>> timeErrors(deviceData->metadata().size());
+    std::vector<std::vector<float>> times(numberOfClusters);
+    std::vector<std::vector<float>> timeErrors(numberOfClusters);
 
-    for (int i = 0; i < deviceData->metadata().size(); ++i) {
+    for (int i = 0; i < numberOfClusters; ++i) {
       std::vector<std::pair<DetId, float>> thisCluster;
-      thisCluster.reserve(deviceView.cells(i));
-      clusters->emplace_back(deviceView.energy(i),
-                             math::XYZPoint(deviceView.x(i), deviceView.y(i), deviceView.z(i)),
+      thisCluster.reserve(position_v[i].cells());
+      clusters->emplace_back(energy_v[i].energy(),
+                             math::XYZPoint(position_v[i].x(), position_v[i].y(), position_v[i].z()),
                              reco::CaloID::DET_HGCAL_ENDCAP,
                              std::move(thisCluster),
                              algoId_);
-      clusters->back().setSeed(deviceView.seed(i));
-      times[i].reserve(deviceView.cells(i));
-      timeErrors[i].reserve(deviceView.cells(i));
+      clusters->back().setSeed(indexes_v[i].seedID());
+      times[i].reserve(position_v[i].cells());
+      timeErrors[i].reserve(position_v[i].cells());
     }
 
     // Populate hits and fractions required to compute the cluster's time.
@@ -164,7 +168,7 @@ public:
   }
 
 private:
-  edm::EDGetTokenT<HGCalSoAClustersHostCollection> const getTokenSoAClusters_;
+  edm::EDGetTokenT<reco::CaloClusterHostCollection> const getTokenSoAClusters_;
   edm::EDGetTokenT<HGCalSoARecHitsHostCollection> const getTokenSoACells_;
   edm::EDGetTokenT<HGCalSoARecHitsExtraHostCollection> const getTokenSoARecHitsExtra_;
   std::string detector_;

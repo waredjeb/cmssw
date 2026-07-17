@@ -1,4 +1,4 @@
-#include "DataFormats/HGCalReco/interface/HGCalSoAClustersHostCollection.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/global/EDAnalyzer.h"
@@ -27,24 +27,27 @@ public:
     auto const& data = iEvent.get(token_);
 
     auto const view = data.view();
-    std::cout << fmt::format("hgcalSoALayerClustersProducer size = {}", view.metadata().size()) << std::endl;
-    for (int i = 0; i < data->metadata().size(); ++i) {
+    auto const position_v = view.position();
+    auto const energy_v = view.energy();
+    const int numberOfClusters = position_v.metadata().size();
+    std::cout << fmt::format("hgcalSoALayerClustersProducer size = {}", numberOfClusters) << std::endl;
+    for (int i = 0; i < numberOfClusters; ++i) {
       std::cout << fmt::format("CLUSTERS_SOA {}, energy = {:.{}f}, x = {:.{}f}, y = {:.{}f}, z= {:.{}f}",
                                i,
-                               view.energy(i),
+                               energy_v[i].energy(),
                                std::numeric_limits<float>::max_digits10,
-                               view.x(i),
+                               position_v[i].x(),
                                std::numeric_limits<float>::max_digits10,
-                               view.y(i),
+                               position_v[i].y(),
                                std::numeric_limits<float>::max_digits10,
-                               view.z(i),
+                               position_v[i].z(),
                                std::numeric_limits<float>::max_digits10)
                 << std::endl;
     }
   }
 
 private:
-  edm::EDGetTokenT<HGCalSoAClustersHostCollection> const token_;
+  edm::EDGetTokenT<reco::CaloClusterHostCollection> const token_;
 };
 
 #include "FWCore/Framework/interface/MakerMacros.h"
