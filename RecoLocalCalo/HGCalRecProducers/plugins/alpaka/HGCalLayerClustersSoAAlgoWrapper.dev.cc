@@ -3,8 +3,6 @@
 #include "HGCalLayerClustersSoAAlgoWrapper.h"
 #include "ConstantsForClusters.h"
 
-#include "CLUEAlgoAlpaka.h"
-
 #include <cstdint>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

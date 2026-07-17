@@ -15,6 +15,9 @@
 
 #include "HGCalLayerClustersAlgoWrapper.h"
 
+#include <cstdint>
+#include <vector>
+
 // Processes the input RecHit SoA collection and generates an output SoA
 // containing all the necessary information to build the clusters.
 // Specifically, this producer does not create the clusters in any format.
@@ -31,6 +34,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     HGCalSoARecHitsLayerClustersProducer(edm::ParameterSet const& config)
         : EDProducer(config),
           getTokenDevice_{consumes(config.getParameter<edm::InputTag>("hgcalRecHitsSoA"))},
+          getTokenLayerSizes_{consumes<std::vector<uint32_t>>(
+              edm::InputTag(config.getParameter<edm::InputTag>("hgcalRecHitsSoA").label(), "layerSizes"))},
           deviceToken_{produces()},
           deltac_((float)config.getParameter<double>("deltac")),
           kappa_((float)config.getParameter<double>("kappa")),
@@ -42,12 +47,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const& deviceInput = iEvent.get(getTokenDevice_);
       //std::cout << "Size of device collection: " << deviceInput->metadata().size() << std::endl;
       auto const input_v = deviceInput.view();
+      auto const& layerSizes = iEvent.get(getTokenLayerSizes_);
       // Allocate output SoA
       HGCalSoARecHitsExtraDeviceCollection output(iEvent.queue(), deviceInput->metadata().size());
+      // run() only fills the cluster index and the seed flag: zero-initialise the
+      // whole buffer so that the remaining columns hold a defined value instead
+      // of uninitialised device memory.
+      output.zeroInitialise(iEvent.queue());
       auto output_v = output.view();
 
-      algo_.run(
-          iEvent.queue(), deviceInput->metadata().size(), deltac_, kappa_, outlierDeltaFactor_, input_v, output_v);
+      algo_.run(iEvent.queue(),
+                deviceInput->metadata().size(),
+                deltac_,
+                kappa_,
+                outlierDeltaFactor_,
+                layerSizes,
+                input_v,
+                output_v);
       iEvent.emplace(deviceToken_, std::move(output));
     }
 
@@ -63,6 +79,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     // use device::EDGetToken<T> to read from device memory space
     device::EDGetToken<HGCalSoARecHitsDeviceCollection> const getTokenDevice_;
+    edm::EDGetTokenT<std::vector<uint32_t>> const getTokenLayerSizes_;
     device::EDPutToken<HGCalSoARecHitsExtraDeviceCollection> const deviceToken_;
     HGCalLayerClustersAlgoWrapper algo_;
     const float deltac_;

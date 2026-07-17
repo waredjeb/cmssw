@@ -13,6 +13,10 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
+#include <cassert>
+#include <cstdint>
+#include <vector>
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class HGCalSoARecHitsProducer : public stream::EDProducer<> {
@@ -31,7 +35,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           thicknessCorrection_(config.getParameter<std::vector<double>>("thicknessCorrection")),
           caloGeomToken_(consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()),
           hits_token_(consumes<HGCRecHitCollection>(config.getParameter<edm::InputTag>("recHits"))),
-          deviceToken_{produces()} {}
+          deviceToken_{produces()},
+          layerSizesToken_{produces("layerSizes")} {}
 
     ~HGCalSoARecHitsProducer() override = default;
 
@@ -46,41 +51,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const& hits = *(hits_h.product());
       computeThreshold();
 
+      const unsigned int numberOfLayers = 2 * maxlayer_;
+
       // Count effective hits above threshold
-      uint32_t index = 0;
-      for (unsigned int i = 0; i < hits.size(); ++i) {
-        const HGCRecHit& hgrh = hits[i];
-        DetId detid = hgrh.detid();
-        unsigned int layerOnSide = (rhtools_.getLayerWithOffset(detid) - 1);
+      auto acceptHit = [&](const HGCRecHit& hgrh, int& layer, float& sigmaNoise) {
+        const DetId detid = hgrh.detid();
+        const unsigned int layerOnSide = (rhtools_.getLayerWithOffset(detid) - 1);
 
-        // set sigmaNoise default value 1 to use kappa value directly in case of
-        // sensor-independent thresholds
-        int thickness_index = rhtools_.getSiThickIndex(detid);
-        if (thickness_index == -1) {
-          thickness_index = maxNumberOfThickIndices_;
-        }
-        double storedThreshold = thresholds_[layerOnSide][thickness_index];
-        if (hgrh.energy() < storedThreshold)
-          continue;  // this sets the ZS threshold at ecut times the sigma noise
-        index++;
-      }
-
-      // Allocate Host SoA will contain one entry for each RecHit above threshold
-      HGCalSoARecHitsHostCollection cells(iEvent.queue(), index);
-      auto cellsView = cells.view();
-
-      // loop over all hits and create the Hexel structure, skip energies below ecut
-      // for each layer and wafer calculate the thresholds (sigmaNoise and energy)
-      // once
-      index = 0;
-      for (unsigned int i = 0; i < hits.size(); ++i) {
-        const HGCRecHit& hgrh = hits[i];
-        DetId detid = hgrh.detid();
-        unsigned int layerOnSide = (rhtools_.getLayerWithOffset(detid) - 1);
-
-        // set sigmaNoise default value 1 to use kappa value directly in case of
-        // sensor-independent thresholds
-        float sigmaNoise = 1.f;
         int thickness_index = rhtools_.getSiThickIndex(detid);
         if (thickness_index == -1) {
           thickness_index = maxNumberOfThickIndices_;
@@ -89,16 +66,58 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (detid.det() == DetId::HGCalHSi || detid.subdetId() == HGCHEF) {
           storedThreshold = thresholds_.at(layerOnSide).at(thickness_index + deltasi_index_regemfac_);
         }
-        sigmaNoise = v_sigmaNoise_.at(layerOnSide).at(thickness_index);
-
         if (hgrh.energy() < storedThreshold)
-          continue;  // this sets the ZS threshold at ecut times the sigma noise
-        // for the sensor
+          return false;
+
+        sigmaNoise = v_sigmaNoise_.at(layerOnSide).at(thickness_index);
+        const int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
+        layer = layerOnSide + offset;
+        return true;
+      };
+
+      // Count hits above threshold, per layer
+      std::vector<uint32_t> hitsPerLayer(numberOfLayers, 0);
+      uint32_t index = 0;
+      for (unsigned int i = 0; i < hits.size(); ++i) {
+        int layer = 0;
+        float sigmaNoise = 1.f;
+        if (not acceptHit(hits[i], layer, sigmaNoise))
+          continue;
+        hitsPerLayer[layer]++;
+        index++;
+      }
+
+      // Hits are written grouped by layer, in increasing layer order, and keep
+      // their relative order within a layer.
+      std::vector<uint32_t> layerCursor(numberOfLayers, 0);
+      std::vector<uint32_t> layerSizes;
+      layerSizes.reserve(numberOfLayers);
+      uint32_t nextLayerStart = 0;
+      for (unsigned int layer = 0; layer < numberOfLayers; ++layer) {
+        layerCursor[layer] = nextLayerStart;
+        nextLayerStart += hitsPerLayer[layer];
+        if (hitsPerLayer[layer] > 0) {
+          layerSizes.push_back(hitsPerLayer[layer]);
+        }
+      }
+      assert(nextLayerStart == index);
+
+      // Allocate Host SoA will contain one entry for each RecHit above threshold
+      HGCalSoARecHitsHostCollection cells(iEvent.queue(), index);
+      auto cellsView = cells.view();
+
+      // loop over all hits and create the Hexel structure, skip energies below ecut
+      // for each layer and wafer calculate the thresholds (sigmaNoise and energy)
+      for (unsigned int i = 0; i < hits.size(); ++i) {
+        const HGCRecHit& hgrh = hits[i];
+        DetId detid = hgrh.detid();
+        int layer = 0;
+        float sigmaNoise = 1.f;
+        if (not acceptHit(hgrh, layer, sigmaNoise))
+          continue;
 
         const GlobalPoint position(rhtools_.getPosition(detid));
-        int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
-        int layer = layerOnSide + offset;
-        auto entryInSoA = cellsView[index];
+        auto entryInSoA = cellsView[layerCursor[layer]++];
         if (detector_ == "BH") {
           entryInSoA.dim1() = position.eta();
           entryInSoA.dim2() = position.phi();
@@ -116,12 +135,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         entryInSoA.detid() = detid.rawId();
         entryInSoA.time() = hgrh.time();
         entryInSoA.timeError() = hgrh.timeError();
-        index++;
       }
 #if 0
         std::cout << "Size: " << cells->metadata().size() << " count cells: " << index
           << " i.e. " << cells->metadata().size() << std::endl;
 #endif
+
+      iEvent.emplace(layerSizesToken_, std::move(layerSizes));
 
       if constexpr (!std::is_same_v<Device, alpaka_common::DevHost>) {
         // Trigger copy async to GPU
@@ -170,6 +190,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
     edm::EDGetTokenT<HGCRecHitCollection> hits_token_;
     device::EDPutToken<HGCalSoARecHitsDeviceCollection> const deviceToken_;
+    edm::EDPutTokenT<std::vector<uint32_t>> const layerSizesToken_;
 
     void computeThreshold() {
       // To support the TDR geometry and also the post-TDR one (v9 onwards), we
