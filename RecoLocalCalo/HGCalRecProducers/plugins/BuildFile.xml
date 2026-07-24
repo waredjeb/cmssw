@@ -30,6 +30,7 @@
 <library file="alpaka/*.cc" name="RecoLocalCaloHGCalRecProducersPluginsPortable">
   <use name="alpaka"/>
   <use name="clue"/>
+  <use name="cluestering"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/ParameterSet"/>
   <use name="FWCore/Utilities"/>
