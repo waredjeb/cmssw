@@ -1,6 +1,5 @@
 <library file="*.cc" name="RecoLocalCaloHGCalRecProducersPlugins">
   <use name="alpaka"/>
-  <use name="cluestering"/>
   <use name="fmt"/>
   <use name="tbb"/>
   <use name="CommonTools/UtilAlgos"/>
