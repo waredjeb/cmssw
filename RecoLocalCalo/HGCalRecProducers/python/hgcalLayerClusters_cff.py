@@ -109,6 +109,136 @@ _v19SiPlugin = dict(
 for _clusters in (hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci):
     phase2_hgcalV19.toModify(_clusters, plugin = dict(**_v19SiPlugin))
 
+#####################################################################
+# Alpaka (device) CLUEstering chain.
+#
+# When the "alpaka" ProcessModifier is active, each CPU
+# hgcalLayerClusters<Det> module is replaced by a device chain that ends
+# in the very same legacy products (std::vector<reco::CaloCluster> at the
+# default label, the "timeLayerCluster" ValueMap and, for HFNose, the
+# "InitialLayerClustersMask") emitted at the SAME module label, so that
+# everything downstream (hgcalMergeLayerClusters, TICL, ...) is untouched.
+#
+# The chain per detector is:
+#   hgcalSoARecHits<Det>       (HGCRecHit  -> HGCalSoARecHits SoA)
+#   hgcalCLUEstering<Det>      (CLUE clustering on the SoA)
+#   hgcalSoALayerClusters<Det> (build the CaloCluster SoA)
+#   _fromSoA<Det>              (SoA -> legacy reco::CaloCluster products)
+#####################################################################
+from RecoLocalCalo.HGCalRecProducers.hgCalSoARecHitsProducer_cfi import hgCalSoARecHitsProducer
+from RecoLocalCalo.HGCalRecProducers.hgCalCLUEsteringLayerClustersProducer_cfi import hgCalCLUEsteringLayerClustersProducer
+from RecoLocalCalo.HGCalRecProducers.hgCalSoALayerClustersProducer_cfi import hgCalSoALayerClustersProducer
+from RecoLocalCalo.HGCalRecProducers.hgCalLayerClustersFromSoAProducer_cfi import hgCalLayerClustersFromSoAProducer
+
+# Silicon (EE/FH/BH) share the same energy-threshold constants as the CPU
+# plugins configured above (see the plugin= dicts). Scintillator (BH) also
+# uses the silicon constants: its own thickness index is out of range and the
+# producer then uses a zero threshold, exactly as in the CPU algorithm.
+_siFcPerMip = HGCalUncalibRecHit.HGCEEConfig.fCPerMIP.value() + HGCalUncalibRecHit.HGCHEFConfig.fCPerMIP.value()
+_siNoises = HGCAL_noises.values.value() + HGCAL_noises.values.value()
+_siThicknessCorrection = HGCalRecHit.thicknessCorrection.value()
+_siDEdXweights = HGCalRecHit.layerWeights.value()
+
+def _makeSoARecHits(det, recHits, **kwargs):
+    return hgCalSoARecHitsProducer.clone(
+        detector = det,
+        recHits = recHits,
+        maxNumberOfThickIndices = 6,
+        fcPerMip = _siFcPerMip,
+        thicknessCorrection = _siThicknessCorrection,
+        noises = _siNoises,
+        dEdXweights = _siDEdXweights,
+        **kwargs
+    )
+
+# ---- EE (silicon, electromagnetic) ----
+hgcalSoARecHitsEE = _makeSoARecHits('EE', "HGCalRecHit:HGCEERecHits")
+hgcalCLUEsteringEE = hgCalCLUEsteringLayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsEE', deltac = 1.3, kappa = 9., outlierDeltaFactor = 2.)
+hgcalSoALayerClustersEE = hgCalSoALayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsEE', hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringEE')
+_fromSoAEE = hgCalLayerClustersFromSoAProducer.clone(
+    src = 'hgcalSoALayerClustersEE',
+    hgcalRecHitsSoA = 'hgcalSoARecHitsEE',
+    hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringEE',
+    detector = 'EE')
+
+# ---- HSi / FH (silicon, hadronic) ----
+hgcalSoARecHitsHSi = _makeSoARecHits('FH', "HGCalRecHit:HGCHEFRecHits")
+hgcalCLUEsteringHSi = hgCalCLUEsteringLayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHSi', deltac = 1.3, kappa = 9., outlierDeltaFactor = 2.)
+hgcalSoALayerClustersHSi = hgCalSoALayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHSi', hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringHSi')
+_fromSoAFH = hgCalLayerClustersFromSoAProducer.clone(
+    src = 'hgcalSoALayerClustersHSi',
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHSi',
+    hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringHSi',
+    detector = 'FH')
+
+# ---- HSci / BH (scintillator, hadronic) ----
+hgcalSoARecHitsHSci = _makeSoARecHits('BH', "HGCalRecHit:HGCHEBRecHits")
+hgcalCLUEsteringHSci = hgCalCLUEsteringLayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHSci', deltac = 0.0315, kappa = 9., outlierDeltaFactor = 2.)
+hgcalSoALayerClustersHSci = hgCalSoALayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHSci', hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringHSci')
+_fromSoABH = hgCalLayerClustersFromSoAProducer.clone(
+    src = 'hgcalSoALayerClustersHSci',
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHSci',
+    hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringHSci',
+    detector = 'BH')
+
+# ---- HFNose (silicon, only under the phase2_hfnose modifier) ----
+hgcalSoARecHitsHFNose = hgCalSoARecHitsProducer.clone(
+    detector = 'HFNose',
+    recHits = "HGCalRecHit:HGCHFNoseRecHits",
+    maxNumberOfThickIndices = 3,
+    fcPerMip = HGCalUncalibRecHit.HGCHFNoseConfig.fCPerMIP.value(),
+    thicknessCorrection = HGCalRecHit.thicknessNoseCorrection.value(),
+    noises = HGCAL_noises.values.value(),
+    dEdXweights = HGCalRecHit.layerNoseWeights.value())
+hgcalCLUEsteringHFNose = hgCalCLUEsteringLayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHFNose', deltac = 1.3, kappa = 9., outlierDeltaFactor = 2.)
+hgcalSoALayerClustersHFNose = hgCalSoALayerClustersProducer.clone(
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHFNose', hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringHFNose')
+_fromSoAHFNose = hgCalLayerClustersFromSoAProducer.clone(
+    src = 'hgcalSoALayerClustersHFNose',
+    hgcalRecHitsSoA = 'hgcalSoARecHitsHFNose',
+    hgcalRecHitsLayerClustersSoA = 'hgcalCLUEsteringHFNose',
+    detector = 'HFNose',
+    nHitsTime = 3)
+
+# v19 geometry: the silicon constants gain a fourth thickness category, so the
+# SoA rechit producers must be updated exactly like the CPU plugins above.
+_v19SiSoAParams = dict(
+    maxNumberOfThickIndices = 8,
+    thicknessCorrection = [0.75, 0.76, 0.75, 0.76, 0.85, 0.85, 0.84, 0.85],
+    fcPerMip = fCPerMIP_mean_V19.value() + fCPerMIP_mean_V19.value(),
+    noises = nonAgedNoises_v9_v19 + nonAgedNoises_v9_v19,
+)
+for _soa in (hgcalSoARecHitsEE, hgcalSoARecHitsHSi, hgcalSoARecHitsHSci):
+    phase2_hgcalV19.toModify(_soa, **_v19SiSoAParams)
+
+# The device producers that must be scheduled (in a Task) under the alpaka
+# modifier. Consumed collections are auto-copied device->host by the alpaka
+# framework, so the CPU converter (_fromSoA*) can read the host SoAs directly.
+# These Tasks are added to hgcalLocalRecoTask under alpaka in
+# RecoLocalCalo/Configuration/python/hgcalLocalReco_cff.py.
+hgcalLayerClustersAlpakaTask = cms.Task(
+    hgcalSoARecHitsEE,   hgcalCLUEsteringEE,   hgcalSoALayerClustersEE,
+    hgcalSoARecHitsHSi,  hgcalCLUEsteringHSi,  hgcalSoALayerClustersHSi,
+    hgcalSoARecHitsHSci, hgcalCLUEsteringHSci, hgcalSoALayerClustersHSci,
+)
+hgcalLayerClustersHFNoseAlpakaTask = cms.Task(
+    hgcalSoARecHitsHFNose, hgcalCLUEsteringHFNose, hgcalSoALayerClustersHFNose,
+)
+
+# Replace the CPU producers with the SoA->legacy converters at the SAME labels.
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+alpaka.toReplaceWith(hgcalLayerClustersEE,     _fromSoAEE)
+alpaka.toReplaceWith(hgcalLayerClustersHSi,    _fromSoAFH)
+alpaka.toReplaceWith(hgcalLayerClustersHSci,   _fromSoABH)
+alpaka.toReplaceWith(hgcalLayerClustersHFNose, _fromSoAHFNose)
+
 hgcalMergeLayerClusters = hgcalMergeLayerClusters_.clone(
 )
 

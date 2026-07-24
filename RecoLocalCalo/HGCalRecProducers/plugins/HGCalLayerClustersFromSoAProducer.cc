@@ -163,7 +163,7 @@ public:
     desc.add<std::string>("timeClname", "timeLayerCluster");
     desc.ifValue(edm::ParameterDescription<std::string>(
                      "detector", "EE", true, edm::Comment("the HGCAL component used to create clusters.")),
-                 edm::allowedValues<std::string>("EE", "FH"));
+                 edm::allowedValues<std::string>("EE", "FH", "BH", "HFNose"));
     descriptions.addWithDefaultLabel(desc);
   }
 
