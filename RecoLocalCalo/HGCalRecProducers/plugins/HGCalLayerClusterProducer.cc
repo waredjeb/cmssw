@@ -31,6 +31,10 @@
 
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 #include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
+#include "DataFormats/CaloRecHit/interface/CaloID.h"
+#include "DataFormats/TICL/interface/AssociationMap.h"
+#include "DataFormats/TICL/interface/HitsAndFractionsHost.h"
 
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
@@ -101,15 +105,15 @@ private:
                                    const std::vector<std::pair<DetId, float>>& hitsAndFractions);
 
   /**
-   * @brief Counts time for all points in the cluster
+   * @brief Counts time for all clusters and stores it in the SoA timing columns.
    *
    * @param[in] hitmap hitmap to find correct RecHit only for silicon (not for BH-HSci)
-   * @param[in] hitsAndFraction all hits in the cluster
-   * @return counted time
+   * @param[in, out] layerClusters SoA view whose timing columns are filled
+   * @param[in] hitsAndFractions transient hits-and-fractions association map
   */
-  std::pair<float, float> calculateTime(std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
-                                        const std::vector<std::pair<DetId, float>>& hitsAndFractions,
-                                        size_t sizeCluster);
+  void calculateTime(std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
+                     reco::CaloClusterHostCollection::View layerClusters,
+                     ticl::HitsAndFractionsHost::ConstView hitsAndFractions);
 };
 
 HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps)
@@ -137,6 +141,7 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
   positionDeltaRho2_ = pluginPSet.getParameter<double>("positionDeltaRho2");
 
   produces<std::vector<float>>("InitialLayerClustersMask");
+  produces<reco::CaloClusterHostCollection>();
   produces<std::vector<reco::BasicCluster>>();
   //time for layer clusters
   produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
@@ -211,36 +216,37 @@ math::XYZPoint HGCalLayerClusterProducer::calculatePosition(
   }
 }
 
-std::pair<float, float> HGCalLayerClusterProducer::calculateTime(
-    std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
-    const std::vector<std::pair<DetId, float>>& hitsAndFractions,
-    size_t sizeCluster) {
-  std::pair<float, float> timeCl(-99., -1.);
+void HGCalLayerClusterProducer::calculateTime(std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
+                                              reco::CaloClusterHostCollection::View layerClusters,
+                                              ticl::HitsAndFractionsHost::ConstView hitsAndFractions) {
+  for (auto cluster = 0; cluster < hitsAndFractions.keys(); ++cluster) {
+    std::pair<float, float> timeCl(-99., -1.);
 
-  if (sizeCluster >= hitsTime_) {
-    std::vector<float> timeClhits;
-    std::vector<float> timeErrorClhits;
+    if (detector_ != "BH" && hitsAndFractions.count(cluster) >= static_cast<int>(hitsTime_)) {
+      std::vector<float> timeClhits;
+      std::vector<float> timeErrorClhits;
 
-    for (auto const& hit : hitsAndFractions) {
-      //time is computed wrt  0-25ns + offset and set to -1 if no time
-      const HGCRecHit* rechit = hitmap[hit.first];
+      for (auto const& hitAndFraction : hitsAndFractions[cluster]) {
+        //time is computed wrt  0-25ns + offset and set to -1 if no time
+        const HGCRecHit* rechit = hitmap[hitAndFraction.hit];
 
-      float rhTimeE = rechit->timeError();
-      //check on timeError to exclude scintillator
-      if (rhTimeE < 0.f)
-        continue;
-      timeClhits.push_back(rechit->time());
-      timeErrorClhits.push_back(1.f / (rhTimeE * rhTimeE));
+        float rhTimeE = rechit->timeError();
+        //check on timeError to exclude scintillator
+        if (rhTimeE < 0.f)
+          continue;
+        timeClhits.push_back(rechit->time());
+        timeErrorClhits.push_back(1.f / (rhTimeE * rhTimeE));
+      }
+      hgcalsimclustertime::ComputeClusterTime timeEstimator;
+      timeCl = timeEstimator.fixSizeHighestDensity(timeClhits, timeErrorClhits, hitsTime_);
     }
-    hgcalsimclustertime::ComputeClusterTime timeEstimator;
-    timeCl = timeEstimator.fixSizeHighestDensity(timeClhits, timeErrorClhits, hitsTime_);
+    layerClusters.timing()[cluster].time() = timeCl.first;
+    layerClusters.timing()[cluster].timeError() = timeCl.second;
   }
-  return timeCl;
 }
+
 void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   edm::Handle<HGCRecHitCollection> hits;
-
-  std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
 
   edm::ESHandle<CaloGeometry> geom = es.getHandle(caloGeomToken_);
   rhtools_.setGeometry(*geom);
@@ -258,21 +264,50 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   }
 
   algo_->makeClusters();
-  *clusters = algo_->getClusters(false);
 
+  auto clusters_and_associations = algo_->getClusters(false);
+  auto clusters = std::move(clusters_and_associations.layer_clusters);
+  auto hits_and_fractions = std::move(clusters_and_associations.hits_and_fractions);
+  auto clusters_view = clusters->view();
+
+  const auto numberOfClusters = clusters_view.position().metadata().size();
+
+  // Fill the SoA timing columns from the transient hits-and-fractions map.
+  if (numberOfClusters > 0)
+    calculateTime(hitmap, clusters_view, hits_and_fractions->view());
+
+  // Build the legacy std::vector<reco::CaloCluster> product from the SoA rows,
+  // repopulating the hits-and-fractions from the transient association map, so
+  // that downstream (TICL) keeps working unchanged.
+  auto legacy_clusters = std::make_unique<std::vector<reco::BasicCluster>>();
+  legacy_clusters->reserve(numberOfClusters);
   std::vector<std::pair<float, float>> times;
-  times.reserve(clusters->size());
+  times.reserve(numberOfClusters);
 
-  for (unsigned i = 0; i < clusters->size(); ++i) {
-    reco::CaloCluster& sCl = (*clusters)[i];
+  auto hf_view = hits_and_fractions->view();
+  for (int i = 0; i < numberOfClusters; ++i) {
+    std::vector<std::pair<DetId, float>> hitsAndFractions;
+    hitsAndFractions.reserve(hf_view.count(i));
+    for (auto const& haf : hf_view[i]) {
+      hitsAndFractions.emplace_back(haf.hit, haf.fraction);
+    }
+
+    const float energy = clusters_view.energy().energy()[i];
+    math::XYZPoint position(clusters_view.position().x()[i],
+                            clusters_view.position().y()[i],
+                            clusters_view.position().z()[i]);
     if (!calculatePositionInAlgo_) {
-      sCl.setPosition(calculatePosition(hitmap, sCl.hitsAndFractions()));
+      position = calculatePosition(hitmap, hitsAndFractions);
     }
-    if (detector_ != "BH") {
-      times.push_back(calculateTime(hitmap, sCl.hitsAndFractions(), sCl.size()));
-    } else {
-      times.push_back(std::pair<float, float>(-99.f, -1.f));
-    }
+    const reco::CaloID caloID = clusters_view.indexes().caloID()[i];
+    const reco::CaloCluster::AlgoId algo = clusters_view.indexes().algoID()[i];
+    const DetId seedId = clusters_view.indexes().seedID()[i];
+
+    reco::BasicCluster cluster(energy, position, caloID, hitsAndFractions, algo);
+    cluster.setSeed(seedId);
+    legacy_clusters->emplace_back(std::move(cluster));
+
+    times.emplace_back(clusters_view.timing().time()[i], clusters_view.timing().timeError()[i]);
   }
 
 #if DEBUG_CLUSTERS_ALPAKA
@@ -281,10 +316,11 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   auto lumiNumber = evt.eventAuxiliary().luminosityBlock();
   auto evtNumber = evt.eventAuxiliary().id().event();
 
-  dumper.dumpInfos(*clusters, moduleLabel_, runNumber, lumiNumber, evtNumber, true);
+  dumper.dumpInfos(*legacy_clusters, moduleLabel_, runNumber, lumiNumber, evtNumber, true);
 #endif
 
-  auto clusterHandle = evt.put(std::move(clusters));
+  evt.put(std::move(clusters));
+  auto clusterHandle = evt.put(std::move(legacy_clusters));
 
   if (detector_ == "HFNose") {
     std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);

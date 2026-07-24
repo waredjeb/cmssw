@@ -6,10 +6,12 @@
   <use name="CommonTools/UtilAlgos"/>
   <use name="CondFormats/DataRecord"/>
   <use name="CondFormats/HGCalObjects"/>
+  <use name="DataFormats/CaloRecHit"/>
   <use name="DataFormats/ForwardDetId"/>
   <use name="DataFormats/HGCDigi"/>
   <use name="DataFormats/HGCRecHit"/>
   <use name="DataFormats/HcalDetId"/>
+  <use name="DataFormats/TICL"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/MessageLogger"/>
   <use name="FWCore/ParameterSet"/>
@@ -18,6 +20,7 @@
   <use name="Geometry/CaloGeometry"/>
   <use name="Geometry/HGCalCommonData"/>
   <use name="Geometry/HGCalGeometry"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
   <use name="RecoLocalCalo/HGCalRecAlgos"/>
   <use name="RecoLocalCalo/HGCalRecProducers"/>
   <flags EDM_PLUGIN="1"/>

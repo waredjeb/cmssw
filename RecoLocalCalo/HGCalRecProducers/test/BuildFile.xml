@@ -2,3 +2,9 @@
   <use name="RecoLocalCalo/HGCalRecProducers" />
   <use name="catch2" />
 </bin>
+
+<bin name="testCLUEsteringApi" file="testCLUEsteringApi.cc">
+  <use name="cluestering"/>
+  <use name="alpaka"/>
+  <flags ALPAKA_BACKENDS="serial"/>
+</bin>

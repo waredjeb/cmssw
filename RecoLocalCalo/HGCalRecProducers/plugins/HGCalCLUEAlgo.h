@@ -5,9 +5,11 @@
 
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
 #include "DataFormats/ParticleFlowReco/interface/PFRecHitFwd.h"
+#include "DataFormats/TICL/interface/AssociationMap.h"
 #include "Geometry/CaloTopology/interface/HGCalTopology.h"
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
@@ -18,6 +20,7 @@
 
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalLayerTiles.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalCLUEStrategy.h"
+#include "RecoLocalCalo/HGCalRecProducers/interface/LayerClusterAndAssociations.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
@@ -75,7 +78,8 @@ public:
   void makeClusters() override;
 
   // this is the method to get the cluster collection out
-  std::vector<reco::BasicCluster> getClusters(bool) override;
+  ticl::LayerClustersAndAssociations getClusters(bool) override;
+  std::vector<reco::BasicCluster> getClustersLegacy(bool) override;
 
   void reset() override {
     clusters_v_.clear();
@@ -188,15 +192,10 @@ private:
     std::vector<float> dim2;
 
     std::vector<float> weight;
-    std::vector<float> rho;
-
-    std::vector<float> delta;
-    std::vector<int> nearestHigher;
-    std::vector<int> clusterIndex;
     std::vector<float> sigmaNoise;
-    std::vector<int> cellType;
-    std::vector<std::vector<int>> followers;
-    std::vector<bool> isSeed;
+    std::vector<int> clusterIndex;
+    std::vector<int> seeds;
+
     float layerDim3 = std::numeric_limits<float>::infinity();
 
     void clear() {
@@ -204,14 +203,9 @@ private:
       dim1.clear();
       dim2.clear();
       weight.clear();
-      rho.clear();
-      delta.clear();
-      nearestHigher.clear();
-      clusterIndex.clear();
       sigmaNoise.clear();
-      cellType.clear();
-      followers.clear();
-      isSeed.clear();
+      clusterIndex.clear();
+      seeds.clear();
     }
 
     void shrink_to_fit() {
@@ -219,14 +213,9 @@ private:
       dim1.shrink_to_fit();
       dim2.shrink_to_fit();
       weight.shrink_to_fit();
-      rho.shrink_to_fit();
-      delta.shrink_to_fit();
-      nearestHigher.shrink_to_fit();
-      clusterIndex.shrink_to_fit();
       sigmaNoise.shrink_to_fit();
-      cellType.shrink_to_fit();
-      followers.shrink_to_fit();
-      isSeed.shrink_to_fit();
+      clusterIndex.shrink_to_fit();
+      seeds.shrink_to_fit();
     }
   };
 
@@ -237,37 +226,6 @@ private:
 #if DEBUG_CLUSTERS_ALPAKA
   std::string moduleType_;
 #endif
-
-  inline float distance2(const TILE& lt, int cell1, int cell2, int layerId) const {  // 2-d distance on the layer (x-y)
-    return (lt.distance2(cells_[layerId].dim1[cell1],
-                         cells_[layerId].dim2[cell1],
-                         cells_[layerId].dim1[cell2],
-                         cells_[layerId].dim2[cell2]));
-  }
-
-  inline float distance(const TILE& lt, int cell1, int cell2, int layerId) const {  // 2-d distance on the layer (x-y)
-    return std::sqrt(lt.distance2(cells_[layerId].dim1[cell1],
-                                  cells_[layerId].dim2[cell1],
-                                  cells_[layerId].dim1[cell2],
-                                  cells_[layerId].dim2[cell2]));
-  }
-
-  void prepareDataStructures(const unsigned int layerId);
-  void calculateLocalDensity(const TILE& lt,
-                             const unsigned int layerId,
-                             const std::vector<double>& deltas_c);  // return max density
-  void calculateLocalDensity(const TILE& lt,
-                             const unsigned int layerId,
-                             const std::vector<double>& deltas_c,
-                             HGCalSiliconStrategy strategy);
-  void calculateLocalDensity(const TILE& lt,
-                             const unsigned int layerId,
-                             const std::vector<double>& deltas_c,
-                             HGCalScintillatorStrategy strategy);
-  void calculateDistanceToHigher(const TILE& lt, const unsigned int layerId, const std::vector<double>& deltas_o);
-  int findAndAssignClusters(const unsigned int layerId,
-                            const std::vector<double>& deltas_seed,
-                            const std::vector<double>& deltas_o);
 };
 
 // explicit template instantiation
