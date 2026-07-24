@@ -31,7 +31,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           thicknessCorrection_(config.getParameter<std::vector<double>>("thicknessCorrection")),
           caloGeomToken_(consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()),
           hits_token_(consumes<HGCRecHitCollection>(config.getParameter<edm::InputTag>("recHits"))),
-          deviceToken_{produces()} {}
+          deviceToken_{produces()} {
+      // Offset to jump from the CE-E silicon thickness indices to the CE-H ones
+      // in the thresholds array. It equals the number of CE-E silicon thickness
+      // categories, i.e. half of the total number of silicon thickness indices
+      // (3 for the pre-v19 geometries, 4 for v19). Previously this member was
+      // left uninitialized, which produced out-of-range accesses for FH hits.
+      deltasi_index_regemfac_ = maxNumberOfThickIndices_ / 2;
+    }
 
     ~HGCalSoARecHitsProducer() override = default;
 
@@ -60,6 +67,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           thickness_index = maxNumberOfThickIndices_;
         }
         double storedThreshold = thresholds_[layerOnSide][thickness_index];
+        // Use the CE-H silicon thresholds for FH hits, exactly as in the fill
+        // loop below. Both loops must apply the same selection, otherwise the
+        // number of selected hits differs from the SoA size allocated here.
+        if (detid.det() == DetId::HGCalHSi || detid.subdetId() == HGCHEF) {
+          storedThreshold = thresholds_.at(layerOnSide).at(thickness_index + deltasi_index_regemfac_);
+        }
         if (hgrh.energy() < storedThreshold)
           continue;  // this sets the ZS threshold at ecut times the sigma noise
         index++;
