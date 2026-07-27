@@ -42,3 +42,63 @@ def customiseHLTforCLUEstering(process):
 def customiseHLTforOldDeviceCLUE(process):
     """Keep the legacy in-CMSSW device CLUE for the HGCal HLT layer clustering (menu default)."""
     return _retype(process, _CLUE_TYPES)
+
+
+def customiseHLTforCLUEsteringAllDetectors(process):
+    """Run the HGCal HLT layer clustering with CLUEstering on EE, FH (HSi) AND BH (HSci).
+
+    The 75e33 menu only has a device SoA chain for EE (FH/BH use the CPU
+    HGCalLayerClusterProducer). This customiser (1) retypes the EE clustering step
+    to CLUEstering, then (2) builds full device chains for FH and BH by cloning the
+    EE device modules, (3) repoints hltMergeLayerClusters at the FH/BH SoA->legacy
+    converters, and (4) schedules the new producers. CLUEstering handles the
+    scintillator (BH) natively (eta/phi coordinates); the old in-CMSSW device CLUE
+    cannot (it is silicon-tiled).
+    """
+    # EE: retype the existing device clustering step to CLUEstering.
+    process = customiseHLTforCLUEstering(process)
+
+    # FH and BH device chains, cloned from the EE modules.
+    #   tag -> (detector, recHits, deltac)
+    specs = [
+        ("HSi", "FH", cms.InputTag("hltHGCalRecHit", "HGCHEFRecHits"), 1.3),
+        ("HSci", "BH", cms.InputTag("hltHGCalRecHit", "HGCHEBRecHits"), 0.0315),
+    ]
+    new_modules = []
+    for tag, det, recHits, deltac in specs:
+        soarh = process.hltHgcalSoARecHitsProducer.clone(detector=det, recHits=recHits)
+        clue = process.hltHgcalSoARecHitsLayerClustersProducer.clone(
+            hgcalRecHitsSoA="hltHgcalSoARecHits" + tag, deltac=deltac)
+        agg = process.hltHgcalSoALayerClustersProducer.clone(
+            hgcalRecHitsSoA="hltHgcalSoARecHits" + tag,
+            hgcalRecHitsLayerClustersSoA="hltHgcalCLUEstering" + tag)
+        conv = process.hltHgCalLayerClustersFromSoAProducer.clone(
+            detector=det,
+            src="hltHgcalSoALayerClusters" + tag,
+            hgcalRecHitsSoA="hltHgcalSoARecHits" + tag,
+            hgcalRecHitsLayerClustersSoA="hltHgcalCLUEstering" + tag)
+        setattr(process, "hltHgcalSoARecHits" + tag, soarh)
+        setattr(process, "hltHgcalCLUEstering" + tag, clue)
+        setattr(process, "hltHgcalSoALayerClusters" + tag, agg)
+        setattr(process, "hltHgCalLayerClustersFromSoAProducer" + tag, conv)
+        new_modules += [soarh, clue, agg, conv]
+
+    # Repoint the merge at the device converters for all three detectors.
+    process.hltMergeLayerClusters.layerClusters = cms.VInputTag(
+        "hltHgCalLayerClustersFromSoAProducer",       # EE
+        "hltHgCalLayerClustersFromSoAProducerHSci",   # BH
+        "hltHgCalLayerClustersFromSoAProducerHSi",    # FH
+    )
+    process.hltMergeLayerClusters.time_layerclusters = cms.VInputTag(
+        "hltHgCalLayerClustersFromSoAProducer:timeLayerCluster",
+        "hltHgCalLayerClustersFromSoAProducerHSci:timeLayerCluster",
+        "hltHgCalLayerClustersFromSoAProducerHSi:timeLayerCluster",
+    )
+
+    # Schedule the new producers: associate a Task with every Path that runs the merge.
+    process.hltHgcalCLUEsteringFHBHTask = cms.Task(*new_modules)
+    for pn in process.paths_().keys():
+        pth = getattr(process, pn)
+        if "hltMergeLayerClusters" in pth.moduleNames():
+            pth.associate(process.hltHgcalCLUEsteringFHBHTask)
+    return process
