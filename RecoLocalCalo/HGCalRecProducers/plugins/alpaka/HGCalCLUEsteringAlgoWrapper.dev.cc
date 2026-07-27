@@ -205,12 +205,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::memcpy(queue, h_counts, d_counts);
     alpaka::wait(queue);
 
-    std::vector<uint32_t> event_sizes(nLayers);
+    // event_sizes holds only the NON-EMPTY layers. CLUEstering's batched
+    // clustering launches per-batch device work, and a zero-size batch triggers a
+    // 0-block kernel launch on CUDA (cudaErrorInvalidValue; harmless no-op on the
+    // serial backend). Empty layers contribute no points, so dropping them leaves
+    // the contiguous per-layer point layout and the global cluster numbering
+    // unchanged. h_offsets is still kept per layer for the sort/gather kernels.
+    std::vector<uint32_t> event_sizes;
+    event_sizes.reserve(nLayers);
     auto h_offsets = make_host_buffer<int[]>(queue, nLayers);
     int running = 0;
     for (int l = 0; l < nLayers; ++l) {
       h_offsets[l] = running;
-      event_sizes[l] = static_cast<uint32_t>(h_counts[l]);
+      if (h_counts[l] > 0)
+        event_sizes.push_back(static_cast<uint32_t>(h_counts[l]));
       running += h_counts[l];
     }
 

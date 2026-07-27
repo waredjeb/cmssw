@@ -169,6 +169,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto maxEnergyIndex = cms::alpakatools::make_device_view<int>(queue, outputs_service.maxEnergyIndex(), size);
     alpaka::memset(queue, maxEnergyIndex, kInvalidIndexByte);
 
+    // Nothing to aggregate (e.g. an event with no rechits in this subdetector):
+    // return after zeroing the (empty) output. Continuing would compute
+    // groups = 0 and issue a 0-block kernel launch, which is a harmless no-op on
+    // the serial backend but raises cudaErrorInvalidValue on CUDA.
+    if (input_rechits_soa.metadata().size() == 0)
+      return;
+
     // use 64 items per group (this value is arbitrary, but it's a reasonable starting point)
     uint32_t items = 64;
 
