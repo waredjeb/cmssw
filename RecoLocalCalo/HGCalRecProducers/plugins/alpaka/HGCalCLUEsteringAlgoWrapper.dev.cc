@@ -250,7 +250,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // 6) Run the batched clustering: cluster indexes come out GLOBAL across
     //    layers, outliers are -1.
-    clue::Clusterer<2> algo(queue, dc, kappa, outlierDeltaFactor);
+    // clue::Clusterer(density_radius, min_density, outlier_distance): the third
+    // argument is an absolute distance. CLUE defines the outlier distance as
+    // outlierDeltaFactor * dc (== the CPU algo's deltao, e.g. 2.0 * 1.3 = 2.6),
+    // so scale it here rather than passing the bare factor.
+    clue::Clusterer<2> algo(queue, dc, kappa, dc * outlierDeltaFactor);
     algo.make_clusters(queue, d_points, std::span<const uint32_t>(event_sizes));
     alpaka::wait(queue);
 #else
