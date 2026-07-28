@@ -13,10 +13,13 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/SynchronizingEDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalSoAClustersExtra.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/HGCalTilesConstants.h"
 
 #include "HGCalLayerClustersSoAAlgoWrapper.h"
+
+#include <vector>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -26,6 +29,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         : SynchronizingEDProducer(config),
           getTokenDeviceRecHits_{consumes(config.getParameter<edm::InputTag>("hgcalRecHitsSoA"))},
           getTokenDeviceClusters_{consumes(config.getParameter<edm::InputTag>("hgcalRecHitsLayerClustersSoA"))},
+          getTokenMaxLayerPerSide_{consumes<unsigned int>(config.getParameter<edm::InputTag>("hgcalMaxLayerPerSide"))},
           deviceTokenSoAClusters_{produces()},
           thresholdW0_(config.getParameter<double>("thresholdW0")),
           positionDeltaRho2_(config.getParameter<double>("positionDeltaRho2")) {}
@@ -59,14 +63,33 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const& deviceInputClusters = iEvent.get(getTokenDeviceClusters_);
       auto const inputClusters_v = deviceInputClusters.view();
 
+      // Number of layers per side, as computed by the producer that filled
+      // hgcalRecHitsSoA: needed to recover the per-side, z-side-independent
+      // `layer` convention (rhtools.getLayerWithOffset(seed)) from the
+      // combined (layerOnSide + zside*maxLayerPerSide) value stored per rechit.
+      const unsigned int maxLayerPerSide = iEvent.get(getTokenMaxLayerPerSide_);
+
       reco::CaloClusterDeviceCollection output(
           iEvent.queue(), num_clusters_, num_clusters_, num_clusters_, num_clusters_);
       // Zero-initialise the whole buffer: run() only writes a subset of the
-      // columns (position, energy, seedID), so this guarantees the remaining
-      // columns (corrected energies, caloID/algoID/flags, timing) hold a
-      // defined value instead of uninitialised device memory.
+      // columns (position, energy, seedID, algoID, corrected energies), so
+      // this guarantees the remaining columns (flags, timing) hold a defined
+      // value instead of uninitialised device memory.
       output.zeroInitialise(iEvent.queue());
       auto output_v = output.view();
+
+      // caloID has a virtual destructor and host-only methods, so it cannot be
+      // constructed on device: fill it here, host-side, with an explicit H2D
+      // copy of DET_HGCAL_ENDCAP repeated for every cluster. caloIDs must stay
+      // alive until this (potentially async) copy has completed, so it is
+      // declared in the same scope as the rest of this queue-synchronizing
+      // produce() call, matching HGCalSoARecHitsProducer's cells.
+      std::vector<::reco::CaloID> caloIDs(num_clusters_, ::reco::CaloID(::reco::CaloID::DET_HGCAL_ENDCAP));
+      auto caloIDs_host = cms::alpakatools::make_host_view<::reco::CaloID const>(caloIDs.data(), num_clusters_);
+      auto caloIDs_device =
+          cms::alpakatools::make_device_view<::reco::CaloID>(iEvent.queue(), output_v.indexes().caloID());
+      alpaka::memcpy(iEvent.queue(), caloIDs_device, caloIDs_host);
+
       // Allocate workspace SoA cluster
       HGCalSoAClustersExtraDeviceCollection outputWorkspace(iEvent.queue(), num_clusters_);
       auto output_workspace_v = outputWorkspace.view();
@@ -75,6 +98,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 num_clusters_,
                 thresholdW0_,
                 positionDeltaRho2_,
+                maxLayerPerSide,
                 inputRechits_v,
                 inputClusters_v,
                 output_v,
@@ -86,6 +110,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("hgcalRecHitsLayerClustersSoA", edm::InputTag("TO BE DEFINED"));
       desc.add<edm::InputTag>("hgcalRecHitsSoA", edm::InputTag("TO BE DEFINED"));
+      desc.add<edm::InputTag>("hgcalMaxLayerPerSide", edm::InputTag("TO BE DEFINED", "maxLayerPerSide"));
       desc.add<double>("thresholdW0", 2.9);
       desc.add<double>("positionDeltaRho2", 1.69);
       descriptions.addWithDefaultLabel(desc);
@@ -94,6 +119,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     device::EDGetToken<HGCalSoARecHitsDeviceCollection> const getTokenDeviceRecHits_;
     device::EDGetToken<HGCalSoARecHitsExtraDeviceCollection> const getTokenDeviceClusters_;
+    edm::EDGetTokenT<unsigned int> const getTokenMaxLayerPerSide_;
     device::EDPutToken<reco::CaloClusterDeviceCollection> const deviceTokenSoAClusters_;
     HGCalLayerClustersSoAAlgoWrapper algo_;
     unsigned int num_clusters_;

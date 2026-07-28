@@ -36,7 +36,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           caloGeomToken_(consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()),
           hits_token_(consumes<HGCRecHitCollection>(config.getParameter<edm::InputTag>("recHits"))),
           deviceToken_{produces()},
-          layerSizesToken_{produces("layerSizes")} {}
+          layerSizesToken_{produces("layerSizes")},
+          maxLayerPerSideToken_{produces("maxLayerPerSide")} {}
 
     ~HGCalSoARecHitsProducer() override = default;
 
@@ -142,6 +143,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
       iEvent.emplace(layerSizesToken_, std::move(layerSizes));
+      iEvent.emplace(maxLayerPerSideToken_, maxlayer_);
 
       if constexpr (!std::is_same_v<Device, alpaka_common::DevHost>) {
         // Trigger copy async to GPU
@@ -191,6 +193,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::EDGetTokenT<HGCRecHitCollection> hits_token_;
     device::EDPutToken<HGCalSoARecHitsDeviceCollection> const deviceToken_;
     edm::EDPutTokenT<std::vector<uint32_t>> const layerSizesToken_;
+    edm::EDPutTokenT<unsigned int> const maxLayerPerSideToken_;
 
     void computeThreshold() {
       // To support the TDR geometry and also the post-TDR one (v9 onwards), we

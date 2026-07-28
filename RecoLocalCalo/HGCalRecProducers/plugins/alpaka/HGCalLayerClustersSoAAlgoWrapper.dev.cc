@@ -29,6 +29,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::atomicAdd(acc, &outputs.position()[clIdx].cells(), 1);
         if (input_clusters_soa[i].isSeed() == 1) {
           outputs.indexes()[clIdx].seedID() = input_rechits_soa[i].detid();
+          outputs.indexes()[clIdx].algoID() = ::reco::CaloCluster::hgcal_em;
+          outputs.energy()[clIdx].correctedEnergy() = -1.f;
+          outputs.energy()[clIdx].correctedEnergyUncertainty() = -1.f;
         }
       }
     }
@@ -122,6 +125,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const unsigned int numer_of_clusters,
                                   float thresholdW0,
                                   float positionDeltaRho2,
+                                  unsigned int maxLayerPerSide,
                                   const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
                                   const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
                                   reco::CaloClusterDeviceCollection::View outputs,
@@ -139,7 +143,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           outputs.position()[cluster_index].y() = input_rechits_soa[max_energy_index].dim2();
         }
         outputs.position()[cluster_index].z() = input_rechits_soa[max_energy_index].dim3();
-        outputs.position()[cluster_index].layer() = input_rechits_soa[max_energy_index].layer();
+        outputs.position()[cluster_index].layer() =
+            (input_rechits_soa[max_energy_index].layer() % maxLayerPerSide) + 1;
       }  // uniform_elements
     }    // operator()
   };
@@ -148,6 +153,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                              const unsigned int size,
                                              float thresholdW0,
                                              float positionDeltaRho2,
+                                             unsigned int maxLayerPerSide,
                                              const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
                                              const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
                                              reco::CaloClusterDeviceCollection::View outputs,
@@ -208,6 +214,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         size,
                         thresholdW0,
                         positionDeltaRho2,
+                        maxLayerPerSide,
                         input_rechits_soa,
                         input_clusters_soa,
                         outputs,
