@@ -1,0 +1,8 @@
+<lcgdict>
+  <class name="ticl::HitsAndFractionsHost"/>
+  <class name="ticl::HitsAndFractionsHost::Layout"/>
+  <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>::ContentBuffersLayout<128, false>"/>
+  <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>::OffsetsLayout<128, false>"/>
+
+  <class name="edm::Wrapper<ticl::HitsAndFractionsHost>" splitLevel="0"/>
+</lcgdict>
