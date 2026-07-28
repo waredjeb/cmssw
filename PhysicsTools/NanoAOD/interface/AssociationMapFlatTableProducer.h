@@ -1,16 +1,16 @@
-#ifndef HLTrigger_HLTUpgradeNano_AssociationMapFlatTable_h
-#define HLTrigger_HLTUpgradeNano_AssociationMapFlatTable_h
+#ifndef HLTrigger_HLTUpgradeNano_TICLAssociationMapFlatTable_h
+#define HLTrigger_HLTUpgradeNano_TICLAssociationMapFlatTable_h
 
 #include <type_traits>
 
 #include "PhysicsTools/NanoAOD/interface/SimpleFlatTableProducer.h"
 #include "SimDataFormats/Associations/interface/TICLAssociationMap.h"
 
-// Concept to check if a type is a valid AssociationMap of AssociationElement, both oneToOne and oneToMany.
+// Concept to check if a type is a valid TICLAssociationMap of AssociationElement, both oneToOne and oneToMany.
 // For oneToOne pass as Container the type std::vector<T::AssociationElementType>
 // For oneToMany pass as Container the type std::vector<std::vector<T::AssociationElementType>>
 template <typename T, typename Container>
-concept IsValidAssociationMap = requires {
+concept IsValidTICLAssociationMap = requires {
   typename T::Traits;
   typename T::AssociationElementType;
   typename T::V;
@@ -20,7 +20,7 @@ concept IsValidAssociationMap = requires {
 };
 
 template <typename T>
-  requires IsValidAssociationMap<T, std::vector<typename T::AssociationElementType>>
+  requires IsValidTICLAssociationMap<T, std::vector<typename T::AssociationElementType>>
 class AssociationOneToOneFlatTableProducer : public SimpleFlatTableProducerBase<typename T::AssociationElementType, T> {
 public:
   using TProd = T::AssociationElementType;
@@ -61,7 +61,7 @@ public:
 };
 
 template <typename T>
-  requires IsValidAssociationMap<T, std::vector<std::vector<typename T::AssociationElementType>>>
+  requires IsValidTICLAssociationMap<T, std::vector<std::vector<typename T::AssociationElementType>>>
 class AssociationOneToManyFlatTableProducer : public SimpleFlatTableProducerBase<T, T> {
 public:
   using TProd = T::AssociationElementType;
@@ -247,45 +247,45 @@ protected:
 
 // OneToOne, Fraction and Fraction with Score
 template <typename Source, typename Target>
-using AssociationMapOneToOneFraction =
-    ticl::AssociationMap<vector<ticl::AssociationElement<ticl::FractionType>>, std::vector<Source>, std::vector<Target>>;
+using TICLAssociationMapOneToOneFraction =
+    ticl::TICLAssociationMap<vector<ticl::AssociationElement<ticl::FractionType>>, std::vector<Source>, std::vector<Target>>;
 
 template <typename Source, typename Target>
-using AssociationMapOneToOneFractionScore =
-    ticl::AssociationMap<vector<ticl::AssociationElement<std::pair<ticl::FractionType, float>>>,
+using TICLAssociationMapOneToOneFractionScore =
+    ticl::TICLAssociationMap<vector<ticl::AssociationElement<std::pair<ticl::FractionType, float>>>,
                          std::vector<Source>,
                          std::vector<Target>>;
 
 // OneToOne, SharedEnergy and SharedEnergy with Score
 template <typename Source, typename Target>
-using AssociationMapOneToOneSharedEnergy = ticl::
-    AssociationMap<vector<ticl::AssociationElement<ticl::SharedEnergyType>>, std::vector<Source>, std::vector<Target>>;
+using TICLAssociationMapOneToOneSharedEnergy = ticl::
+    TICLAssociationMap<vector<ticl::AssociationElement<ticl::SharedEnergyType>>, std::vector<Source>, std::vector<Target>>;
 
 template <typename Source, typename Target>
-using AssociationMapOneToOneSharedEnergyScore =
-    ticl::AssociationMap<vector<ticl::AssociationElement<std::pair<ticl::SharedEnergyType, float>>>,
+using TICLAssociationMapOneToOneSharedEnergyScore =
+    ticl::TICLAssociationMap<vector<ticl::AssociationElement<std::pair<ticl::SharedEnergyType, float>>>,
                          std::vector<Source>,
                          std::vector<Target>>;
 
 // OneToMany, Fraction and Fraction with Score
 template <typename Source, typename Target>
-using AssociationMapOneToManyFraction =
-    ticl::AssociationMap<vector<vector<ticl::AssociationElement<ticl::FractionType>>>, vector<Source>, vector<Target>>;
+using TICLAssociationMapOneToManyFraction =
+    ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<ticl::FractionType>>>, vector<Source>, vector<Target>>;
 
 template <typename Source, typename Target>
-using AssociationMapOneToManyFractionScore =
-    ticl::AssociationMap<vector<vector<ticl::AssociationElement<pair<ticl::FractionType, float>>>>,
+using TICLAssociationMapOneToManyFractionScore =
+    ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<pair<ticl::FractionType, float>>>>,
                          vector<Source>,
                          vector<Target>>;
 
 // OneToMany, SharedEnergy and SharedEnergy with Score
 template <typename Source, typename Target>
-using AssociationMapOneToManySharedEnergy = ticl::
-    AssociationMap<vector<vector<ticl::AssociationElement<ticl::SharedEnergyType>>>, vector<Source>, vector<Target>>;
+using TICLAssociationMapOneToManySharedEnergy = ticl::
+    TICLAssociationMap<vector<vector<ticl::AssociationElement<ticl::SharedEnergyType>>>, vector<Source>, vector<Target>>;
 
 template <typename Source, typename Target>
-using AssociationMapOneToManySharedEnergyScore =
-    ticl::AssociationMap<vector<vector<ticl::AssociationElement<pair<ticl::SharedEnergyType, float>>>>,
+using TICLAssociationMapOneToManySharedEnergyScore =
+    ticl::TICLAssociationMap<vector<vector<ticl::AssociationElement<pair<ticl::SharedEnergyType, float>>>>,
                          vector<Source>,
                          vector<Target>>;
 

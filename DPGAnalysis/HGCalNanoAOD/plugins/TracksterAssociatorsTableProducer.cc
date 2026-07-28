@@ -4,10 +4,10 @@
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 
-typedef AssociationOneToOneFlatTableProducer<AssociationMapOneToOneFraction<SimCluster, CaloParticle>>
+typedef AssociationOneToOneFlatTableProducer<TICLAssociationMapOneToOneFraction<SimCluster, CaloParticle>>
     SimClusterCaloParticleFractionFlatTableProducer;
 
-typedef AssociationOneToManyFlatTableProducer<AssociationMapOneToManySharedEnergyScore<ticl::Trackster, ticl::Trackster>>
+typedef AssociationOneToManyFlatTableProducer<TICLAssociationMapOneToManySharedEnergyScore<ticl::Trackster, ticl::Trackster>>
     TracksterTracksterEnergyScoreFlatTableProducer;
 
 #include "FWCore/Framework/interface/MakerMacros.h"
