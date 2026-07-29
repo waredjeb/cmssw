@@ -93,7 +93,22 @@ hgcalLayerClustersHFNose = hgcalLayerClusters_.clone(
 hgcalMergeLayerClusters = hgcalMergeLayerClusters_.clone(
 )
 
+# Layer-cluster timing now travels inside the cluster SoA, so the merge no
+# longer takes a parallel list of time ValueMaps.
 layerClusters = cms.VInputTag('hgcalLayerClustersEE', 'hgcalLayerClustersHSi', 'hgcalLayerClustersHSci', 'barrelLayerClustersEB', 'barrelLayerClustersHB')
-time_layerClusters = cms.VInputTag('hgcalLayerClustersEE:timeLayerCluster', 'hgcalLayerClustersHSi:timeLayerCluster', 'hgcalLayerClustersHSci:timeLayerCluster', 'barrelLayerClustersEB:timeLayerCluster', 'barrelLayerClustersHB:timeLayerCluster')
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
-ticl_barrel.toModify(hgcalMergeLayerClusters, layerClusters = layerClusters, time_layerclusters = time_layerClusters)
+ticl_barrel.toModify(hgcalMergeLayerClusters, layerClusters = layerClusters)
+
+# Legacy AoS view of the merged layer clusters, for the edm::Ref consumers
+# (associators, validation, PF, EGamma) that cannot read the SoA.
+from RecoLocalCalo.HGCalRecProducers.caloClustersFromSoA_cfi import caloClustersFromSoA as _caloClustersFromSoA
+
+hgcalCaloClustersFromSoA = _caloClustersFromSoA.clone(
+    src = 'hgcalMergeLayerClusters'
+)
+
+# HFNose is not merged: TICL reads its layer clusters directly, so it needs its
+# own converter instance.
+hgcalCaloClustersFromSoAHFNose = _caloClustersFromSoA.clone(
+    src = 'hgcalLayerClustersHFNose'
+)

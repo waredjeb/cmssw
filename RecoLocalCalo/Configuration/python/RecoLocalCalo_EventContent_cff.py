@@ -21,14 +21,18 @@ from Configuration.Eras.Modifier_pA_2016_cff import pA_2016
 from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
 from Configuration.ProcessModifiers.storeZDCDigis_cff import storeZDCDigis
 # don't modify AOD for HGCal yet, need "reduced" rechits collection first (i.e. requires reconstruction)
-phase2_hgcal.toModify( RecoLocalCaloAOD, 
+# The layer clusters are produced as a portable SoA plus a hits-and-fractions
+# association map; the legacy reco::CaloCluster view comes from the converter.
+phase2_hgcal.toModify( RecoLocalCaloAOD,
     outputCommands = RecoLocalCaloAOD.outputCommands + ['keep *_HGCalRecHit_*_*',
-                                                        'keep recoCaloClusters_hgcalMergeLayerClusters_*_*',
-                                                        'keep *_hgcalMergeLayerClusters_timeLayerCluster_*',
+                                                        'keep *_hgcalMergeLayerClusters_*_*',
+                                                        'keep recoCaloClusters_hgcalCaloClustersFromSoA_*_*',
+                                                        'keep *_hgcalCaloClustersFromSoA_timeLayerCluster_*',
                                                         'keep *_hgcalMergeLayerClusters_InitialLayerClustersMask_*'])
-phase2_hfnose.toModify( RecoLocalCaloAOD, 
-    outputCommands = RecoLocalCaloAOD.outputCommands + ['keep recoCaloClusters_hgcalLayerClustersHFNose_*_*',
-                                                        'keep *_hgcalLayerClustersHFNose_timeLayerCluster_*',
+phase2_hfnose.toModify( RecoLocalCaloAOD,
+    outputCommands = RecoLocalCaloAOD.outputCommands + ['keep *_hgcalLayerClustersHFNose_*_*',
+                                                        'keep recoCaloClusters_hgcalCaloClustersFromSoAHFNose_*_*',
+                                                        'keep *_hgcalCaloClustersFromSoAHFNose_timeLayerCluster_*',
                                                         'keep *_hgcalLayerClustersHFNose_InitialLayerClustersMask_*'])
 (pA_2016|pp_on_AA).toModify( RecoLocalCaloAOD.outputCommands,
         func=lambda outputCommands: outputCommands.extend(['keep *_zdcreco_*_*',

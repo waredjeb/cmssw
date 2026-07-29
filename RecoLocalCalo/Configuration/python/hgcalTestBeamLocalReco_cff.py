@@ -107,7 +107,7 @@ def runRecoForSep2024TB(process):
     )
 
     from RecoLocalCalo.HGCalRecProducers.hgCalLayerClustersFromSoAProducer_cfi import hgCalLayerClustersFromSoAProducer
-    process.hgcalMergeLayerClusters = hgCalLayerClustersFromSoAProducer.clone(
+    process.hgcalCaloClustersFromSoA = hgCalLayerClustersFromSoAProducer.clone(
         hgcalRecHitsLayerClustersSoA="hgcalSoARecHitsLayerClusters",
         hgcalRecHitsSoA="hgcalSoARecHits",
         src="hgcalSoALayerClusters"
@@ -118,7 +118,7 @@ def runRecoForSep2024TB(process):
         process.hgcalSoARecHits,
         process.hgcalSoARecHitsLayerClusters,
         process.hgcalSoALayerClusters,
-        process.hgcalMergeLayerClusters
+        process.hgcalCaloClustersFromSoA
     )
     process.hgcalTestBeamLocalRecoSequence = cms.Path(process.reco_task)
     process.schedule.insert(0, process.hgcalTestBeamLocalRecoSequence)

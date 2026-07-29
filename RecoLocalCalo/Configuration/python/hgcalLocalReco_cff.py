@@ -9,7 +9,7 @@ from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cff import recHitMapProdu
 # (for now until global reco is going with some sort of clustering)
 from RecoParticleFlow.PFClusterProducer.particleFlowRecHitHGC_cfi import *
 from RecoParticleFlow.PFClusterProducer.particleFlowClusterHGC_cfi import *
-from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersHFNose, hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci, hgcalMergeLayerClusters
+from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersHFNose, hgcalLayerClustersEE, hgcalLayerClustersHSi, hgcalLayerClustersHSci, hgcalMergeLayerClusters, hgcalCaloClustersFromSoA, hgcalCaloClustersFromSoAHFNose
 
 hgcalLocalRecoTask = cms.Task( HGCalUncalibRecHit,
                                        HGCalRecHit,
@@ -18,11 +18,13 @@ hgcalLocalRecoTask = cms.Task( HGCalUncalibRecHit,
                                        hgcalLayerClustersHSi,
                                        hgcalLayerClustersHSci,
                                        hgcalMergeLayerClusters,
+                                       hgcalCaloClustersFromSoA,
                                        particleFlowRecHitHGC,
                                        particleFlowClusterHGCal )
 
 _hfnose_hgcalLocalRecoTask = hgcalLocalRecoTask.copy()
 _hfnose_hgcalLocalRecoTask.add(hgcalLayerClustersHFNose)
+_hfnose_hgcalLocalRecoTask.add(hgcalCaloClustersFromSoAHFNose)
 
 from Configuration.Eras.Modifier_phase2_hfnose_cff import phase2_hfnose
 phase2_hfnose.toReplaceWith(
