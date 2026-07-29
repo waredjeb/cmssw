@@ -77,8 +77,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             clusterEnergy = (clusterSeed == kInvalidIndex) ? 0.f : input_rechits_soa[clusterSeed].energy();
           }
         }  // CAS
-      }    // uniform_elements
-    }      // operator()
+      }  // uniform_elements
+    }  // operator()
   };
 
   // Real Kernel position
@@ -115,7 +115,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::atomicAdd(acc, &outputs.position()[cluster_index].y(), input_rechits_soa[hit_index].dim2() * Wi);
         alpaka::atomicAdd(acc, &outputs_service[cluster_index].total_weight_log(), Wi);
       }  // uniform_elements
-    }    // operator()
+    }  // operator()
   };
 
   // Besides the final position, add also the DetId of the seed of each cluster
@@ -146,7 +146,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         outputs.position()[cluster_index].layer() =
             (input_rechits_soa[max_energy_index].layer() % maxLayerPerSide) + 1;
       }  // uniform_elements
-    }    // operator()
+    }  // operator()
   };
 
   void HGCalLayerClustersSoAAlgoWrapper::run(Queue& queue,

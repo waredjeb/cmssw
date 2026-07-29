@@ -140,8 +140,8 @@ namespace ticl {
 
           lcTensor[base_lc + 0] =
               layerClusters.energy()[v].energy() / static_cast<float>(ts.vertex_multiplicity(k));
-          lcTensor[base_lc + 1] = std::abs(clPosition.eta());
-          lcTensor[base_lc + 2] = clPosition.phi();
+          lcTensor[base_lc + 1] = std::abs(layerClusters.eta(v));
+          lcTensor[base_lc + 2] = layerClusters.phi(v);
           lcTensor[base_lc + 3] = clPosition.x();
           lcTensor[base_lc + 4] = clPosition.y();
           lcTensor[base_lc + 5] = std::abs(clPosition.z());

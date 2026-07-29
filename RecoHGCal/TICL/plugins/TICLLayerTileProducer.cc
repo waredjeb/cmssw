@@ -82,8 +82,8 @@ void TICLLayerTileProducer::produce(edm::Event &evt, const edm::EventSetup &) {
     }
     assert(layer >= 0);
 
-    const auto eta = layerClusters.position()[lcId].eta();
-    const auto phi = layerClusters.position()[lcId].phi();
+    const auto eta = layerClusters.eta(lcId);
+    const auto phi = layerClusters.phi(lcId);
 
     if (doNose_) {
       resultHFNose->fill(layer, eta, phi, lcId);

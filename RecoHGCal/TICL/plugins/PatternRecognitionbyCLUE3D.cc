@@ -271,8 +271,8 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     clusters_[layer].r_over_absz.emplace_back(
         sqrt(lcPosition.x() * lcPosition.x() + lcPosition.y() * lcPosition.y()) / std::abs(lcPosition.z()));
     clusters_[layer].radius.emplace_back(radius_x + radius_y);
-    clusters_[layer].eta.emplace_back(lcPosition.eta());
-    clusters_[layer].phi.emplace_back(lcPosition.phi());
+    clusters_[layer].eta.emplace_back(input.layerClusters.eta(layerIdx));
+    clusters_[layer].phi.emplace_back(input.layerClusters.phi(layerIdx));
     clusters_[layer].cells.push_back(cells);
     const auto algoId = input.layerClusters.indexes()[layerIdx].algoID();
     if constexpr (!isBarrel_) {

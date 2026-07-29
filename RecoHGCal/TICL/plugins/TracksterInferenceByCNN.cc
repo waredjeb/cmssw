@@ -94,7 +94,6 @@ namespace ticl {
 
         for (int k : clusterIndices) {
           const unsigned int v = ts.vertices(k);
-          auto const& clPosition = layerClusters.position()[v];
 
           const int j = rhtools.getLayerWithOffset(layerClusters.indexes()[v].seedID()) - 1;
           if (j < 0 || j >= eidNLayers_) {
@@ -110,8 +109,8 @@ namespace ticl {
 
           inputTensor[base + 0] =
               layerClusters.energy()[v].energy() / static_cast<float>(ts.vertex_multiplicity(k));
-          inputTensor[base + 1] = std::abs(clPosition.eta());
-          inputTensor[base + 2] = clPosition.phi();
+          inputTensor[base + 1] = std::abs(layerClusters.eta(v));
+          inputTensor[base + 2] = layerClusters.phi(v);
 
           ++seenClusters[j];
         }

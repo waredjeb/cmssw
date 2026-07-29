@@ -107,7 +107,6 @@ namespace ticl {
 
         for (int k : clusterIndices) {
           const unsigned int v = ts.vertices(k);
-          auto const& clPosition = layerClusters.position()[v];
           const DetId seedId = layerClusters.indexes()[v].seedID();
           if (rhtools.isBarrel(seedId)) {
             continue;
@@ -126,8 +125,8 @@ namespace ticl {
               static_cast<size_t>(seenClusters[j]) * eidNFeatures_;
 
           in[base + 0] = layerClusters.energy()[v].energy() / static_cast<float>(ts.vertex_multiplicity(k));
-          in[base + 1] = std::abs(clPosition.eta());
-          in[base + 2] = clPosition.phi();
+          in[base + 1] = std::abs(layerClusters.eta(v));
+          in[base + 2] = layerClusters.phi(v);
 
           ++seenClusters[j];
         }

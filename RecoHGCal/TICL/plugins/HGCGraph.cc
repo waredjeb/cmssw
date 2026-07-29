@@ -196,8 +196,8 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                                              minCosPointing,
                                                              verbosity_ > ticl::VerbosityLevel::Advanced);
                     if (isRootDoublet and checkDistanceRootDoubletVsSeed) {
-                      if (reco::deltaR2(layerClusters.position()[innerClusterId].eta(),
-                                        layerClusters.position()[innerClusterId].phi(),
+                      if (reco::deltaR2(layerClusters.eta(innerClusterId),
+                                        layerClusters.phi(innerClusterId),
                                         origin_eta,
                                         origin_phi) > root_doublet_max_distance_from_seed_squared) {
                         isRootDoublet = false;
@@ -242,10 +242,10 @@ bool HGCGraphT<TILES>::areOverlappingOnSiblingLayers(int innerIdx,
                                                      int outerIdx,
                                                      const reco::CaloClusterSoAConstView &layerClusters,
                                                      float maxRSquared) {
-  return reco::deltaR2(layerClusters.position()[outerIdx].eta(),
-                       layerClusters.position()[outerIdx].phi(),
-                       layerClusters.position()[innerIdx].eta(),
-                       layerClusters.position()[innerIdx].phi()) < maxRSquared;
+  return reco::deltaR2(layerClusters.eta(outerIdx),
+                       layerClusters.phi(outerIdx),
+                       layerClusters.eta(innerIdx),
+                       layerClusters.phi(innerIdx)) < maxRSquared;
 }
 
 //also return a vector of seedIndex for the reconstructed tracksters

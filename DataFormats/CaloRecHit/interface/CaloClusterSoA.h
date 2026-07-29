@@ -13,19 +13,12 @@
 
 namespace reco {
 
-  // clang-format off
   GENERATE_SOA_LAYOUT(CaloClusterSoAPosition,
                       SOA_COLUMN(float, x),
                       SOA_COLUMN(float, y),
                       SOA_COLUMN(float, z),
                       SOA_COLUMN(int, layer),
-                      SOA_COLUMN(int, cells),
-                      SOA_CONST_ELEMENT_METHODS(
-                        SOA_HOST_DEVICE auto r() const { return xtd::sqrt(x() * x() + y() * y()); }
-                        SOA_HOST_DEVICE auto phi() const { return xtd::atan2(y(), x()); }
-                        SOA_HOST_DEVICE auto eta() const { return xtd::asinh(z() / r()); }
-                      ))
-  // clang-format on
+                      SOA_COLUMN(int, cells))
 
   GENERATE_SOA_LAYOUT(CaloClusterSoAEnergy,
                       SOA_COLUMN(float, energy),
@@ -40,11 +33,32 @@ namespace reco {
 
   GENERATE_SOA_LAYOUT(CaloClusterSoATiming, SOA_COLUMN(float, time), SOA_COLUMN(float, timeError))
 
+  // clang-format off
   GENERATE_SOA_BLOCKS(CaloClusterSoALayout,
                       SOA_BLOCK(position, CaloClusterSoAPosition),
                       SOA_BLOCK(energy, CaloClusterSoAEnergy),
                       SOA_BLOCK(indexes, CaloClusterSoAIndexes),
-                      SOA_BLOCK(timing, CaloClusterSoATiming))
+                      SOA_BLOCK(timing, CaloClusterSoATiming),
+                      SOA_CONST_VIEW_METHODS(
+                        SOA_HOST_DEVICE auto r(std::integral auto idx) const {
+                          const auto x = this->position()[idx].x();
+                          const auto y = this->position()[idx].y();
+                          return xtd::sqrt(x * x + y * y);
+                        }
+                        SOA_HOST_DEVICE auto phi(std::integral auto idx) const {
+                          const auto x = this->position()[idx].x();
+                          const auto y = this->position()[idx].y();
+                          return xtd::atan2(y, x);
+                        }
+                        SOA_HOST_DEVICE auto eta(std::integral auto idx) const {
+                          const auto x = this->position()[idx].x();
+                          const auto y = this->position()[idx].y();
+                          const auto z = this->position()[idx].z();
+                          return xtd::asinh(z / xtd::sqrt(x * x + y * y));
+                        }
+                      )
+  )
+  // clang-format on
 
   using CaloClusterSoA = CaloClusterSoALayout<>;
   using CaloClusterSoAView = CaloClusterSoA::View;

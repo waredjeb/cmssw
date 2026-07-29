@@ -78,7 +78,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       output.zeroInitialise(iEvent.queue());
       auto output_v = output.view();
 
-
       // Allocate workspace SoA cluster
       HGCalSoAClustersExtraDeviceCollection outputWorkspace(iEvent.queue(), num_clusters_);
       auto output_workspace_v = outputWorkspace.view();
