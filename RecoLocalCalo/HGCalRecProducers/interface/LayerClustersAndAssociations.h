@@ -8,11 +8,8 @@
 #include <memory>
 
 namespace ticl {
-
-  // Return bundle of the layer-cluster algorithms: the per-cluster scalars as a
-  // portable SoA, plus the variable-length hit lists as a separate compressed
-  // (CSR) association map keyed by cluster index. The two are index-consistent:
-  // hits_and_fractions[i] holds the hits of cluster i of layer_clusters.
+  // Return the portable SoA of per-cluster information, plus variable length
+  // hit lists keyed by cluster index in CSR format.
   struct LayerClustersAndAssociations {
     std::unique_ptr<reco::CaloClusterHostCollection> layer_clusters;
     std::unique_ptr<HitsAndFractionsHost> hits_and_fractions;

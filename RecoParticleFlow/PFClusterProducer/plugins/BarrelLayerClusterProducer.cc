@@ -80,9 +80,6 @@ BarrelLayerClusterProducer::BarrelLayerClusterProducer(const edm::ParameterSet& 
 
   timeResolutionCalc_ = std::make_unique<CaloRecHitResolutionProvider>(ps.getParameterSet("timeResolutionCalc"));
   produces<std::vector<float>>("InitialLayerClustersMask");
-  // Per-cluster scalars (including timing) as a portable SoA, plus the
-  // variable-length hit lists as a separate association map. Both go into the
-  // unnamed instance: EDM resolves products by type, and the two types differ.
   produces<reco::CaloClusterHostCollection>();
   produces<ticl::HitsAndFractionsHost>();
 }

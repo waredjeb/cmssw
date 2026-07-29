@@ -99,16 +99,17 @@ layerClusters = cms.VInputTag('hgcalLayerClustersEE', 'hgcalLayerClustersHSi', '
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 ticl_barrel.toModify(hgcalMergeLayerClusters, layerClusters = layerClusters)
 
-# Legacy AoS view of the merged layer clusters, for the edm::Ref consumers
-# (associators, validation, PF, EGamma) that cannot read the SoA.
+# Legacy AoS view of the merged layer clusters. TICL reads the SoA directly from
+# hgcalMergeLayerClusters; this exists only for the edm::Ref consumers that cannot
+# read an SoA at all (associators, validation, PF, EGamma, dumpers, Fireworks).
 from RecoLocalCalo.HGCalRecProducers.caloClustersFromSoA_cfi import caloClustersFromSoA as _caloClustersFromSoA
 
 hgcalCaloClustersFromSoA = _caloClustersFromSoA.clone(
     src = 'hgcalMergeLayerClusters'
 )
 
-# HFNose is not merged: TICL reads its layer clusters directly, so it needs its
-# own converter instance.
+# HFNose is not merged: TICL reads hgcalLayerClustersHFNose (SoA) directly. This
+# converter instance exists only for the HFNose sim-truth associators.
 hgcalCaloClustersFromSoAHFNose = _caloClustersFromSoA.clone(
     src = 'hgcalLayerClustersHFNose'
 )

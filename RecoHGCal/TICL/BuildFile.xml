@@ -1,5 +1,7 @@
 <use name="DataFormats/Candidate"/>
 <use name="DataFormats/HGCalReco"/>
+<use name="DataFormats/Portable"/>
+<use name="DataFormats/TICL"/>
 <use name="DataFormats/VertexReco"/>
 <use name="FWCore/PluginManager"/>
 <use name="Geometry/HGCalCommonData"/>

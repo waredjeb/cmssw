@@ -195,34 +195,34 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     clusters_.resize(2 * rhtools->lastLayer(false));
   std::vector<std::pair<int, int>> layerIdx2layerandSoa;  //used everywhere also to propagate cluster masking
 
-  layerIdx2layerandSoa.reserve(input.layerClusters.size());
-  unsigned int layerIdx = 0;
-  for (auto const &lc : input.layerClusters) {
+  const int numberOfClusters = input.layerClusters.position().metadata().size();
+  layerIdx2layerandSoa.reserve(numberOfClusters);
+  for (int layerIdx = 0; layerIdx < numberOfClusters; ++layerIdx) {
     if (input.mask[layerIdx] == 0.) {
       if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
         edm::LogVerbatim("PatternRecognitionbyCLUE3D") << "Skipping masked cluster: " << layerIdx;
       }
       layerIdx2layerandSoa.emplace_back(-1, -1);
-      layerIdx++;
       continue;
     }
-    const auto firstHitDetId = lc.hitsAndFractions()[0].first;
-    int layer = rhtools->getLayerWithOffset(firstHitDetId);
+    auto const &lcPosition = input.layerClusters.position()[layerIdx];
+    const DetId detId = input.layerClusters.indexes()[layerIdx].seedID();
+    int layer = rhtools->getLayerWithOffset(detId);
     if (!isBarrel_)
-      layer += rhtools->lastLayer() * ((rhtools->zside(firstHitDetId) + 1) >> 1) - 1;
+      layer += rhtools->lastLayer() * ((rhtools->zside(detId) + 1) >> 1) - 1;
     assert(layer >= 0);
-    auto detId = lc.hitsAndFractions()[0].first;
     int layerClusterIndexInLayer = clusters_[layer].x.size();
     layerIdx2layerandSoa.emplace_back(layer, layerClusterIndexInLayer);
+    const int cells = lcPosition.cells();
     float sum_x = 0.;
     float sum_y = 0.;
     float sum_sqr_x = 0.;
     float sum_sqr_y = 0.;
-    float ref_x = lc.x();
-    float ref_y = lc.y();
-    float invClsize = 1. / lc.hitsAndFractions().size();
-    for (auto const &hitsAndFractions : lc.hitsAndFractions()) {
-      auto const &point = rhtools->getPosition(hitsAndFractions.first);
+    float ref_x = lcPosition.x();
+    float ref_y = lcPosition.y();
+    float invClsize = 1. / cells;
+    for (auto const &hitAndFraction : input.hitsAndFractions[layerIdx]) {
+      auto const &point = rhtools->getPosition(hitAndFraction.hit);
       sum_x += point.x() - ref_x;
       sum_sqr_x += (point.x() - ref_x) * (point.x() - ref_x);
       sum_y += point.y() - ref_y;
@@ -238,8 +238,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     if (PatternRecognitionAlgoBaseT<TILES>::algo_verbosity_ > VerbosityLevel::Advanced) {
       edm::LogVerbatim("PatternRecognitionbyCLUE3D")
           << "cluster rx: " << std::setw(5) << radius_x << ", ry: " << std::setw(5) << radius_y
-          << ", r:  " << std::setw(5) << (radius_x + radius_y) << ", cells: " << std::setw(4)
-          << lc.hitsAndFractions().size();
+          << ", r:  " << std::setw(5) << (radius_x + radius_y) << ", cells: " << std::setw(4) << cells;
     }
 
     // The case of single cell layer clusters has to be handled differently.
@@ -266,24 +265,26 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
     }
 
     // Maybe check if these vectors can be reserved beforehands
-    clusters_[layer].x.emplace_back(lc.x());
-    clusters_[layer].y.emplace_back(lc.y());
-    clusters_[layer].z.emplace_back(lc.z());
-    clusters_[layer].r_over_absz.emplace_back(sqrt(lc.x() * lc.x() + lc.y() * lc.y()) / std::abs(lc.z()));
+    clusters_[layer].x.emplace_back(lcPosition.x());
+    clusters_[layer].y.emplace_back(lcPosition.y());
+    clusters_[layer].z.emplace_back(lcPosition.z());
+    clusters_[layer].r_over_absz.emplace_back(
+        sqrt(lcPosition.x() * lcPosition.x() + lcPosition.y() * lcPosition.y()) / std::abs(lcPosition.z()));
     clusters_[layer].radius.emplace_back(radius_x + radius_y);
-    clusters_[layer].eta.emplace_back(lc.eta());
-    clusters_[layer].phi.emplace_back(lc.phi());
-    clusters_[layer].cells.push_back(lc.hitsAndFractions().size());
+    clusters_[layer].eta.emplace_back(lcPosition.eta());
+    clusters_[layer].phi.emplace_back(lcPosition.phi());
+    clusters_[layer].cells.push_back(cells);
+    const auto algoId = input.layerClusters.indexes()[layerIdx].algoID();
     if constexpr (!isBarrel_) {
-      clusters_[layer].algoId.push_back(lc.algo() - reco::CaloCluster::hgcal_em);
+      clusters_[layer].algoId.push_back(algoId - reco::CaloCluster::hgcal_em);
     } else {
-      clusters_[layer].algoId.push_back(lc.algo() - reco::CaloCluster::barrel_em);
+      clusters_[layer].algoId.push_back(algoId - reco::CaloCluster::barrel_em);
     }
     clusters_[layer].isSilicon.push_back(rhtools->isSilicon(detId));
-    clusters_[layer].energy.emplace_back(lc.energy());
+    clusters_[layer].energy.emplace_back(input.layerClusters.energy()[layerIdx].energy());
     clusters_[layer].isSeed.push_back(false);
     clusters_[layer].clusterIndex.emplace_back(-1);
-    clusters_[layer].layerClusterOriginalIdx.emplace_back(layerIdx++);
+    clusters_[layer].layerClusterOriginalIdx.emplace_back(layerIdx);
     clusters_[layer].nearestHigher.emplace_back(-1, -1);
     clusters_[layer].rho.emplace_back(0.f);
     clusters_[layer].z_extension.emplace_back(0.f);
@@ -358,7 +359,6 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
   }
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
-                              input.layerClustersTime,
                               limit_em,
                               *rhtools,
                               computeLocalTime_,

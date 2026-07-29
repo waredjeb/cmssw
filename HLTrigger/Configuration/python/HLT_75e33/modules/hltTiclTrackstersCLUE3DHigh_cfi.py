@@ -4,7 +4,7 @@ hltTiclTrackstersCLUE3DHigh = cms.EDProducer("TrackstersProducer",
     detector = cms.string('HGCAL'),
     filtered_mask = cms.InputTag("hltFilteredLayerClustersCLUE3DHigh","CLUE3DHigh"),
     itername = cms.string('CLUE3DHigh'),
-    layer_clusters = cms.InputTag("hltCaloClustersFromSoA"),
+    layer_clusters = cms.InputTag("hltMergeLayerClusters"),
     layer_clusters_hfnose_tiles = cms.InputTag("ticlLayerTileHFNose"),
     layer_clusters_tiles = cms.InputTag("hltTiclLayerTileProducer"),
     layer_clusters_barrel_tiles = cms.InputTag("hltTiclLayerTileBarrelProducer:ticlLayerTilesBarrel"),
@@ -148,6 +148,5 @@ hltTiclTrackstersCLUE3DHigh = cms.EDProducer("TrackstersProducer",
         miniBatchSize = cms.untracked.int32(64)
     ),
     seeding_regions = cms.InputTag("hltTiclSeedingGlobal"),
-    time_layerclusters = cms.InputTag("hltCaloClustersFromSoA","timeLayerCluster")
     )
     

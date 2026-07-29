@@ -1,9 +1,10 @@
 // Rebuild the legacy AoS layer clusters from the portable SoA representation.
 //
-// This is the single compatibility bridge between the SoA world (layer-cluster
-// production, merging and TICL) and the consumers that need `edm::Ref`/`edm::Ptr`
-// into an addressable collection and therefore cannot read an SoA at all:
-// the sim-truth associators, HGCal validation, PF and the EGamma HLT producers.
+// Used by: the sim-truth
+// associators, HGCal/Barrel validation, PF (`particleFlowClusterHGCal`), the EGamma
+// HLT ID and isolation producers, the Phase-2 L3 muon HGCal isolation,
+// `EGammaSuperclusterProducer`, `TICLDumper`, the NanoAOD/NGTScouting table
+// producers, Fireworks and the GPU-vs-CPU DQM comparison.
 //
 // It sits once, after the merge, and reconstructs the hits and fractions from
 // the association map, so it works for every subdetector that feeds the merge
@@ -32,8 +33,6 @@
 class CaloClustersFromSoAProducer : public edm::stream::EDProducer<> {
 public:
   CaloClustersFromSoAProducer(edm::ParameterSet const& config)
-      // The cluster SoA and its association map are emitted by the same module
-      // under the same (unnamed) instance: EDM resolves them by type.
       : clustersToken_(consumes(config.getParameter<edm::InputTag>("src"))),
         hitsAndFractionsToken_(consumes(config.getParameter<edm::InputTag>("src"))),
         timeClname_(config.getParameter<std::string>("timeClname")) {
@@ -69,8 +68,7 @@ public:
           clusters_v.indexes()[i].algoID(),
           clusters_v.indexes()[i].seedID(),
           clusters_v.indexes()[i].flags());
-      // The reco::CaloCluster constructor defaults both to -1; copy them across
-      // anyway so the converter stays faithful if a producer ever sets them.
+      // Defauled to -1, keep for completeness
       clusters->back().setCorrectedEnergy(clusters_v.energy()[i].correctedEnergy());
       clusters->back().setCorrectedEnergyUncertainty(clusters_v.energy()[i].correctedEnergyUncertainty());
 

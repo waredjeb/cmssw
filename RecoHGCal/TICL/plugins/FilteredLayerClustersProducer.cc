@@ -29,7 +29,7 @@ public:
   void produce(edm::Event&, const edm::EventSetup&) override;
 
 private:
-  edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
+  edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
   edm::EDGetTokenT<std::vector<float>> clustersMask_token_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometry_token_;
   std::string clusterFilter_;
@@ -41,7 +41,7 @@ private:
 DEFINE_FWK_MODULE(FilteredLayerClustersProducer);
 
 FilteredLayerClustersProducer::FilteredLayerClustersProducer(const edm::ParameterSet& ps) {
-  clusters_token_ = consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("LayerClusters"));
+  clusters_token_ = consumes(ps.getParameter<edm::InputTag>("LayerClusters"));
   clustersMask_token_ = consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("LayerClustersInputMask"));
   caloGeometry_token_ = esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>();
   clusterFilter_ = ps.getParameter<std::string>("clusterFilter");
@@ -57,7 +57,7 @@ void FilteredLayerClustersProducer::beginRun(edm::Run const&, edm::EventSetup co
 
 void FilteredLayerClustersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("LayerClusters", edm::InputTag("hgcalCaloClustersFromSoA"));
+  desc.add<edm::InputTag>("LayerClusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("LayerClustersInputMask",
                           edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask"));
   desc.add<std::string>("iteration_label", "iterationLabelGoesHere");
@@ -73,7 +73,7 @@ void FilteredLayerClustersProducer::fillDescriptions(edm::ConfigurationDescripti
 }
 
 void FilteredLayerClustersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
-  edm::Handle<std::vector<reco::CaloCluster>> clusterHandle;
+  edm::Handle<reco::CaloClusterHostCollection> clusterHandle;
   edm::Handle<std::vector<float>> inputClustersMaskHandle;
   evt.getByToken(clusters_token_, clusterHandle);
   evt.getByToken(clustersMask_token_, inputClustersMaskHandle);
@@ -93,7 +93,7 @@ void FilteredLayerClustersProducer::produce(edm::Event& evt, const edm::EventSet
   // Transfer input mask in output
   auto layerClustersMask = std::make_unique<std::vector<float>>(inputClusterMask);
 
-  const auto& layerClusters = *clusterHandle;
+  const auto& layerClusters = clusterHandle->const_view();
   if (theFilter_) {
     theFilter_->filter(layerClusters, *layerClustersMask, rhtools_);
   }

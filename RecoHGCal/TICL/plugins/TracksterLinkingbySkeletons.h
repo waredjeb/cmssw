@@ -37,7 +37,7 @@ namespace ticl {
     std::array<ticl::Vector, 3> findSkeletonNodes(const ticl::Trackster& trackster,
                                                   float lower_percentage,
                                                   float upper_percentage,
-                                                  const std::vector<reco::CaloCluster>& layerClusters,
+                                                  const reco::CaloClusterSoAConstView& layerClusters,
                                                   const hgcal::RecHitTools& rhtools);
 
     bool areCompatible(const ticl::Trackster& myTrackster,

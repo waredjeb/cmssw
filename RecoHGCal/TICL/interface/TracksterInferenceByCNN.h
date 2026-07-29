@@ -20,7 +20,7 @@ namespace ticl {
 
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc);
 
-    void runInference(const std::vector<reco::CaloCluster>& layerClusters,
+    void runInference(const reco::CaloClusterSoAConstView& layerClusters,
                       std::vector<Trackster>& tracksters,
                       const hgcal::RecHitTools& rhtools) const override;
 

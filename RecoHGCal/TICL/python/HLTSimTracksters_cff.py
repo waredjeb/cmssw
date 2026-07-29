@@ -8,7 +8,7 @@ from SimTracker.TrackAssociation.trackingParticleRecoTrackAsssociation_cfi impor
 # CA - PATTERN RECOGNITION
 
 hltFilteredLayerClustersSimTracksters = _filteredLayerClustersProducer.clone(
-    LayerClusters = cms.InputTag("hltCaloClustersFromSoA"),
+    LayerClusters = cms.InputTag("hltMergeLayerClusters"),
     LayerClustersInputMask = cms.InputTag("hltMergeLayerClusters","InitialLayerClustersMask"),
     clusterFilter = "ClusterFilterByAlgoAndSize",
     min_cluster_size = 0, # inclusive
@@ -27,8 +27,7 @@ hltTiclSimTracksters = _simTrackstersProducer.clone(
     layerClusterCaloParticleAssociator = cms.InputTag("hltHGCalLayerClusterCaloParticleAssociation"),
     layerClusterSimClusterAssociator = cms.InputTag("hltHGCalLayerClusterSimClusterAssociation"),
     filtered_mask = cms.InputTag("hltFilteredLayerClustersSimTracksters","hltTiclSimTracksters"),
-    layer_clusters = cms.InputTag("hltCaloClustersFromSoA"),
-    time_layerclusters = cms.InputTag("hltCaloClustersFromSoA","timeLayerCluster"),
+    layer_clusters = cms.InputTag("hltMergeLayerClusters"),
     simTrackToTPMap = cms.InputTag("simHitTPAssocProducer","simTrackToTP"),
     recoTracks = cms.InputTag("hltGeneralTracks"),
     gsfTracks  = cms.InputTag("hltEgammaGsfTracksL1Seeded"),

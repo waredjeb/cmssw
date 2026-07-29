@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
 
 class HGCDoublet {
@@ -18,21 +18,18 @@ public:
   HGCDoublet(const int innerClusterId,
              const int outerClusterId,
              const int doubletId,
-             const std::vector<reco::CaloCluster> *layerClusters,
+             const reco::CaloClusterSoAConstView &layerClusters,
              const int seedIndex,
              bool areSiblingClusters = false)
-      : layerClusters_(layerClusters),
-        theDoubletId_(doubletId),
+      : theDoubletId_(doubletId),
         innerClusterId_(innerClusterId),
         outerClusterId_(outerClusterId),
-        innerR_((*layerClusters)[innerClusterId].position().r()),
-        outerR_((*layerClusters)[outerClusterId].position().r()),
-        innerX_((*layerClusters)[innerClusterId].x()),
-        outerX_((*layerClusters)[outerClusterId].x()),
-        innerY_((*layerClusters)[innerClusterId].y()),
-        outerY_((*layerClusters)[outerClusterId].y()),
-        innerZ_((*layerClusters)[innerClusterId].z()),
-        outerZ_((*layerClusters)[outerClusterId].z()),
+        innerX_(layerClusters.position()[innerClusterId].x()),
+        outerX_(layerClusters.position()[outerClusterId].x()),
+        innerY_(layerClusters.position()[innerClusterId].y()),
+        outerY_(layerClusters.position()[outerClusterId].y()),
+        innerZ_(layerClusters.position()[innerClusterId].z()),
+        outerZ_(layerClusters.position()[outerClusterId].z()),
         seedIndex_(seedIndex),
         alreadyVisited_(false),
         areSiblingClusters_(areSiblingClusters) {}
@@ -48,10 +45,6 @@ public:
   double innerZ() const { return innerZ_; }
 
   double outerZ() const { return outerZ_; }
-
-  double innerR() const { return innerR_; }
-
-  double outerR() const { return outerR_; }
 
   int seedIndex() const { return seedIndex_; }
 
@@ -94,7 +87,6 @@ public:
   void setVisited(bool visited) { alreadyVisited_ = visited; }
 
 private:
-  const std::vector<reco::CaloCluster> *layerClusters_;
   std::vector<int> outerNeighbors_;
   std::vector<int> innerNeighbors_;
 
@@ -102,8 +94,6 @@ private:
   const int innerClusterId_;
   const int outerClusterId_;
 
-  const double innerR_;
-  const double outerR_;
   const double innerX_;
   const double outerX_;
   const double innerY_;

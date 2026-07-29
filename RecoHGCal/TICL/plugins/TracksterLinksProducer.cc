@@ -18,7 +18,7 @@
 
 #include "DataFormats/Common/interface/OrphanHandle.h"
 
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -67,8 +67,7 @@ private:
   std::string algoType_;
 
   std::vector<edm::EDGetTokenT<std::vector<Trackster>>> tracksters_tokens_;
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
-  const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
+  const edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
 
   const bool regressionAndPid_;
   std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;
@@ -88,9 +87,7 @@ private:
 
 TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, const ticl::TICLONNXGlobalCache *cache)
     : algoType_(ps.getParameter<edm::ParameterSet>("linkingPSet").getParameter<std::string>("type")),
-      clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
-      clustersTime_token_(
-          consumes<edm::ValueMap<std::pair<float, float>>>(ps.getParameter<edm::InputTag>("layer_clustersTime"))),
+      clusters_token_(consumes(ps.getParameter<edm::InputTag>("layer_clusters"))),
       regressionAndPid_(ps.getParameter<bool>("regressionAndPid")),
       geometry_token_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()),
       detector_(ps.getParameter<std::string>("detector")),
@@ -206,12 +203,11 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
 
   auto linkedResultTracksters = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
-  const auto &layerClusters = evt.get(clusters_token_);
-  const auto &layerClustersTimes = evt.get(clustersTime_token_);
+  const auto &layerClusters = evt.get(clusters_token_).const_view();
 
   // loop over the original_masks_tokens_ and get the original masks collections and multiply them
   // to get the global mask
-  std::vector<float> original_global_mask(layerClusters.size(), 1.f);
+  std::vector<float> original_global_mask(layerClusters.position().metadata().size(), 1.f);
   for (unsigned int i = 0; i < original_masks_tokens_.size(); ++i) {
     const auto &tmp_mask = evt.get(original_masks_tokens_[i]);
     for (unsigned int j = 0; j < tmp_mask.size(); ++j) {
@@ -230,7 +226,8 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
   }
 
   // Linking
-  const typename TracksterLinkingAlgoBase::Inputs input(evt, es, layerClusters, layerClustersTimes, trackstersManager);
+  const typename TracksterLinkingAlgoBase::Inputs input(
+      evt, es, layerClusters, trackstersManager);
   auto linkedTracksterIdToInputTracksterId = std::make_unique<std::vector<std::vector<unsigned int>>>();
 
   // LinkTracksters will produce a vector of vector of indices of tracksters that:
@@ -251,7 +248,6 @@ void TracksterLinksProducer::produce(edm::Event &evt, const edm::EventSetup &es)
 
   assignPCAtoTracksters(*resultTracksters,
                         layerClusters,
-                        layerClustersTimes,
                         rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
                         rhtools_,
                         true);
@@ -308,8 +304,7 @@ void TracksterLinksProducer::fillDescriptions(edm::ConfigurationDescriptions &de
   desc.add<std::vector<edm::InputTag>>("tracksters_collections", {edm::InputTag("ticlTrackstersCLUE3DHigh")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
-  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"));
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<bool>("regressionAndPid", false);
   desc.add<std::string>("detector", "HGCAL");
   desc.add<std::string>("propagator", "PropagatorWithMaterial");

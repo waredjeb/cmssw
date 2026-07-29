@@ -4,7 +4,6 @@
 #ifndef RecoHGCal_TICL_ClusterFilterByAlgo_h
 #define RecoHGCal_TICL_ClusterFilterByAlgo_h
 
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "ClusterFilterBase.h"
 
 #include <memory>
@@ -18,11 +17,13 @@ namespace ticl {
         : ClusterFilterBase(ps), algo_number_(ps.getParameter<std::vector<int>>("algo_number")) {}
     ~ClusterFilterByAlgo() override {}
 
-    void filter(const std::vector<reco::CaloCluster>& layerClusters,
+    void filter(const reco::CaloClusterSoAConstView& layerClusters,
                 std::vector<float>& layerClustersMask,
                 hgcal::RecHitTools& rhtools) const override {
-      for (size_t i = 0; i < layerClusters.size(); i++) {
-        if (find(algo_number_.begin(), algo_number_.end(), layerClusters[i].algo()) == algo_number_.end()) {
+      const int numberOfClusters = layerClusters.position().metadata().size();
+      for (int i = 0; i < numberOfClusters; i++) {
+        if (find(algo_number_.begin(), algo_number_.end(), layerClusters.indexes()[i].algoID()) ==
+            algo_number_.end()) {
           layerClustersMask[i] = 0.;
         }
       }

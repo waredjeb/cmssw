@@ -1,8 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-# Layer-cluster timing now travels inside the cluster SoA, so the merge no
-# longer takes a parallel list of time ValueMaps.
-
 ceh_layerClusters = [
     "hltHgcalLayerClustersHSci",
     "hltHgcalLayerClustersHSi"

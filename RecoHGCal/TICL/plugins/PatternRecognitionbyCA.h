@@ -34,7 +34,6 @@ namespace ticl {
 
   private:
     void mergeTrackstersTRK(const std::vector<Trackster>&,
-                            const std::vector<reco::CaloCluster>&,
                             std::vector<Trackster>&,
                             std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation) const;
     const std::unique_ptr<HGCGraphT<TILES>> theGraph_;

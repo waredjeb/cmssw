@@ -127,9 +127,7 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
   positionDeltaRho2_ = pluginPSet.getParameter<double>("positionDeltaRho2");
 
   produces<std::vector<float>>("InitialLayerClustersMask");
-  // Per-cluster scalars (including timing) as a portable SoA, plus the
-  // variable-length hit lists as a separate association map. Both go into the
-  // unnamed instance: EDM resolves products by type, and the two types differ.
+
   produces<reco::CaloClusterHostCollection>();
   produces<ticl::HitsAndFractionsHost>();
 }
@@ -265,8 +263,7 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
       clusters_v.position()[i].y() = position.y();
       clusters_v.position()[i].z() = position.z();
     }
-    // Timing lives in the cluster SoA now; the algorithm leaves it unwritten, so
-    // every cluster must be assigned here. BH has no per-hit timing in digi.
+    // BH has no timing
     const auto timeCl = (detector_ != "BH") ? calculateTime(hitmap, hitsOfCluster, clusters_v.position()[i].cells())
                                             : std::pair<float, float>(-99.f, -1.f);
     clusters_v.timing()[i].time() = timeCl.first;

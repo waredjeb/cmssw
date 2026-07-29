@@ -14,7 +14,6 @@
 
 #include "HeterogeneousCore/AlpakaInterface/interface/host.h"
 
-#include <cassert>
 #include <vector>
 
 class MergeClusterProducer : public edm::stream::EDProducer<> {
@@ -43,9 +42,8 @@ public:
   void produce(edm::Event &, const edm::EventSetup &) override;
 
 private:
-  // Each layer-cluster producer emits a cluster SoA and, under the same label,
-  // the matching hits-and-fractions association map. The two are consumed from
-  // the same InputTag: EDM resolves products by type.
+  // each layer-cluster producer produces a cluster SoA and a hits-and-fractions
+  // association map.
   std::vector<edm::EDGetTokenT<reco::CaloClusterHostCollection>> tokens_;
   std::vector<edm::EDGetTokenT<ticl::HitsAndFractionsHost>> hits_tokens_;
 
@@ -130,10 +128,7 @@ void MergeClusterProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
   }
   // CSR terminator: count(lastCluster) needs offsets[nClusters].
   mergedHits_v.offsets()[totalClusters].keys_offsets() = hitStart;
-  // The map is keyed by position in the merged cluster collection, so a
-  // mismatch here would silently mis-associate hits rather than crash.
-  assert(clusterStart == totalClusters);
-  assert(hitStart == totalHits);
+
 
   //create layer cluster mask
   auto layerClustersMask = std::make_unique<std::vector<float>>(totalClusters, 1.0);

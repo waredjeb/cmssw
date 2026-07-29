@@ -5,7 +5,6 @@
 #include "PatternRecognitionbyCA.h"
 #include "HGCDoublet.h"
 #include "HGCGraph.h"
-#include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Math/interface/deltaR.h"
 
 template <typename TILES>
@@ -13,9 +12,8 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                               const std::vector<TICLSeedingRegion> &regions,
                                               int nEtaBins,
                                               int nPhiBins,
-                                              const std::vector<reco::CaloCluster> &layerClusters,
+                                              const reco::CaloClusterSoAConstView &layerClusters,
                                               const std::vector<float> &mask,
-                                              const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
                                               int deltaIEta,
                                               int deltaIPhi,
                                               float minCosTheta,
@@ -29,7 +27,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                               int lastLayerFH,
                                               const std::vector<double> &siblings_maxRSquared) {
   isOuterClusterOfDoublets_.clear();
-  isOuterClusterOfDoublets_.resize(layerClusters.size());
+  isOuterClusterOfDoublets_.resize(layerClusters.position().metadata().size());
   allDoublets_.clear();
   theRootDoublets_.clear();
   bool checkDistanceRootDoubletVsSeed = root_doublet_max_distance_from_seed_squared < 9999;
@@ -159,7 +157,7 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                     }
                     auto doubletId = allDoublets_.size();
                     if (maxDeltaTime != -1 &&
-                        !areTimeCompatible(innerClusterId, outerClusterId, layerClustersTime, maxDeltaTime)) {
+                        !areTimeCompatible(innerClusterId, outerClusterId, layerClusters, maxDeltaTime)) {
                       if (verbosity_ > ticl::VerbosityLevel::Advanced)
                         LogDebug("HGCGraph") << "Rejecting doublets due to timing!" << std::endl;
                       continue;
@@ -167,13 +165,13 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                     if (currentOuterLayerId - currentInnerLayerId == 1) {
                       if (areOverlappingOnSiblingLayers(innerClusterId, outerClusterId, layerClusters, maxRSquared)) {
                         allDoublets_.emplace_back(
-                            innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, true);
+                            innerClusterId, outerClusterId, doubletId, layerClusters, r.index, true);
                       } else {
                         continue;
                       }
                     } else {
                       allDoublets_.emplace_back(
-                          innerClusterId, outerClusterId, doubletId, &layerClusters, r.index, false);
+                          innerClusterId, outerClusterId, doubletId, layerClusters, r.index, false);
                     }
                     if (verbosity_ > ticl::VerbosityLevel::Advanced) {
                       LogDebug("HGCGraph")
@@ -198,8 +196,8 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
                                                              minCosPointing,
                                                              verbosity_ > ticl::VerbosityLevel::Advanced);
                     if (isRootDoublet and checkDistanceRootDoubletVsSeed) {
-                      if (reco::deltaR2(layerClusters[innerClusterId].eta(),
-                                        layerClusters[innerClusterId].phi(),
+                      if (reco::deltaR2(layerClusters.position()[innerClusterId].eta(),
+                                        layerClusters.position()[innerClusterId].phi(),
                                         origin_eta,
                                         origin_phi) > root_doublet_max_distance_from_seed_squared) {
                         isRootDoublet = false;
@@ -228,12 +226,12 @@ void HGCGraphT<TILES>::makeAndConnectDoublets(const TILES &histo,
 template <typename TILES>
 bool HGCGraphT<TILES>::areTimeCompatible(int innerIdx,
                                          int outerIdx,
-                                         const edm::ValueMap<std::pair<float, float>> &layerClustersTime,
+                                         const reco::CaloClusterSoAConstView &layerClusters,
                                          float maxDeltaTime) {
-  float timeIn = layerClustersTime.get(innerIdx).first;
-  float timeInE = layerClustersTime.get(innerIdx).second;
-  float timeOut = layerClustersTime.get(outerIdx).first;
-  float timeOutE = layerClustersTime.get(outerIdx).second;
+  float timeIn = layerClusters.timing()[innerIdx].time();
+  float timeInE = layerClusters.timing()[innerIdx].timeError();
+  float timeOut = layerClusters.timing()[outerIdx].time();
+  float timeOutE = layerClusters.timing()[outerIdx].timeError();
 
   return (timeIn == -99. || timeOut == -99. ||
           std::abs(timeIn - timeOut) < maxDeltaTime * sqrt(timeInE * timeInE + timeOutE * timeOutE));
@@ -242,12 +240,12 @@ bool HGCGraphT<TILES>::areTimeCompatible(int innerIdx,
 template <typename TILES>
 bool HGCGraphT<TILES>::areOverlappingOnSiblingLayers(int innerIdx,
                                                      int outerIdx,
-                                                     const std::vector<reco::CaloCluster> &layerClusters,
+                                                     const reco::CaloClusterSoAConstView &layerClusters,
                                                      float maxRSquared) {
-  return reco::deltaR2(layerClusters[outerIdx].eta(),
-                       layerClusters[outerIdx].phi(),
-                       layerClusters[innerIdx].eta(),
-                       layerClusters[innerIdx].phi()) < maxRSquared;
+  return reco::deltaR2(layerClusters.position()[outerIdx].eta(),
+                       layerClusters.position()[outerIdx].phi(),
+                       layerClusters.position()[innerIdx].eta(),
+                       layerClusters.position()[innerIdx].phi()) < maxRSquared;
 }
 
 //also return a vector of seedIndex for the reconstructed tracksters

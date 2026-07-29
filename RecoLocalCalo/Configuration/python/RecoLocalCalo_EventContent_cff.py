@@ -21,8 +21,6 @@ from Configuration.Eras.Modifier_pA_2016_cff import pA_2016
 from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
 from Configuration.ProcessModifiers.storeZDCDigis_cff import storeZDCDigis
 # don't modify AOD for HGCal yet, need "reduced" rechits collection first (i.e. requires reconstruction)
-# The layer clusters are produced as a portable SoA plus a hits-and-fractions
-# association map; the legacy reco::CaloCluster view comes from the converter.
 phase2_hgcal.toModify( RecoLocalCaloAOD,
     outputCommands = RecoLocalCaloAOD.outputCommands + ['keep *_HGCalRecHit_*_*',
                                                         'keep *_hgcalMergeLayerClusters_*_*',
@@ -43,7 +41,7 @@ phase2_hfnose.toModify( RecoLocalCaloAOD,
 storeZDCDigis.toModify( RecoLocalCaloAOD,
                         outputCommands = RecoLocalCaloAOD.outputCommands + ['keep QIE10DataFrameHcalDataFrameContainer_hcalDigis_ZDC_*'])
 from Configuration.ProcessModifiers.egamma_lowPt_exclusive_cff import egamma_lowPt_exclusive
-egamma_lowPt_exclusive.toModify( RecoLocalCaloAOD, 
+egamma_lowPt_exclusive.toModify( RecoLocalCaloAOD,
     outputCommands = RecoLocalCaloAOD.outputCommands + ['keep *_towerMaker_*_*',
                                                         'keep *_zdcreco_*_*',
                                                         'keep ZDCDataFramesSorted_hcalDigis_*_*',
@@ -78,13 +76,15 @@ RecoLocalCaloFEVT = cms.PSet(
 )
 RecoLocalCaloFEVT.outputCommands.extend(RecoLocalCaloRECO.outputCommands)
 RecoLocalCaloFEVT.outputCommands.extend(ecalLocalRecoFEVT.outputCommands)
-phase2_hgcal.toModify( RecoLocalCaloFEVT, 
+phase2_hgcal.toModify( RecoLocalCaloFEVT,
     outputCommands = RecoLocalCaloFEVT.outputCommands + ['keep *_HGCalUncalibRecHit_*_*'])
 
 #HGCAL FEVTHLT content
+# Need both new SoA and old AoS to be kept
 HGCAL_FEVTHLT = cms.PSet(
     outputCommands = cms.untracked.vstring(
         'keep *_hltHGCalRecHit_*_*',
-        'keep *_hltMergeLayerClusters*_*_*'
+        'keep *_hltMergeLayerClusters*_*_*',
+        'keep *_hltCaloClustersFromSoA*_*_*'
     )
 )

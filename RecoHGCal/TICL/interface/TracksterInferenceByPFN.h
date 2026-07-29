@@ -16,7 +16,7 @@ namespace ticl {
   public:
     explicit TracksterInferenceByPFN(const edm::ParameterSet& conf, TICLONNXGlobalCache const* cache);
 
-    void runInference(const std::vector<reco::CaloCluster>& layerClusters,
+    void runInference(const reco::CaloClusterSoAConstView& layerClusters,
                       std::vector<Trackster>& tracksters,
                       const hgcal::RecHitTools& rhtools) const override;
 

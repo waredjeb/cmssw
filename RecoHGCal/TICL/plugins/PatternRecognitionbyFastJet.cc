@@ -130,11 +130,12 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
             continue;
           }
           // Should we correct for the position of the PV?
-          auto const &cl = input.layerClusters[clusterIdx];
-          math::XYZVector direction(cl.x(), cl.y(), cl.z());
+          auto const &clPosition = input.layerClusters.position()[clusterIdx];
+          const auto clEnergy = input.layerClusters.energy()[clusterIdx].energy();
+          math::XYZVector direction(clPosition.x(), clPosition.y(), clPosition.z());
           direction = direction.Unit();
-          direction *= cl.energy();
-          auto fpj = fastjet::PseudoJet(direction.X(), direction.Y(), direction.Z(), cl.energy());
+          direction *= clEnergy;
+          auto fpj = fastjet::PseudoJet(direction.X(), direction.Y(), direction.Z(), clEnergy);
           fpj.set_user_index(clusterIdx);
           fjInputs.push_back(fpj);
         }  // End of loop on the clusters on currentLayer
@@ -156,7 +157,6 @@ void PatternRecognitionbyFastJet<TILES>::makeTracksters(
 
   ticl::assignPCAtoTracksters(result,
                               input.layerClusters,
-                              input.layerClustersTime,
                               limit_em,
                               *rhtools,
                               computeLocalTime_,

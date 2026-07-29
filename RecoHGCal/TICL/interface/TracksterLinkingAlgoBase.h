@@ -6,7 +6,7 @@
 
 #include <memory>
 #include <vector>
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "DataFormats/HGCalReco/interface/TICLLayerTile.h"
 #include "DataFormats/HGCalReco/interface/TICLSeedingRegion.h"
@@ -14,7 +14,6 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
-#include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/HGCalReco/interface/Common.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "DataFormats/Common/interface/MultiSpan.h"
@@ -49,16 +48,14 @@ namespace ticl {
     struct Inputs {
       const edm::Event& ev;
       const edm::EventSetup& es;
-      const std::vector<reco::CaloCluster>& layerClusters;
-      const edm::ValueMap<std::pair<float, float>>& layerClustersTime;
+      const reco::CaloClusterSoAConstView& layerClusters;
       const edm::MultiSpan<Trackster>& tracksters;
 
       Inputs(const edm::Event& eV,
              const edm::EventSetup& eS,
-             const std::vector<reco::CaloCluster>& lC,
-             const edm::ValueMap<std::pair<float, float>>& lT,
+             const reco::CaloClusterSoAConstView& lC,
              const edm::MultiSpan<Trackster>& tS)
-          : ev(eV), es(eS), layerClusters(lC), layerClustersTime(lT), tracksters(tS) {}
+          : ev(eV), es(eS), layerClusters(lC), tracksters(tS) {}
     };
 
     virtual void linkTracksters(const Inputs& input,

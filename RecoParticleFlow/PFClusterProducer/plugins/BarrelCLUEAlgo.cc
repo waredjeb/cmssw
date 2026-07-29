@@ -112,10 +112,6 @@ ticl::LayerClustersAndAssociations BarrelCLUEAlgoT<T>::getClusters(bool) {
 
   auto totalNumberOfClusters = offsets.back() + numberOfClustersPerLayer_.back();
 
-  // The cluster count is known up front, the hit count is not: with energy
-  // sharing a cell contributes an entry to every cluster it is split across, so
-  // the map content is staged here and moved into the (exactly sized) CSR
-  // buffers once the loop below has finished.
   ticl::LayerClustersAndAssociations clustersAndAssociations(totalNumberOfClusters, 0);
   auto clusters_v = clustersAndAssociations.layer_clusters->view();
   std::vector<ticl::HitAndFraction> stagedHits;
@@ -177,8 +173,6 @@ ticl::LayerClustersAndAssociations BarrelCLUEAlgoT<T>::getClusters(bool) {
       int seedDetId = -1;
 
       const auto globalClusterIndex = clIndex + firstClusterIdx;
-      // Clusters are visited in increasing global index, so recording the write
-      // cursor on entry (plus the terminator below) builds a monotonic CSR.
       stagedOffsets[globalClusterIndex] = static_cast<int>(stagedHits.size());
 
       for (auto [cellIdx, fraction] : cl) {
@@ -199,12 +193,9 @@ ticl::LayerClustersAndAssociations BarrelCLUEAlgoT<T>::getClusters(bool) {
       clusters_v.position()[globalClusterIndex].x() = position.x();
       clusters_v.position()[globalClusterIndex].y() = position.y();
       clusters_v.position()[globalClusterIndex].z() = position.z();
-      // 1-based layer, matching the per-side convention the HGCal paths use.
       clusters_v.position()[globalClusterIndex].layer() = static_cast<int>(layerId) + 1;
       clusters_v.position()[globalClusterIndex].cells() = static_cast<int>(cl.size());
       clusters_v.energy()[globalClusterIndex].energy() = energy;
-      // reco::CaloCluster leaves both corrected energies at -1 unless a
-      // correction is applied; the SoA has no default, so set them explicitly.
       clusters_v.energy()[globalClusterIndex].correctedEnergy() = -1.f;
       clusters_v.energy()[globalClusterIndex].correctedEnergyUncertainty() = -1.f;
       clusters_v.indexes()[globalClusterIndex].algoID() = algoId_;

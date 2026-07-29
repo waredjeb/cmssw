@@ -41,9 +41,7 @@ public:
     }
 
     produces<std::vector<float>>("InitialLayerClustersMask");
-    // Same product pair as the legacy (non-alpaka) layer-cluster producers, so
-    // that MergeClusterProducer sees one uniform input regardless of which
-    // clustering produced the clusters.
+
     produces<reco::CaloClusterHostCollection>();
     produces<ticl::HitsAndFractionsHost>();
   }
@@ -66,9 +64,7 @@ public:
     const int numberOfClusters = position_v.metadata().size();
     const int numberOfRecHits = soaRecHitsExtra_v.metadata().size();
 
-    // Pass 1: how many rechits ended up in each cluster. Outliers (clusterIndex
-    // == -1) contribute no entry, so the map content is generally shorter than
-    // the rechit SoA.
+    // Number of rechits in each cluster, excluding outliers
     std::vector<int> hitsPerCluster(numberOfClusters, 0);
     int numberOfClusteredHits = 0;
     for (int i = 0; i < numberOfRecHits; ++i) {
@@ -76,7 +72,6 @@ public:
       if (clusterIndex == -1) {
         continue;
       }
-      assert(clusterIndex < numberOfClusters);
       ++hitsPerCluster[clusterIndex];
       ++numberOfClusteredHits;
     }
@@ -89,7 +84,7 @@ public:
     auto hits_v = hitsAndFractions->view();
 
     // Prefix-sum the per-cluster counts into the CSR offsets, and copy the
-    // per-cluster scalars across. algoID/caloID are (re)written from this
+    // per-cluster features across. algoID/caloID are reqritten from this
     // module's own detector setting rather than taken from the kernel, which
     // hardcodes the EE values.
     int hitsOffset = 0;
@@ -113,11 +108,7 @@ public:
     hits_v.offsets()[numberOfClusters].keys_offsets() = hitsOffset;
     assert(hitsOffset == numberOfClusteredHits);
 
-    // Pass 2: scatter the hits, and collect the per-hit times needed below.
-    // This involves two SoAs: the original RecHits SoA and the clustering
-    // algorithm's output SoA. Both have the same cardinality, and crucially,
-    // the output SoA includes the cluster index. Walking the rechits in
-    // ascending index keeps each cluster's hit list in rechit order.
+    // scatter the hits, and collect the per-hit times needed below.
     std::vector<int> cursor(numberOfClusters, 0);
     std::vector<std::vector<float>> times(numberOfClusters);
     std::vector<std::vector<float>> timeErrors(numberOfClusters);
@@ -135,7 +126,7 @@ public:
       timeErrors[clusterIndex].push_back(1.f / (soaCells_v[i].timeError() * soaCells_v[i].timeError()));
     }
 
-    // Finally, compute and assign the time to each cluster.
+    // Assign time to each cluster
     hgcalsimclustertime::ComputeClusterTime timeEstimator;
     for (int i = 0; i < numberOfClusters; ++i) {
       const auto timeCl = (detector_ != "BH")
@@ -145,11 +136,7 @@ public:
       clusters_v.timing()[i].timeError() = timeCl.second;
     }
 
-    // The layerClusterMask for the HGCAL detector is created at a later
-    // stage, when the layer clusters from the different components of HGCAL
-    // are merged together into a unique collection. For the case of HFNose,
-    // since there is no further merging step needed, we create the
-    // layerClustersMask directly here.
+    // HFNoise has no mergint step, so create the layerClustersMask here
     if (detector_ == "HFNose") {
       std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
       layerClustersMask->resize(numberOfClusters, 1.0);

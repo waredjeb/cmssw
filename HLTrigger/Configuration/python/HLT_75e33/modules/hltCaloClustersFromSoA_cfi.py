@@ -2,7 +2,6 @@ import FWCore.ParameterSet.Config as cms
 
 # Legacy AoS view of the merged layer clusters, for the edm::Ref consumers
 # (associators, validation, PF, EGamma) that cannot read the SoA.
-
 hltCaloClustersFromSoA = cms.EDProducer("CaloClustersFromSoAProducer",
     src = cms.InputTag("hltMergeLayerClusters"),
     timeClname = cms.string("timeLayerCluster"),

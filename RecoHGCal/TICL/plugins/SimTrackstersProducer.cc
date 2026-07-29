@@ -3,6 +3,8 @@
 
 // user include files
 
+#include <cassert>
+
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -14,6 +16,7 @@
 #include "DataFormats/Common/interface/OrphanHandle.h"
 
 #include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -25,7 +28,6 @@
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/GsfElectronTools.h"
 
-#include "DataFormats/Common/interface/ValueMap.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToSimClusterAssociator.h"
 #include "SimDataFormats/Associations/interface/LayerClusterToCaloParticleAssociator.h"
 
@@ -67,6 +69,7 @@ public:
 
   void addTrackster(const int index,
                     const std::vector<std::pair<edm::Ref<reco::CaloClusterCollection>, std::pair<float, float>>>& lcVec,
+                    const reco::CaloClusterSoAConstView& layerClusters,
                     const std::vector<float>& inputClusterMask,
                     const float fractionCut_,
                     const float energy,
@@ -86,8 +89,7 @@ private:
   const bool doNose_ = false;
   const bool doBarrel_ = false;
   const bool computeLocalTime_;
-  const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
-  const edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>> clustersTime_token_;
+  const edm::EDGetTokenT<reco::CaloClusterHostCollection> clusters_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
 
   const edm::EDGetTokenT<std::vector<SimCluster>> simclusters_token_;
@@ -122,7 +124,6 @@ SimTrackstersProducer::SimTrackstersProducer(const edm::ParameterSet& ps)
       doBarrel_(detector_ == "Barrel"),
       computeLocalTime_(ps.getParameter<bool>("computeLocalTime")),
       clusters_token_(consumes(ps.getParameter<edm::InputTag>("layer_clusters"))),
-      clustersTime_token_(consumes(ps.getParameter<edm::InputTag>("time_layerclusters"))),
       filtered_layerclusters_mask_token_(consumes(ps.getParameter<edm::InputTag>("filtered_mask"))),
       simclusters_token_(consumes(ps.getParameter<edm::InputTag>("simclusters"))),
       caloparticles_token_(consumes(ps.getParameter<edm::InputTag>("caloparticles"))),
@@ -155,8 +156,7 @@ void SimTrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
   desc.add<bool>("computeLocalTime", "true");
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
-  desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"));
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
   desc.add<edm::InputTag>("filtered_mask", edm::InputTag("filteredLayerClustersSimTracksters", "ticlSimTracksters"));
   desc.add<edm::InputTag>("simclusters", edm::InputTag("mix", "MergedCaloTruth"));
   desc.add<edm::InputTag>("caloparticles", edm::InputTag("mix", "MergedCaloTruth"));
@@ -201,6 +201,7 @@ void SimTrackstersProducer::makePUTrackster(const std::vector<float>& inputClust
 void SimTrackstersProducer::addTrackster(
     const int index,
     const std::vector<std::pair<edm::Ref<reco::CaloClusterCollection>, std::pair<float, float>>>& lcVec,
+    const reco::CaloClusterSoAConstView& layerClusters,
     const std::vector<float>& inputClusterMask,
     const float fractionCut_,
     const float energy,
@@ -223,7 +224,7 @@ void SimTrackstersProducer::addTrackster(
   tmpTrackster.vertex_multiplicity().reserve(lcVec.size());
   for (auto const& [lc, energyScorePair] : lcVec) {
     if (inputClusterMask[lc.index()] > 0) {
-      float fraction = energyScorePair.first / lc->energy();
+      float fraction = energyScorePair.first / layerClusters.energy()[lc.index()].energy();
       if (fraction < fractionCut_)
         continue;
       tmpTrackster.vertices().push_back(lc.index());
@@ -283,30 +284,29 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   auto result_ticlCandidates = std::make_unique<std::vector<TICLCandidate>>();
 
   const auto& layerClustersHandle = evt.getHandle(clusters_token_);
-  const auto& layerClustersTimesHandle = evt.getHandle(clustersTime_token_);
   const auto& inputClusterMaskHandle = evt.getHandle(filtered_layerclusters_mask_token_);
 
   // Validate input collections
-  if (!layerClustersHandle.isValid() || !layerClustersTimesHandle.isValid() || !inputClusterMaskHandle.isValid()) {
+  if (!layerClustersHandle.isValid() || !inputClusterMaskHandle.isValid()) {
     edm::LogWarning("SimTrackstersProducer") << "Missing input collections. Producing empty outputs.";
     this->returnEmptyCollections(evt, 0);
     return;
   }
 
   // Proceed if inputs are valid
-  const auto& layerClusters = *layerClustersHandle;
-  const auto& layerClustersTimes = *layerClustersTimesHandle;
+  const auto& layerClusters = layerClustersHandle->const_view();
+  const auto numberOfClusters = layerClusters.position().metadata().size();
   const auto& inputClusterMask = *inputClusterMaskHandle;
 
-  output_mask->resize(layerClusters.size(), 1.f);
-  output_mask_fromCP->resize(layerClusters.size(), 1.f);
+  output_mask->resize(numberOfClusters, 1.f);
+  output_mask_fromCP->resize(numberOfClusters, 1.f);
 
   const auto& simclusters = evt.get(simclusters_token_);
   edm::Handle<std::vector<CaloParticle>> caloParticles_h;
   evt.getByToken(caloparticles_token_, caloParticles_h);
   if (!caloParticles_h.isValid()) {
     edm::LogWarning("SimTrackstersProducer") << "Missing CaloParticles.";
-    this->returnEmptyCollections(evt, layerClusters.size());
+    this->returnEmptyCollections(evt, numberOfClusters);
     return;
   }
   const auto& caloparticles = *caloParticles_h;
@@ -335,7 +335,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   const auto TPtoRecoTrackMapHandle = evt.getHandle(associatormapStRsToken_);
   if (!TPtoRecoTrackMapHandle.isValid()) {
     edm::LogWarning("SimTrackstersProducer") << "Missing TP->RecoTrack association.";
-    this->returnEmptyCollections(evt, layerClusters.size());
+    this->returnEmptyCollections(evt, numberOfClusters);
     return;
   }
   const auto& TPtoRecoTrackMap = *TPtoRecoTrackMapHandle;
@@ -379,6 +379,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
                    CLHEP::s;  // Geant4 time is in seconds, convert to ns (CLHEP::s = 1e9)
       addTrackster(cpIndex,
                    lcVec,
+                   layerClusters,
                    inputClusterMask,
                    fractionCut_,
                    regr_energy,
@@ -401,6 +402,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
 
         addTrackster(scIndex,
                      lcVec,
+                     layerClusters,
                      inputClusterMask,
                      fractionCut_,
                      sc.g4Tracks()[0].getMomentumAtBoundary().energy(),
@@ -427,6 +429,7 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
     // Create a Trackster from any CP
     addTrackster(cpIndex,
                  lcVec,
+                 layerClusters,
                  inputClusterMask,
                  fractionCut_,
                  regr_energy,
@@ -451,7 +454,6 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   //       store time from boundary position in simTracksters
   ticl::assignPCAtoTracksters(*result,
                               layerClusters,
-                              layerClustersTimes,
                               rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z(),
                               rhtools_,
                               computeLocalTime_,
@@ -461,7 +463,6 @@ void SimTrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) 
   result->shrink_to_fit();
   ticl::assignPCAtoTracksters(*result_fromCP,
                               layerClusters,
-                              layerClustersTimes,
                               rhtools_.getPositionLayer(rhtools_.lastLayerEE(doNose_)).z(),
                               rhtools_,
                               computeLocalTime_,

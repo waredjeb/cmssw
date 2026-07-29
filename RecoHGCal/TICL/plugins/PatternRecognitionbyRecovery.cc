@@ -40,10 +40,11 @@ void PatternRecognitionbyRecovery<TILES>::makeTracksters(
   // Clear the result vector
   result.clear();
 
-  result.reserve(input.layerClusters.size() / 16);  // Heuristic
+  const int numberOfClusters = input.layerClusters.position().metadata().size();
+  result.reserve(numberOfClusters / 16);
 
   // Iterate over all layer clusters
-  for (unsigned int i = 0; i < input.layerClusters.size(); ++i) {
+  for (int i = 0; i < numberOfClusters; ++i) {
     if (input.mask[i] == 0.f) {
       continue;  // Skip masked clusters
     }
@@ -59,15 +60,16 @@ void PatternRecognitionbyRecovery<TILES>::makeTracksters(
     mult.clear();
     mult.reserve(1);
     mult.push_back(1);
-    const auto &lc = input.layerClusters[i];
-    const auto timePair = input.layerClustersTime.get(i);
-    trackster.setTimeAndError(timePair.first, timePair.second);
-    trackster.setRawEnergy(lc.energy());
-    trackster.setBarycenter({float(lc.x()), float(lc.y()), float(lc.z())});
+    const auto &lcPosition = input.layerClusters.position()[i];
+    const auto lcEnergy = input.layerClusters.energy()[i].energy();
+    const auto &lcTiming = input.layerClusters.timing()[i];
+    trackster.setTimeAndError(lcTiming.time(), lcTiming.timeError());
+    trackster.setRawEnergy(lcEnergy);
+    trackster.setBarycenter({lcPosition.x(), lcPosition.y(), lcPosition.z()});
     trackster.calculateRawPt();
-    const float z = lc.z();
+    const float z = lcPosition.z();
     if (z <= z_limit_em_ && z >= -z_limit_em_) {
-      trackster.setRawEmEnergy(lc.energy());
+      trackster.setRawEmEnergy(lcEnergy);
       trackster.calculateRawEmPt();
     }
   }

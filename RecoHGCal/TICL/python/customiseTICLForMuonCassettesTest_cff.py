@@ -89,14 +89,17 @@ def customiseTICLForMuonCassettesTest(process):
         recHits = cms.InputTag("HGCalRecHit","HGCEERecHits"),
         timeClname = cms.string('timeLayerCluster')
     )
-    
-    process.hgcalCaloClustersFromSoA = hgcalCaloClustersFromSoA.clone(
+
+    process.hgcalMergeLayerClusters = hgcalMergeLayerClusters.clone(
         layerClusters = cms.VInputTag("hgcalLayerClustersMuonCassettesTestEE"),
-        timeClname = cms.string('timeLayerCluster'),
-        time_layerclusters = cms.VInputTag("hgcalLayerClustersMuonCassettesTestEE:timeLayerCluster")
     )
 
-    process.hgcalLocalRecoTask = cms.Task(process.HGCalRecHit, process.HGCalUncalibRecHit, process.hgcalLayerClustersMuonCassettesTestEE, process.hgcalCaloClustersFromSoA, process.recHitMapProducer)
+    process.hgcalCaloClustersFromSoA = hgcalCaloClustersFromSoA.clone(
+        src = 'hgcalMergeLayerClusters',
+        timeClname = cms.string('timeLayerCluster'),
+    )
+
+    process.hgcalLocalRecoTask = cms.Task(process.HGCalRecHit, process.HGCalUncalibRecHit, process.hgcalLayerClustersMuonCassettesTestEE, process.hgcalMergeLayerClusters, process.hgcalCaloClustersFromSoA, process.recHitMapProducer)
 
     process.ticlLayerTileProducer = ticlLayerTileProducer.clone()
 
@@ -116,7 +119,7 @@ def customiseTICLForMuonCassettesTest(process):
       detector = cms.string('HGCAL'),
       filtered_mask = cms.InputTag("filteredLayerClustersMIP","MIP"),
       itername = cms.string('MIP'),
-      layer_clusters = cms.InputTag("hgcalCaloClustersFromSoA"),
+      layer_clusters = cms.InputTag("hgcalMergeLayerClusters"),
       layer_clusters_tiles = cms.InputTag("ticlLayerTileProducer"),
       original_mask = cms.InputTag("hgcalMergeLayerClusters","InitialLayerClustersMask"),
       patternRecognitionBy = cms.string('CA'),

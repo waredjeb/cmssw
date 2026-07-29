@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -35,7 +35,7 @@ namespace ticl {
     virtual ~TracksterInferenceAlgoBase() = default;
 
     // Build minibatches internally.
-    virtual void runInference(const std::vector<reco::CaloCluster>& layerClusters,
+    virtual void runInference(const reco::CaloClusterSoAConstView& layerClusters,
                               std::vector<Trackster>& tracksters,
                               const hgcal::RecHitTools& rhtools) const = 0;
 

@@ -44,7 +44,7 @@ filteredLayerClustersHFNoseHAD = filteredLayerClustersHAD.clone(
     min_cluster_size = 2, # inclusive
     algo_number = [9], # reco::CaloCluster::hfnose
     iteration_label = "HADn",
-    LayerClusters = 'hgcalCaloClustersFromSoAHFNose',
+    LayerClusters = 'hgcalLayerClustersHFNose',
     LayerClustersInputMask = "ticlTrackstersHFNoseTrk"
 )
 
@@ -52,12 +52,11 @@ filteredLayerClustersHFNoseHAD = filteredLayerClustersHAD.clone(
 
 ticlTrackstersHFNoseHAD = ticlTrackstersHAD.clone(
     detector = "HFNose",
-    layer_clusters = "hgcalCaloClustersFromSoAHFNose",
+    layer_clusters = "hgcalLayerClustersHFNose",
     layer_clusters_hfnose_tiles = "ticlLayerTileHFNose",
     original_mask = "ticlTrackstersHFNoseTrk",
     filtered_mask = "filteredLayerClustersHFNoseHAD:HADn",
     seeding_regions = "ticlSeedingGlobalHFNose",
-    time_layerclusters = "hgcalCaloClustersFromSoAHFNose:timeLayerCluster",
     patternRecognitionBy = cms.string('CA'),
     pluginPatternRecognitionByCA = dict(
        pid_threshold = 0.,

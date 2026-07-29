@@ -78,10 +78,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       output.zeroInitialise(iEvent.queue());
       auto output_v = output.view();
 
-      // caloID is deliberately left zero-initialised here: it has a virtual
-      // destructor, so it is neither constructible on device nor safely
-      // copyable to it. HGCalLayerClustersFromSoAProducer sets it host-side
-      // when it builds the host cluster collection.
 
       // Allocate workspace SoA cluster
       HGCalSoAClustersExtraDeviceCollection outputWorkspace(iEvent.queue(), num_clusters_);

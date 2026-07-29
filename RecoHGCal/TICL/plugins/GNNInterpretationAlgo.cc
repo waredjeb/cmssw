@@ -189,7 +189,7 @@ std::vector<float> GNNInterpretationAlgo::padFeatures(const std::vector<float>& 
 void GNNInterpretationAlgo::buildGraphFromNodes(const std::tuple<Vector, AlgebraicMatrix55, int>& TrackInfo,
                                                 const reco::Track& track,
                                                 const edm::MultiSpan<Trackster>& tracksters,
-                                                const std::vector<reco::CaloCluster>& clusters,
+                                                const reco::CaloClusterSoAConstView& clusters,
                                                 const std::vector<ticl::Node>& nodeVec,
                                                 GraphData& outGraphData) {
   outGraphData = {};  // clear previous data
@@ -316,7 +316,7 @@ void GNNInterpretationAlgo::buildGraphFromNodes(const std::tuple<Vector, Algebra
     float max_dist = 0.f;
 
     for (const auto& vtx : vertices) {
-      const auto& cl = clusters[vtx];
+      const auto& cl = clusters.position()[vtx];
       const float dist = std::sqrt(std::pow(cl.x() - src_feats[4], 2) + std::pow(cl.y() - src_feats[5], 2) +
                                    std::pow(std::abs(cl.z()) - src_feats[6], 2));
       min_dist = std::min(min_dist, dist);

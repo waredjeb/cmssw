@@ -143,9 +143,6 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
 
   auto totalNumberOfClusters = offsets.back() + numberOfClustersPerLayer_.back();
 
-  // The association map is a CSR structure, so its content buffer has to be
-  // sized up front: count the cells that ended up in a cluster (outliers, with
-  // clusterIndex == -1, carry no hit entry).
   int totalNumberOfHits = 0;
   for (unsigned int layerId = 0; layerId < 2 * maxlayer_ + 2; ++layerId) {
     for (auto clusterIndex : cells_[layerId].clusterIndex) {
@@ -157,10 +154,7 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
   ticl::LayerClustersAndAssociations clustersAndAssociations(totalNumberOfClusters, totalNumberOfHits);
   auto clusters_v = clustersAndAssociations.layer_clusters->view();
   auto hits_v = clustersAndAssociations.hits_and_fractions->view();
-  // Running write cursor into the map content, i.e. the offset of the cluster
-  // currently being filled. Clusters are visited in increasing global index, so
-  // writing keys_offsets()[globalClusterIndex] on entry (plus the terminator
-  // below) yields a monotonic, complete offsets array.
+
   int hitsOffset = 0;
 
   std::vector<std::vector<int>> cellsIdInCluster;
@@ -264,16 +258,9 @@ ticl::LayerClustersAndAssociations HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool
       clusters_v.position()[globalClusterIndex].x() = x;
       clusters_v.position()[globalClusterIndex].y() = y;
       clusters_v.position()[globalClusterIndex].z() = z;
-      // Per-side, 1-based layer, i.e. rhtools_.getLayerWithOffset(seed): populate()
-      // stores the cell under layerId = (getLayerWithOffset - 1) + zside * maxlayer_,
-      // so the z side folds out again here. Keep this convention in sync with the
-      // alpaka path (HGCalLayerClustersSoAAlgoWrapper) — every TICL consumer
-      // re-derives the layer this way.
       clusters_v.position()[globalClusterIndex].layer() = layerId % maxlayer_ + 1;
       clusters_v.position()[globalClusterIndex].cells() = static_cast<int>(cl.size());
       clusters_v.energy()[globalClusterIndex].energy() = energy;
-      // reco::CaloCluster leaves both corrected energies at -1 unless a
-      // correction is applied; the SoA has no default, so set them explicitly.
       clusters_v.energy()[globalClusterIndex].correctedEnergy() = -1.f;
       clusters_v.energy()[globalClusterIndex].correctedEnergyUncertainty() = -1.f;
       clusters_v.indexes()[globalClusterIndex].caloID() = reco::CaloID(reco::CaloID::DET_HGCAL_ENDCAP);

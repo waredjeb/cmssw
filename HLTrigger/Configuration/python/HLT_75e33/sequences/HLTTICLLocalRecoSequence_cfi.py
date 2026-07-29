@@ -23,6 +23,8 @@ from Configuration.ProcessModifiers.alpaka_cff import alpaka
 from Configuration.ProcessModifiers.alpakaValidationHLT_cff import alpakaValidationHLT
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 
+# hltCaloClustersFromSoA kept as sequence feeds edm::Ref consumers which read AoS
+
 HLTTICLLocalRecoSequence = cms.Sequence(
         hltHGCalUncalibRecHit+
         hltHGCalRecHit+

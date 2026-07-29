@@ -2,6 +2,7 @@
 // A simplistic 1/N(tracksters) sharing is applied for hits that belong to multiple tracksters.
 // Alternatively takes the energy value from the pre-calculated regressed energy value in the Trackster.
 
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -19,18 +20,17 @@ namespace ticl {
     std::tuple<TracksterMomentumPluginBase::LorentzVector, float> calcP4(
         const ticl::Trackster& trackster,
         const reco::Vertex& vertex,
-        const std::vector<reco::CaloCluster>& calo_clusters) const;
+        const reco::CaloClusterSoAConstView& calo_clusters) const;
     bool energy_from_regression_;
     edm::EDGetTokenT<std::vector<reco::Vertex>> vertex_token_;
-    edm::EDGetTokenT<std::vector<reco::CaloCluster>> layer_clusters_token_;
+    edm::EDGetTokenT<reco::CaloClusterHostCollection> layer_clusters_token_;
   };
 
   TracksterP4FromEnergySum::TracksterP4FromEnergySum(const edm::ParameterSet& ps, edm::ConsumesCollector&& ic)
       : TracksterMomentumPluginBase(ps, std::move(ic)),
         energy_from_regression_(ps.getParameter<bool>("energyFromRegression")),
         vertex_token_(ic.consumes<std::vector<reco::Vertex>>(ps.getParameter<edm::InputTag>("vertices"))),
-        layer_clusters_token_(
-            ic.consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layerClusters"))) {}
+        layer_clusters_token_(ic.consumes(ps.getParameter<edm::InputTag>("layerClusters"))) {}
 
   void TracksterP4FromEnergySum::setP4(const std::vector<const Trackster*>& tracksters,
                                        std::vector<TICLCandidate>& ticl_cands,
@@ -47,13 +47,12 @@ namespace ticl {
       }
     }
 
-    edm::Handle<std::vector<reco::CaloCluster>> layer_clusters_h;
-    event.getByToken(layer_clusters_token_, layer_clusters_h);
+    const auto& layer_clusters = event.get(layer_clusters_token_).const_view();
 
     auto size = std::min(tracksters.size(), ticl_cands.size());
     for (size_t i = 0; i < size; ++i) {
       const auto* trackster = tracksters[i];
-      auto ret = calcP4(*trackster, best_vertex, *layer_clusters_h);
+      auto ret = calcP4(*trackster, best_vertex, layer_clusters);
 
       auto& ticl_cand = ticl_cands[i];
       ticl_cand.setP4(std::get<0>(ret));
@@ -64,7 +63,7 @@ namespace ticl {
   std::tuple<TracksterMomentumPluginBase::LorentzVector, float> TracksterP4FromEnergySum::calcP4(
       const ticl::Trackster& trackster,
       const reco::Vertex& vertex,
-      const std::vector<reco::CaloCluster>& calo_clusters) const {
+      const reco::CaloClusterSoAConstView& calo_clusters) const {
     std::array<double, 3> barycentre{{0., 0., 0.}};
     double energy = 0.;
     size_t counter = 0;
@@ -72,11 +71,12 @@ namespace ticl {
     for (auto idx : trackster.vertices()) {
       auto n_vertices = trackster.vertex_multiplicity(counter++);
       auto fraction = n_vertices ? 1.f / n_vertices : 1.f;
-      auto weight = calo_clusters[idx].energy() * fraction;
+      auto weight = calo_clusters.energy()[idx].energy() * fraction;
       energy += weight;
-      barycentre[0] += calo_clusters[idx].x() * weight;
-      barycentre[1] += calo_clusters[idx].y() * weight;
-      barycentre[2] += calo_clusters[idx].z() * weight;
+      auto const& position = calo_clusters.position()[idx];
+      barycentre[0] += position.x() * weight;
+      barycentre[1] += position.y() * weight;
+      barycentre[2] += position.z() * weight;
     }
     std::transform(
         std::begin(barycentre), std::end(barycentre), std::begin(barycentre), [&energy](double val) -> double {

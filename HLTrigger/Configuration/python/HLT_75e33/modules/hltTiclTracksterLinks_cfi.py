@@ -3,8 +3,7 @@ from ..psets.hltTiclTracksterLinksPSet_cfi import hltTiclTracksterLinksPSet
 
 hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
     detector = cms.string('HGCAL'),
-    layer_clusters = cms.InputTag("hltCaloClustersFromSoA"),
-    layer_clustersTime = cms.InputTag("hltCaloClustersFromSoA","timeLayerCluster"),
+    layer_clusters = cms.InputTag("hltMergeLayerClusters"),
     inferenceAlgo = cms.string(''),
     linkingPSet = hltTiclTracksterLinksPSet,
     pluginInferenceAlgoTracksterInferenceByDNN = cms.PSet(
