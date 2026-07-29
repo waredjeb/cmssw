@@ -4,7 +4,7 @@ hltTiclTrackstersCLUE3DBarrel = cms.EDProducer("TrackstersProducer",
     detector = cms.string('Barrel'),
     filtered_mask = cms.InputTag("hltFilteredLayerClustersCLUE3DBarrel","CLUE3DBarrel"), # TODO change filter
     itername = cms.string('CLUE3DBarrel'),
-    layer_clusters = cms.InputTag("hltMergeLayerClusters"),
+    layer_clusters = cms.InputTag("hltCaloClustersFromSoA"),
     layer_clusters_hfnose_tiles = cms.InputTag("ticlLayerTileHFNose"),
     layer_clusters_tiles = cms.InputTag("hltTiclLayerTileProducer"),
     layer_clusters_barrel_tiles = cms.InputTag("hltTiclLayerTileBarrelProducer:ticlLayerTilesBarrel"),
@@ -135,5 +135,5 @@ hltTiclTrackstersCLUE3DBarrel = cms.EDProducer("TrackstersProducer",
         type = cms.string('TracksterInferenceByPFN')
     ),
     seeding_regions = cms.InputTag("hltTiclSeedingGlobal"),
-    time_layerclusters = cms.InputTag("hltMergeLayerClusters","timeLayerCluster")
+    time_layerclusters = cms.InputTag("hltCaloClustersFromSoA","timeLayerCluster")
     )

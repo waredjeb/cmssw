@@ -45,7 +45,7 @@ public:
     desc.add<bool>("skipNonExistingSrc", false)
         ->setComment("whether or not to skip producing the table on absent input product");
     desc.add<std::string>("tableName", "hltMergeLayerClusters")->setComment("name of the flat table ouput");
-    desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hltMergeLayerClusters", "timeLayerCluster"));
+    desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hltCaloClustersFromSoA", "timeLayerCluster"));
     desc.add<int>("precision", 7);
     descriptions.addWithDefaultLabel(desc);
   }

@@ -7,6 +7,7 @@ from ..modules.hltHgcalLayerClustersEEL1Seeded_cfi import *
 from ..modules.hltHgcalLayerClustersHSciL1Seeded_cfi import *
 from ..modules.hltHgcalLayerClustersHSiL1Seeded_cfi import *
 from ..modules.hltMergeLayerClustersL1Seeded_cfi import *
+from ..modules.hltCaloClustersFromSoA_cfi import *
 from ..modules.hltHGCalRecHitL1Seeded_cfi import *
 from ..modules.hltHGCalUncalibRecHitL1Seeded_cfi import *
 from ..modules.hltL1TEGammaHGCFilteredCollectionProducer_cfi import *
@@ -33,7 +34,8 @@ _HgcalLocalRecoL1SeededSequence = cms.Sequence(hltHgcalDigis+
                                                hltHgcalLayerClustersEEL1Seeded+
                                                hltHgcalLayerClustersHSciL1Seeded+
                                                hltHgcalLayerClustersHSiL1Seeded+
-                                               hltMergeLayerClustersL1Seeded)
+                                               hltMergeLayerClustersL1Seeded+
+                                               hltCaloClustersFromSoAL1Seeded)
 
 _HgcalTICLPatternRecognitionL1SeededSequence = cms.Sequence(hltFilteredLayerClustersCLUE3DHighL1Seeded+
                                                             hltTiclSeedingL1+
@@ -76,6 +78,7 @@ _HgcalLocalRecoL1SeededSequence_barrel = cms.Sequence(
     hltHgcalLayerClustersHSciL1Seeded+
     hltHgcalLayerClustersHSiL1Seeded+
     hltBarrelLayerClustersEBL1Seeded+
-    hltMergeLayerClustersL1Seeded
+    hltMergeLayerClustersL1Seeded+
+    hltCaloClustersFromSoAL1Seeded
 ) 
 ticl_barrel.toReplaceWith(_HgcalLocalRecoL1SeededSequence, _HgcalLocalRecoL1SeededSequence_barrel)

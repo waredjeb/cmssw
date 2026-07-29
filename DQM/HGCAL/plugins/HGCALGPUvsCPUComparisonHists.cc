@@ -67,8 +67,8 @@ HGCALGPUvsCPUComparisonHists::HGCALGPUvsCPUComparisonHists(const edm::ParameterS
 
 void HGCALGPUvsCPUComparisonHists::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("monitoredLayerClusters", edm::InputTag("hltMergeLayerClusters"));
-  desc.add<edm::InputTag>("referenceLayerClusters", edm::InputTag("hltMergeLayerClustersSerialSync"));
+  desc.add<edm::InputTag>("monitoredLayerClusters", edm::InputTag("hltCaloClustersFromSoA"));
+  desc.add<edm::InputTag>("referenceLayerClusters", edm::InputTag("hltCaloClustersFromSoASerialSync"));
   desc.add<std::string>("topFolderName", "HLT/HeterogeneousComparisons/HGCalMonitoring");
   descriptions.addWithDefaultLabel(desc);
 }

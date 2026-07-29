@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 layerClusterSimTracksterAssociation = cms.EDProducer("LCToSimTSAssociatorEDProducer",
-    label_lc = cms.InputTag("hgcalMergeLayerClusters"),
+    label_lc = cms.InputTag("hgcalCaloClustersFromSoA"),
     label_simTst = cms.InputTag("ticlSimTracksters"),
     associator = cms.InputTag('lcSimTSAssocByEnergyScoreProducer'),
     label_cp = cms.InputTag("mix","MergedCaloTruth"),
@@ -17,7 +17,7 @@ premix_stage2.toModify(layerClusterSimTracksterAssociation,
 )
 
 layerClusterSimTracksterAssociationHFNose = layerClusterSimTracksterAssociation.clone(
-    label_lc = "hgcalLayerClustersHFNose"
+    label_lc = "hgcalCaloClustersFromSoAHFNose"
 )
 
 layerClusterSimTracksterAssociationBarrel = layerClusterSimTracksterAssociation.clone(

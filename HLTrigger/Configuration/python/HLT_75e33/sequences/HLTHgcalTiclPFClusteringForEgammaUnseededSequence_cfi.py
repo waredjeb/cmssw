@@ -6,6 +6,7 @@ from ..modules.hltHgcalLayerClustersEE_cfi import *
 from ..modules.hltHgcalLayerClustersHSci_cfi import *
 from ..modules.hltHgcalLayerClustersHSi_cfi import *
 from ..modules.hltMergeLayerClusters_cfi import *
+from ..modules.hltCaloClustersFromSoA_cfi import *
 from ..modules.hltHGCalRecHit_cfi import *
 from ..modules.hltHGCalUncalibRecHit_cfi import *
 from ..modules.hltParticleFlowClusterHGCalFromTICLUnseeded_cfi import *
@@ -36,7 +37,8 @@ _HgcalLocalRecoUnseededSequence = cms.Sequence(hltHgcalDigis+hltHGCalUncalibRecH
                                                hltHgcalLayerClustersEE+
                                                hltHgcalLayerClustersHSci+
                                                hltHgcalLayerClustersHSi+
-                                               hltMergeLayerClusters)
+                                               hltMergeLayerClusters+
+                                               hltCaloClustersFromSoA)
 
 _HgcalTICLPatternRecognitionUnseededSequence = cms.Sequence(hltFilteredLayerClustersCLUE3DHigh+
                                                             hltTiclSeedingGlobal+hltTiclLayerTileProducer+
@@ -61,6 +63,7 @@ alpaka.toReplaceWith(_HgcalLocalRecoUnseededSequence,
                                   + hltHgcalLayerClustersHSci
                                   + hltHgcalLayerClustersHSi
                                   + hltMergeLayerClusters
+                                  + hltCaloClustersFromSoA
                      ) 
 )
 
@@ -86,7 +89,8 @@ _HgcalLocalRecoUnseededSequence_barrel = cms.Sequence(hltHgcalDigis+hltHGCalUnca
                                                       hltHgcalLayerClustersHSi+
                                                       hltBarrelLayerClustersEB+
                                                       hltBarrelLayerClustersHB+
-                                                      hltMergeLayerClusters)
+                                                      hltMergeLayerClusters+
+                                               hltCaloClustersFromSoA)
 
 _HgcalTICLPatternRecognitionUnseededSequence_barrel = cms.Sequence(hltFilteredLayerClustersCLUE3DHigh+
                                                                    hltFilteredLayerClustersCLUE3DBarrel+

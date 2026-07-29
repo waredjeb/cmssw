@@ -33,7 +33,7 @@ from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 from SimCalorimetry.HGCalAssociatorProducers.AllLayerClusterToTracksterAssociatorsProducer_cfi import AllLayerClusterToTracksterAssociatorsProducer as _AllLayerClusterToTracksterAssociatorsProducer
 
 hltAllLayerClusterToTracksterAssociations = _AllLayerClusterToTracksterAssociatorsProducer.clone(
-    layer_clusters = cms.InputTag("hltMergeLayerClusters"),
+    layer_clusters = cms.InputTag("hltCaloClustersFromSoA"),
     tracksterCollections = cms.VInputTag(
         *[cms.InputTag(label) for label in _hltTiclIterLabelsPSet.labels],
         cms.InputTag("hltTiclSimTracksters"),
@@ -43,7 +43,7 @@ hltAllLayerClusterToTracksterAssociations = _AllLayerClusterToTracksterAssociato
 
 hltAllTrackstersToSimTrackstersAssociationsByLCs = _allTrackstersToSimTrackstersAssociationsByLCs.clone(
     allLCtoTSAccoc =  cms.string("hltAllLayerClusterToTracksterAssociations"),
-    layerClusters = cms.InputTag("hltMergeLayerClusters"),
+    layerClusters = cms.InputTag("hltCaloClustersFromSoA"),
     tracksterCollections = cms.VInputTag(
         *[cms.InputTag(label) for label in _hltTiclIterLabelsPSet.labels]
     ),
@@ -65,7 +65,7 @@ from SimCalorimetry.HGCalAssociatorProducers.AllHitToTracksterAssociatorsProduce
 hltAllHitToTracksterAssociations =  _AllHitToTracksterAssociatorsProducer.clone(
     hitMapTag = cms.InputTag("hltHGCalRecHitMapProducer","hgcalRecHitMap"),
     hits = cms.InputTag("hltHGCalRecHitMapProducer", "RefProdVectorHGCRecHitCollection"),
-    layerClusters = cms.InputTag("hltMergeLayerClusters"),
+    layerClusters = cms.InputTag("hltCaloClustersFromSoA"),
     tracksterCollections = cms.VInputTag(
         *[cms.InputTag(label) for label in _hltTiclIterLabelsPSet.labels],
         cms.InputTag("hltTiclSimTracksters"),
@@ -90,6 +90,10 @@ from SimCalorimetry.HGCalAssociatorProducers.hltLCToCPAssociation_cfi import hlt
 from SimCalorimetry.HGCalAssociatorProducers.hltLCToSCAssociation_cfi import hltHGCalLCToSCAssociatorByEnergyScoreProducer, hltHGCalLayerClusterSimClusterAssociation
 
 hltHgcalAssociatorsTask = cms.Task(hltHGCalRecHitMapProducer,
+                                   # hltRecHitMapProducer feeds the hitMapTag/hits of the
+                                   # hlt{HGCal,Barrel}LCTo{SC,CP}AssociatorByEnergyScoreProducers;
+                                   # without it here they never see a hit map.
+                                   hltRecHitMapProducer,
                                    hltHGCalLCToCPAssociatorByEnergyScoreProducer,
                                    hltHGCalLCToSCAssociatorByEnergyScoreProducer,
                                    SimClusterToCaloParticleAssociation,

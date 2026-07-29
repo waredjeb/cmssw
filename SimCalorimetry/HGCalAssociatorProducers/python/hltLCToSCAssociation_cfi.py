@@ -15,10 +15,10 @@ hltHGCalLCToSCAssociatorByEnergyScoreProducer = scAssocByEnergyScoreProducer.clo
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import barrelLayerClusterSimClusterAssociation as _barrelLayerClusterSimClusterAssociation
 hltBarrelLayerClusterSimClusterAssociation = _barrelLayerClusterSimClusterAssociation.clone(
     associator = 'hltBarrelLCToSCAssociatorByEnergyScoreProducer',
-    label_lcl = 'hltMergeLayerClusters'
+    label_lcl = 'hltCaloClustersFromSoA'
 )
 from SimCalorimetry.HGCalAssociatorProducers.LCToSCAssociation_cfi import layerClusterSimClusterAssociation as _layerClusterSimClusterAssociation
 hltHGCalLayerClusterSimClusterAssociation = _layerClusterSimClusterAssociation.clone(
     associator = 'hltHGCalLCToSCAssociatorByEnergyScoreProducer',
-    label_lcl = 'hltMergeLayerClusters'
+    label_lcl = 'hltCaloClustersFromSoA'
 )

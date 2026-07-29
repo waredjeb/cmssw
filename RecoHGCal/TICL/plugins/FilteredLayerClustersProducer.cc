@@ -57,7 +57,7 @@ void FilteredLayerClustersProducer::beginRun(edm::Run const&, edm::EventSetup co
 
 void FilteredLayerClustersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("LayerClusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("LayerClusters", edm::InputTag("hgcalCaloClustersFromSoA"));
   desc.add<edm::InputTag>("LayerClustersInputMask",
                           edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask"));
   desc.add<std::string>("iteration_label", "iterationLabelGoesHere");

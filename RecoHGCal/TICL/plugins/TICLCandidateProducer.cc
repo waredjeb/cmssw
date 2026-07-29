@@ -601,8 +601,8 @@ void TICLCandidateProducer::fillDescriptions(edm::ConfigurationDescriptions &des
   desc.add<std::vector<edm::InputTag>>("general_tracksterlinks_collections", {edm::InputTag("ticlTracksterLinks")});
   desc.add<std::vector<edm::InputTag>>("original_masks",
                                        {edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask")});
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
-  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
+  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("timingSoA", edm::InputTag("mtdSoA"));
   desc.add<edm::InputTag>("muons", edm::InputTag("muons1stStep"));

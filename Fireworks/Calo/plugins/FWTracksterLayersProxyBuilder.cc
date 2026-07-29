@@ -76,27 +76,27 @@ void FWTracksterLayersProxyBuilder::build(const FWEventItem *iItem, TEveElementL
           << "lower time bound is larger than upper time bound. Maybe opposite is desired?";
     }
   } else {
-    iItem->getEvent()->getByLabel(edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"), TimeValueMapHandle_);
+    iItem->getEvent()->getByLabel(edm::InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"), TimeValueMapHandle_);
     edm::LogWarning("DataNotFound|InvalidData")
         << __FILE__ << ":" << __LINE__
         << " couldn't locate 'hgcalLayerClusters:timeLayerCluster' ValueMap in input file. Trying to access "
-           "'hgcalMergeLayerClusters:timeLayerClusters' ValueMap";
+           "'hgcalCaloClustersFromSoA:timeLayerClusters' ValueMap";
     if (!TimeValueMapHandle_.isValid()) {
       edm::LogWarning("DataNotFound|InvalidData")
           << __FILE__ << ":" << __LINE__
-          << " couldn't locate 'hgcalMergeLayerClusters:timeLayerCluster' ValueMap in input file.";
+          << " couldn't locate 'hgcalCaloClustersFromSoA:timeLayerCluster' ValueMap in input file.";
     }
   }
 
   if (!layerClustersHandle_.isValid()) {
-    iItem->getEvent()->getByLabel(edm::InputTag("hgcalMergeLayerClusters"), layerClustersHandle_);
+    iItem->getEvent()->getByLabel(edm::InputTag("hgcalCaloClustersFromSoA"), layerClustersHandle_);
     edm::LogWarning("DataNotFound|InvalidData")
         << __FILE__ << ":" << __LINE__
         << " couldn't locate 'hgcalLayerClusters' collection "
-           "in input file. Trying to access 'hgcalMergeLayerClusters' collection.";
+           "in input file. Trying to access 'hgcalCaloClustersFromSoA' collection.";
     if (!layerClustersHandle_.isValid()) {
       edm::LogWarning("DataNotFound|InvalidData")
-          << __FILE__ << ":" << __LINE__ << " couldn't locate 'hgcalMergeLayerClusters' collection in input file.";
+          << __FILE__ << ":" << __LINE__ << " couldn't locate 'hgcalCaloClustersFromSoA' collection in input file.";
     }
   }
 

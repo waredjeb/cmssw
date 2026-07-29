@@ -69,7 +69,7 @@ template <typename HIT>
 void HitToLayerClusterAssociatorProducerT<HIT>::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
   if constexpr (std::is_same_v<HIT, HGCRecHit>) {
-    desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+    desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
     desc.add<edm::InputTag>("hitMap", edm::InputTag("recHitMapProducer", "hgcalRecHitMap"));
     desc.add<std::vector<edm::InputTag>>("hits",
                                          {edm::InputTag("HGCalRecHit", "HGCEERecHits"),

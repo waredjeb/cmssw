@@ -21,7 +21,7 @@ allTrackstersToSimTrackstersAssociationsByLCs = AllTracksterToSimTracksterAssoci
 allBarrelTrackstersToSimTrackstersAssociationsByLCs = AllTracksterToSimTracksterAssociatorsByLCsProducer.clone(
     allLCtoTSAccoc = cms.string("allBarrelLayerClusterToTracksterAssociations"),
     tracksterCollections = cms.VInputTag(['ticlTrackstersCLUE3DBarrel']),
-    layerClusters = cms.InputTag('hgcalMergeLayerClusters'),
+    layerClusters = cms.InputTag('hgcalCaloClustersFromSoA'),
     simTracksterCollections = cms.VInputTag(['ticlSimTrackstersBarrel', 'ticlSimTrackstersBarrel:fromCPs'])
 )
 

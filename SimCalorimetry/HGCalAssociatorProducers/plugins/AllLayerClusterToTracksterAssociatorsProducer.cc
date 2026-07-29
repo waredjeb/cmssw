@@ -107,7 +107,7 @@ void AllLayerClusterToTracksterAssociatorsProducer::fillDescriptions(edm::Config
                                        {edm::InputTag("ticlTrackstersCLUE3DHigh"),
                                         edm::InputTag("ticlTrackstersLinks"),
                                         edm::InputTag("ticlCandidate")});
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
   descriptions.add("AllLayerClusterToTracksterAssociatorsProducer", desc);
 }
 

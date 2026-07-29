@@ -10,7 +10,7 @@ from RecoHGCal.TICL.MIPStep_cff import ticlTrackstersMIP, filteredLayerClustersM
 
 
 from RecoHGCal.TICL.filteredLayerClustersProducer_cfi import filteredLayerClustersProducer
-from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalMergeLayerClusters
+from RecoLocalCalo.HGCalRecProducers.hgcalLayerClusters_cff import hgcalLayerClustersEE, hgcalCaloClustersFromSoA
 from RecoTracker.IterativeTracking.iterativeTk_cff import trackdnn_source
 from RecoLocalCalo.HGCalRecProducers.recHitMapProducer_cfi import recHitMapProducer
 from RecoHGCal.TICL.ticlLayerTileProducer_cfi import ticlLayerTileProducer
@@ -90,13 +90,13 @@ def customiseTICLForMuonCassettesTest(process):
         timeClname = cms.string('timeLayerCluster')
     )
     
-    process.hgcalMergeLayerClusters = hgcalMergeLayerClusters.clone(
+    process.hgcalCaloClustersFromSoA = hgcalCaloClustersFromSoA.clone(
         layerClusters = cms.VInputTag("hgcalLayerClustersMuonCassettesTestEE"),
         timeClname = cms.string('timeLayerCluster'),
         time_layerclusters = cms.VInputTag("hgcalLayerClustersMuonCassettesTestEE:timeLayerCluster")
     )
 
-    process.hgcalLocalRecoTask = cms.Task(process.HGCalRecHit, process.HGCalUncalibRecHit, process.hgcalLayerClustersMuonCassettesTestEE, process.hgcalMergeLayerClusters, process.recHitMapProducer)
+    process.hgcalLocalRecoTask = cms.Task(process.HGCalRecHit, process.HGCalUncalibRecHit, process.hgcalLayerClustersMuonCassettesTestEE, process.hgcalCaloClustersFromSoA, process.recHitMapProducer)
 
     process.ticlLayerTileProducer = ticlLayerTileProducer.clone()
 
@@ -116,7 +116,7 @@ def customiseTICLForMuonCassettesTest(process):
       detector = cms.string('HGCAL'),
       filtered_mask = cms.InputTag("filteredLayerClustersMIP","MIP"),
       itername = cms.string('MIP'),
-      layer_clusters = cms.InputTag("hgcalMergeLayerClusters"),
+      layer_clusters = cms.InputTag("hgcalCaloClustersFromSoA"),
       layer_clusters_tiles = cms.InputTag("ticlLayerTileProducer"),
       original_mask = cms.InputTag("hgcalMergeLayerClusters","InitialLayerClustersMask"),
       patternRecognitionBy = cms.string('CA'),
@@ -150,7 +150,7 @@ def customiseTICLForMuonCassettesTest(process):
     process.FEVTDEBUGHLToutput.outputCommands.append('drop *_ticlTracksters*_*_*')
     process.FEVTDEBUGHLToutput.outputCommands.append('drop *_hgcalLayerClusters*_*_*')
     process.FEVTDEBUGHLToutput.outputCommands.append('keep *_ticlTrackstersMIP_*_*')
-    process.FEVTDEBUGHLToutput.outputCommands.append('keep *_hgcalMergeLayerClusters_*_*'),
+    process.FEVTDEBUGHLToutput.outputCommands.append('keep *_hgcalCaloClustersFromSoA_*_*'),
     process.FEVTDEBUGHLToutput.outputCommands.append('keep *_HGCalRecHit_*_*',)
     process.FEVTDEBUGHLToutput.outputCommands.append('keep *_hgcalLayerClustersMuonCassettesTestEE_*_*')
     process.schedule = cms.Schedule(process.raw2digi_step,process.FEVTDEBUGHLToutput_step)

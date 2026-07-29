@@ -128,7 +128,7 @@ template <typename CLUSTER>
 void LCToSCAssociatorEDProducerT<CLUSTER>::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("label_scl", edm::InputTag("mix", "MergedCaloTruth"));
-  desc.add<edm::InputTag>("label_lcl", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("label_lcl", edm::InputTag("hgcalCaloClustersFromSoA"));
   desc.add<edm::InputTag>("associator", edm::InputTag("scAssocByEnergyScoreProducer"));
   descriptions.addWithDefaultLabel(desc);
 }

@@ -49,7 +49,7 @@ _hgcalTracksterMapper_HGCal = cms.PSet(
     thresholdsByDetector = cms.VPSet(
     ),
     tracksterSrc = cms.InputTag("ticlCandidate"),
-    clusterSrc = cms.InputTag("hgcalMergeLayerClusters"),
+    clusterSrc = cms.InputTag("hgcalCaloClustersFromSoA"),
     filterByTracksterPID = cms.bool(True),
     pid_threshold = cms.double(0.8),
     filter_on_categories = cms.vint32([0, 1]),

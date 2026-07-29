@@ -6,6 +6,7 @@ from ..modules.hltHgcalLayerClustersEE_cfi import *
 from ..modules.hltHgcalLayerClustersHSci_cfi import *
 from ..modules.hltHgcalLayerClustersHSi_cfi import *
 from ..modules.hltMergeLayerClusters_cfi import *
+from ..modules.hltCaloClustersFromSoA_cfi import *
 from ..modules.hltHGCalRecHit_cfi import *
 from ..modules.hltHGCalUncalibRecHit_cfi import *
 from ..modules.hltParticleFlowClusterHGCal_cfi import *
@@ -20,7 +21,7 @@ from ..modules.hltBarrelLayerClustersHB_cfi import *
 from ..modules.hltTiclLayerTileBarrelProducer_cfi import *
 from ..modules.hltTiclTrackstersCLUE3DBarrel_cfi import *
 
-HLTHgcalTiclPFClusteringForEgamma = cms.Sequence((hltHgcalDigis+hltHGCalUncalibRecHit+hltHGCalRecHit+hltParticleFlowRecHitHGC+hltHgcalLayerClustersEE+hltHgcalLayerClustersHSci+hltHgcalLayerClustersHSi+hltMergeLayerClusters+hltFilteredLayerClustersCLUE3DHigh+hltTiclSeedingGlobal+hltTiclLayerTileProducer+hltTiclTrackstersCLUE3DHigh+hltParticleFlowClusterHGCal+hltParticleFlowSuperClusterHGCal))
+HLTHgcalTiclPFClusteringForEgamma = cms.Sequence((hltHgcalDigis+hltHGCalUncalibRecHit+hltHGCalRecHit+hltParticleFlowRecHitHGC+hltHgcalLayerClustersEE+hltHgcalLayerClustersHSci+hltHgcalLayerClustersHSi+hltMergeLayerClusters+hltCaloClustersFromSoA+hltFilteredLayerClustersCLUE3DHigh+hltTiclSeedingGlobal+hltTiclLayerTileProducer+hltTiclTrackstersCLUE3DHigh+hltParticleFlowClusterHGCal+hltParticleFlowSuperClusterHGCal))
 
 HLTHgcalTiclPFClusteringForEgamma_barrel = cms.Sequence((
   hltHgcalDigis+
@@ -33,6 +34,7 @@ HLTHgcalTiclPFClusteringForEgamma_barrel = cms.Sequence((
   hltBarrelLayerClustersEB+
   hltBarrelLayerClustersHB+
   hltMergeLayerClusters+
+  hltCaloClustersFromSoA+
   hltFilteredLayerClustersCLUE3DHigh+
   hltTiclSeedingGlobal+
   hltTiclLayerTileProducer+

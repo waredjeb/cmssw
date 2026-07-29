@@ -5,6 +5,7 @@ hltHgcalSoALayerClustersProducer = cms.EDProducer("HGCalSoALayerClustersProducer
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string('')
     ),
+    hgcalMaxLayerPerSide = cms.InputTag("hltHgcalSoARecHitsProducer", "maxLayerPerSide"),
     hgcalRecHitsLayerClustersSoA = cms.InputTag("hltHgcalSoARecHitsLayerClustersProducer"),
     hgcalRecHitsSoA = cms.InputTag("hltHgcalSoARecHitsProducer"),
     positionDeltaRho2 = cms.double(1.69),
@@ -13,6 +14,7 @@ hltHgcalSoALayerClustersProducer = cms.EDProducer("HGCalSoALayerClustersProducer
 
 hltHgcalSoALayerClustersProducerSerialSync = makeSerialClone(hltHgcalSoALayerClustersProducer,
                                                              #feed the upstream serial modules in
+                                                             hgcalMaxLayerPerSide = ("hltHgcalSoARecHitsProducerSerialSync", "maxLayerPerSide"),
                                                              hgcalRecHitsLayerClustersSoA = "hltHgcalSoARecHitsLayerClustersProducerSerialSync",
                                                              hgcalRecHitsSoA = "hltHgcalSoARecHitsProducerSerialSync"
 )

@@ -739,7 +739,7 @@ void BarrelValidator::fillDescriptions(edm::ConfigurationDescriptions& descripti
     desc.add<edm::ParameterSetDescription>("histoProducerAlgoBlock", psd1);
   }
   desc.add<edm::InputTag>("hits", edm::InputTag("recHitMapProducer", "RefProdVectorPFRecHitCollection"));
-  desc.add<edm::InputTag>("lclTag", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("lclTag", edm::InputTag("hgcalCaloClustersFromSoA"));
   desc.add<edm::InputTag>("rechitmapTag", edm::InputTag("recHitMapProducer", "barrelRecHitMap"));
   desc.add<std::vector<edm::InputTag>>("label_tst",
                                        {

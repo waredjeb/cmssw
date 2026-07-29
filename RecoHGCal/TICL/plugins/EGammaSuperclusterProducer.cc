@@ -242,7 +242,7 @@ void EGammaSuperclusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<edm::InputTag>("ticlSuperClusters", edm::InputTag("ticlTracksterLinksSuperclusteringDNN"));
   desc.add<edm::InputTag>("ticlTrackstersEM", edm::InputTag("ticlTrackstersCLUE3DHigh"))
       ->setComment("The trackster collection used before superclustering, ie CLUE3D EM tracksters");
-  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"))
+  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalCaloClustersFromSoA"))
       ->setComment("The layer cluster collection that goes with ticlTrackstersEM");
   desc.add<double>("superclusterEtThreshold", 4.)->setComment("Minimum supercluster transverse energy.");
   desc.add<bool>("enableRegression", true)->setComment("Enable supercluster energy regression");

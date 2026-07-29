@@ -4,6 +4,7 @@ from ..modules.hltHgcalLayerClustersEE_cfi import *
 from ..modules.hltHgcalLayerClustersHSci_cfi import *
 from ..modules.hltHgcalLayerClustersHSi_cfi import *
 from ..modules.hltMergeLayerClusters_cfi import *
+from ..modules.hltCaloClustersFromSoA_cfi import *
 from ..modules.hltHGCalRecHit_cfi import *
 from ..modules.hltHGCalUncalibRecHit_cfi import *
 # Heterogeneous HGCAL EE layer clusters
@@ -28,7 +29,8 @@ HLTTICLLocalRecoSequence = cms.Sequence(
         hltHgcalLayerClustersEE+
         hltHgcalLayerClustersHSci+
         hltHgcalLayerClustersHSi+
-        hltMergeLayerClusters)
+        hltMergeLayerClusters+
+        hltCaloClustersFromSoA)
 
 _HLTTICLLocalRecoSequence_heterogeneous = cms.Sequence(
         hltHGCalUncalibRecHit+
@@ -39,7 +41,8 @@ _HLTTICLLocalRecoSequence_heterogeneous = cms.Sequence(
         hltHgCalLayerClustersFromSoAProducer+
         hltHgcalLayerClustersHSci+
         hltHgcalLayerClustersHSi+
-        hltMergeLayerClusters)
+        hltMergeLayerClusters+
+        hltCaloClustersFromSoA)
 (alpaka & (~ticl_barrel)).toReplaceWith(HLTTICLLocalRecoSequence, _HLTTICLLocalRecoSequence_heterogeneous)
 
 #Define a GPU+CPU instance of TICLLocalRecoSequence, to be triggered by 'alpakaValidationHLT' procModifier
@@ -55,12 +58,14 @@ _HLTTICLLocalRecoSequence_heterogeneousGPUCPU = cms.Sequence(
         hltHgcalLayerClustersHSci+
         hltHgcalLayerClustersHSi+
         hltMergeLayerClusters+
+        hltCaloClustersFromSoA+
         #CPU part: runs dedicated 'SerialSync' modules on CPU
         hltHgcalSoARecHitsProducerSerialSync+
         hltHgcalSoARecHitsLayerClustersProducerSerialSync+
         hltHgcalSoALayerClustersProducerSerialSync+
         hltHgCalLayerClustersFromSoAProducerSerialSync+
-        hltMergeLayerClustersSerialSync)
+        hltMergeLayerClustersSerialSync+
+        hltCaloClustersFromSoASerialSync)
 alpakaValidationHLT.toReplaceWith(HLTTICLLocalRecoSequence, _HLTTICLLocalRecoSequence_heterogeneousGPUCPU)
 
 _HLTTICLLocalRecoSequence_withBarrel = cms.Sequence(
@@ -72,7 +77,8 @@ _HLTTICLLocalRecoSequence_withBarrel = cms.Sequence(
         HLTPfRecHitUnseededSequence+
         hltBarrelLayerClustersEB+
         hltBarrelLayerClustersHB+
-        hltMergeLayerClusters
+        hltMergeLayerClusters+
+        hltCaloClustersFromSoA
 )
 (ticl_barrel & (~alpaka)).toReplaceWith(HLTTICLLocalRecoSequence, _HLTTICLLocalRecoSequence_withBarrel)
 
@@ -88,6 +94,7 @@ _HLTTICLLocalRecoSequence_heterogeneous_withBarrel = cms.Sequence(
         HLTPfRecHitUnseededSequence+
         hltBarrelLayerClustersEB+
         hltBarrelLayerClustersHB+
-        hltMergeLayerClusters
+        hltMergeLayerClusters+
+        hltCaloClustersFromSoA
 )
 (ticl_barrel & alpaka).toReplaceWith(HLTTICLLocalRecoSequence, _HLTTICLLocalRecoSequence_heterogeneous_withBarrel)

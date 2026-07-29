@@ -15,11 +15,11 @@ hltHGCalLCToCPAssociatorByEnergyScoreProducer = _lcAssocByEnergyScoreProducer.cl
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import barrelLayerClusterCaloParticleAssociation as _barrelLayerClusterCaloParticleAssociation
 hltBarrelLayerClusterCaloParticleAssociation = _barrelLayerClusterCaloParticleAssociation.clone(
     associator = 'hltBarrelLCToCPAssociatorByEnergyScoreProducer',
-    label_lc = 'hltMergeLayerClusters'
+    label_lc = 'hltCaloClustersFromSoA'
 )
 
 from SimCalorimetry.HGCalAssociatorProducers.LCToCPAssociation_cfi import layerClusterCaloParticleAssociation as _layerClusterCaloParticleAssociation
 hltHGCalLayerClusterCaloParticleAssociation = _layerClusterCaloParticleAssociation.clone(
     associator = 'hltHGCalLCToCPAssociatorByEnergyScoreProducer',
-    label_lc = 'hltMergeLayerClusters'
+    label_lc = 'hltCaloClustersFromSoA'
 )

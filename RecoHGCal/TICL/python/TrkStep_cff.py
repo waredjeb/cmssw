@@ -43,7 +43,7 @@ ticlTrkStepTask = cms.Task(ticlSeedingTrk
 # HFNOSE CLUSTER FILTERING/MASKING
 
 filteredLayerClustersHFNoseTrk = filteredLayerClustersTrk.clone(
-    LayerClusters = 'hgcalLayerClustersHFNose',
+    LayerClusters = 'hgcalCaloClustersFromSoAHFNose',
     LayerClustersInputMask = 'ticlTrackstersHFNoseEM',
     min_cluster_size = 2, # inclusive
     algo_number = [9], # reco::CaloCluster::hfnose
@@ -54,12 +54,12 @@ filteredLayerClustersHFNoseTrk = filteredLayerClustersTrk.clone(
 
 ticlTrackstersHFNoseTrk = ticlTrackstersTrk.clone(
     detector = "HFNose",
-    layer_clusters = "hgcalLayerClustersHFNose",
+    layer_clusters = "hgcalCaloClustersFromSoAHFNose",
     layer_clusters_hfnose_tiles = "ticlLayerTileHFNose",
     original_mask = 'ticlTrackstersHFNoseEM',
     filtered_mask = "filteredLayerClustersHFNoseTrk:Trkn",
     seeding_regions = "ticlSeedingTrkHFNose",
-    time_layerclusters = "hgcalLayerClustersHFNose:timeLayerCluster",
+    time_layerclusters = "hgcalCaloClustersFromSoAHFNose:timeLayerCluster",
     patternRecognitionBy = cms.string('CA'),
     pluginPatternRecognitionByCA = dict(
         filter_on_categories = [2, 4], # filter muons and charged hadrons

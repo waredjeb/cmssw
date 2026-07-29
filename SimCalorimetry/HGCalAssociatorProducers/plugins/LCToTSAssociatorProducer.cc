@@ -61,7 +61,7 @@ void LCToTSAssociatorProducer::produce(edm::StreamID, edm::Event &iEvent, const 
 
 void LCToTSAssociatorProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
   desc.add<edm::InputTag>("tracksters", edm::InputTag("ticlTracksters"));
   descriptions.add("LCToTSAssociatorProducer", desc);
 }

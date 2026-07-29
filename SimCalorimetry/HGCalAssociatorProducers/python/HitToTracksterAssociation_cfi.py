@@ -34,6 +34,6 @@ allHitToTracksterAssociations = AllHitToTracksterAssociatorsProducer.clone(
 from SimCalorimetry.HGCalAssociatorProducers.AllHitToBarrelTracksterAssociatorsProducer_cfi import AllHitToBarrelTracksterAssociatorsProducer
 
 allHitToBarrelTracksterAssociations = AllHitToBarrelTracksterAssociatorsProducer.clone(
-    layerClusters = cms.InputTag("hgcalMergeLayerClusters"),
+    layerClusters = cms.InputTag("hgcalCaloClustersFromSoA"),
     tracksterCollections = cms.VInputTag('ticlTrackstersCLUE3DBarrel', 'ticlSimTrackstersBarrel', 'ticlSimTrackstersBarrel:fromCPs')
 )

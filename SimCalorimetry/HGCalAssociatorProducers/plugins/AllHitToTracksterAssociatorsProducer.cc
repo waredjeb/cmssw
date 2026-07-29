@@ -142,7 +142,7 @@ void AllHitToTracksterAssociatorsProducerT<HIT>::produce(edm::StreamID,
 template <typename HIT>
 void AllHitToTracksterAssociatorsProducerT<HIT>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalCaloClustersFromSoA"));
   if constexpr (std::is_same_v<HIT, HGCRecHit>) {
     desc.add<std::vector<edm::InputTag>>("tracksterCollections",
                                          {edm::InputTag("ticlTrackstersCLUE3DHigh"),

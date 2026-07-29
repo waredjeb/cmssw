@@ -5,7 +5,7 @@ from SimCalorimetry.HGCalAssociatorProducers.hltLCToCPAssociation_cfi import hlt
 from SimCalorimetry.HGCalAssociatorProducers.hltLCToSCAssociation_cfi import hltBarrelLayerClusterSimClusterAssociation
 
 hltBarrelValidator = _barrelValidator.clone(
-    lclTag = 'hltMergeLayerClusters',
+    lclTag = 'hltCaloClustersFromSoA',
     hits = 'hltRecHitMapProducer:RefProdVectorPFRecHitCollection',
     rechitmapTag = 'hltRecHitMapProducer:barrelRecHitMap',
     associator = ['hltBarrelLayerClusterCaloParticleAssociation',],

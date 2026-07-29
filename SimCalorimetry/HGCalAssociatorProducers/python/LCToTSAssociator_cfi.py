@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 layerClusterToTracksterAssociation = cms.EDProducer("LCToTSAssociatorProducer",
-    layer_clusters = cms.InputTag("hgcalMergeLayerClusters"),
+    layer_clusters = cms.InputTag("hgcalCaloClustersFromSoA"),
     tracksters = cms.InputTag("ticlTracksters"),
 )
 
@@ -48,6 +48,6 @@ allLayerClusterToTracksterAssociations = AllLayerClusterToTracksterAssociatorsPr
 )
 
 allBarrelLayerClusterToTracksterAssociations = AllLayerClusterToTracksterAssociatorsProducer.clone(
-    layer_clusters = cms.InputTag("hgcalMergeLayerClusters"),
+    layer_clusters = cms.InputTag("hgcalCaloClustersFromSoA"),
     tracksterCollections = cms.VInputTag(cms.InputTag("ticlTrackstersCLUE3DBarrel"), cms.InputTag("ticlSimTrackstersBarrel"), cms.InputTag("ticlSimTrackstersBarrel", "fromCPs"))
 )

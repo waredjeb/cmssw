@@ -786,7 +786,7 @@ void HGCalValidator::fillDescriptions(edm::ConfigurationDescriptions& descriptio
     desc.add<edm::ParameterSetDescription>("histoProducerAlgoBlock", psd1);
   }
   desc.add<edm::InputTag>("hits", edm::InputTag("recHitMapProducer", "RefProdVectorHGCRecHitCollection"));
-  desc.add<edm::InputTag>("label_lcl", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("label_lcl", edm::InputTag("hgcalCaloClustersFromSoA"));
   desc.add<std::vector<edm::InputTag>>("label_tst",
                                        {
                                            edm::InputTag("ticlTrackstersCLUE3DHigh"),

@@ -34,7 +34,7 @@ ticlMIPStepTask = cms.Task(ticlSeedingGlobal
     ,ticlTrackstersMIP)
 
 filteredLayerClustersHFNoseMIP = filteredLayerClustersMIP.clone(
-    LayerClusters = 'hgcalLayerClustersHFNose',
+    LayerClusters = 'hgcalCaloClustersFromSoAHFNose',
     LayerClustersInputMask = "hgcalLayerClustersHFNose:InitialLayerClustersMask",
     iteration_label = "MIPn",
     algo_number = [9] # reco::CaloCluster::hfnose
@@ -42,12 +42,12 @@ filteredLayerClustersHFNoseMIP = filteredLayerClustersMIP.clone(
 
 ticlTrackstersHFNoseMIP = ticlTrackstersMIP.clone(
     detector = "HFNose",
-    layer_clusters = "hgcalLayerClustersHFNose",
+    layer_clusters = "hgcalCaloClustersFromSoAHFNose",
     layer_clusters_hfnose_tiles = "ticlLayerTileHFNose",
     original_mask = "hgcalLayerClustersHFNose:InitialLayerClustersMask",
     filtered_mask = "filteredLayerClustersHFNoseMIP:MIPn",
     seeding_regions = "ticlSeedingGlobalHFNose",
-    time_layerclusters = "hgcalLayerClustersHFNose:timeLayerCluster",
+    time_layerclusters = "hgcalCaloClustersFromSoAHFNose:timeLayerCluster",
     patternRecognitionBy = cms.string('CA'),
     pluginPatternRecognitionByCA = dict(min_layers_per_trackster = 6)
 )

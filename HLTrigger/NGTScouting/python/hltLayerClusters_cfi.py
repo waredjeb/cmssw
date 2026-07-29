@@ -7,7 +7,7 @@ from Validation.HGCalValidation.HLT_TICLIterLabels_cff import hltTiclIterLabelsP
 hltLayerClustersTable = cms.EDProducer(
     "LayerClustersCollectionTableProducer",
     skipNonExistingSrc=cms.bool(True),
-    src=cms.InputTag("hltMergeLayerClusters"),
+    src=cms.InputTag("hltCaloClustersFromSoA"),
     cut=cms.string(""),
     name=cms.string("hltMergeLayerClusters"),
     doc=cms.string("HLT HGCAL Layer Clusters"),
@@ -38,7 +38,7 @@ hltLayerClustersTable = cms.EDProducer(
 hltLayerClustersExtraTable = cms.EDProducer("LayerClustersExtraTableProducer",
     tableName=cms.string("hltMergeLayerClusters"),
     skipNonExistingSrc=cms.bool(True),
-    time_layerclusters=cms.InputTag("hltMergeLayerClusters", "timeLayerCluster"),
+    time_layerclusters=cms.InputTag("hltCaloClustersFromSoA", "timeLayerCluster"),
     precision=cms.int32(7))
 
 

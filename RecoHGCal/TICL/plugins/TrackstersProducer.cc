@@ -228,10 +228,10 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
-  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalCaloClustersFromSoA"));
   desc.add<edm::InputTag>("filtered_mask", edm::InputTag("filteredLayerClusters", "iterationLabelGoesHere"));
   desc.add<edm::InputTag>("original_mask", edm::InputTag("hgcalMergeLayerClusters", "InitialLayerClustersMask"));
-  desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
+  desc.add<edm::InputTag>("time_layerclusters", edm::InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"));
   desc.add<edm::InputTag>("layer_clusters_tiles", edm::InputTag("ticlLayerTileProducer"));
   desc.add<edm::InputTag>("layer_clusters_barrel_tiles",
                           edm::InputTag("ticlLayerTileProducer", "ticlLayerTilesBarrel"));

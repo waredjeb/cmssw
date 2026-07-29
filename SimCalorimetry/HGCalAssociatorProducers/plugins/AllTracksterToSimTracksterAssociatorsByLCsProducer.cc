@@ -345,7 +345,7 @@ void AllTracksterToSimTracksterAssociatorsByLCsProducer::fillDescriptions(edm::C
       "tracksterCollections", {edm::InputTag("ticlTrackstersCLUE3DHigh"), edm::InputTag("ticlTrackstersLinks")});
   desc.add<std::vector<edm::InputTag>>(
       "simTracksterCollections", {edm::InputTag("ticlSimTracksters"), edm::InputTag("ticlSimTracksters", "fromCPs")});
-  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
+  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalCaloClustersFromSoA"));
   descriptions.add("AllTracksterToSimTracksterAssociatorsByLCsProducer", desc);
 }
 

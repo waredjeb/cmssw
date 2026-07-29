@@ -1600,8 +1600,8 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
 
   desc.add<edm::InputTag>("trackstersInCand", edm::InputTag("ticlTrackstersCLUE3DHigh"));
 
-  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalMergeLayerClusters"));
-  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalMergeLayerClusters", "timeLayerCluster"));
+  desc.add<edm::InputTag>("layerClusters", edm::InputTag("hgcalCaloClustersFromSoA"));
+  desc.add<edm::InputTag>("layer_clustersTime", edm::InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"));
   desc.add<edm::InputTag>("ticlcandidates", edm::InputTag("ticlCandidate"));
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("tracksTime", edm::InputTag("tofPID:t0"));

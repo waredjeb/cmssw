@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 hltFilteredLayerClustersCLUE3DHighL1Seeded = cms.EDProducer("FilteredLayerClustersProducer",
-    LayerClusters = cms.InputTag("hltMergeLayerClustersL1Seeded"),
+    LayerClusters = cms.InputTag("hltCaloClustersFromSoAL1Seeded"),
     LayerClustersInputMask = cms.InputTag("hltMergeLayerClustersL1Seeded","InitialLayerClustersMask"),
     algo_number = cms.vint32(6, 7, 8),
     clusterFilter = cms.string('ClusterFilterByAlgoAndSize'),

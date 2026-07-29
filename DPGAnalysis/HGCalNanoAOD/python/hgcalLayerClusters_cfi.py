@@ -5,7 +5,7 @@ from PhysicsTools.NanoAOD.nano_cff import nanoMetadata
 hgcalLayerClustersTable = cms.EDProducer(
     "LayerClustersCollectionTableProducer",
     skipNonExistingSrc=cms.bool(True),
-    src=cms.InputTag("hgcalMergeLayerClusters"),
+    src=cms.InputTag("hgcalCaloClustersFromSoA"),
     cut=cms.string(""),
     name=cms.string("HGCalLayerClusters"),
     doc=cms.string("Offline HGCAL Layer Clusters"),
@@ -37,7 +37,7 @@ hgcalLayerClustersExtraTable = cms.EDProducer(
     "LayerClustersExtraTableProducer",
     tableName=cms.string("HGCalLayerClusters"),
     skipNonExistingSrc=cms.bool(True),
-    time_layerclusters=cms.InputTag("hgcalMergeLayerClusters", "timeLayerCluster"),
+    time_layerclusters=cms.InputTag("hgcalCaloClustersFromSoA", "timeLayerCluster"),
     precision=cms.int32(7)
 )
 

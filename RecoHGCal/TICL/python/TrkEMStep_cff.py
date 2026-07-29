@@ -44,7 +44,7 @@ ticlTrkEMStepTask = cms.Task(ticlSeedingTrk
 # HFNOSE CLUSTER FILTERING/MASKING
 
 filteredLayerClustersHFNoseTrkEM = filteredLayerClustersTrkEM.clone(
-    LayerClusters = 'hgcalLayerClustersHFNose',
+    LayerClusters = 'hgcalCaloClustersFromSoAHFNose',
     LayerClustersInputMask = "hgcalLayerClustersHFNose:InitialLayerClustersMask",
     min_cluster_size = 3, # inclusive
     algo_number = [9], # reco::CaloCluster::hfnose
@@ -55,12 +55,12 @@ filteredLayerClustersHFNoseTrkEM = filteredLayerClustersTrkEM.clone(
 
 ticlTrackstersHFNoseTrkEM = ticlTrackstersTrkEM.clone(
     detector = "HFNose",
-    layer_clusters = "hgcalLayerClustersHFNose",
+    layer_clusters = "hgcalCaloClustersFromSoAHFNose",
     layer_clusters_hfnose_tiles = "ticlLayerTileHFNose",
     original_mask = "hgcalLayerClustersHFNose:InitialLayerClustersMask",
     filtered_mask = "filteredLayerClustersHFNoseTrkEM:TrkEMn",
     seeding_regions = "ticlSeedingTrkHFNose",
-    time_layerclusters = "hgcalLayerClustersHFNose:timeLayerCluster",
+    time_layerclusters = "hgcalCaloClustersFromSoAHFNose:timeLayerCluster",
     patternRecognitionBy = cms.string('CA'),
     itername = "TrkEMn",
     pluginPatternRecognitionByCA = dict(
