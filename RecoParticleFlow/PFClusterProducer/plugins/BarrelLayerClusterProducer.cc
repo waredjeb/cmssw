@@ -33,6 +33,8 @@
 #include "DataFormats/ParticleFlowReco/interface/PFRecHit.h"
 
 #include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
+#include "DataFormats/TICL/interface/HitsAndFractionsHost.h"
 
 #include "RecoParticleFlow/PFClusterProducer/plugins/BarrelCLUEAlgo.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/BarrelTilesConstants.h"
@@ -49,7 +51,6 @@ public:
 
 private:
   reco::CaloCluster::AlgoId algoId_;
-  std::string timeClname_;
   unsigned int nHitsTime_;
   edm::EDGetTokenT<reco::PFRecHitCollection> hits_token_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
@@ -65,7 +66,6 @@ DEFINE_FWK_MODULE(BarrelLayerClusterProducer);
 
 BarrelLayerClusterProducer::BarrelLayerClusterProducer(const edm::ParameterSet& ps)
     : algoId_(reco::CaloCluster::undefined),
-      timeClname_(ps.getParameter<std::string>("timeClname")),
       nHitsTime_(ps.getParameter<unsigned int>("nHitsTime")),
       hits_token_{consumes<reco::PFRecHitCollection>(ps.getParameter<edm::InputTag>("recHits"))},
       caloGeomToken_{consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()} {
@@ -80,8 +80,11 @@ BarrelLayerClusterProducer::BarrelLayerClusterProducer(const edm::ParameterSet& 
 
   timeResolutionCalc_ = std::make_unique<CaloRecHitResolutionProvider>(ps.getParameterSet("timeResolutionCalc"));
   produces<std::vector<float>>("InitialLayerClustersMask");
-  produces<std::vector<reco::BasicCluster>>();
-  produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
+  // Per-cluster scalars (including timing) as a portable SoA, plus the
+  // variable-length hit lists as a separate association map. Both go into the
+  // unnamed instance: EDM resolves products by type, and the two types differ.
+  produces<reco::CaloClusterHostCollection>();
+  produces<ticl::HitsAndFractionsHost>();
 }
 
 void BarrelLayerClusterProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -129,28 +132,24 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
   }
   algo_->makeClusters();
 
-  std::unique_ptr<std::vector<reco::CaloCluster>> clusters(new std::vector<reco::CaloCluster>);
-  *clusters = algo_->getClusters(false);
-  auto clusterHandle = evt.put(std::move(clusters));
+  auto clustersAndAssociations = algo_->getClusters(false);
+  auto clusters = std::move(clustersAndAssociations.layer_clusters);
+  auto hitsAndFractions = std::move(clustersAndAssociations.hits_and_fractions);
 
-  edm::PtrVector<reco::BasicCluster> clusterPtrs;  //, clusterPtrsSharing;
+  auto clusters_v = clusters->view();
+  auto const hits_v = hitsAndFractions->const_view();
+  const int numberOfClusters = clusters_v.position().metadata().size();
 
-  std::vector<std::pair<float, float>> times;
-  times.reserve(clusterHandle->size());
-
-  for (unsigned i = 0; i < clusterHandle->size(); ++i) {
-    edm::Ptr<reco::BasicCluster> ptr(clusterHandle, i);
-    clusterPtrs.push_back(ptr);
-
+  // Timing lives in the cluster SoA now, so every cluster must be assigned here.
+  for (int i = 0; i < numberOfClusters; ++i) {
     std::pair<float, float> timeCl(-99., -1.);
 
-    const reco::CaloCluster& sCl = (*clusterHandle)[i];
-    if (sCl.size() >= nHitsTime_) {
+    if (clusters_v.position()[i].cells() >= static_cast<int>(nHitsTime_)) {
       std::vector<float> timeClhits;
       std::vector<float> timeErrorClhits;
 
-      for (auto const& hit : sCl.hitsAndFractions()) {
-        auto finder = hitmap.find(hit.first);
+      for (auto const& hit : hits_v[i]) {
+        auto finder = hitmap.find(hit.hit);
         if (finder == hitmap.end())
           continue;
 
@@ -165,18 +164,16 @@ void BarrelLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup&
       hgcalsimclustertime::ComputeClusterTime timeEstimator;
       timeCl = timeEstimator.fixSizeHighestDensity(timeClhits, timeErrorClhits, nHitsTime_);
     }
-    times.push_back(timeCl);
+    clusters_v.timing()[i].time() = timeCl.first;
+    clusters_v.timing()[i].timeError() = timeCl.second;
   }
 
   std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-  layerClustersMask->resize(clusterHandle->size(), 1.0);
+  layerClustersMask->resize(numberOfClusters, 1.0);
   evt.put(std::move(layerClustersMask), "InitialLayerClustersMask");
 
-  auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
-  edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
-  filler.insert(clusterHandle, times.begin(), times.end());
-  filler.fill();
-  evt.put(std::move(timeCl), timeClname_);
+  evt.put(std::move(clusters));
+  evt.put(std::move(hitsAndFractions));
 
   algo_->reset();
 }

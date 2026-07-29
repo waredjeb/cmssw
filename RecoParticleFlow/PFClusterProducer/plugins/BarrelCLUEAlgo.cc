@@ -98,7 +98,7 @@ void BarrelCLUEAlgoT<T>::makeClusters() {
 }
 
 template <typename T>
-std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
+ticl::LayerClustersAndAssociations BarrelCLUEAlgoT<T>::getClusters(bool) {
   std::vector<int> offsets(numberOfClustersPerLayer_.size(), 0);
 
   int maxClustersOnLayer = numberOfClustersPerLayer_[0];
@@ -111,7 +111,16 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
   }
 
   auto totalNumberOfClusters = offsets.back() + numberOfClustersPerLayer_.back();
-  clusters_v_.resize(totalNumberOfClusters);
+
+  // The cluster count is known up front, the hit count is not: with energy
+  // sharing a cell contributes an entry to every cluster it is split across, so
+  // the map content is staged here and moved into the (exactly sized) CSR
+  // buffers once the loop below has finished.
+  ticl::LayerClustersAndAssociations clustersAndAssociations(totalNumberOfClusters, 0);
+  auto clusters_v = clustersAndAssociations.layer_clusters->view();
+  std::vector<ticl::HitAndFraction> stagedHits;
+  std::vector<int> stagedOffsets(totalNumberOfClusters + 1, 0);
+
   // Store the cellId and energy for each cluster
   // We need to store the energy as a pair here because we perform the energy splitting
   std::vector<std::vector<std::pair<int, float>>> cellsIdInCluster;
@@ -161,38 +170,58 @@ std::vector<reco::BasicCluster> BarrelCLUEAlgoT<T>::getClusters(bool) {
       }
     }
 
-    std::vector<std::pair<DetId, float>> thisCluster;
     for (int clIndex = 0; clIndex < numberOfClustersPerLayer_[layerId]; clIndex++) {
       auto& cl = cellsIdInCluster[clIndex];
       auto position = calculatePosition(cl, layerId);
       float energy = 0.f;
       int seedDetId = -1;
 
+      const auto globalClusterIndex = clIndex + firstClusterIdx;
+      // Clusters are visited in increasing global index, so recording the write
+      // cursor on entry (plus the terminator below) builds a monotonic CSR.
+      stagedOffsets[globalClusterIndex] = static_cast<int>(stagedHits.size());
+
       for (auto [cellIdx, fraction] : cl) {
         energy += cellsOnLayer.weight[cellIdx] * fraction;
-        thisCluster.emplace_back(cellsOnLayer.detid[cellIdx], fraction);
+        stagedHits.push_back(ticl::HitAndFraction{cellsOnLayer.detid[cellIdx], fraction});
         if (cellsOnLayer.isSeed[cellIdx]) {
           seedDetId = cellsOnLayer.detid[cellIdx];
         }
       }
-      auto globalClusterIndex = clIndex + firstClusterIdx;
 
       if constexpr (std::is_same_v<T, EBLayerTiles>) {
-        clusters_v_[globalClusterIndex] =
-            reco::BasicCluster(energy, position, reco::CaloID::DET_ECAL_BARREL, thisCluster, algoId_);
+        clusters_v.indexes()[globalClusterIndex].caloID() = reco::CaloID(reco::CaloID::DET_ECAL_BARREL);
       } else if constexpr (std::is_same_v<T, HBLayerTiles>) {
-        clusters_v_[globalClusterIndex] =
-            reco::BasicCluster(energy, position, reco::CaloID::DET_HCAL_BARREL, thisCluster, algoId_);
+        clusters_v.indexes()[globalClusterIndex].caloID() = reco::CaloID(reco::CaloID::DET_HCAL_BARREL);
       } else {
-        clusters_v_[globalClusterIndex] =
-            reco::BasicCluster(energy, position, reco::CaloID::DET_HO, thisCluster, algoId_);
+        clusters_v.indexes()[globalClusterIndex].caloID() = reco::CaloID(reco::CaloID::DET_HO);
       }
-      clusters_v_[globalClusterIndex].setSeed(seedDetId);
-      thisCluster.clear();
+      clusters_v.position()[globalClusterIndex].x() = position.x();
+      clusters_v.position()[globalClusterIndex].y() = position.y();
+      clusters_v.position()[globalClusterIndex].z() = position.z();
+      // 1-based layer, matching the per-side convention the HGCal paths use.
+      clusters_v.position()[globalClusterIndex].layer() = static_cast<int>(layerId) + 1;
+      clusters_v.position()[globalClusterIndex].cells() = static_cast<int>(cl.size());
+      clusters_v.energy()[globalClusterIndex].energy() = energy;
+      // reco::CaloCluster leaves both corrected energies at -1 unless a
+      // correction is applied; the SoA has no default, so set them explicitly.
+      clusters_v.energy()[globalClusterIndex].correctedEnergy() = -1.f;
+      clusters_v.energy()[globalClusterIndex].correctedEnergyUncertainty() = -1.f;
+      clusters_v.indexes()[globalClusterIndex].algoID() = algoId_;
+      clusters_v.indexes()[globalClusterIndex].seedID() = DetId(seedDetId);
+      clusters_v.indexes()[globalClusterIndex].flags() = 0;
     }
     cellsIdInCluster.clear();
   }
-  return clusters_v_;
+  stagedOffsets[totalNumberOfClusters] = static_cast<int>(stagedHits.size());
+
+  clustersAndAssociations.hits_and_fractions = std::make_unique<ticl::HitsAndFractionsHost>(
+      cms::alpakatools::host(), static_cast<int>(stagedHits.size()), totalNumberOfClusters);
+  auto hits_v = clustersAndAssociations.hits_and_fractions->view();
+  std::copy(stagedHits.begin(), stagedHits.end(), hits_v.content().values().data());
+  std::copy(stagedOffsets.begin(), stagedOffsets.end(), hits_v.offsets().keys_offsets().data());
+
+  return clustersAndAssociations;
 }
 
 template <typename T>

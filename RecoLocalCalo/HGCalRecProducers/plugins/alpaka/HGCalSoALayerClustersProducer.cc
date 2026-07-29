@@ -78,17 +78,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       output.zeroInitialise(iEvent.queue());
       auto output_v = output.view();
 
-      // caloID has a virtual destructor and host-only methods, so it cannot be
-      // constructed on device: fill it here, host-side, with an explicit H2D
-      // copy of DET_HGCAL_ENDCAP repeated for every cluster. caloIDs must stay
-      // alive until this (potentially async) copy has completed, so it is
-      // declared in the same scope as the rest of this queue-synchronizing
-      // produce() call, matching HGCalSoARecHitsProducer's cells.
-      std::vector<::reco::CaloID> caloIDs(num_clusters_, ::reco::CaloID(::reco::CaloID::DET_HGCAL_ENDCAP));
-      auto caloIDs_host = cms::alpakatools::make_host_view<::reco::CaloID const>(caloIDs.data(), num_clusters_);
-      auto caloIDs_device =
-          cms::alpakatools::make_device_view<::reco::CaloID>(iEvent.queue(), output_v.indexes().caloID());
-      alpaka::memcpy(iEvent.queue(), caloIDs_device, caloIDs_host);
+      // caloID is deliberately left zero-initialised here: it has a virtual
+      // destructor, so it is neither constructible on device nor safely
+      // copyable to it. HGCalLayerClustersFromSoAProducer sets it host-side
+      // when it builds the host cluster collection.
 
       // Allocate workspace SoA cluster
       HGCalSoAClustersExtraDeviceCollection outputWorkspace(iEvent.queue(), num_clusters_);

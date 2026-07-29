@@ -9,8 +9,13 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
-#include "DataFormats/EgammaReco/interface/BasicCluster.h"
-#include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
+#include "DataFormats/TICL/interface/HitsAndFractionsHost.h"
+
+#include "HeterogeneousCore/AlpakaInterface/interface/host.h"
+
+#include <cassert>
+#include <vector>
 
 class MergeClusterProducer : public edm::stream::EDProducer<> {
 public:
@@ -38,91 +43,47 @@ public:
   void produce(edm::Event &, const edm::EventSetup &) override;
 
 private:
-  std::vector<edm::EDGetTokenT<std::vector<reco::CaloCluster>>> tokens_;
-
-  std::vector<edm::EDGetTokenT<edm::ValueMap<std::pair<float, float>>>> time_tokens_;
-  std::string timeClname_;
-  /**
-   * @brief method merge three vectors of reco::CaloCluster to one
-   *
-   * @param[out] merge the vector into which others vectors will be merge
-   * @param[in] EE vector for Electromagnetic silicon
-   * @param[in] HSi vector for Hardon silicon
-   * @param[in] ESci vector for hadron scintillator
-  */
-  void mergeTogether(std::vector<reco::CaloCluster> &merge, std::vector<std::vector<reco::CaloCluster>> &clusters);
+  // Each layer-cluster producer emits a cluster SoA and, under the same label,
+  // the matching hits-and-fractions association map. The two are consumed from
+  // the same InputTag: EDM resolves products by type.
+  std::vector<edm::EDGetTokenT<reco::CaloClusterHostCollection>> tokens_;
+  std::vector<edm::EDGetTokenT<ticl::HitsAndFractionsHost>> hits_tokens_;
 
   /**
-   * @brief copy all values from vm to to
+   * @brief Append one input cluster SoA to the merged one
    *
-   * @param[in] vm Value map with values
-   * @param[out] to vector to will be copy value map
+   * @param[out] merged the collection the input is appended to
+   * @param[in] input the collection to append
+   * @param[in] start index in merged at which the input is written
   */
-  void addTo(std::vector<std::pair<float, float>> &to, const edm::ValueMap<std::pair<float, float>> &vm) {
-    size_t size = vm.size();
-    for (size_t i = 0; i < size; ++i) {
-      to.push_back(vm.get(i));
-    }
-  }
+  static void mergeClusters(reco::CaloClusterHostCollection::View &merged,
+                            const reco::CaloClusterHostCollection::ConstView &input,
+                            int start);
+
   /**
-   * @brief Merge value map of time for all parts of detector together  to vector times
+   * @brief Append one input association map to the merged one
    *
-   * @param[in] evt Event to get time value maps
-   * @param[in] size of all 3 value maps
-   * @param[out] times vector of merged time vectors
+   * The map is keyed by cluster index, so the keys are shifted by the same
+   * amount as the clusters (clusterStart) and the offsets by the number of hits
+   * already written (hitStart). Keeping these two in step with mergeClusters is
+   * what makes merged[i] the hit list of merged cluster i.
   */
-  void mergeTime(edm::Event &evt, size_t size, std::vector<std::pair<float, float>> &times) {
-    // get values from all three part of detectors
-    std::vector<edm::ValueMap<std::pair<float, float>>> time_maps;
-    for (auto token : time_tokens_) {
-      edm::Handle<edm::ValueMap<std::pair<float, float>>> handle;
-      evt.getByToken(token, handle);
-      time_maps.push_back(*handle);
-    }
-    times.reserve(size);
-    for (const auto &vm : time_maps) {
-      addTo(times, vm);
-    }
-  }
-  /**
-   * @brief get info form event and then call merge
-   *
-   * it is used for merge and clusters and time
-   *
-   * @param[in] evt Event
-   * @param[in] EE_token token for Electromagnetic silicon
-   * @param[in] HSi_token token for Hardon silicon
-   * @param[in] ESci_token token for hadron scintillator
-   * @return merged result
-  */
-  template <typename T>
-  void createMerge(edm::Event &evt, std::vector<edm::EDGetTokenT<T>> &tokens, T &merge) {
-    std::vector<T> handles;
-    for (auto token : tokens) {
-      edm::Handle<T> handle;
-      evt.getByToken(token, handle);
-      handles.push_back(*handle);
-    }
-    mergeTogether(merge, handles);
-  }
+  static void mergeHitsAndFractions(ticl::HitsAndFractionsHost::View &merged,
+                                    const ticl::HitsAndFractionsHost::ConstView &input,
+                                    int clusterStart,
+                                    int hitStart);
 };
 
-MergeClusterProducer::MergeClusterProducer(const edm::ParameterSet &ps)
-    : timeClname_(ps.getParameter<std::string>("timeClname")) {
+MergeClusterProducer::MergeClusterProducer(const edm::ParameterSet &ps) {
   std::vector<edm::InputTag> tags = ps.getParameter<std::vector<edm::InputTag>>("layerClusters");
   for (auto &tag : tags) {
-    tokens_.push_back(consumes<std::vector<reco::CaloCluster>>(tag));
-  }
-  std::vector<edm::InputTag> time_tags = ps.getParameter<std::vector<edm::InputTag>>("time_layerclusters");
-  for (auto &tag : time_tags) {
-    time_tokens_.push_back(consumes<edm::ValueMap<std::pair<float, float>>>(tag));
+    tokens_.push_back(consumes<reco::CaloClusterHostCollection>(tag));
+    hits_tokens_.push_back(consumes<ticl::HitsAndFractionsHost>(tag));
   }
 
   produces<std::vector<float>>("InitialLayerClustersMask");
-  produces<std::vector<reco::BasicCluster>>();
-  produces<std::vector<reco::BasicCluster>>("sharing");
-  //time for layer clusters
-  produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
+  produces<reco::CaloClusterHostCollection>();
+  produces<ticl::HitsAndFractionsHost>();
 }
 
 void MergeClusterProducer::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
@@ -133,49 +94,86 @@ void MergeClusterProducer::fillDescriptions(edm::ConfigurationDescriptions &desc
                                        {edm::InputTag("hgcalLayerClustersEE"),
                                         edm::InputTag("hgcalLayerClustersHSi"),
                                         edm::InputTag("hgcalLayerClustersHSci")});
-  //time
-  desc.add<std::vector<edm::InputTag>>("time_layerclusters",
-                                       {edm::InputTag("hgcalLayerClustersEE:timeLayerCluster"),
-                                        edm::InputTag("hgcalLayerClustersHSi:timeLayerCluster"),
-                                        edm::InputTag("hgcalLayerClustersHSci:timeLayerCluster")});
-  desc.add<std::string>("timeClname", "timeLayerCluster");
   descriptions.add("hgcalMergeLayerClusters", desc);
 }
 
 void MergeClusterProducer::produce(edm::Event &evt, const edm::EventSetup &es) {
-  //merge clusters
-  std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
-  createMerge(evt, tokens_, *clusters);
-  //put new clusters to event
-  auto clusterHandle = evt.put(std::move(clusters));
+  std::vector<edm::Handle<reco::CaloClusterHostCollection>> clusterHandles;
+  std::vector<edm::Handle<ticl::HitsAndFractionsHost>> hitsHandles;
+  int totalClusters = 0;
+  int totalHits = 0;
+
+  for (size_t i = 0; i < tokens_.size(); ++i) {
+    auto const &clusterHandle = evt.getHandle(tokens_[i]);
+    auto const &hitsHandle = evt.getHandle(hits_tokens_[i]);
+    totalClusters += clusterHandle->view().position().metadata().size();
+    totalHits += hitsHandle->const_view().size();
+    clusterHandles.push_back(clusterHandle);
+    hitsHandles.push_back(hitsHandle);
+  }
+
+  auto merged = std::make_unique<reco::CaloClusterHostCollection>(
+      cms::alpakatools::host(), totalClusters, totalClusters, totalClusters, totalClusters);
+  auto mergedHits = std::make_unique<ticl::HitsAndFractionsHost>(cms::alpakatools::host(), totalHits, totalClusters);
+  auto merged_v = merged->view();
+  auto mergedHits_v = mergedHits->view();
+
+  int clusterStart = 0;
+  int hitStart = 0;
+  for (size_t i = 0; i < clusterHandles.size(); ++i) {
+    auto const input_v = clusterHandles[i]->const_view();
+    auto const inputHits_v = hitsHandles[i]->const_view();
+    mergeClusters(merged_v, input_v, clusterStart);
+    mergeHitsAndFractions(mergedHits_v, inputHits_v, clusterStart, hitStart);
+    clusterStart += input_v.position().metadata().size();
+    hitStart += inputHits_v.size();
+  }
+  // CSR terminator: count(lastCluster) needs offsets[nClusters].
+  mergedHits_v.offsets()[totalClusters].keys_offsets() = hitStart;
+  // The map is keyed by position in the merged cluster collection, so a
+  // mismatch here would silently mis-associate hits rather than crash.
+  assert(clusterStart == totalClusters);
+  assert(hitStart == totalHits);
 
   //create layer cluster mask
-  std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-  layerClustersMask->resize(clusterHandle->size(), 1.0);
-  //put it into event
+  auto layerClustersMask = std::make_unique<std::vector<float>>(totalClusters, 1.0);
+
+  evt.put(std::move(merged));
+  evt.put(std::move(mergedHits));
   evt.put(std::move(layerClustersMask), "InitialLayerClustersMask");
-
-  //time
-  std::vector<std::pair<float, float>> times;
-  mergeTime(evt, clusterHandle->size(), times);
-
-  auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
-  edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
-  filler.insert(clusterHandle, times.begin(), times.end());
-  filler.fill();
-  evt.put(std::move(timeCl), timeClname_);
 }
 
-void MergeClusterProducer::mergeTogether(std::vector<reco::CaloCluster> &merge,
-                                         std::vector<std::vector<reco::CaloCluster>> &clusters) {
-  size_t clusterSize = 0;
-  for (auto &cl : clusters) {
-    clusterSize += cl.size();
+void MergeClusterProducer::mergeClusters(reco::CaloClusterHostCollection::View &merged,
+                                         const reco::CaloClusterHostCollection::ConstView &input,
+                                         int start) {
+  for (int idx = 0; idx < input.position().metadata().size(); ++idx) {
+    const auto cumulative_index = idx + start;
+    merged.position()[cumulative_index].x() = input.position()[idx].x();
+    merged.position()[cumulative_index].y() = input.position()[idx].y();
+    merged.position()[cumulative_index].z() = input.position()[idx].z();
+    merged.position()[cumulative_index].layer() = input.position()[idx].layer();
+    merged.position()[cumulative_index].cells() = input.position()[idx].cells();
+    merged.energy()[cumulative_index].energy() = input.energy()[idx].energy();
+    merged.energy()[cumulative_index].correctedEnergy() = input.energy()[idx].correctedEnergy();
+    merged.energy()[cumulative_index].correctedEnergyUncertainty() = input.energy()[idx].correctedEnergyUncertainty();
+    merged.indexes()[cumulative_index].caloID() = input.indexes()[idx].caloID();
+    merged.indexes()[cumulative_index].algoID() = input.indexes()[idx].algoID();
+    merged.indexes()[cumulative_index].seedID() = input.indexes()[idx].seedID();
+    merged.indexes()[cumulative_index].flags() = input.indexes()[idx].flags();
+    merged.timing()[cumulative_index].time() = input.timing()[idx].time();
+    merged.timing()[cumulative_index].timeError() = input.timing()[idx].timeError();
   }
-  merge.reserve(clusterSize);
+}
 
-  for (auto &cl : clusters) {
-    merge.insert(merge.end(), cl.begin(), cl.end());
+void MergeClusterProducer::mergeHitsAndFractions(ticl::HitsAndFractionsHost::View &merged,
+                                                 const ticl::HitsAndFractionsHost::ConstView &input,
+                                                 int clusterStart,
+                                                 int hitStart) {
+  for (int key = 0; key < input.keys(); ++key) {
+    merged.offsets()[key + clusterStart].keys_offsets() = input.offsets()[key].keys_offsets() + hitStart;
+  }
+  for (int idx = 0; idx < input.size(); ++idx) {
+    merged.content()[idx + hitStart].values() = input.content()[idx].values();
   }
 }
 

@@ -2,8 +2,6 @@
 // Date: 03/2023
 // @file create layer clusters
 
-#define DEBUG_CLUSTERS_ALPAKA 0
-
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -31,12 +29,12 @@
 
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 #include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/CaloRecHit/interface/CaloClusterHostCollection.h"
+#include "DataFormats/TICL/interface/HitsAndFractionsHost.h"
 
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
-#if DEBUG_CLUSTERS_ALPAKA
-#include "RecoLocalCalo/HGCalRecProducers/interface/DumpClustersDetails.h"
-#endif
+#include <span>
 
 class HGCalLayerClusterProducer : public edm::stream::EDProducer<> {
 public:
@@ -72,7 +70,6 @@ private:
   std::unique_ptr<HGCalClusteringAlgoBase> algo_;
   std::string detector_;
 
-  std::string timeClname_;
   unsigned int hitsTime_;
 
   // for calculate position
@@ -81,9 +78,6 @@ private:
   hgcal::RecHitTools rhtools_;
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
   const bool calculatePositionInAlgo_;
-#if DEBUG_CLUSTERS_ALPAKA
-  std::string moduleLabel_;
-#endif
 
   /**
    * @brief Sets algoId accordingly to the detector type
@@ -94,34 +88,30 @@ private:
    * @brief Counts position for all points in the cluster
    *
    * @param[in] hitmap hitmap to find correct RecHit
-   * @param[in] hitsAndFraction all hits in the cluster
+   * @param[in] hitsAndFractions hits of this cluster, from the association map
    * @return counted position
   */
   math::XYZPoint calculatePosition(std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
-                                   const std::vector<std::pair<DetId, float>>& hitsAndFractions);
+                                   std::span<const ticl::HitAndFraction> hitsAndFractions);
 
   /**
    * @brief Counts time for all points in the cluster
    *
    * @param[in] hitmap hitmap to find correct RecHit only for silicon (not for BH-HSci)
-   * @param[in] hitsAndFraction all hits in the cluster
+   * @param[in] hitsAndFractions hits of this cluster, from the association map
    * @return counted time
   */
   std::pair<float, float> calculateTime(std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
-                                        const std::vector<std::pair<DetId, float>>& hitsAndFractions,
+                                        std::span<const ticl::HitAndFraction> hitsAndFractions,
                                         size_t sizeCluster);
 };
 
 HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps)
     : algoId_(reco::CaloCluster::undefined),
       detector_(ps.getParameter<std::string>("detector")),  // one of EE, FH, BH, HFNose
-      timeClname_(ps.getParameter<std::string>("timeClname")),
       hitsTime_(ps.getParameter<unsigned int>("nHitsTime")),
       caloGeomToken_(consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()),
       calculatePositionInAlgo_(ps.getParameter<bool>("calculatePositionInAlgo")) {
-#if DEBUG_CLUSTERS_ALPAKA
-  moduleLabel_ = ps.getParameter<std::string>("@module_label");
-#endif
   setAlgoId();  //sets algo id according to detector type
   hits_token_ = consumes<HGCRecHitCollection>(ps.getParameter<edm::InputTag>("recHits"));
 
@@ -137,9 +127,11 @@ HGCalLayerClusterProducer::HGCalLayerClusterProducer(const edm::ParameterSet& ps
   positionDeltaRho2_ = pluginPSet.getParameter<double>("positionDeltaRho2");
 
   produces<std::vector<float>>("InitialLayerClustersMask");
-  produces<std::vector<reco::BasicCluster>>();
-  //time for layer clusters
-  produces<edm::ValueMap<std::pair<float, float>>>(timeClname_);
+  // Per-cluster scalars (including timing) as a portable SoA, plus the
+  // variable-length hit lists as a separate association map. Both go into the
+  // unnamed instance: EDM resolves products by type, and the two types differ.
+  produces<reco::CaloClusterHostCollection>();
+  produces<ticl::HitsAndFractionsHost>();
 }
 
 void HGCalLayerClusterProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -159,7 +151,7 @@ void HGCalLayerClusterProducer::fillDescriptions(edm::ConfigurationDescriptions&
 
 math::XYZPoint HGCalLayerClusterProducer::calculatePosition(
     std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
-    const std::vector<std::pair<DetId, float>>& hitsAndFractions) {
+    std::span<const ticl::HitAndFraction> hitsAndFractions) {
   float total_weight = 0.f;
   float maxEnergyValue = 0.f;
   DetId maxEnergyIndex;
@@ -168,7 +160,7 @@ math::XYZPoint HGCalLayerClusterProducer::calculatePosition(
 
   for (auto const& hit : hitsAndFractions) {
     //time is computed wrt  0-25ns + offset and set to -1 if no time
-    const HGCRecHit* rechit = hitmap[hit.first];
+    const HGCRecHit* rechit = hitmap[hit.hit];
     total_weight += rechit->energy();
     if (rechit->energy() > maxEnergyValue) {
       maxEnergyValue = rechit->energy();
@@ -180,7 +172,7 @@ math::XYZPoint HGCalLayerClusterProducer::calculatePosition(
   const GlobalPoint positionMaxEnergy(rhtools_.getPosition(maxEnergyIndex));
   for (auto const& hit : hitsAndFractions) {
     //time is computed wrt  0-25ns + offset and set to -1 if no time
-    const HGCRecHit* rechit = hitmap[hit.first];
+    const HGCRecHit* rechit = hitmap[hit.hit];
 
     const GlobalPoint position(rhtools_.getPosition(rechit->detid()));
 
@@ -213,7 +205,7 @@ math::XYZPoint HGCalLayerClusterProducer::calculatePosition(
 
 std::pair<float, float> HGCalLayerClusterProducer::calculateTime(
     std::unordered_map<uint32_t, const HGCRecHit*>& hitmap,
-    const std::vector<std::pair<DetId, float>>& hitsAndFractions,
+    std::span<const ticl::HitAndFraction> hitsAndFractions,
     size_t sizeCluster) {
   std::pair<float, float> timeCl(-99., -1.);
 
@@ -223,7 +215,7 @@ std::pair<float, float> HGCalLayerClusterProducer::calculateTime(
 
     for (auto const& hit : hitsAndFractions) {
       //time is computed wrt  0-25ns + offset and set to -1 if no time
-      const HGCRecHit* rechit = hitmap[hit.first];
+      const HGCRecHit* rechit = hitmap[hit.hit];
 
       float rhTimeE = rechit->timeError();
       //check on timeError to exclude scintillator
@@ -239,8 +231,6 @@ std::pair<float, float> HGCalLayerClusterProducer::calculateTime(
 }
 void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   edm::Handle<HGCRecHitCollection> hits;
-
-  std::unique_ptr<std::vector<reco::BasicCluster>> clusters(new std::vector<reco::BasicCluster>);
 
   edm::ESHandle<CaloGeometry> geom = es.getHandle(caloGeomToken_);
   rhtools_.setGeometry(*geom);
@@ -258,45 +248,39 @@ void HGCalLayerClusterProducer::produce(edm::Event& evt, const edm::EventSetup& 
   }
 
   algo_->makeClusters();
-  *clusters = algo_->getClusters(false);
 
-  std::vector<std::pair<float, float>> times;
-  times.reserve(clusters->size());
+  auto clustersAndAssociations = algo_->getClusters(false);
+  auto clusters = std::move(clustersAndAssociations.layer_clusters);
+  auto hitsAndFractions = std::move(clustersAndAssociations.hits_and_fractions);
 
-  for (unsigned i = 0; i < clusters->size(); ++i) {
-    reco::CaloCluster& sCl = (*clusters)[i];
+  auto clusters_v = clusters->view();
+  auto const hits_v = hitsAndFractions->const_view();
+  const int numberOfClusters = clusters_v.position().metadata().size();
+
+  for (int i = 0; i < numberOfClusters; ++i) {
+    auto const hitsOfCluster = hits_v[i];
     if (!calculatePositionInAlgo_) {
-      sCl.setPosition(calculatePosition(hitmap, sCl.hitsAndFractions()));
+      const auto position = calculatePosition(hitmap, hitsOfCluster);
+      clusters_v.position()[i].x() = position.x();
+      clusters_v.position()[i].y() = position.y();
+      clusters_v.position()[i].z() = position.z();
     }
-    if (detector_ != "BH") {
-      times.push_back(calculateTime(hitmap, sCl.hitsAndFractions(), sCl.size()));
-    } else {
-      times.push_back(std::pair<float, float>(-99.f, -1.f));
-    }
+    // Timing lives in the cluster SoA now; the algorithm leaves it unwritten, so
+    // every cluster must be assigned here. BH has no per-hit timing in digi.
+    const auto timeCl = (detector_ != "BH") ? calculateTime(hitmap, hitsOfCluster, clusters_v.position()[i].cells())
+                                            : std::pair<float, float>(-99.f, -1.f);
+    clusters_v.timing()[i].time() = timeCl.first;
+    clusters_v.timing()[i].timeError() = timeCl.second;
   }
-
-#if DEBUG_CLUSTERS_ALPAKA
-  hgcalUtils::DumpClusters dumper;
-  auto runNumber = evt.eventAuxiliary().run();
-  auto lumiNumber = evt.eventAuxiliary().luminosityBlock();
-  auto evtNumber = evt.eventAuxiliary().id().event();
-
-  dumper.dumpInfos(*clusters, moduleLabel_, runNumber, lumiNumber, evtNumber, true);
-#endif
-
-  auto clusterHandle = evt.put(std::move(clusters));
 
   if (detector_ == "HFNose") {
     std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-    layerClustersMask->resize(clusterHandle->size(), 1.0);
+    layerClustersMask->resize(numberOfClusters, 1.0);
     evt.put(std::move(layerClustersMask), "InitialLayerClustersMask");
   }
 
-  auto timeCl = std::make_unique<edm::ValueMap<std::pair<float, float>>>();
-  edm::ValueMap<std::pair<float, float>>::Filler filler(*timeCl);
-  filler.insert(clusterHandle, times.begin(), times.end());
-  filler.fill();
-  evt.put(std::move(timeCl), timeClname_);
+  evt.put(std::move(clusters));
+  evt.put(std::move(hitsAndFractions));
 
   algo_->reset();
 }

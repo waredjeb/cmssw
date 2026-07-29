@@ -75,11 +75,9 @@ public:
   void makeClusters() override;
 
   // this is the method to get the cluster collection out
-  std::vector<reco::BasicCluster> getClusters(bool) override;
+  ticl::LayerClustersAndAssociations getClusters(bool) override;
 
   void reset() override {
-    clusters_v_.clear();
-    clusters_v_.shrink_to_fit();
     for (auto& cl : numberOfClustersPerLayer_) {
       cl = 0;
     }

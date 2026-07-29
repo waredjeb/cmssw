@@ -1,7 +1,13 @@
 <lcgdict>
+  <!-- Column payload type: needed for the ContentBuffersLayout streamer. -->
+  <class name="ticl::HitAndFraction"/>
+
   <class name="ticl::HitsAndFractionsHost"/>
   <class name="ticl::HitsAndFractionsHost::Layout"/>
   <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>::ContentBuffersLayout<128, false>"/>
+  <!-- OffsetsLayout derives from OffsetBufferLayout (it only overrides the
+       ctor to allocate elements+1), so the base needs a dictionary too. -->
+  <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>::OffsetBufferLayout<128, false>"/>
   <class name="ticl::AssociationMapLayout<int, ticl::HitAndFraction>::OffsetsLayout<128, false>"/>
 
   <class name="edm::Wrapper<ticl::HitsAndFractionsHost>" splitLevel="0"/>
