@@ -19,6 +19,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
              const float dc,
              const float kappa,
              const float outlierDeltaFactor,
+             const bool isScintillator,
              std::span<const uint32_t> batchItemSizes,
              const HGCalSoARecHitsDeviceCollection::ConstView inputs,
              HGCalSoARecHitsExtraDeviceCollection::View outputs) const;

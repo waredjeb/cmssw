@@ -9,6 +9,8 @@
 
 #include "CLUEstering/CLUEstering.hpp"
 
+#include <cmath>
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using namespace cms::alpakatools;
@@ -36,6 +38,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                           const float dc,
                                           const float kappa,
                                           const float outlierDeltaFactor,
+                                          const bool isScintillator,
                                           std::span<const uint32_t> batchItemSizes,
                                           const HGCalSoARecHitsDeviceCollection::ConstView inputs,
                                           HGCalSoARecHitsExtraDeviceCollection::View outputs) const {
@@ -60,11 +63,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // One batch item per non-empty layer. CLUEstering has no notion of layers
     // and takes the layer of a hit from its position in the collection, which is
     // why the RecHits SoA is filled grouped by layer.
-    clusterer.make_clusters(queue,
-                            points,
-                            batchItemSizes,
-                            clue::EuclideanMetric<2, float>{},
-                            clue::FlatKernel<float>{0.5f});
+    if (isScintillator) {
+      // Scintillator cells cluster in (eta, phi): phi is periodic, with the
+      // coordinate stored in [0, 2pi) as required by the periodic metric.
+      constexpr float kTwoPi = 2.f * static_cast<float>(M_PI);
+      clusterer.setWrappedCoordinates(0, 1);
+      clusterer.make_clusters(queue,
+                              points,
+                              batchItemSizes,
+                              clue::PeriodicEuclideanMetric<2, float>{0.f, kTwoPi},
+                              clue::FlatKernel<float>{0.5f});
+    } else {
+      clusterer.make_clusters(queue,
+                              points,
+                              batchItemSizes,
+                              clue::EuclideanMetric<2, float>{},
+                              clue::FlatKernel<float>{0.5f});
+    }
 
     // Same number of seeds as clusters
     const auto seeds = clusterer.getSeeds();

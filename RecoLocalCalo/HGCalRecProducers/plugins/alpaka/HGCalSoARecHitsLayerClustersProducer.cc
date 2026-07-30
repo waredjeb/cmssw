@@ -5,6 +5,7 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/ParameterSet/interface/allowedValues.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
@@ -39,7 +40,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           deviceToken_{produces()},
           deltac_((float)config.getParameter<double>("deltac")),
           kappa_((float)config.getParameter<double>("kappa")),
-          outlierDeltaFactor_((float)config.getParameter<double>("outlierDeltaFactor")) {}
+          outlierDeltaFactor_((float)config.getParameter<double>("outlierDeltaFactor")),
+          isScintillator_(config.getParameter<std::string>("detector") == "BH") {}
 
     ~HGCalSoARecHitsLayerClustersProducer() override = default;
 
@@ -61,6 +63,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 deltac_,
                 kappa_,
                 outlierDeltaFactor_,
+                isScintillator_,
                 layerSizes,
                 input_v,
                 output_v);
@@ -73,6 +76,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<double>("deltac", 1.3);
       desc.add<double>("kappa", 9.);
       desc.add<double>("outlierDeltaFactor", 2.);
+      desc.ifValue(edm::ParameterDescription<std::string>(
+                       "detector", "EE", true, edm::Comment("the HGCAL component used to create clusters.")),
+                   edm::allowedValues<std::string>("EE", "FH", "BH"));
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -85,6 +91,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const float deltac_;
     const float kappa_;
     const float outlierDeltaFactor_;
+    const bool isScintillator_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

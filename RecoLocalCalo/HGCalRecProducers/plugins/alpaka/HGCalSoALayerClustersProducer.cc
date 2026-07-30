@@ -2,11 +2,13 @@
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoAClustersDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoARecHitsExtraDeviceCollection.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/CaloRecHit/interface/alpaka/CaloClusterDeviceCollection.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/ParameterSet/interface/allowedValues.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
@@ -32,7 +34,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           getTokenMaxLayerPerSide_{consumes<unsigned int>(config.getParameter<edm::InputTag>("hgcalMaxLayerPerSide"))},
           deviceTokenSoAClusters_{produces()},
           thresholdW0_(config.getParameter<double>("thresholdW0")),
-          positionDeltaRho2_(config.getParameter<double>("positionDeltaRho2")) {}
+          positionDeltaRho2_(config.getParameter<double>("positionDeltaRho2")),
+          detector_(config.getParameter<std::string>("detector")),
+          isScintillator_(detector_ == "BH"),
+          algoId_(detector_ == "EE"   ? ::reco::CaloCluster::hgcal_em
+                  : detector_ == "BH" ? ::reco::CaloCluster::hgcal_scintillator
+                                      : ::reco::CaloCluster::hgcal_had) {}
 
     ~HGCalSoALayerClustersProducer() override = default;
 
@@ -87,6 +94,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 thresholdW0_,
                 positionDeltaRho2_,
                 maxLayerPerSide,
+                isScintillator_,
+                algoId_,
                 inputRechits_v,
                 inputClusters_v,
                 output_v,
@@ -101,6 +110,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<edm::InputTag>("hgcalMaxLayerPerSide", edm::InputTag("TO BE DEFINED", "maxLayerPerSide"));
       desc.add<double>("thresholdW0", 2.9);
       desc.add<double>("positionDeltaRho2", 1.69);
+      desc.ifValue(edm::ParameterDescription<std::string>(
+                       "detector", "EE", true, edm::Comment("the HGCAL component used to create clusters.")),
+                   edm::allowedValues<std::string>("EE", "FH", "BH"));
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -113,6 +125,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned int num_clusters_;
     float thresholdW0_;
     float positionDeltaRho2_;
+    std::string detector_;
+    bool isScintillator_;
+    ::reco::CaloCluster::AlgoId algoId_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

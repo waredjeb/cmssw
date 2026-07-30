@@ -5,6 +5,7 @@ hltHgcalSoARecHitsLayerClustersProducer = cms.EDProducer("HGCalSoARecHitsLayerCl
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string('')
     ),
+    detector = cms.string('EE'),
     hgcalRecHitsSoA = cms.InputTag("hltHgcalSoARecHitsProducer"),
     deltac = cms.double(1.3),
     kappa = cms.double(9),

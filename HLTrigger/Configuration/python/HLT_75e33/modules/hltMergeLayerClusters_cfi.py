@@ -5,6 +5,17 @@ ceh_layerClusters = [
     "hltHgcalLayerClustersHSi"
 ]
 
+# Heterogeneous CE-H layer clusters, converted back from the SoA
+ceh_layerClustersFromSoA = [
+    "hltHgCalLayerClustersFromSoAProducerHSci",
+    "hltHgCalLayerClustersFromSoAProducerHSi"
+]
+
+ceh_layerClustersFromSoASerialSync = [
+    "hltHgCalLayerClustersFromSoAProducerHSciSerialSync",
+    "hltHgCalLayerClustersFromSoAProducerHSiSerialSync"
+]
+
 barrel_layerClusters = [
     "hltBarrelLayerClustersEB",
     "hltBarrelLayerClustersHB"
@@ -16,7 +27,7 @@ hltMergeLayerClusters = cms.EDProducer("MergeClusterProducer",
 )
 
 hltMergeLayerClustersSerialSync = cms.EDProducer("MergeClusterProducer",
-    layerClusters = cms.VInputTag("hltHgCalLayerClustersFromSoAProducerSerialSync", *ceh_layerClusters),
+    layerClusters = cms.VInputTag("hltHgCalLayerClustersFromSoAProducerSerialSync", *ceh_layerClustersFromSoASerialSync),
 )
 
 # Process modifiers: ticl_barrel and alpaka
@@ -24,7 +35,7 @@ from Configuration.ProcessModifiers.alpaka_cff import alpaka
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 
 (alpaka & ~ticl_barrel).toModify(hltMergeLayerClusters,
-    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClusters]
+    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClustersFromSoA]
 )
 
 (ticl_barrel & ~alpaka).toModify(hltMergeLayerClusters,
@@ -32,5 +43,5 @@ from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 )
 
 (ticl_barrel & alpaka).toModify(hltMergeLayerClusters,
-    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClusters, *barrel_layerClusters]
+    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClustersFromSoA, *barrel_layerClusters]
 )

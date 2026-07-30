@@ -5,6 +5,7 @@ hltHgcalSoALayerClustersProducer = cms.EDProducer("HGCalSoALayerClustersProducer
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string('')
     ),
+    detector = cms.string('EE'),
     hgcalMaxLayerPerSide = cms.InputTag("hltHgcalSoARecHitsProducer", "maxLayerPerSide"),
     hgcalRecHitsLayerClustersSoA = cms.InputTag("hltHgcalSoARecHitsLayerClustersProducer"),
     hgcalRecHitsSoA = cms.InputTag("hltHgcalSoARecHitsProducer"),

@@ -18,6 +18,14 @@ from ..modules.hltHgcalSoARecHitsProducer_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducer_cfi import *
 from ..modules.hltHgcalSoALayerClustersProducer_cfi import *
 from ..modules.hltHgcalLayerClustersFromSoAProducer_cfi import *
+from ..modules.hltHgcalSoARecHitsProducerHSci_cfi import *
+from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSci_cfi import *
+from ..modules.hltHgcalSoALayerClustersProducerHSci_cfi import *
+from ..modules.hltHgcalLayerClustersFromSoAProducerHSci_cfi import *
+from ..modules.hltHgcalSoARecHitsProducerHSi_cfi import *
+from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSi_cfi import *
+from ..modules.hltHgcalSoALayerClustersProducerHSi_cfi import *
+from ..modules.hltHgcalLayerClustersFromSoAProducerHSi_cfi import *
 from ..modules.hltTiclTracksterLinks_cfi import *
 # Barrel layer clusters
 from ..modules.hltBarrelLayerClustersEB_cfi import *
@@ -51,7 +59,7 @@ HLTHgcalTiclPFClusteringForEgammaUnseededSequence = cms.Sequence(_HgcalLocalReco
 
 # Alpaka
 from Configuration.ProcessModifiers.alpaka_cff import alpaka
-alpaka.toReplaceWith(_HgcalLocalRecoUnseededSequence, 
+alpaka.toReplaceWith(_HgcalLocalRecoUnseededSequence,
                      cms.Sequence(
                                   hltHgcalDigis
                                   + hltHGCalUncalibRecHit
@@ -60,11 +68,17 @@ alpaka.toReplaceWith(_HgcalLocalRecoUnseededSequence,
                                   + hltHgcalSoARecHitsLayerClustersProducer
                                   + hltHgcalSoALayerClustersProducer
                                   + hltHgCalLayerClustersFromSoAProducer
-                                  + hltHgcalLayerClustersHSci
-                                  + hltHgcalLayerClustersHSi
+                                  + hltHgcalSoARecHitsProducerHSci
+                                  + hltHgcalSoARecHitsLayerClustersProducerHSci
+                                  + hltHgcalSoALayerClustersProducerHSci
+                                  + hltHgCalLayerClustersFromSoAProducerHSci
+                                  + hltHgcalSoARecHitsProducerHSi
+                                  + hltHgcalSoARecHitsLayerClustersProducerHSi
+                                  + hltHgcalSoALayerClustersProducerHSi
+                                  + hltHgCalLayerClustersFromSoAProducerHSi
                                   + hltMergeLayerClusters
                                   + hltCaloClustersFromSoA
-                     ) 
+                     )
 )
 
 

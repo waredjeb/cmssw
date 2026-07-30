@@ -3,6 +3,7 @@
 #include "HGCalLayerClustersSoAAlgoWrapper.h"
 #include "ConstantsForClusters.h"
 
+#include <cmath>
 #include <cstdint>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -10,11 +11,22 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using namespace cms::alpakatools;
   using namespace hgcal::constants;
 
+  // Scintillator rechits store (eta, phi) in (dim1, dim2): recover the
+  // cartesian transverse position from them and the cell z. The phi stored in
+  // the SoA is shifted into [0, 2pi), which leaves sin/cos unchanged.
+  ALPAKA_FN_ACC ALPAKA_FN_INLINE static void etaPhiZToXY(
+      const float eta, const float phi, const float z, float& x, float& y) {
+    const float r = z / std::sinh(eta);
+    x = r * std::cos(phi);
+    y = r * std::sin(phi);
+  }
+
   // Set energy and number of hits in each clusters
   class HGCalLayerClustersSoAAlgoKernelEnergy {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const& acc,
                                   const unsigned int numer_of_clusters,
+                                  const ::reco::CaloCluster::AlgoId algoId,
                                   const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
                                   const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
                                   reco::CaloClusterDeviceCollection::View outputs) const {
@@ -29,7 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::atomicAdd(acc, &outputs.position()[clIdx].cells(), 1);
         if (input_clusters_soa[i].isSeed() == 1) {
           outputs.indexes()[clIdx].seedID() = input_rechits_soa[i].detid();
-          outputs.indexes()[clIdx].algoID() = ::reco::CaloCluster::hgcal_em;
+          outputs.indexes()[clIdx].algoID() = algoId;
           outputs.energy()[clIdx].correctedEnergy() = -1.f;
           outputs.energy()[clIdx].correctedEnergyUncertainty() = -1.f;
         }
@@ -88,6 +100,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   const unsigned int numer_of_clusters,
                                   float thresholdW0,
                                   float positionDeltaRho2,
+                                  const bool isScintillator,
                                   const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
                                   const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
                                   reco::CaloClusterDeviceCollection::View outputs,
@@ -100,6 +113,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (cluster_index == kInvalidCluster) {
           continue;
         }
+
+        if (isScintillator) {
+          // Scintillator recipe (HGCalCLUEAlgoT, scintillator strategy):
+          // plain energy-weighted mean of the cartesian cell positions, using
+          // every cell in the cluster (no log-weighting, no distance cut).
+          const float energy = input_rechits_soa[hit_index].energy();
+          float cell_x;
+          float cell_y;
+          etaPhiZToXY(input_rechits_soa[hit_index].dim1(),
+                      input_rechits_soa[hit_index].dim2(),
+                      input_rechits_soa[hit_index].dim3(),
+                      cell_x,
+                      cell_y);
+          alpaka::atomicAdd(acc, &outputs.position()[cluster_index].x(), cell_x * energy);
+          alpaka::atomicAdd(acc, &outputs.position()[cluster_index].y(), cell_y * energy);
+          alpaka::atomicAdd(acc, &outputs_service[cluster_index].total_weight_log(), energy);
+          continue;
+        }
+
         const int max_energy_index = outputs_service[cluster_index].maxEnergyIndex();
 
         //for silicon only just use 1+6 cells = 1.3cm for all thicknesses
@@ -126,6 +158,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   float thresholdW0,
                                   float positionDeltaRho2,
                                   unsigned int maxLayerPerSide,
+                                  const bool isScintillator,
                                   const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
                                   const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
                                   reco::CaloClusterDeviceCollection::View outputs,
@@ -138,6 +171,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           float inv_tot_weight = 1.f / outputs_service[cluster_index].total_weight_log();
           outputs.position()[cluster_index].x() *= inv_tot_weight;
           outputs.position()[cluster_index].y() *= inv_tot_weight;
+        } else if (isScintillator) {
+          // (dim1, dim2) hold (eta, phi) for scintillator cells: convert the
+          // highest-energy cell position to cartesian coordinates.
+          float cell_x;
+          float cell_y;
+          etaPhiZToXY(input_rechits_soa[max_energy_index].dim1(),
+                      input_rechits_soa[max_energy_index].dim2(),
+                      input_rechits_soa[max_energy_index].dim3(),
+                      cell_x,
+                      cell_y);
+          outputs.position()[cluster_index].x() = cell_x;
+          outputs.position()[cluster_index].y() = cell_y;
         } else {
           outputs.position()[cluster_index].x() = input_rechits_soa[max_energy_index].dim1();
           outputs.position()[cluster_index].y() = input_rechits_soa[max_energy_index].dim2();
@@ -154,10 +199,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                              float thresholdW0,
                                              float positionDeltaRho2,
                                              unsigned int maxLayerPerSide,
+                                             const bool isScintillator,
+                                             const ::reco::CaloCluster::AlgoId algoId,
                                              const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
                                              const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
                                              reco::CaloClusterDeviceCollection::View outputs,
                                              HGCalSoAClustersExtraDeviceCollection::View outputs_service) const {
+    // Bail out on empty inputs (e.g. no rechits above threshold in this
+    // detector, or no clusters found): launching a kernel with zero blocks is
+    // an error on the GPU backends, and there is nothing to fill anyway (the
+    // producer zero-initialises the output collection).
+    if (size == 0 || input_rechits_soa.metadata().size() == 0) {
+      return;
+    }
+
     auto x = cms::alpakatools::make_device_view<float>(queue, outputs.position().x());
     alpaka::memset(queue, x, 0x0);
     auto y = cms::alpakatools::make_device_view<float>(queue, outputs.position().y());
@@ -184,8 +239,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     //   - elements within a single thread on a CPU backend
     auto workDiv = make_workdiv<Acc1D>(groups, items);
 
-    alpaka::exec<Acc1D>(
-        queue, workDiv, HGCalLayerClustersSoAAlgoKernelEnergy{}, size, input_rechits_soa, input_clusters_soa, outputs);
+    alpaka::exec<Acc1D>(queue,
+                        workDiv,
+                        HGCalLayerClustersSoAAlgoKernelEnergy{},
+                        size,
+                        algoId,
+                        input_rechits_soa,
+                        input_clusters_soa,
+                        outputs);
     alpaka::exec<Acc1D>(queue,
                         workDiv,
                         HGCalLayerClustersSoAAlgoKernelPositionByHits{},
@@ -202,6 +263,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         size,
                         thresholdW0,
                         positionDeltaRho2,
+                        isScintillator,
                         input_rechits_soa,
                         input_clusters_soa,
                         outputs,
@@ -215,6 +277,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         thresholdW0,
                         positionDeltaRho2,
                         maxLayerPerSide,
+                        isScintillator,
                         input_rechits_soa,
                         input_clusters_soa,
                         outputs,

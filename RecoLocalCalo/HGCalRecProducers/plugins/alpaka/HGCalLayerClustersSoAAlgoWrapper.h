@@ -7,6 +7,7 @@
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoARecHitsDeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoARecHitsExtraDeviceCollection.h"
 // #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoAClustersDeviceCollection.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "DataFormats/CaloRecHit/interface/alpaka/CaloClusterDeviceCollection.h"
 #include "RecoLocalCalo/HGCalRecProducers/interface/alpaka/HGCalSoAClustersExtraDeviceCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
@@ -22,6 +23,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
              float thresholdW0,
              float positionDeltaRho2,
              unsigned int maxLayerPerSide,
+             const bool isScintillator,
+             const ::reco::CaloCluster::AlgoId algoId,
              const HGCalSoARecHitsDeviceCollection::ConstView input_rechits_soa,
              const HGCalSoARecHitsExtraDeviceCollection::ConstView input_clusters_soa,
              reco::CaloClusterDeviceCollection::View outputs,

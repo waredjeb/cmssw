@@ -14,6 +14,7 @@
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <vector>
 
@@ -27,6 +28,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           initialized_(false),
           isNose_(detector_ == "HFNose"),
           maxNumberOfThickIndices_(config.getParameter<unsigned>("maxNumberOfThickIndices")),
+          deltasi_index_regemfac_(config.getParameter<int>("deltasi_index_regemfac")),
+          sciThicknessCorrection_(config.getParameter<double>("sciThicknessCorrection")),
+          noiseMip_(config.getParameter<edm::ParameterSet>("noiseMip").getParameter<double>("noise_MIP")),
           fcPerEle_(config.getParameter<double>("fcPerEle")),
           ecut_(config.getParameter<double>("ecut")),
           fcPerMip_(config.getParameter<std::vector<double>>("fcPerMip")),
@@ -121,7 +125,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto entryInSoA = cellsView[layerCursor[layer]++];
         if (detector_ == "BH") {
           entryInSoA.dim1() = position.eta();
-          entryInSoA.dim2() = position.phi();
+          // CLUEstering's periodic metric expects the periodic coordinate in
+          // [0, period), so shift phi from [-pi, pi) to [0, 2pi). Adding 2pi
+          // leaves sin/cos unchanged, so the cartesian position recovered
+          // downstream is unaffected.
+          float phi = position.phi();
+          if (phi < 0.f) {
+            phi += 2.f * static_cast<float>(M_PI);
+          }
+          entryInSoA.dim2() = phi;
         }  // else, isSilicon == true and eta phi values will not be used
         else {
           entryInSoA.dim1() = position.x();
@@ -162,6 +174,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<std::string>("detector", "EE")->setComment("options EE, FH, BH,  HFNose; other value defaults to EE");
       desc.add<edm::InputTag>("recHits", edm::InputTag("HGCalRecHit", "HGCEERecHits"));
       desc.add<unsigned int>("maxNumberOfThickIndices", 6);
+      desc.add<int>("deltasi_index_regemfac", 3);
+      desc.add<double>("sciThicknessCorrection", 0.9);
+      // Same nested PSet as HGCalCLUEAlgoT, so that the configuration can be
+      // shared with the legacy producer; only noise_MIP is used here.
+      edm::ParameterSetDescription descNestedNoiseMIP;
+      descNestedNoiseMIP.add<bool>("scaleByDose", false);
+      descNestedNoiseMIP.add<unsigned int>("scaleByDoseAlgo", 0);
+      descNestedNoiseMIP.add<double>("scaleByDoseFactor", 1.);
+      descNestedNoiseMIP.add<std::string>("doseMap", "");
+      descNestedNoiseMIP.add<std::string>("sipmMap", "");
+      descNestedNoiseMIP.add<double>("referenceIdark", -1);
+      descNestedNoiseMIP.add<double>("referenceXtalk", -1);
+      descNestedNoiseMIP.add<double>("noise_MIP", 1. / 100.);
+      desc.add<edm::ParameterSetDescription>("noiseMip", descNestedNoiseMIP);
       desc.add<double>("fcPerEle", 0.00016020506);
       desc.add<std::vector<double>>("fcPerMip");
       desc.add<std::vector<double>>("thicknessCorrection");
@@ -179,6 +205,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned int maxlayer_;
     int deltasi_index_regemfac_;
     double sciThicknessCorrection_;
+    double noiseMip_;
     double fcPerEle_;
     double ecut_;
     std::vector<double> fcPerMip_;
@@ -227,6 +254,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               << " noiseMip: " << fcPerEle_ * nonAgedNoises_[ithick] / fcPerMip_[ithick]
               << " sigmaNoise: " << sigmaNoise << "\n";
 #endif
+        }
+
+        // The last slot addresses the scintillator cells, whose noise is
+        // expressed directly in MIP units (same recipe as
+        // HGCalCLUEAlgoT::computeThreshold).
+        if (!isNose_) {
+          float scintillators_sigmaNoise = 0.001f * noiseMip_ * dEdXweights_[ilayer] / sciThicknessCorrection_;
+          thresholds_[ilayer - 1][maxNumberOfThickIndices_] = ecut_ * scintillators_sigmaNoise;
+          v_sigmaNoise_[ilayer - 1][maxNumberOfThickIndices_] = scintillators_sigmaNoise;
         }
       }
     }
