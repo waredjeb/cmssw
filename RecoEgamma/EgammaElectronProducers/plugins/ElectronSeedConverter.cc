@@ -32,7 +32,7 @@
 #include "TrackingTools/TrajectoryState/interface/ftsFromVertexToPoint.h"
 #include "TrackingTools/KalmanUpdators/interface/Chi2MeasurementEstimator.h"
 
-#include "Geometry/CommonDetUnit/interface/GeomDetEnumerators.h"
+#include "Geometry/CommonTopologies/interface/GeomDetEnumerators.h"
 #include "DataFormats/DetId/interface/DetId.h"
 
 #include "TrackingTools/RecoGeometry/interface/RecoGeometryRecord.h"
