@@ -12,3 +12,10 @@ hltFilteredLayerClustersRecovery = cms.EDProducer("FilteredLayerClustersProducer
     min_cluster_size = cms.int32(2),
     min_layerId = cms.int32(0)
 )
+
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
+
+(alpaka & ~ticl_barrel).toModify(hltFilteredLayerClustersRecovery,
+    LayerClusters = "hltHgCalLayerClustersFromSoAProducer"
+)

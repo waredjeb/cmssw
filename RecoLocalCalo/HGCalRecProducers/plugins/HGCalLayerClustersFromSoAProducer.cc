@@ -1,3 +1,6 @@
+// Rebuild the layer clusters of the HGCAL subdetectors from the portable SoA
+// representation.
+
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 
 #include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
@@ -7,8 +10,9 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/allowedValues.h"
-#include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Math/interface/Point3D.h"
@@ -22,24 +26,21 @@
 
 #include "RecoLocalCalo/HGCalRecProducers/interface/ComputeClusterTime.h"
 
+#include <cstdint>
 #include <vector>
 
 class HGCalLayerClustersFromSoAProducer : public edm::stream::EDProducer<> {
 public:
   HGCalLayerClustersFromSoAProducer(edm::ParameterSet const& config)
       : getTokenSoAClusters_(consumes(config.getParameter<edm::InputTag>("src"))),
-        getTokenSoACells_(consumes(config.getParameter<edm::InputTag>("hgcalRecHitsSoA"))),
-        getTokenSoARecHitsExtra_(consumes(config.getParameter<edm::InputTag>("hgcalRecHitsLayerClustersSoA"))),
-        detector_(config.getParameter<std::string>("detector")),
+        getTokenClusterOffsets_(consumes(config.getParameter<edm::InputTag>("clusterOffsets"))),
         hitsTime_(config.getParameter<unsigned int>("nHitsTime")) {
-    if (detector_ == "HFNose") {
-      algoId_ = reco::CaloCluster::hfnose;
-    } else if (detector_ == "EE") {
-      algoId_ = reco::CaloCluster::hgcal_em;
-    } else if (detector_ == "BH") {
-      algoId_ = reco::CaloCluster::hgcal_scintillator;
-    } else {  //for FH
-      algoId_ = reco::CaloCluster::hgcal_had;
+    for (auto const& pset : config.getParameter<std::vector<edm::ParameterSet>>("layerClusters")) {
+      inputs_.push_back({consumes<HGCalSoARecHitsHostCollection>(pset.getParameter<edm::InputTag>("hgcalRecHitsSoA")),
+                         consumes<HGCalSoARecHitsExtraHostCollection>(
+                             pset.getParameter<edm::InputTag>("hgcalRecHitsLayerClustersSoA")),
+                         // timing is not implemented in the digitisation of the scintillator
+                         pset.getParameter<std::string>("detector") != "BH"});
     }
 
     produces<std::vector<float>>("InitialLayerClustersMask");
@@ -51,31 +52,41 @@ public:
   ~HGCalLayerClustersFromSoAProducer() override = default;
 
   void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override {
+    const size_t numberOfInputs = inputs_.size();
+
     auto const& deviceData = iEvent.get(getTokenSoAClusters_);
-
-    auto const& deviceSoARecHitsExtra = iEvent.get(getTokenSoARecHitsExtra_);
-    auto const soaRecHitsExtra_v = deviceSoARecHitsExtra.view();
-
-    auto const& deviceSoACells = iEvent.get(getTokenSoACells_);
-    auto const soaCells_v = deviceSoACells.view();
-
     auto const deviceView = deviceData.view();
     auto const position_v = deviceView.position();
     auto const energy_v = deviceView.energy();
     auto const indexes_v = deviceView.indexes();
+    auto const timing_v = deviceView.timing();
     const int numberOfClusters = position_v.metadata().size();
-    const int numberOfRecHits = soaRecHitsExtra_v.metadata().size();
+
+    // clusterOffsets[d] is the index, in the merged collection, of the first
+    // cluster of the d-th subdetector; the last entry is the total number of
+    // clusters. It is filled by HGCalSoALayerClustersProducer from the same
+    // list of subdetectors, in the same order.
+    auto const& clusterOffsets = iEvent.get(getTokenClusterOffsets_);
+    if (clusterOffsets.size() != numberOfInputs + 1) {
+      throw cms::Exception("Configuration")
+          << "HGCalLayerClustersFromSoAProducer is configured with " << numberOfInputs
+          << " subdetectors, but the input clusterOffsets describes " << (clusterOffsets.size() - 1)
+          << ": the 'layerClusters' list must match the one of the module producing 'src'.";
+    }
 
     // Number of rechits in each cluster, excluding outliers
     std::vector<int> hitsPerCluster(numberOfClusters, 0);
     int numberOfClusteredHits = 0;
-    for (int i = 0; i < numberOfRecHits; ++i) {
-      const auto clusterIndex = soaRecHitsExtra_v[i].clusterIndex();
-      if (clusterIndex == -1) {
-        continue;
+    for (size_t d = 0; d < numberOfInputs; ++d) {
+      auto const& soaRecHitsExtra_v = iEvent.get(inputs_[d].recHitsExtra).view();
+      for (int i = 0; i < soaRecHitsExtra_v.metadata().size(); ++i) {
+        const auto clusterIndex = soaRecHitsExtra_v[i].clusterIndex();
+        if (clusterIndex == -1) {
+          continue;
+        }
+        ++hitsPerCluster[clusterIndex + clusterOffsets[d]];
+        ++numberOfClusteredHits;
       }
-      ++hitsPerCluster[clusterIndex];
-      ++numberOfClusteredHits;
     }
 
     auto clusters = std::make_unique<reco::CaloClusterHostCollection>(
@@ -86,9 +97,9 @@ public:
     auto hits_v = hitsAndFractions->view();
 
     // Prefix-sum the per-cluster counts into the CSR offsets, and copy the
-    // per-cluster features across. algoID/caloID are reqritten from this
-    // module's own detector setting rather than taken from the kernel, which
-    // hardcodes the EE values.
+    // per-cluster features across. caloID is the only field that the kernels do
+    // not fill; algoID is taken from the SoA, where it is already set per
+    // subdetector.
     int hitsOffset = 0;
     for (int i = 0; i < numberOfClusters; ++i) {
       hits_v.offsets()[i].keys_offsets() = hitsOffset;
@@ -103,7 +114,7 @@ public:
       clusters_v.energy()[i].correctedEnergy() = energy_v[i].correctedEnergy();
       clusters_v.energy()[i].correctedEnergyUncertainty() = energy_v[i].correctedEnergyUncertainty();
       clusters_v.indexes()[i].caloID() = reco::CaloID(reco::CaloID::DET_HGCAL_ENDCAP);
-      clusters_v.indexes()[i].algoID() = algoId_;
+      clusters_v.indexes()[i].algoID() = indexes_v[i].algoID();
       clusters_v.indexes()[i].seedID() = indexes_v[i].seedID();
       clusters_v.indexes()[i].flags() = indexes_v[i].flags();
     }
@@ -114,37 +125,40 @@ public:
     std::vector<int> cursor(numberOfClusters, 0);
     std::vector<std::vector<float>> times(numberOfClusters);
     std::vector<std::vector<float>> timeErrors(numberOfClusters);
-    for (int i = 0; i < numberOfRecHits; ++i) {
-      const auto clusterIndex = soaRecHitsExtra_v[i].clusterIndex();
-      if (clusterIndex == -1) {
-        continue;
+    for (size_t d = 0; d < numberOfInputs; ++d) {
+      auto const& soaCells_v = iEvent.get(inputs_[d].cells).view();
+      auto const& soaRecHitsExtra_v = iEvent.get(inputs_[d].recHitsExtra).view();
+      for (int i = 0; i < soaRecHitsExtra_v.metadata().size(); ++i) {
+        const auto clusterIndex = soaRecHitsExtra_v[i].clusterIndex();
+        if (clusterIndex == -1) {
+          continue;
+        }
+        const int j = clusterIndex + clusterOffsets[d];
+        const auto slot = hits_v.offsets()[j].keys_offsets() + cursor[j]++;
+        hits_v.content().values()[slot] = ticl::HitAndFraction{soaCells_v[i].detid(), 1.f};
+        if (soaCells_v[i].timeError() < 0.f) {
+          continue;
+        }
+        times[j].push_back(soaCells_v[i].time());
+        timeErrors[j].push_back(1.f / (soaCells_v[i].timeError() * soaCells_v[i].timeError()));
       }
-      const auto slot = hits_v.offsets()[clusterIndex].keys_offsets() + cursor[clusterIndex]++;
-      hits_v.content().values()[slot] = ticl::HitAndFraction{soaCells_v[i].detid(), 1.f};
-      if (soaCells_v[i].timeError() < 0.f) {
-        continue;
-      }
-      times[clusterIndex].push_back(soaCells_v[i].time());
-      timeErrors[clusterIndex].push_back(1.f / (soaCells_v[i].timeError() * soaCells_v[i].timeError()));
     }
 
     // Assign time to each cluster
     hgcalsimclustertime::ComputeClusterTime timeEstimator;
-    for (int i = 0; i < numberOfClusters; ++i) {
-      const auto timeCl = (detector_ != "BH")
-                              ? timeEstimator.fixSizeHighestDensity(times[i], timeErrors[i], hitsTime_)
-                              : std::pair<float, float>(-99.f, -1.f);
-      clusters_v.timing()[i].time() = timeCl.first;
-      clusters_v.timing()[i].timeError() = timeCl.second;
+    for (size_t d = 0; d < numberOfInputs; ++d) {
+      for (int j = clusterOffsets[d]; j < static_cast<int>(clusterOffsets[d + 1]); ++j) {
+        const auto timeCl = inputs_[d].hasTiming
+                                ? timeEstimator.fixSizeHighestDensity(times[j], timeErrors[j], hitsTime_)
+                                : std::pair<float, float>(-99.f, -1.f);
+        clusters_v.timing()[j].time() = timeCl.first;
+        clusters_v.timing()[j].timeError() = timeCl.second;
+      }
     }
 
-    // HFNoise has no mergint step, so create the layerClustersMask here
-    if (detector_ == "HFNose") {
-      std::unique_ptr<std::vector<float>> layerClustersMask(new std::vector<float>);
-      layerClustersMask->resize(numberOfClusters, 1.0);
-      iEvent.put(std::move(layerClustersMask), "InitialLayerClustersMask");
-    }
+    auto layerClustersMask = std::make_unique<std::vector<float>>(numberOfClusters, 1.f);
 
+    iEvent.put(std::move(layerClustersMask), "InitialLayerClustersMask");
     iEvent.put(std::move(clusters));
     iEvent.put(std::move(hitsAndFractions));
   }
@@ -152,23 +166,31 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("src", edm::InputTag("hltHgcalSoALayerClustersProducer"));
-    desc.add<edm::InputTag>("hgcalRecHitsLayerClustersSoA", edm::InputTag("hltHgcalSoARecHitsLayerClustersProducer"));
-    desc.add<edm::InputTag>("hgcalRecHitsSoA", edm::InputTag("hltHgcalSoARecHitsProducer"));
+    desc.add<edm::InputTag>("clusterOffsets", edm::InputTag("hltHgcalSoALayerClustersProducer", "clusterOffsets"));
+    edm::ParameterSetDescription layerClustersDesc;
+    layerClustersDesc.add<edm::InputTag>("hgcalRecHitsLayerClustersSoA",
+                                         edm::InputTag("hltHgcalSoARecHitsLayerClustersProducer"));
+    layerClustersDesc.add<edm::InputTag>("hgcalRecHitsSoA", edm::InputTag("hltHgcalSoARecHitsProducer"));
+    layerClustersDesc.ifValue(edm::ParameterDescription<std::string>(
+                                  "detector", "EE", true, edm::Comment("the HGCAL component used to create clusters.")),
+                              edm::allowedValues<std::string>("EE", "FH", "BH"));
+    desc.addVPSet("layerClusters", layerClustersDesc, {});
     desc.add<unsigned int>("nHitsTime", 3);
     desc.add<std::string>("timeClname", "timeLayerCluster");
-    desc.ifValue(edm::ParameterDescription<std::string>(
-                     "detector", "EE", true, edm::Comment("the HGCAL component used to create clusters.")),
-                 edm::allowedValues<std::string>("EE", "FH", "BH"));
     descriptions.addWithDefaultLabel(desc);
   }
 
 private:
+  struct Input {
+    edm::EDGetTokenT<HGCalSoARecHitsHostCollection> cells;
+    edm::EDGetTokenT<HGCalSoARecHitsExtraHostCollection> recHitsExtra;
+    bool hasTiming;
+  };
+
   edm::EDGetTokenT<reco::CaloClusterHostCollection> const getTokenSoAClusters_;
-  edm::EDGetTokenT<HGCalSoARecHitsHostCollection> const getTokenSoACells_;
-  edm::EDGetTokenT<HGCalSoARecHitsExtraHostCollection> const getTokenSoARecHitsExtra_;
-  std::string detector_;
+  edm::EDGetTokenT<std::vector<uint32_t>> const getTokenClusterOffsets_;
+  std::vector<Input> inputs_;
   unsigned int hitsTime_;
-  reco::CaloCluster::AlgoId algoId_;
 };
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(HGCalLayerClustersFromSoAProducer);

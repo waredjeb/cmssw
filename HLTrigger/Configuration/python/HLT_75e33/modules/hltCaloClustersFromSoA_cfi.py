@@ -12,7 +12,13 @@ hltCaloClustersFromSoAL1Seeded = hltCaloClustersFromSoA.clone(
     src = "hltMergeLayerClustersL1Seeded"
 )
 
-# Used by the alpakaValidationHLT GPU-vs-CPU comparison.
 hltCaloClustersFromSoASerialSync = hltCaloClustersFromSoA.clone(
-    src = "hltMergeLayerClustersSerialSync"
+    src = "hltHgCalLayerClustersFromSoAProducerSerialSync"
+)
+
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
+
+(alpaka & ~ticl_barrel).toModify(hltCaloClustersFromSoA,
+    src = "hltHgCalLayerClustersFromSoAProducer"
 )

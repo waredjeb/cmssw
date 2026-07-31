@@ -5,17 +5,6 @@ ceh_layerClusters = [
     "hltHgcalLayerClustersHSi"
 ]
 
-# Heterogeneous CE-H layer clusters, converted back from the SoA
-ceh_layerClustersFromSoA = [
-    "hltHgCalLayerClustersFromSoAProducerHSci",
-    "hltHgCalLayerClustersFromSoAProducerHSi"
-]
-
-ceh_layerClustersFromSoASerialSync = [
-    "hltHgCalLayerClustersFromSoAProducerHSciSerialSync",
-    "hltHgCalLayerClustersFromSoAProducerHSiSerialSync"
-]
-
 barrel_layerClusters = [
     "hltBarrelLayerClustersEB",
     "hltBarrelLayerClustersHB"
@@ -26,22 +15,17 @@ hltMergeLayerClusters = cms.EDProducer("MergeClusterProducer",
     layerClusters = cms.VInputTag("hltHgcalLayerClustersEE", *ceh_layerClusters),
 )
 
-hltMergeLayerClustersSerialSync = cms.EDProducer("MergeClusterProducer",
-    layerClusters = cms.VInputTag("hltHgCalLayerClustersFromSoAProducerSerialSync", *ceh_layerClustersFromSoASerialSync),
-)
-
 # Process modifiers: ticl_barrel and alpaka
 from Configuration.ProcessModifiers.alpaka_cff import alpaka
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 
-(alpaka & ~ticl_barrel).toModify(hltMergeLayerClusters,
-    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClustersFromSoA]
-)
-
+# With alpaka, hltHgCalLayerClustersFromSoAProducer already emits EE, HSci and HSi
+# as a single collection: nothing is left to merge unless the barrel is also run,
+# so the module is only kept for ticl_barrel and dropped from the other sequences.
 (ticl_barrel & ~alpaka).toModify(hltMergeLayerClusters,
     layerClusters = ["hltHgcalLayerClustersEE", *ceh_layerClusters, *barrel_layerClusters]
 )
 
 (ticl_barrel & alpaka).toModify(hltMergeLayerClusters,
-    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *ceh_layerClustersFromSoA, *barrel_layerClusters]
+    layerClusters = ["hltHgCalLayerClustersFromSoAProducer", *barrel_layerClusters]
 )

@@ -1,5 +1,5 @@
 import FWCore.ParameterSet.Config as cms
-from ..psets.hltTiclTracksterLinksPSet_cfi import hltTiclTracksterLinksPSet 
+from ..psets.hltTiclTracksterLinksPSet_cfi import hltTiclTracksterLinksPSet
 
 hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
     detector = cms.string('HGCAL'),
@@ -43,3 +43,11 @@ hltTiclTracksterLinks = cms.EDProducer("TracksterLinksProducer",
 )
 
 
+
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
+
+(alpaka & ~ticl_barrel).toModify(hltTiclTracksterLinks,
+    layer_clusters = "hltHgCalLayerClustersFromSoAProducer",
+    original_masks = ["hltHgCalLayerClustersFromSoAProducer:InitialLayerClustersMask"]
+)

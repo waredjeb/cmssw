@@ -7,21 +7,16 @@ from ..modules.hltMergeLayerClusters_cfi import *
 from ..modules.hltCaloClustersFromSoA_cfi import *
 from ..modules.hltHGCalRecHit_cfi import *
 from ..modules.hltHGCalUncalibRecHit_cfi import *
-# Heterogeneous HGCAL EE layer clusters
+# Heterogeneous HGCAL rechits and CLUE, per subdetector; hltHgcalSoALayerClustersProducer
+# assembles the clusters of all three into a single collection.
 from ..modules.hltHgcalSoARecHitsProducer_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducer_cfi import *
-from ..modules.hltHgcalSoALayerClustersProducer_cfi import *
-from ..modules.hltHgcalLayerClustersFromSoAProducer_cfi import *
-# Heterogeneous HGCAL HSci (BH) layer clusters
 from ..modules.hltHgcalSoARecHitsProducerHSci_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSci_cfi import *
-from ..modules.hltHgcalSoALayerClustersProducerHSci_cfi import *
-from ..modules.hltHgcalLayerClustersFromSoAProducerHSci_cfi import *
-# Heterogeneous HGCAL HSi (FH) layer clusters
 from ..modules.hltHgcalSoARecHitsProducerHSi_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSi_cfi import *
-from ..modules.hltHgcalSoALayerClustersProducerHSi_cfi import *
-from ..modules.hltHgcalLayerClustersFromSoAProducerHSi_cfi import *
+from ..modules.hltHgcalSoALayerClustersProducer_cfi import *
+from ..modules.hltHgcalLayerClustersFromSoAProducer_cfi import *
 # Barrel layer clusters
 from ..modules.hltParticleFlowRecHitECALUnseeded_cfi import *
 from ..modules.hltParticleFlowRecHitHBHE_cfi import *
@@ -49,17 +44,12 @@ _HLTTICLLocalRecoSequence_heterogeneous = cms.Sequence(
         hltHGCalRecHit+
         hltHgcalSoARecHitsProducer+
         hltHgcalSoARecHitsLayerClustersProducer+
-        hltHgcalSoALayerClustersProducer+
-        hltHgCalLayerClustersFromSoAProducer+
         hltHgcalSoARecHitsProducerHSci+
         hltHgcalSoARecHitsLayerClustersProducerHSci+
-        hltHgcalSoALayerClustersProducerHSci+
-        hltHgCalLayerClustersFromSoAProducerHSci+
         hltHgcalSoARecHitsProducerHSi+
         hltHgcalSoARecHitsLayerClustersProducerHSi+
-        hltHgcalSoALayerClustersProducerHSi+
-        hltHgCalLayerClustersFromSoAProducerHSi+
-        hltMergeLayerClusters+
+        hltHgcalSoALayerClustersProducer+
+        hltHgCalLayerClustersFromSoAProducer+
         hltCaloClustersFromSoA)
 (alpaka & (~ticl_barrel)).toReplaceWith(HLTTICLLocalRecoSequence, _HLTTICLLocalRecoSequence_heterogeneous)
 
@@ -70,35 +60,25 @@ _HLTTICLLocalRecoSequence_heterogeneousGPUCPU = cms.Sequence(
         hltHGCalRecHit+
         hltHgcalSoARecHitsProducer+
         hltHgcalSoARecHitsLayerClustersProducer+
-        hltHgcalSoALayerClustersProducer+
-        hltHgCalLayerClustersFromSoAProducer+
         hltHgcalSoARecHitsProducerHSci+
         hltHgcalSoARecHitsLayerClustersProducerHSci+
-        hltHgcalSoALayerClustersProducerHSci+
-        hltHgCalLayerClustersFromSoAProducerHSci+
         hltHgcalSoARecHitsProducerHSi+
         hltHgcalSoARecHitsLayerClustersProducerHSi+
-        hltHgcalSoALayerClustersProducerHSi+
-        hltHgCalLayerClustersFromSoAProducerHSi+
+        hltHgcalSoALayerClustersProducer+
+        hltHgCalLayerClustersFromSoAProducer+
         hltHgcalLayerClustersEE+
         hltHgcalLayerClustersHSci+
         hltHgcalLayerClustersHSi+
-        hltMergeLayerClusters+
         hltCaloClustersFromSoA+
         #CPU part: runs dedicated 'SerialSync' modules on CPU
         hltHgcalSoARecHitsProducerSerialSync+
         hltHgcalSoARecHitsLayerClustersProducerSerialSync+
-        hltHgcalSoALayerClustersProducerSerialSync+
-        hltHgCalLayerClustersFromSoAProducerSerialSync+
         hltHgcalSoARecHitsProducerHSciSerialSync+
         hltHgcalSoARecHitsLayerClustersProducerHSciSerialSync+
-        hltHgcalSoALayerClustersProducerHSciSerialSync+
-        hltHgCalLayerClustersFromSoAProducerHSciSerialSync+
         hltHgcalSoARecHitsProducerHSiSerialSync+
         hltHgcalSoARecHitsLayerClustersProducerHSiSerialSync+
-        hltHgcalSoALayerClustersProducerHSiSerialSync+
-        hltHgCalLayerClustersFromSoAProducerHSiSerialSync+
-        hltMergeLayerClustersSerialSync+
+        hltHgcalSoALayerClustersProducerSerialSync+
+        hltHgCalLayerClustersFromSoAProducerSerialSync+
         hltCaloClustersFromSoASerialSync)
 alpakaValidationHLT.toReplaceWith(HLTTICLLocalRecoSequence, _HLTTICLLocalRecoSequence_heterogeneousGPUCPU)
 
@@ -121,16 +101,12 @@ _HLTTICLLocalRecoSequence_heterogeneous_withBarrel = cms.Sequence(
         hltHGCalRecHit+
         hltHgcalSoARecHitsProducer+
         hltHgcalSoARecHitsLayerClustersProducer+
-        hltHgcalSoALayerClustersProducer+
-        hltHgCalLayerClustersFromSoAProducer+
         hltHgcalSoARecHitsProducerHSci+
         hltHgcalSoARecHitsLayerClustersProducerHSci+
-        hltHgcalSoALayerClustersProducerHSci+
-        hltHgCalLayerClustersFromSoAProducerHSci+
         hltHgcalSoARecHitsProducerHSi+
         hltHgcalSoARecHitsLayerClustersProducerHSi+
-        hltHgcalSoALayerClustersProducerHSi+
-        hltHgCalLayerClustersFromSoAProducerHSi+
+        hltHgcalSoALayerClustersProducer+
+        hltHgCalLayerClustersFromSoAProducer+
         HLTPfRecHitUnseededSequence+
         hltBarrelLayerClustersEB+
         hltBarrelLayerClustersHB+

@@ -57,3 +57,11 @@ ticlv5_TrackLinkingGNN.toModify(hltTiclCandidate,
         type = cms.string('GNNLink')
     )
 )
+
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
+
+(alpaka & ~ticl_barrel).toModify(hltTiclCandidate,
+    layer_clusters = "hltHgCalLayerClustersFromSoAProducer",
+    original_masks = ["hltHgCalLayerClustersFromSoAProducer:InitialLayerClustersMask"]
+)

@@ -22,7 +22,7 @@ def setupLocalInputsForRelVal(local_daq : str = 'local_daq'):
 def runRecoForSep2024TB(process):
 
     local_daq = setupLocalInputsForRelVal()
-    
+
     process.load('Configuration.StandardSequences.Accelerators_cff')
 
     process.load(f"Configuration.Geometry.GeometryExtendedRun4D104Reco_cff")
@@ -30,7 +30,7 @@ def runRecoForSep2024TB(process):
     from Geometry.HGCalMapping.hgcalmapping_cff import customise_hgcalmapper
     process = customise_hgcalmapper(
         process, modules='Geometry/HGCalMapping/data/ModuleMaps/modulelocator_P5v1.txt')
-    
+
     process.EvFDaqDirector = cms.Service("EvFDaqDirector",
                                          baseDir=cms.untracked.string('local_daq/fu'),
                                          buBaseDir=cms.untracked.string('local_daq/ramdisk'),
@@ -100,17 +100,29 @@ def runRecoForSep2024TB(process):
         hgcalRecHitsSoA="hgcalSoARecHits"
     )
 
+    # TB only has EE
     from RecoLocalCalo.HGCalRecProducers.hgCalSoALayerClustersProducer_cfi import hgCalSoALayerClustersProducer
     process.hgcalSoALayerClusters = hgCalSoALayerClustersProducer.clone(
-        hgcalRecHitsLayerClustersSoA="hgcalSoARecHitsLayerClusters",
-        hgcalRecHitsSoA="hgcalSoARecHits"
+        layerClusters=cms.VPSet(
+            cms.PSet(
+                detector=cms.string('EE'),
+                hgcalRecHitsLayerClustersSoA=cms.InputTag("hgcalSoARecHitsLayerClusters"),
+                hgcalRecHitsSoA=cms.InputTag("hgcalSoARecHits")
+            )
+        )
     )
 
     from RecoLocalCalo.HGCalRecProducers.hgCalLayerClustersFromSoAProducer_cfi import hgCalLayerClustersFromSoAProducer
     process.hgcalCaloClustersFromSoA = hgCalLayerClustersFromSoAProducer.clone(
-        hgcalRecHitsLayerClustersSoA="hgcalSoARecHitsLayerClusters",
-        hgcalRecHitsSoA="hgcalSoARecHits",
-        src="hgcalSoALayerClusters"
+        src="hgcalSoALayerClusters",
+        clusterOffsets=cms.InputTag("hgcalSoALayerClusters", "clusterOffsets"),
+        layerClusters=cms.VPSet(
+            cms.PSet(
+                detector=cms.string('EE'),
+                hgcalRecHitsLayerClustersSoA=cms.InputTag("hgcalSoARecHitsLayerClusters"),
+                hgcalRecHitsSoA=cms.InputTag("hgcalSoARecHits")
+            )
+        )
     )
 
     process.reco_task = cms.Task(

@@ -16,16 +16,12 @@ from ..modules.hltTiclSeedingGlobal_cfi import *
 from ..modules.hltTiclTrackstersCLUE3DHigh_cfi import *
 from ..modules.hltHgcalSoARecHitsProducer_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducer_cfi import *
-from ..modules.hltHgcalSoALayerClustersProducer_cfi import *
-from ..modules.hltHgcalLayerClustersFromSoAProducer_cfi import *
 from ..modules.hltHgcalSoARecHitsProducerHSci_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSci_cfi import *
-from ..modules.hltHgcalSoALayerClustersProducerHSci_cfi import *
-from ..modules.hltHgcalLayerClustersFromSoAProducerHSci_cfi import *
 from ..modules.hltHgcalSoARecHitsProducerHSi_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSi_cfi import *
-from ..modules.hltHgcalSoALayerClustersProducerHSi_cfi import *
-from ..modules.hltHgcalLayerClustersFromSoAProducerHSi_cfi import *
+from ..modules.hltHgcalSoALayerClustersProducer_cfi import *
+from ..modules.hltHgcalLayerClustersFromSoAProducer_cfi import *
 from ..modules.hltTiclTracksterLinks_cfi import *
 # Barrel layer clusters
 from ..modules.hltBarrelLayerClustersEB_cfi import *
@@ -66,17 +62,12 @@ alpaka.toReplaceWith(_HgcalLocalRecoUnseededSequence,
                                   + hltHGCalRecHit+hltParticleFlowRecHitHGC
                                   + hltHgcalSoARecHitsProducer
                                   + hltHgcalSoARecHitsLayerClustersProducer
-                                  + hltHgcalSoALayerClustersProducer
-                                  + hltHgCalLayerClustersFromSoAProducer
                                   + hltHgcalSoARecHitsProducerHSci
                                   + hltHgcalSoARecHitsLayerClustersProducerHSci
-                                  + hltHgcalSoALayerClustersProducerHSci
-                                  + hltHgCalLayerClustersFromSoAProducerHSci
                                   + hltHgcalSoARecHitsProducerHSi
                                   + hltHgcalSoARecHitsLayerClustersProducerHSi
-                                  + hltHgcalSoALayerClustersProducerHSi
-                                  + hltHgCalLayerClustersFromSoAProducerHSi
-                                  + hltMergeLayerClusters
+                                  + hltHgcalSoALayerClustersProducer
+                                  + hltHgCalLayerClustersFromSoAProducer
                                   + hltCaloClustersFromSoA
                      )
 )
@@ -86,7 +77,7 @@ alpaka.toReplaceWith(_HgcalLocalRecoUnseededSequence,
 
 # Ticl mustache
 from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff import ticl_superclustering_mustache_ticl
-ticl_superclustering_mustache_ticl.toReplaceWith(_SuperclusteringUnseededSequence, 
+ticl_superclustering_mustache_ticl.toReplaceWith(_SuperclusteringUnseededSequence,
                                                  cms.Sequence(
                                                               hltTiclTracksterLinksSuperclusteringMustacheUnseeded
                                                               + hltTiclEGammaSuperClusterProducerUnseeded

@@ -6,10 +6,8 @@ from ..modules.hltHgcalDigis_cfi import hltHgcalDigis
 from ..modules.hltHgcalSoALayerClustersProducer_cfi import hltHgcalSoALayerClustersProducer
 from ..modules.hltHgcalSoARecHitsLayerClustersProducer_cfi import hltHgcalSoARecHitsLayerClustersProducer
 from ..modules.hltHgcalSoARecHitsProducer_cfi import hltHgcalSoARecHitsProducer
-from ..modules.hltHgcalSoALayerClustersProducerHSci_cfi import hltHgcalSoALayerClustersProducerHSci
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSci_cfi import hltHgcalSoARecHitsLayerClustersProducerHSci
 from ..modules.hltHgcalSoARecHitsProducerHSci_cfi import hltHgcalSoARecHitsProducerHSci
-from ..modules.hltHgcalSoALayerClustersProducerHSi_cfi import hltHgcalSoALayerClustersProducerHSi
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerHSi_cfi import hltHgcalSoARecHitsLayerClustersProducerHSi
 from ..modules.hltHgcalSoARecHitsProducerHSi_cfi import hltHgcalSoARecHitsProducerHSi
 from ..modules.hltInputLST_cfi import hltInputLST
@@ -69,13 +67,11 @@ HLTHeterogeneousHGCalRecoSequence = cms.Sequence(
     + hltHGCalRecHit
     + hltHgcalSoARecHitsProducer
     + hltHgcalSoARecHitsLayerClustersProducer
-    + hltHgcalSoALayerClustersProducer
     + hltHgcalSoARecHitsProducerHSci
     + hltHgcalSoARecHitsLayerClustersProducerHSci
-    + hltHgcalSoALayerClustersProducerHSci
     + hltHgcalSoARecHitsProducerHSi
     + hltHgcalSoARecHitsLayerClustersProducerHSi
-    + hltHgcalSoALayerClustersProducerHSi
+    + hltHgcalSoALayerClustersProducer
 )
 
 DST_HeterogeneousReco = cms.Path(

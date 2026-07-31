@@ -149,4 +149,12 @@ hltTiclTrackstersCLUE3DHigh = cms.EDProducer("TrackstersProducer",
     ),
     seeding_regions = cms.InputTag("hltTiclSeedingGlobal"),
     )
-    
+
+
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
+
+(alpaka & ~ticl_barrel).toModify(hltTiclTrackstersCLUE3DHigh,
+    layer_clusters = "hltHgCalLayerClustersFromSoAProducer",
+    original_mask = ("hltHgCalLayerClustersFromSoAProducer", "InitialLayerClustersMask")
+)

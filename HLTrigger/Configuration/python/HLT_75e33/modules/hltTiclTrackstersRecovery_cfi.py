@@ -100,3 +100,10 @@ hltTiclTrackstersRecovery = cms.EDProducer("TrackstersProducer",
     ),
     seeding_regions = cms.InputTag("hltTiclSeedingGlobal"),
 )
+
+from Configuration.ProcessModifiers.alpaka_cff import alpaka
+from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
+
+(alpaka & ~ticl_barrel).toModify(hltTiclTrackstersRecovery,
+    layer_clusters = "hltHgCalLayerClustersFromSoAProducer"
+)
