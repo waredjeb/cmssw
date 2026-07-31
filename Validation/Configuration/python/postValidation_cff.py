@@ -2,6 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 from Validation.RecoMuon.PostProcessor_cff import *
 from Validation.RecoTrack.PostProcessorTracker_cfi import *
+from Validation.TrackingMCTruth.PostProcessorSimPixelTrack_cff import *
 from Validation.MuonIsolation.PostProcessor_cff import *
 from Validation.MuonCSCDigis.PostProcessor_cff import *
 from Validation.CaloTowers.CaloTowersPostProcessor_cff import *
