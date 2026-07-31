@@ -62,7 +62,7 @@
  * @date July 2025
  */
 template <typename TrackerTraits>
-class SimPixelTrackFromRecoTrackProducer : public edm::stream::EDProducer<> {
+class SimPixelTrackFromRecoTrackProducer : public edm::stream::EDProducer<edm::stream::WatchRuns> {
 public:
   explicit SimPixelTrackFromRecoTrackProducer(const edm::ParameterSet&);
   static void fillDescriptions(edm::ConfigurationDescriptions&);
