@@ -58,6 +58,37 @@ def customiseHLTforCLUEsteringAllDetectors(process):
     # EE: retype the existing device clustering step to CLUEstering.
     process = customiseHLTforCLUEstering(process)
 
+    # Scintillator (BH) noise, in MIP units. CLUEstering's effective seeding
+    # density is min_density * sigmaNoise, so the BH rechit SoA must carry a
+    # non-zero scintillator sigmaNoise. Take the exact menu values from the CPU
+    # scintillator layer-cluster module when present, else fall back to the
+    # producer defaults.
+    # These parameters do not exist yet on the (menu-dumped) SoA rechit module,
+    # so they must be passed to clone() as cms types, not bare Python values.
+    # In the HLT menu the CPU scintillator module wires noiseMip as the
+    # HGCAL_noise_heback PSet (scaleByDose etc.); the scalar MIP noise the SoA
+    # producer needs lives in its noise_MIP field.
+    def _scalar(x):
+        if hasattr(x, "noise_MIP"):
+            return x.noise_MIP.value()
+        try:
+            return x.value()
+        except Exception:
+            return None
+
+    sci_noise = {}
+    _cpuSci = getattr(process, "hltHgcalLayerClustersHSci", None)
+    if _cpuSci is not None and hasattr(_cpuSci, "plugin"):
+        _pl = _cpuSci.plugin
+        if hasattr(_pl, "noiseMip"):
+            _nm = _scalar(_pl.noiseMip)
+            if _nm is not None:
+                sci_noise["noiseMip"] = cms.double(_nm)
+        if hasattr(_pl, "sciThicknessCorrection"):
+            _sc = _scalar(_pl.sciThicknessCorrection)
+            if _sc is not None:
+                sci_noise["sciThicknessCorrection"] = cms.double(_sc)
+
     # FH and BH device chains, cloned from the EE modules.
     #   tag -> (detector, recHits, deltac)
     specs = [
@@ -66,12 +97,18 @@ def customiseHLTforCLUEsteringAllDetectors(process):
     ]
     new_modules = []
     for tag, det, recHits, deltac in specs:
-        soarh = process.hltHgcalSoARecHitsProducer.clone(detector=det, recHits=recHits)
+        # BH needs the scintillator noise wired through so sigmaNoise != 0.
+        rh_kwargs = dict(detector=det, recHits=recHits)
+        if det == "BH":
+            rh_kwargs.update(sci_noise)
+        soarh = process.hltHgcalSoARecHitsProducer.clone(**rh_kwargs)
+        # 'detector' is a new parameter on these modules, so pass it as cms.string.
         clue = process.hltHgcalSoARecHitsLayerClustersProducer.clone(
-            hgcalRecHitsSoA="hltHgcalSoARecHits" + tag, deltac=deltac)
+            hgcalRecHitsSoA="hltHgcalSoARecHits" + tag, deltac=deltac, detector=cms.string(det))
         agg = process.hltHgcalSoALayerClustersProducer.clone(
             hgcalRecHitsSoA="hltHgcalSoARecHits" + tag,
-            hgcalRecHitsLayerClustersSoA="hltHgcalCLUEstering" + tag)
+            hgcalRecHitsLayerClustersSoA="hltHgcalCLUEstering" + tag,
+            detector=cms.string(det))
         conv = process.hltHgCalLayerClustersFromSoAProducer.clone(
             detector=det,
             src="hltHgcalSoALayerClusters" + tag,

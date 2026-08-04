@@ -28,7 +28,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           getTokenDeviceClusters_{consumes(config.getParameter<edm::InputTag>("hgcalRecHitsLayerClustersSoA"))},
           deviceTokenSoAClusters_{produces()},
           thresholdW0_(config.getParameter<double>("thresholdW0")),
-          positionDeltaRho2_(config.getParameter<double>("positionDeltaRho2")) {}
+          positionDeltaRho2_(config.getParameter<double>("positionDeltaRho2")),
+          isScintillator_(config.getParameter<std::string>("detector") == "BH") {}
 
     ~HGCalSoALayerClustersProducer() override = default;
 
@@ -75,6 +76,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 num_clusters_,
                 thresholdW0_,
                 positionDeltaRho2_,
+                isScintillator_,
                 inputRechits_v,
                 inputClusters_v,
                 output_v,
@@ -88,6 +90,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<edm::InputTag>("hgcalRecHitsSoA", edm::InputTag("TO BE DEFINED"));
       desc.add<double>("thresholdW0", 2.9);
       desc.add<double>("positionDeltaRho2", 1.69);
+      desc.add<std::string>("detector", "EE")
+          ->setComment("HGCAL component; 'BH' computes the scintillator centroid in cartesian (eta,phi->x,y).");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -99,6 +103,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned int num_clusters_;
     float thresholdW0_;
     float positionDeltaRho2_;
+    const bool isScintillator_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
