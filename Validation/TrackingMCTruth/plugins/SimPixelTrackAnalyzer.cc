@@ -394,17 +394,29 @@ namespace simdoublets {
             "ntuplet building.");
     /*
     Cut on quadruplets (two triplets sharing a doublet) using the curvatures Ci, Co of the triplets:
-    |Co - Ci| < (|Co| + |Ci|)/2 * caDCurvCut + caDCurv0
+    |Co - Ci| < (|Co| + |Ci|)/2 * maxDCurv + floorDCurv
+
+    These four are declared but not read: the analyzer keeps the quadruplet and fishbone cuts disabled
+    (see cellCuts, where caDCurvCuts_/caDCurv0_ are hard-coded to 999). They must still be declared
+    because hltSimPixelTrackAnalyzer_cff clones the whole geometry PSet from hltPhase2PixelTracksSoA,
+    and the CA cuts carried by this branch add them to that PSet. Vanilla CMSSW does not have them,
+    which is why upstream never needed the declarations. maxDCurv/floorDCurv are this branch's names
+    for what the commented-out code above calls caDCurvCuts/caDCurv0.
     */
-    // geometryParams.add<std::vector<double>>("caDCurvCuts", std::vector<double>(TrackerTraits::numberOfLayers, 99.))
-    //     ->setComment("Cut on curvature difference between two consecutive triplets.");
-    // geometryParams.add<std::vector<double>>("caDCurv0", std::vector<double>(TrackerTraits::numberOfLayers, 99.))
-    //     ->setComment("Offset for the cut on curvature difference between two consecutive triplets.");
-    // geometryParams
-    //     .add<std::vector<double>>("fishboneCuts", std::vector<double>(TrackerTraits::numberOfLayers, 0.99999f))
-    //     ->setComment(
-    //         "Threshold for merging aligned doublets in fishbone cleaning. Depends on the layer of the outer RecHit. "
-    //         "Warning: this will be a float in the final algorithm, therefore 0.9999999 will become 1 == no merging!");
+    geometryParams.add<std::vector<double>>("maxDCurv", std::vector<double>(TrackerTraits::numberOfLayers, 99.))
+        ->setComment("Cut on curvature difference between two consecutive triplets. Not used by this analyzer.");
+    geometryParams.add<std::vector<double>>("floorDCurv", std::vector<double>(TrackerTraits::numberOfLayers, 99.))
+        ->setComment(
+            "Offset for the cut on curvature difference between two consecutive triplets. Not used by this analyzer.");
+    geometryParams
+        .add<std::vector<double>>("fishboneCuts", std::vector<double>(TrackerTraits::numberOfLayers, 0.99999f))
+        ->setComment(
+            "Threshold for merging aligned doublets in fishbone cleaning. Depends on the layer of the outer RecHit. "
+            "Not used by this analyzer.");
+    geometryParams
+        .add<std::vector<unsigned int>>("skipsLayers",
+                                        std::vector<unsigned int>(TrackerTraits::nPairsForQuadruplets, 0))
+        ->setComment("Per layer pair, whether the pair skips a layer. Not used by this analyzer.");
     // cells params
     geometryParams
         .add<std::vector<unsigned int>>(
