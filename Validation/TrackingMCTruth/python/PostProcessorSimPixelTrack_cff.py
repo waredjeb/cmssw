@@ -92,13 +92,13 @@ def buildSimNtupletFractions(subfolder, simNtupletName):
     output = []
     for statusTag, statusLabel in [("Alive", "being alive"), 
                                    ("UndefDoubletCuts", "having undef doublet cuts"),
-                                   ("UndefConnectionCuts", "having undef connection cuts"),
+                                   ("UndefTripletCuts", "having undef connection cuts"),
                                    ("MissingLayerPair", "with missing layer pair"),
                                    ("KilledDoublets", "with killed doublets"),
-                                   ("KilledConnections", "with killed connections"),
-                                   ("KilledTripletConnections", "with killed triplet connections"),
+                                   ("KilledTriplets", "with killed triplets"),
+                                   ("KilledQuadruplets", "with killed quadruplets"),
                                    ("TooShort", "having 3 RecHits but yet being to short to pass the threshold"),
-                                   ("NotStartingPair", "starting in a layer pair not considered as a starting point for Ntuplets")]:
+                                   ("InvalidStart", "starting doublet not considered as a starting point for Ntuplets")]:
         strings = (subfolder, statusTag, simNtupletName, statusLabel, subfolder, statusTag)
         output.append("SimNtuplets/%s/frac%s_vs_pt 'Fraction of TPs with %s %s vs p_{T}; TP transverse momentum p_{T} [GeV]; Fraction' SimNtuplets/%s/num_pt_%s general/num_vs_pt" % strings)
         output.append("SimNtuplets/%s/frac%s_vs_eta 'Fraction of TPs with %s %s vs #eta; TP pseudorapidity #eta; Fraction' SimNtuplets/%s/num_eta_%s general/num_vs_eta" % strings)

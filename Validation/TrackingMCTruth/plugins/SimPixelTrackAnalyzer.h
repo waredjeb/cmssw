@@ -48,6 +48,9 @@
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
 
 #include "SimDataFormats/TrackingAnalysis/interface/SimPixelTrack.h"
+#include "SimDataFormats/TrackingAnalysis/interface/SimDoublet.h"
+#include "SimDataFormats/TrackingAnalysis/interface/SimTriplet.h"
+#include "SimDataFormats/TrackingAnalysis/interface/SimNtuplet.h"
 
 #include <vector>
 #include <string>
@@ -68,6 +71,7 @@ namespace simdoublets {
     double dz;
     double dxy;
     double vertpos;
+    double curvature;
     int pdgId{0};
   };
 }  // namespace simdoublets
@@ -79,6 +83,12 @@ namespace simdoublets {
 template <typename TrackerTraits>
 class SimPixelTrackAnalyzer : public DQMEDAnalyzer {
 public:
+  // types for SimPixelTrack properties
+  using float_type = SimPixelTrack::float_type;
+  using int_type = SimPixelTrack::int_type;
+  using layer_type = SimPixelTrack::layer_type;
+  using status_type = SimPixelTrack::status_type;
+
   explicit SimPixelTrackAnalyzer(const edm::ParameterSet&);
   ~SimPixelTrackAnalyzer() override;
 
@@ -88,40 +98,67 @@ public:
   // small struct keeping all cut parameters
   struct CAGeometryParams {
     //Constructor from ParameterSet
-    CAGeometryParams(edm::ParameterSet const& iConfig, double const ptmin, std::vector<int> const& isBarrel)
-        : caDCACuts_(iConfig.getParameter<std::vector<double>>("caDCACuts")),
-          phiCuts_(iConfig.getParameter<std::vector<int>>("phiCuts")),
-          ptCuts_(iConfig.getParameter<std::vector<double>>("ptCuts")),
-          minInner_(iConfig.getParameter<std::vector<double>>("minInner")),
-          maxInner_(iConfig.getParameter<std::vector<double>>("maxInner")),
-          minOuter_(iConfig.getParameter<std::vector<double>>("minOuter")),
-          maxOuter_(iConfig.getParameter<std::vector<double>>("maxOuter")),
-          maxDZ_(iConfig.getParameter<std::vector<double>>("maxDZ")),
-          minDZ_(iConfig.getParameter<std::vector<double>>("minDZ")),
-          maxDR_(iConfig.getParameter<std::vector<double>>("maxDR")) {
-      for (double const caThetaCut : iConfig.getParameter<std::vector<double>>("caThetaCuts")) {
-        caThetaCuts_over_ptmin_.push_back(caThetaCut / ptmin);
-      }
-      for (double const isBar : isBarrel) {
-        isBarrel_.push_back((bool)isBar);
-      }
+    CAGeometryParams(edm::ParameterSet const& iConfig, float_type const ptmin, std::vector<int> const& isBarrel)
+        : isBarrel_(convertVec<bool>(isBarrel)),
+          caThetaCuts_over_ptmin_(
+              convertAndScaleVec<float_type>(iConfig.getParameter<std::vector<double>>("caThetaCuts"), ptmin)),
+          caDCACuts_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("caDCACuts"))),
+          // currently, the following parameters are not used in the PixelTracking algorithm yet, 
+          // which is why they are set to default values
+          // caDCurvCuts_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("caDCurvCuts"))),
+          // caDCurv0_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("caDCurv0"))),
+          // fishboneCuts_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("fishboneCuts"))),
+          // startMaxInnerR_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("startMaxInnerR"))),
+          caDCurvCuts_(convertVec<float_type>(std::vector<double>(caDCACuts_.size(), 999.))),
+          caDCurv0_(convertVec<float_type>(std::vector<double>(caDCACuts_.size(), 999.))),
+          fishboneCuts_(convertVec<float_type>(std::vector<double>(caDCACuts_.size(), 0.99999f))),
+          startMaxInnerR_(convertVec<float_type>(std::vector<double>(caDCACuts_.size(), 999.))),
+          phiCuts_(convertVec<int_type>(iConfig.getParameter<std::vector<int>>("phiCuts"))),
+          ptCuts_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("ptCuts"))),
+          minInner_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("minInner"))),
+          maxInner_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("maxInner"))),
+          minOuter_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("minOuter"))),
+          maxOuter_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("maxOuter"))),
+          maxDZ_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("maxDZ"))),
+          minDZ_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("minDZ"))),
+          maxDR_(convertVec<float_type>(iConfig.getParameter<std::vector<double>>("maxDR"))) {
+      auto nLayerPairs = phiCuts_.size();
+      auto nLayers = caDCACuts_.size();
+      assert(caDCACuts_.size() == nLayers);
+      assert(caDCurvCuts_.size() == nLayers);
+      assert(caDCurv0_.size() == nLayers);
+      assert(fishboneCuts_.size() == nLayers);
+      assert(startMaxInnerR_.size() == nLayers);
+      assert(phiCuts_.size() == nLayerPairs);
+      assert(ptCuts_.size() == nLayerPairs);
+      assert(minInner_.size() == nLayerPairs);
+      assert(maxInner_.size() == nLayerPairs);
+      assert(minOuter_.size() == nLayerPairs);
+      assert(maxOuter_.size() == nLayerPairs);
+      assert(maxDZ_.size() == nLayerPairs);
+      assert(minDZ_.size() == nLayerPairs);
+      assert(maxDR_.size() == nLayerPairs);
     }
 
     // Layers params
-    std::vector<bool> isBarrel_;
-    std::vector<double> caThetaCuts_over_ptmin_;
-    const std::vector<double> caDCACuts_;
+    const std::vector<bool> isBarrel_;
+    const std::vector<float_type> caThetaCuts_over_ptmin_;
+    const std::vector<float_type> caDCACuts_;
+    const std::vector<float_type> caDCurvCuts_;
+    const std::vector<float_type> caDCurv0_;
+    const std::vector<float_type> fishboneCuts_;
+    const std::vector<float_type> startMaxInnerR_;
 
     // Cells params
-    const std::vector<int> phiCuts_;
-    const std::vector<double> ptCuts_;
-    const std::vector<double> minInner_;
-    const std::vector<double> maxInner_;
-    const std::vector<double> minOuter_;
-    const std::vector<double> maxOuter_;
-    const std::vector<double> maxDZ_;
-    const std::vector<double> minDZ_;
-    const std::vector<double> maxDR_;
+    const std::vector<int_type> phiCuts_;
+    const std::vector<float_type> ptCuts_;
+    const std::vector<float_type> minInner_;
+    const std::vector<float_type> maxInner_;
+    const std::vector<float_type> minOuter_;
+    const std::vector<float_type> maxOuter_;
+    const std::vector<float_type> maxDZ_;
+    const std::vector<float_type> minDZ_;
+    const std::vector<float_type> maxDR_;
   };
 
   // this is simply a little helper to allow us to book histograms easier
@@ -378,29 +415,24 @@ public:
     void bookHistograms(DQMStore::IBooker& ibook, const std::string& simNtupletName) {
       alive_.book(ibook, simNtupletName, "Alive", " (alive)");
       undefDoubletCuts_.book(ibook, simNtupletName, "UndefDoubletCuts", " (with undef doublet cuts)");
-      undefConnectionCuts_.book(ibook, simNtupletName, "UndefConnectionCuts", " (with undef connection cuts)");
+      undefTripletCuts_.book(ibook, simNtupletName, "UndefTripletCuts", " (with undef connection cuts)");
       missingLayerPair_.book(ibook, simNtupletName, "MissingLayerPair", " (with missing layer pair)");
       killedDoublets_.book(ibook, simNtupletName, "KilledDoublets", " (killed by doublet cuts)");
-      killedDoubletConnections_.book(
-          ibook, simNtupletName, "KilledConnections", " (killed by doublet connection cuts)");
-      killedTripletConnections_.book(
-          ibook, simNtupletName, "KilledTripletConnections", " (killed by triplet connection cuts)");
+      killedTriplets_.book(ibook, simNtupletName, "KilledTriplets", " (killed by triplet cuts)");
+      killedQuadruplets_.book(ibook, simNtupletName, "KilledQuadruplets", " (killed by quadruplet cuts)");
       tooShort_.book(ibook, simNtupletName, "TooShort", " (3 RecHits but still shorter than the threshold)");
-      notStartingPair_.book(ibook,
-                            simNtupletName,
-                            "NotStartingPair",
-                            " (has first doublet in layer pair not considered for starting Ntuplets)");
+      invalidStart_.book(ibook, simNtupletName, "InvalidStart", " (has first doublet not being a valid start)");
     }
 
     histogramBlock alive_;
     histogramBlock undefDoubletCuts_;
-    histogramBlock undefConnectionCuts_;
+    histogramBlock undefTripletCuts_;
     histogramBlock missingLayerPair_;
     histogramBlock killedDoublets_;
-    histogramBlock killedDoubletConnections_;
-    histogramBlock killedTripletConnections_;
+    histogramBlock killedTriplets_;
+    histogramBlock killedQuadruplets_;
     histogramBlock tooShort_;
-    histogramBlock notStartingPair_;
+    histogramBlock invalidStart_;
   };
 
 private:
@@ -413,7 +445,7 @@ private:
                  SimPixelTrack const&,
                  bool const,
                  bool const,
-                 int const,
+                 size_t const,
                  simdoublets::CellCutVariables const&,
                  simdoublets::ClusterSizeCutManager<TrackerTraits> const&);
 
@@ -429,15 +461,34 @@ private:
   // function that fills all histograms of SimDoublets (in folder SimDoublets)
   void fillSimDoubletHistograms(SimPixelTrack::Doublet const&, simdoublets::TrackTruth const&);
 
+  // function that fills all histograms of fishbone cleaning (in folder CAParameters/fishbone)
+  void fillFishboneHistograms(SimPixelTrack const&);
+
   // function that fills all histograms of SimNtuplets (in folder SimNtuplets)
   void fillSimNtupletHistograms(SimPixelTrack const&, simdoublets::TrackTruth const&);
 
   // function that fills all general histograms (in folder general)
-  void fillGeneralHistograms(SimPixelTrack const&, simdoublets::TrackTruth const&, int const, int const, int const);
+  void fillGeneralHistograms(SimPixelTrack const&, simdoublets::TrackTruth const&, size_t const, size_t const, int_type const);
 
   // function that trys to find a valid Ntuplet for the given SimPixelTrack using the given geometry configuration
   // (layer pairs, starting pairs, minimum number of hits) ignoring all cuts on doublets/connections and returns if it was able to find one
   bool configAllowsForValidNtuplet(SimPixelTrack const&) const;
+
+  // conversion of input vectors
+  template <typename Out, typename In>
+  static std::vector<Out> convertVec(const std::vector<In>& input) {
+    return std::vector<Out>(input.begin(), input.end());
+  }
+
+  template <typename Out, typename In>
+  static std::vector<Out> convertAndScaleVec(const std::vector<In>& input, In divisor) {
+    std::vector<Out> result;
+    result.reserve(input.size());
+    std::transform(input.begin(), input.end(), std::back_inserter(result), [divisor](In x) {
+      return static_cast<Out>(x / divisor);
+    });
+    return result;
+  }
 
   // ------------ member data ------------
 
@@ -446,26 +497,27 @@ private:
   const edm::EDGetTokenT<SimPixelTrackCollection> simPixelTracks_getToken_;
 
   // number of layers in total
-  int numLayers_;
+  size_t numLayers_;
 
   // map that takes the layerPairId as defined in the SimPixelTrack
   // and gives the position of the histogram in the histogram vector
-  std::map<int, int> layerPairId2Index_;
+  std::map<size_t, size_t> layerPairId2Index_;
 
   // set that contains all the layerPairId as defined in the SimPixelTrack
   // that are considered as a starting points for Ntuplets
-  std::set<int> startingPairs_;
+  std::set<size_t> startingPairs_;
 
   // cutting parameters
   CAGeometryParams cellCuts_;
-  const int minYsizeB1_;
-  const int minYsizeB2_;
-  const int maxDYsize12_;
-  const int maxDYsize_;
-  const int maxDYPred_;
-  const double cellZ0Cut_;
-  const double hardCurvCut_;
-  const int minNumDoubletsPerNtuplet_;
+  const int_type minYsizeB1_;
+  const int_type minYsizeB2_;
+  const int_type maxDYsize12_;
+  const int_type maxDYsize_;
+  const int_type maxDYPred_;
+  const float_type cellZ0Cut_;
+  const float_type hardCurvCut_;
+  const size_t minNumDoubletsPerNtuplet_;
+  const size_t minNumLayersPerNtuplet_;
 
   std::string folder_;  // main folder in the DQM file
   // inputIsRecoTracks_: - set to false if SimPixelTracks were produced based on TrackingParticles (truth information)
@@ -500,6 +552,8 @@ private:
   CoupledMonitorElement h_numSkippedLayersPerTrackingObject_;
   CoupledMonitorElement h_numRecHitsPerTrackingObject_;
   CoupledMonitorElement h_numLayersPerTrackingObject_;
+  CoupledMonitorElement h_numRecHitsMinusLayers_;
+  CoupledMonitorElement h_numRecHitsMinusLayersVsEta_;
   CoupledMonitorElement h_numSkippedLayersVsEta_;
   CoupledMonitorElement h_numLayersVsEta_;
   CoupledMonitorElement h_numSkippedLayersVsPt_;
@@ -535,11 +589,11 @@ private:
   std::vector<CoupledCutMonitorElement> hVector_Ysize_;
   std::vector<CoupledCutMonitorElement> hVector_DYsize_;
   std::vector<CoupledCutMonitorElement> hVector_DYPred_;
+  std::vector<CoupledCutMonitorElement> hVector_dCurvCut_;
+  std::vector<CoupledCutMonitorElement> hVector_fishbones_;
   // histograms of doublet connections
   CoupledCutMonitorElement h_hardCurvCut_;
-  CoupledCutMonitorElement h_dCurvCut_;
-  CoupledCutMonitorElement h_curvRatioCut_;
-  // vectors of historgrams (one per layer)
+  // vectors of histograms (one per layer)
   std::vector<CoupledCutMonitorElement> hVector_caThetaCut_;
   std::vector<CoupledCutMonitorElement> hVector_caDCACut_;
   std::vector<CoupledCutMonitorElement> hVector_firstHitR_;
@@ -552,6 +606,7 @@ private:
   CoupledMonitorElement h_bestNtuplet_firstLayerVsEta_;
   CoupledMonitorElement h_bestNtuplet_lastLayerVsEta_;
   CoupledMonitorElement h_bestNtuplet_numSkippedLayersVsNumLayers_;
+  CoupledMonitorElement h_bestNtuplet_numLostLayersVsEta_;
   MonitorElement* h_aliveNtuplet_fracNumRecHits_eta_;
   MonitorElement* h_aliveNtuplet_fracNumRecHits_pt_;
   // histograms of the longest Ntuplet per TP

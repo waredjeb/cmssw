@@ -1,0 +1,9 @@
+import FWCore.ParameterSet.Config as cms
+
+from SimTracker.TrackerHitAssociation.simPixelTrackProducerPhase2_cfi import simPixelTrackProducerPhase2
+
+hltSimPixelTrackProducerPhase2 = simPixelTrackProducerPhase2.clone()
+
+from Configuration.ProcessModifiers.hltPhase2LegacyTrackingPatatrackQuadsChain_cff import hltPhase2LegacyTrackingPatatrackQuads
+hltPhase2LegacyTrackingPatatrackQuads.toModify(hltSimPixelTrackProducerPhase2, includeOTBarrel=False)
+

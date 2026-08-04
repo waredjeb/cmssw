@@ -38,252 +38,50 @@
  */
 class SimPixelTrack {
 public:
-  /**
-    * Sub-class for true doublets of RecHits
-    *  - first hit = inner RecHit
-    *  - second hit = outer RecHit
-    */
-  class Doublet {
-  public:
-    // possible states of the doublet (could be set by an analyzer according to doublet cuts)
-    enum class Status : uint8_t { undef, alive, killedByCuts, killedByMissingLayerPair };
+  // types for SimPixelTrack properties (also used for CA cuts in the SimPixelTracksAnalyzer)
+  using float_type = double;
+  using int_type = int16_t;
+  using layer_type = uint16_t;
+  using status_type = uint8_t;
 
-    struct Neighbor {
-      Neighbor(size_t index, size_t nInnerNeighbors)
-          : index_(index), status_(Status::undef), tripletConnectionIsKilled_(nInnerNeighbors, false) {}
+  inline static layer_type kInvalidLayerId = std::numeric_limits<layer_type>::max();
 
-      size_t index() const { return index_; }
+  struct Hits {
+    // vectors of usual hit properties
+    std::vector<unsigned int> detIds;          // detector Ids of the RecHits
+    std::vector<int> moduleIds;                // module Ids of the RecHits
+    std::vector<GlobalPoint> globalPositions;  // global positions of the RecHits (corrected by beamspot)
+    std::vector<layer_type> layerIds;          // layer IDs corresponding to the RecHits
+    std::vector<int_type> clusterYSizes;       // cluster sizes (local y) corresponding to the RecHits
 
-      // methods to set status to undef, alive or killed
-      void setUndef() { status_ = Status::undef; }
-      void setAlive() { status_ = Status::alive; }
-      void setKilled() { status_ = Status::killedByCuts; }
-
-      // methods to check if status is undef, alive or killed
-      bool isUndef() const { return status_ == Status::undef; }
-      bool isAlive() const { return status_ == Status::alive; }
-      bool isKilled() const { return status_ == Status::killedByCuts; }
-
-      void setCurvature(double const curvature) { curvature_ = curvature; }
-      double curvature() const { return curvature_; }
-
-      void setKilledTripletConnection(int i) { tripletConnectionIsKilled_.at(i) = true; }
-      bool isKilledTripletConnection(int i) { return tripletConnectionIsKilled_.at(i); }
-      std::vector<bool> const& tripletConnections() const { return tripletConnectionIsKilled_; }
-
-      size_t index_;                                   // index of the neighboring doublet
-      Status status_;                                  // status of the connection to the neighboring doublet
-      double curvature_{-99999};                       // curvature of the neighboring pair of doublets (=triplet)
-      std::vector<bool> tripletConnectionIsKilled_{};  // status of the triplet connection to the neighbor's neighbors
-    };
-
-    // default constructor
-    Doublet() = default;
-
-    // constructor
-    Doublet(SimPixelTrack const&, size_t const, size_t const, const TrackerTopology*, std::vector<size_t> const&);
-
-    // method to get the layer pair
-    std::pair<uint8_t, uint8_t> layerIds() const { return layerIds_; }
-
-    // method to get the number of skipped layers
-    int8_t numSkippedLayers() const { return numSkippedLayers_; }
-
-    // method to get the layer pair ID
-    int16_t layerPairId() const { return layerPairId_; }
-
-    // methods to get the inner/outer layerId
-    uint8_t innerLayerId() const { return layerIds_.first; }
-    uint8_t outerLayerId() const { return layerIds_.second; }
-
-    // methods to get the cluster size of the inner/outer RecHit
-    int16_t innerClusterYSize() const { return clusterYSizes_.first; }
-    int16_t outerClusterYSize() const { return clusterYSizes_.second; }
-
-    // methods to get the module ids of the inner/outer RecHit
-    unsigned int innerModuleId() const { return moduleIds_.first; }
-    unsigned int outerModuleId() const { return moduleIds_.second; }
-
-    // methods to get the global position of the inner/outer RecHit
-    GlobalPoint innerGlobalPos() const { return globalPositions_.first; };
-    GlobalPoint outerGlobalPos() const { return globalPositions_.second; };
-
-    // methods to set status to undef, alive or killed
-    void setUndef() { status_ = Status::undef; }
-    void setAlive() { status_ = Status::alive; }
-    void setKilledByCuts() { status_ = Status::killedByCuts; }
-    void setKilledByMissingLayerPair() { status_ = Status::killedByMissingLayerPair; }
-
-    // methods to check if status is undef, alive or killed
-    bool isUndef() const { return status_ == Status::undef; }
-    bool isAlive() const { return status_ == Status::alive; }
-    bool isKilledByCuts() const { return status_ == Status::killedByCuts; }
-    bool isKilledByMissingLayerPair() const { return status_ == Status::killedByMissingLayerPair; }
-    bool isKilled() const { return isKilledByCuts() || isKilledByMissingLayerPair(); }
-
-    // methods to get the vector of inner neighboring doublets
-    std::vector<Neighbor>& innerNeighbors() { return innerNeighbors_; }
-    std::vector<Neighbor> const& innerNeighborsView() const { return innerNeighbors_; }
-    int innerNeighborIndex(int i) const { return innerNeighbors_.at(i).index(); }
-    // method to get the number of neighbors
-    int numInnerNeighbors() const { return innerNeighbors_.size(); }
-    // method to get the inner layer ID of the neighbors
-    uint8_t innerNeighborsInnerLayerId() const { return innerNeighborsInnerLayerId_; }
-
-  private:
-    std::pair<int, int> moduleIds_;                        // module Ids of the RecHits of the Doublet
-    std::pair<GlobalPoint, GlobalPoint> globalPositions_;  // global position of the RecHits of the Doublet
-                                                           // (corrected by beamspot)
-    std::pair<uint8_t, uint8_t> layerIds_;                 // pair of layer IDs corresponding to the RecHits
-    std::pair<int16_t, int16_t> clusterYSizes_;            // pair of cluster sizes corresponding to the RecHits
-    Status status_;                                        // status of the doublet
-    int8_t numSkippedLayers_;                              // number of layers skipped by the Doublet
-    int16_t layerPairId_;                     // ID of the layer pair as defined in the reconstruction for the doublets
-    std::vector<Neighbor> innerNeighbors_{};  // indices of inner neighboring doublets and the status of the connection
-    uint8_t innerNeighborsInnerLayerId_{99};  // layer ID of the inner RecHit of the inner neighboring doublets
+    // vectors of vectorHit properties
+    std::vector<float_type> dPhiDrs;     // dPhi / dR of the stub, -1 for non-stub hit
+    std::vector<float_type> dPhiDrErrs;  // error of dPhi / dR of the stub, -1 for non-stub hit
   };
 
-  /**
-    * Sub-class for true Ntuplets of the Tracking Particle
-    * - keep track of length == number of doublets
-    * - first and last layer
-    * - whether the Ntuplet is actually created (survives all cuts)
-    */
-  class Ntuplet {
-  public:
-    // flags indicating qualities of Ntuplet (depending on its constituents)
-    // The order is chosen in such a way that a smaller status value means that the Ntuplet get farther
-    // in the reconstruction chain. Hence, a value of 0 corresponds to the Ntuplet surviving reconstruction.
-    enum class StatusBit : uint8_t {
-      isTooShort = 1,
-      hasMissingLayerPair = 1 << 1,
-      hasUndefDoubletCuts = 1 << 2,
-      hasKilledDoublets = 1 << 3,
-      hasUndefDoubletConnectionCuts = 1 << 4,
-      hasKilledDoubletConnections = 1 << 5,
-      hasKilledTripletConnections = 1 << 6,
-      firstDoubletNotInStartingLayerPairs = 1 << 7
-    };
-
-    // default constructor
-    Ntuplet() = default;
-
-    // constructor
-    Ntuplet(uint8_t const numDoublets,
-            uint8_t const status,
-            uint8_t const firstLayerId,
-            uint8_t const secondLayerId,
-            uint8_t const lastLayerId,
-            uint8_t const numSkippedLayers)
-        : numDoublets_(numDoublets),
-          status_(status),
-          firstLayerId_(firstLayerId),
-          secondLayerId_(secondLayerId),
-          lastLayerId_(lastLayerId),
-          numSkippedLayers_(numSkippedLayers){};
-
-    // accessing the different members
-    uint8_t numDoublets() const { return numDoublets_; }
-    uint8_t numRecHits() const { return (numDoublets_ + 1); }
-    uint8_t firstLayerId() const { return firstLayerId_; }
-    uint8_t secondLayerId() const { return secondLayerId_; }
-    uint8_t lastLayerId() const { return lastLayerId_; }
-    uint8_t numSkippedLayers() const { return numSkippedLayers_; }
-
-    // method to update an external status
-    static uint8_t updateStatus(uint8_t status,
-                                bool const hasUndefDoubletCuts,
-                                bool const hasMissingLayerPair,
-                                bool const hasKilledDoublets,
-                                bool const hasUndefDoubletConnectionCuts,
-                                bool const hasKilledDoubletConnections,
-                                bool const hasKilledTripletConnections,
-                                bool const isTooShort = false,
-                                bool const firstDoubletNotInStartingLayerPairs = false) {
-      return status |
-             (uint8_t(hasUndefDoubletCuts) * uint8_t(StatusBit::hasUndefDoubletCuts) +
-              uint8_t(hasMissingLayerPair) * uint8_t(StatusBit::hasMissingLayerPair) +
-              uint8_t(hasKilledDoublets) * uint8_t(StatusBit::hasKilledDoublets) +
-              uint8_t(hasUndefDoubletConnectionCuts) * uint8_t(StatusBit::hasUndefDoubletConnectionCuts) +
-              uint8_t(hasKilledDoubletConnections) * uint8_t(StatusBit::hasKilledDoubletConnections) +
-              uint8_t(hasKilledTripletConnections) * uint8_t(StatusBit::hasKilledTripletConnections) +
-              uint8_t(isTooShort) * uint8_t(StatusBit::isTooShort) +
-              uint8_t(firstDoubletNotInStartingLayerPairs) * uint8_t(StatusBit::firstDoubletNotInStartingLayerPairs));
-    }
-
-    // methods to set status to alive, undef or killed
-    void setUndefDoubletCuts() { status_ |= uint8_t(StatusBit::hasUndefDoubletCuts); }
-    void setUndefDoubletConnectionCuts() { status_ |= uint8_t(StatusBit::hasUndefDoubletConnectionCuts); }
-    void setMissingLayerPair() { status_ |= uint8_t(StatusBit::hasMissingLayerPair); }
-    void setKilledDoublets() { status_ |= uint8_t(StatusBit::hasKilledDoublets); }
-    void setKilledDoubletConnections() { status_ |= uint8_t(StatusBit::hasKilledDoubletConnections); }
-    void setKilledTripletConnections() { status_ |= uint8_t(StatusBit::hasKilledTripletConnections); }
-    void setTooShort() { status_ |= uint8_t(StatusBit::isTooShort); }
-    void setFirstDoubletNotInStartingLayerPairs() {
-      status_ |= uint8_t(StatusBit::firstDoubletNotInStartingLayerPairs);
-    }
-
-    // methods to check if status is undef, alive or killed
-    bool hasUndefDoubletCuts() const { return status_ & uint8_t(StatusBit::hasUndefDoubletCuts); }
-    bool hasUndefDoubletConnectionCuts() const { return status_ & uint8_t(StatusBit::hasUndefDoubletConnectionCuts); }
-    bool hasUndef() const { return hasUndefDoubletCuts() || hasUndefDoubletConnectionCuts(); }
-    bool hasMissingLayerPair() const { return status_ & uint8_t(StatusBit::hasMissingLayerPair); }
-    bool hasKilledDoublets() const { return status_ & uint8_t(StatusBit::hasKilledDoublets); }
-    bool hasKilledDoubletConnections() const { return status_ & uint8_t(StatusBit::hasKilledDoubletConnections); }
-    bool hasKilledTripletConnections() const { return status_ & uint8_t(StatusBit::hasKilledTripletConnections); }
-    bool isKilled() const {
-      return hasMissingLayerPair() || hasKilledDoublets() || hasKilledDoubletConnections() ||
-             hasKilledTripletConnections();
-    }
-    bool isTooShort() const { return status_ & uint8_t(StatusBit::isTooShort); }
-    bool firstDoubletNotInStartingLayerPairs() const {
-      return status_ & uint8_t(StatusBit::firstDoubletNotInStartingLayerPairs);
-    }
-    bool isAlive() const { return !(status_); }  // if nothing is set (no undef and no kills) the tuplet is alive
-
-    // method to get the leading digit of the status (first non-zero one),
-    // e.g. status=00110100 -> failingRecoStep()=00000100
-    // This represents the first step of the reco chain the given Ntuplet fails.
-    // For an alive Ntuplet, return the max value 11111111.
-    uint8_t failingRecoStep() const {
-      if (isAlive())
-        return 0b11111111;
-      else
-        return (status_ & ((~status_) + 1));
-    }
-
-    // method to compare the own status to a given reference and check which one gets farther in the reconstruction chain
-    bool getsFartherInRecoChainThanReference(Ntuplet const& referenceNtuplet) const {
-      return failingRecoStep() > referenceNtuplet.failingRecoStep();
-    }
-    // method to check if the own Ntuplet gets exactly as far in the reco chain as a given reference
-    bool getsAsFarInRecoChainAsReference(Ntuplet const& referenceNtuplet) const {
-      return failingRecoStep() == referenceNtuplet.failingRecoStep();
-    }
-
-  private:
-    uint8_t numDoublets_;    // number of doublets in the Ntuplet
-    uint8_t status_;         // status flags of the Ntuplet (missing layer pairs, undefined cuts, killed doublets, etc.)
-    uint8_t firstLayerId_;   // index of the first layer of the Ntuplet
-    uint8_t secondLayerId_;  // index of the second layer of the Ntuplet
-    uint8_t lastLayerId_;    // index of the last layer of the Ntuplet
-    uint8_t numSkippedLayers_;  // number of skipped layers over the full Ntuplet (sum of skips by doublets)
+  struct Fishbone {
+    layer_type layerId;  // outer layer Id of the doublets
+    float_type score;    // fishbone score
   };
 
-  // default contructor
-  SimPixelTrack() = default;
+  // SimDoublets, SimTriplets and SimNtuplets
+  class Doublet;
+  class Triplet;
+  class Ntuplet;
 
-  // constructor
-  SimPixelTrack(TrackingParticleRef const trackingParticleRef, reco::BeamSpot const& beamSpot)
-      : trackingParticleRef_(trackingParticleRef), beamSpotPosition_(beamSpot.x0(), beamSpot.y0(), beamSpot.z0()) {}
-  SimPixelTrack(reco::TrackBaseRef const trackRef, reco::BeamSpot const& beamSpot)
-      : trackRef_(trackRef), beamSpotPosition_(beamSpot.x0(), beamSpot.y0(), beamSpot.z0()) {}
-  SimPixelTrack(reco::BeamSpot const& beamSpot) : beamSpotPosition_(beamSpot.x0(), beamSpot.y0(), beamSpot.z0()) {}
+  // contructors
+  SimPixelTrack();
+  SimPixelTrack(TrackingParticleRef const trackingParticleRef, reco::BeamSpot const& beamSpot);
+  SimPixelTrack(reco::TrackBaseRef const trackRef, reco::BeamSpot const& beamSpot);
+  SimPixelTrack(reco::BeamSpot const& beamSpot);
+
+  // destructor
+  ~SimPixelTrack();
 
   // method to add a RecHit to the SimPixelTrack
   void addRecHit(TrackingRecHit const& recHit,
-                 uint8_t const layerId,
-                 int16_t const clusterYSize,
+                 layer_type const layerId,
+                 int_type const clusterYSize,
                  unsigned int const detId,
                  int const moduleId);
 
@@ -293,39 +91,39 @@ public:
   reco::TrackBaseRef track() const { return trackRef_; }
 
   // method to get the detector id vector
-  std::vector<unsigned int> detIds() const { return detIdVector_; }
+  std::vector<unsigned int> detIds() const { return hits_.detIds; }
   // method to get the detector id at index i
-  unsigned int detIds(size_t const i) const { return detIdVector_[i]; }
+  unsigned int detIds(size_t const i) const { return hits_.detIds[i]; }
 
   // method to get the module id vector
-  std::vector<int> moduleIds() const { return moduleIdVector_; }
+  std::vector<int> moduleIds() const { return hits_.moduleIds; }
   // method to get the module id at index i
-  int moduleIds(size_t const i) const { return moduleIdVector_[i]; }
+  int moduleIds(size_t const i) const { return hits_.moduleIds[i]; }
 
   // method to get the global position vector of the RecHits
-  std::vector<GlobalPoint> globalPositions() const { return globalPositionVector_; }
+  std::vector<GlobalPoint> globalPositions() const { return hits_.globalPositions; }
   // method to get the global position of the RecHit at index i
-  GlobalPoint globalPositions(size_t const i) const { return globalPositionVector_[i]; }
+  GlobalPoint globalPositions(size_t const i) const { return hits_.globalPositions[i]; }
 
   // method to get the layer id vector
-  std::vector<uint8_t> layerIds() const { return layerIdVector_; }
+  std::vector<layer_type> layerIds() const { return hits_.layerIds; }
   // method to get the layer id at index i
-  uint8_t layerIds(size_t const i) const { return layerIdVector_[i]; }
+  layer_type layerIds(size_t const i) const { return hits_.layerIds[i]; }
 
   // method to get the cluster size vector
-  std::vector<int16_t> clusterYSizes() const { return clusterYSizeVector_; }
+  std::vector<int_type> clusterYSizes() const { return hits_.clusterYSizes; }
   // method to get the cluster size at index i
-  int16_t clusterYSizes(size_t const i) const { return clusterYSizeVector_[i]; }
+  int_type clusterYSizes(size_t const i) const { return hits_.clusterYSizes[i]; }
 
   // method to get the beam spot position
   GlobalVector beamSpotPosition() const { return beamSpotPosition_; }
 
   // method to get the number of layers
-  int numLayers() const { return numLayers_; }
+  size_t numLayers() const { return numLayers_; }
   // method to get number of RecHits in the SimPixelTrack
-  int numRecHits() const { return layerIdVector_.size(); }
+  size_t numRecHits() const { return hits_.layerIds.size(); }
   // method to get the number of SimDoublets
-  int numDoublets() const { return doublets_.size(); }
+  size_t numDoublets() const;
 
   // method to sort the RecHits according to the position (either a given reference point or the TP vertex)
   void sortRecHits();
@@ -334,84 +132,71 @@ public:
   // method to produce the SimDoublets from the RecHits
   void buildSimDoublets(const TrackerTopology* trackerTopology) const;
   // method to access the SimDoublets
-  std::vector<Doublet>& getSimDoublets() const { return doublets_; }
+  std::vector<Doublet>& getSimDoublets() const;
   // method to build and access the SimDoublets
-  std::vector<Doublet>& buildAndGetSimDoublets(const TrackerTopology* trackerTopology) const {
-    buildSimDoublets(trackerTopology);
-    return doublets_;
-  }
+  std::vector<Doublet>& buildAndGetSimDoublets(const TrackerTopology* trackerTopology) const;
   // method to access a single SimDoublet
-  Doublet const& getSimDoublet(int const index) const { return doublets_.at(index); }
+  Doublet const& getSimDoublet(size_t const index) const;
 
   // method to build the SimNtuplets
   // minNumDoubletsToPass = the number of doublets required for the Ntuplet to not be considered too short
-  void buildSimNtuplets(std::set<int> const& startingPairs, size_t const minNumDoubletsToPass = 0) const;
+  void buildSimNtuplets(size_t const minNumDoubletsToPass) const;
   // method to access the SimNtuplets
-  std::vector<Ntuplet>& getSimNtuplets() const { return ntuplets_; };
+  std::vector<Ntuplet>& getSimNtuplets() const;
   // method to build and access the SimNtuplets in one go
   // minNumDoubletsToPass = the number of doublets required for the Ntuplet to not be considered too short
-  std::vector<Ntuplet>& buildAndGetSimNtuplets(std::set<int> const& startingPairs,
-                                               size_t const minNumDoubletsToPass = 0) const {
-    buildSimNtuplets(startingPairs, minNumDoubletsToPass);
-    return ntuplets_;
-  };
+  std::vector<Ntuplet>& buildAndGetSimNtuplets(size_t const minNumDoubletsToPass) const;
 
   // method to check if there are SimNtuplets
-  bool hasSimNtuplet() const { return longestNtupletIndex_.has_value(); }
+  bool hasSimNtuplet() const;
   // method to check if there are alive SimNtuplet
-  bool hasAliveSimNtuplet() const { return longestAliveNtupletIndex_.has_value(); }
+  bool hasAliveSimNtuplet() const;
 
   // method to access the longest SimNtuplet
-  Ntuplet const& longestSimNtuplet() const { return ntuplets_.at(*longestNtupletIndex_); }
+  Ntuplet const& longestSimNtuplet() const;
   // method to access the longest alive SimNtuplet
-  Ntuplet const& longestAliveSimNtuplet() const { return ntuplets_.at(*longestAliveNtupletIndex_); }
+  Ntuplet const& longestAliveSimNtuplet() const;
   // method to access the best SimNtuplet
-  Ntuplet const& bestSimNtuplet() const { return ntuplets_.at(*bestNtupletIndex_); }
+  Ntuplet const& bestSimNtuplet() const;
+
+  // method to get fishbone alignments
+  std::vector<Fishbone> fishboneScores() const;
 
   // method to clear the mutable vectors once you finished using them
-  void clearMutables() const {
-    doublets_.clear();
-    ntuplets_.clear();
-    longestNtupletIndex_.reset();
-    longestAliveNtupletIndex_.reset();
-    bestNtupletIndex_.reset();
-  }
+  void clearMutables() const;
 
 private:
   // function for recursive building of Ntuplets
   void buildSimNtuplets(Doublet const& doublet,
-                        std::vector<bool> const& tripletConnections,
+                        std::vector<bool> const& quadruplets,
                         size_t numSimDoublets,
-                        size_t const lastLayerId,
-                        uint8_t const status,
-                        uint8_t const numSkippedLayers,
-                        std::set<int> const& startingPairs,
+                        layer_type const lastLayerId,
+                        status_type const status,
+                        int_type const numSkippedLayers,
                         size_t const minNumDoubletsToPass) const;
 
   // class members
   TrackingParticleRef trackingParticleRef_;  // reference to the TrackingParticle (if SimPixelTrack is based on a TP)
   reco::TrackBaseRef trackRef_;              // referency to the track (if SimPixelTrack is based on a track)
-  std::vector<unsigned int> detIdVector_;    // vector of the detector Ids of the RecHits associated to the TP
-  std::vector<int> moduleIdVector_;          // vector of the module Ids of the RecHits
-  std::vector<GlobalPoint> globalPositionVector_;  // vector of the global positions of the RecHits
-                                                   // (corrected by beamspot)
-  std::vector<uint8_t> layerIdVector_;             // vector of layer IDs corresponding to the RecHits
-  std::vector<int16_t> clusterYSizeVector_;        // vector of cluster sizes (local y) corresponding to the RecHits
+  Hits hits_;                                // RecHits associated to the TP
   GlobalVector beamSpotPosition_;  // global position of the beam spot (needed to correct the global RecHit position)
   bool recHitsAreSorted_{false};   // true if RecHits were sorted
-  int numLayers_{0};               // number of layers hit by the TrackingParticle
+  size_t numLayers_{0};            // number of layers hit by the TrackingParticle
 
   // non-persistent, mutable members:
   // vector of true doublets
-  mutable std::vector<Doublet> doublets_{};
+  mutable std::vector<Doublet> doublets_;
   // vector of true Ntuplets
-  mutable std::vector<Ntuplet> ntuplets_{};
+  mutable std::vector<Ntuplet> ntuplets_;
   // index of the longest SimNtuplet
   mutable std::optional<size_t> longestNtupletIndex_{-1};
   // index of the longest SimNtuplet that survives
   mutable std::optional<size_t> longestAliveNtupletIndex_{-1};
   // index of the SimNtuplet that gets the farthest in the reco chain
   mutable std::optional<size_t> bestNtupletIndex_{-1};
+  // vector of length NrecHits that holds for each RecHit references to all the
+  // doublets that have this hit as an outer hit
+  mutable std::vector<std::vector<size_t>> innerDoubletsOfRecHit_{};
 };
 
 // collection of SimPixelTrack

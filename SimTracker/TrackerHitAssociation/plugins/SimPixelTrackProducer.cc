@@ -38,6 +38,9 @@
 #include "DataFormats/TrackerRecHit2D/interface/OmniClusterRef.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimDataFormats/TrackingAnalysis/interface/SimPixelTrack.h"
+#include "SimDataFormats/TrackingAnalysis/interface/SimDoublet.h"
+#include "SimDataFormats/TrackingAnalysis/interface/SimTriplet.h"
+#include "SimDataFormats/TrackingAnalysis/interface/SimNtuplet.h"
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEFastParamsHost.h"
 #include "RecoLocalTracker/Records/interface/PixelCPEFastParamsRecord.h"
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEBase.h"
@@ -73,6 +76,12 @@
 template <typename TrackerTraits>
 class SimPixelTrackProducer : public edm::stream::EDProducer<edm::stream::WatchRuns> {
 public:
+  // types for SimPixelTrack properties
+  using float_type = SimPixelTrack::float_type;
+  using int_type = SimPixelTrack::int_type;
+  using layer_type = SimPixelTrack::layer_type;
+  using status_type = SimPixelTrack::status_type;
+
   explicit SimPixelTrackProducer(const edm::ParameterSet&);
   static void fillDescriptions(edm::ConfigurationDescriptions&);
 
@@ -209,7 +218,7 @@ void SimPixelTrackProducer<pixelTopology::Phase2>::fillDescriptions(edm::Configu
   desc.add<edm::InputTag>("beamSpotSrc", edm::InputTag("hltOnlineBeamSpot"));
 
   // Extension settings
-  desc.add<bool>("includeOTBarrel", false)->setComment("If true, add barrel layers from the OT extension.");
+  desc.add<bool>("includeOTBarrel", true)->setComment("If true, add barrel layers from the OT extension.");
   desc.add<bool>("includeOTDisks", false)->setComment("If true, add disk layers from the OT extension.");
   desc.add<bool>("dropEvenLayerRecHits", false)
       ->setComment("If true, the RecHits in layers with even index are dropped when building the SimNtuplets.");
@@ -305,12 +314,14 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
   }
 
   // initialize a couple of counters
-  int count_associatedRecHits{0}, count_RecHitsInSimPixelTrack{0};
+  int count_recHits{0}, count_associatedRecHits{0}, count_generalAssociatedRecHits{0}, count_RecHitsInSimPixelTrack{0};
 
   // initialize a couple of variables used in the following loop
-  unsigned int detId, layerId, maxCol;
+  unsigned int detId, maxCol;
+  layer_type layerId;
+  int_type clusterYSize;
   uint16_t pixmx;
-  int moduleId, clusterYSize;
+  int moduleId;
 
   // loop over pixel RecHit collections of the different pixel modules
   for (const auto& detSet : *hits) {
@@ -319,13 +330,13 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
     DetId detIdObject(detId);
 
     // determine layer Id from detector Id
-    layerId = simpixeltracks::getLayerId<TrackerTraits>(detId, trackerTopology_);
+    layerId = simpixeltracks::getLayerId<TrackerTraits, layer_type>(detId, trackerTopology_);
 
     // check if we would like to skip
-    if (dropEvenLayerRecHits_ && (layerId % 2 == 0)) {
+    if (dropEvenLayerRecHits_ && (layerId % 2u == 0u)) {
       continue;
     }
-    if (dropOddLayerRecHits_ && (layerId % 2 == 1)) {
+    if (dropOddLayerRecHits_ && (layerId % 2u == 1u)) {
       continue;
     }
 
@@ -340,11 +351,13 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
 
     // loop over RecHits
     for (auto const& hit : detSet) {
+      count_recHits++;
       // find associated TrackingParticles
       auto range = clusterTPAssociation.equal_range(OmniClusterRef(hit.cluster()));
 
       // if the RecHit has associated TrackingParticles
       if (range.first != range.second) {
+        count_generalAssociatedRecHits++;
         for (auto assocTrackingParticleIter = range.first; assocTrackingParticleIter != range.second;
              assocTrackingParticleIter++) {
           const TrackingParticleRef assocTrackingParticle = (assocTrackingParticleIter->second);
@@ -352,7 +365,7 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
           // if the associated TrackingParticle is among the selected ones
           if (selectedTrackingParticleKeys.has(assocTrackingParticle.key())) {
             // determine the cluster size of the RecHit
-            clusterYSize = simpixeltracks::clusterYSize(hit.cluster(), pixmx, maxCol);
+            clusterYSize = simpixeltracks::clusterYSize<int_type>(hit.cluster(), pixmx, maxCol);
             count_associatedRecHits++;
             // loop over collection of SimPixelTrack and find the one of the associated TrackingParticle
             for (auto& simPixelTrack : simPixelTrackCollection) {
@@ -360,6 +373,7 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
               if (assocTrackingParticle.key() == trackingParticleRef.key()) {
                 simPixelTrack.addRecHit(hit, layerId, clusterYSize, detId, moduleId);
                 count_RecHitsInSimPixelTrack++;
+                break;
               }
             }
           }
@@ -394,13 +408,13 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
         continue;
 
       // determine layer Id from detector Id
-      layerId = simpixeltracks::getLayerId<TrackerTraits>(detId, trackerTopology_);
+      layerId = simpixeltracks::getLayerId<TrackerTraits, layer_type>(detId, trackerTopology_);
 
       // check if we would like to skip
-      if (dropEvenLayerRecHits_ && (layerId % 2 == 0)) {
+      if (dropEvenLayerRecHits_ && (layerId % 2u == 0u)) {
         continue;
       }
-      if (dropOddLayerRecHits_ && (layerId % 2 == 1)) {
+      if (dropOddLayerRecHits_ && (layerId % 2u == 1u)) {
         continue;
       }
 
@@ -442,8 +456,10 @@ void SimPixelTrackProducer<TrackerTraits>::produce(edm::Event& event, const edm:
     simPixelTrack.sortRecHits();
   }
 
-  LogDebug("SimPixelTrackProducer") << "Size of SiPixelRecHitCollection : " << hits->size() << std::endl;
-  LogDebug("SimPixelTrackProducer") << count_associatedRecHits << " of " << hits->size()
+  LogDebug("SimPixelTrackProducer") << "Size of SiPixelRecHitCollection : " << count_recHits << std::endl;
+  LogDebug("SimPixelTrackProducer") << count_generalAssociatedRecHits << " of " << count_recHits
+                                    << " RecHits are generally associated to a TrackingParticles." << std::endl;
+  LogDebug("SimPixelTrackProducer") << count_associatedRecHits << " of " << count_recHits
                                     << " RecHits are associated to selected TrackingParticles ("
                                     << count_RecHitsInSimPixelTrack - count_associatedRecHits
                                     << " of them were associated multiple times)." << std::endl;

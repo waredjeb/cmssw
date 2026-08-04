@@ -3,21 +3,21 @@
 
 namespace simpixeltracks {
   // function that determines the layerId from the detId for Phase 1 and 2
-  template <typename TrackerTraits>
-  unsigned int getLayerId(DetId const& detId, const TrackerTopology* trackerTopology) {
+  template <typename TrackerTraits, typename IntType>
+  IntType getLayerId(DetId const& detId, const TrackerTopology* trackerTopology) {
     // number of barrel layers
-    constexpr unsigned int numBarrelLayers{4};
+    constexpr IntType numBarrelLayers{4};
     // number of disks per endcap
-    constexpr unsigned int numEndcapDisks = (TrackerTraits::numberOfLayers - numBarrelLayers) / 2;
+    constexpr IntType numEndcapDisks = (TrackerTraits::numberOfLayers - numBarrelLayers) / 2;
     // number of pixel layers in total
-    constexpr unsigned int numPixelLayers = (TrackerTraits::numberOfLayers);
+    constexpr IntType numPixelLayers = (TrackerTraits::numberOfLayers);
     // number of OT barrel layers
-    constexpr unsigned int numOTBarrelLayers{3};  // FIXME: hardcoded for now
+    constexpr IntType numOTBarrelLayers{3};  // FIXME: hardcoded for now
     // number of disks per OT endcap
-    constexpr unsigned int numOTEndcapDisks{5};  // FIXME: hardcoded for now
+    constexpr IntType numOTEndcapDisks{5};  // FIXME: hardcoded for now
 
     // set default to 999 (invalid)
-    unsigned int layerId{99};
+    IntType layerId{99};
 
     switch (detId.subdetId()) {
       case PixelSubdetector::PixelBarrel:
@@ -53,7 +53,8 @@ namespace simpixeltracks {
 
   // function that determines the cluster size of a Pixel RecHit in local y direction
   // according to the formula used in Patatrack reconstruction
-  inline int clusterYSize(OmniClusterRef::ClusterPixelRef const cluster, uint16_t const pixmx, int const maxCol) {
+  template < typename IntType>
+  inline IntType clusterYSize(OmniClusterRef::ClusterPixelRef const cluster, uint16_t const pixmx, int const maxCol) {
     // check if the cluster lies at the y-edge of the module
     if (cluster->minPixelCol() == 0 || cluster->maxPixelCol() == maxCol) {
       // if so, return -1
@@ -61,7 +62,7 @@ namespace simpixeltracks {
     }
 
     // column span (span of cluster in y direction)
-    int span = cluster->colSpan();
+    IntType span = cluster->colSpan();
 
     // total charge of the first and last column of digis respectively
     int q_firstCol = 0;
@@ -83,10 +84,10 @@ namespace simpixeltracks {
     }
 
     // calculate the unbalance term
-    int unbalance = 8. * std::abs(float(q_firstCol - q_lastCol)) / float(q_firstCol + q_lastCol);
+    IntType unbalance = 8. * std::abs(float(q_firstCol - q_lastCol)) / float(q_firstCol + q_lastCol);
 
     // calculate the cluster size
-    int clusterYSize = 8 * (span + 1) - unbalance;
+    IntType clusterYSize = 8 * (span + 1) - unbalance;
     return clusterYSize;
   }
 }  // namespace simpixeltracks

@@ -23,7 +23,7 @@ autoValidation = { 'liteTracking' : ['prevalidationLiteTracking','validationLite
                    'MTDValidation' : ['', 'globalValidationMTD', 'mtdValidationPostProcessor'],
                    'ecalValidation_phase2' : ['', 'validationECALPhase2', ''],
                    'TrackerPhase2Validation' : ['', 'trackerphase2ValidationSource', 'trackerphase2ValidationHarvesting'],
-                   'SimPixelTrackValidation' : ['globalPrevalidationSimPixelTrack','globalValidationSimPixelTrack','postProcessorSimPixelTrackSequence'],
+                   'SimPixelTrackValidation' : ['simPixelTrackPhase2PreValidation', 'simPixelTrackPhase2Validation', 'postValidation_simPixelTracks'],
                  }
 
 _phase2_allowed = ['baseValidation','trackingValidation','muonOnlyValidation','JetMETOnlyValidation', 'electronOnlyValidation', 'photonOnlyValidation','bTagOnlyValidation', 'tauOnlyValidation', 'hcalValidation', 'HGCalValidation', 'BarrelValidation', 'MTDValidation', 'ecalValidation_phase2', 'TrackerPhase2Validation', 'hltValidation']

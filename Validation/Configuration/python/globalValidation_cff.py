@@ -49,7 +49,6 @@ from Validation.Configuration.barrelSimValid_cff import *
 from Validation.Configuration.mtdSimValid_cff import *
 from Validation.Configuration.ecalSimValid_cff import *
 from Validation.SiTrackerPhase2V.Phase2TrackerValidationFirstStep_cff import *
-from Validation.TrackingMCTruth.simPixelTrackValidation_cff import *
 
 # filter/producer "pre-" sequence for globalValidation
 globalPrevalidationTracking = cms.Sequence(
