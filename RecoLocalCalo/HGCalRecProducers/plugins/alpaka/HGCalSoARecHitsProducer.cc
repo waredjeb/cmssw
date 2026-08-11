@@ -1,3 +1,7 @@
+#include <cmath>
+#include <cstdint>
+#include <vector>
+
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoARecHitsDeviceCollection.h"
@@ -29,9 +33,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           nonAgedNoises_(config.getParameter<std::vector<double>>("noises")),
           dEdXweights_(config.getParameter<std::vector<double>>("dEdXweights")),
           thicknessCorrection_(config.getParameter<std::vector<double>>("thicknessCorrection")),
+          noiseMip_(config.getParameter<double>("noiseMip")),
+          sciThicknessCorrection_(config.getParameter<double>("sciThicknessCorrection")),
           caloGeomToken_(consumesCollector().esConsumes<CaloGeometry, CaloGeometryRecord>()),
           hits_token_(consumes<HGCRecHitCollection>(config.getParameter<edm::InputTag>("recHits"))),
-          deviceToken_{produces()} {}
+          deviceToken_{produces()},
+          layerSizesToken_{produces("layerSizes")} {
+      // Offset to jump from the CE-E silicon thickness indices to the CE-H ones
+      // in the thresholds array. It equals the number of CE-E silicon thickness
+      // categories, i.e. half of the total number of silicon thickness indices
+      // (3 for the pre-v19 geometries, 4 for v19). Previously this member was
+      // left uninitialized, which produced out-of-range accesses for FH hits.
+      deltasi_index_regemfac_ = maxNumberOfThickIndices_ / 2;
+    }
 
     ~HGCalSoARecHitsProducer() override = default;
 
@@ -46,7 +60,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const& hits = *(hits_h.product());
       computeThreshold();
 
-      // Count effective hits above threshold
+      // The rechit SoA is emitted layer-contiguous: hits are grouped by their
+      // global layer index (layerOnSide + zside * maxlayer_), so both endcaps
+      // together span 2 * maxlayer_ layer slots. Downstream device clustering
+      // (CLUEstering) consumes this ordering directly and needs no on-device sort.
+      const unsigned int numberOfLayers = 2 * maxlayer_;
+
+      // Count effective hits above threshold, per layer.
+      std::vector<uint32_t> hitsPerLayer(numberOfLayers, 0);
       uint32_t index = 0;
       for (unsigned int i = 0; i < hits.size(); ++i) {
         const HGCRecHit& hgrh = hits[i];
@@ -60,8 +81,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           thickness_index = maxNumberOfThickIndices_;
         }
         double storedThreshold = thresholds_[layerOnSide][thickness_index];
+        // Use the CE-H silicon thresholds for FH hits, exactly as in the fill
+        // loop below. Both loops must apply the same selection, otherwise the
+        // number of selected hits differs from the SoA size allocated here.
+        if (detid.det() == DetId::HGCalHSi || detid.subdetId() == HGCHEF) {
+          storedThreshold = thresholds_.at(layerOnSide).at(thickness_index + deltasi_index_regemfac_);
+        }
         if (hgrh.energy() < storedThreshold)
           continue;  // this sets the ZS threshold at ecut times the sigma noise
+        const int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
+        const int layer = layerOnSide + offset;
+        hitsPerLayer[layer]++;
         index++;
       }
 
@@ -69,10 +99,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       HGCalSoARecHitsHostCollection cells(iEvent.queue(), index);
       auto cellsView = cells.view();
 
+      // Per-layer write cursors (exclusive prefix sum of the per-layer counts)
+      // and the list of NON-EMPTY per-layer sizes: the latter is emitted as a
+      // side product and used directly as the CLUEstering batch item sizes, so
+      // the batch boundaries are never recomputed on device.
+      std::vector<uint32_t> layerCursor(numberOfLayers, 0);
+      std::vector<uint32_t> layerSizes;
+      layerSizes.reserve(numberOfLayers);
+      uint32_t nextLayerStart = 0;
+      for (unsigned int l = 0; l < numberOfLayers; ++l) {
+        layerCursor[l] = nextLayerStart;
+        nextLayerStart += hitsPerLayer[l];
+        if (hitsPerLayer[l] > 0)
+          layerSizes.push_back(hitsPerLayer[l]);
+      }
+
       // loop over all hits and create the Hexel structure, skip energies below ecut
       // for each layer and wafer calculate the thresholds (sigmaNoise and energy)
-      // once
-      index = 0;
+      // once. Hits are written grouped by layer, in increasing layer order, and
+      // keep their relative order within a layer (via the per-layer cursors).
       for (unsigned int i = 0; i < hits.size(); ++i) {
         const HGCRecHit& hgrh = hits[i];
         DetId detid = hgrh.detid();
@@ -98,10 +143,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const GlobalPoint position(rhtools_.getPosition(detid));
         int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
         int layer = layerOnSide + offset;
-        auto entryInSoA = cellsView[index];
+        auto entryInSoA = cellsView[layerCursor[layer]++];
         if (detector_ == "BH") {
           entryInSoA.dim1() = position.eta();
-          entryInSoA.dim2() = position.phi();
+          // CLUEstering's periodic metric expects the periodic coordinate in
+          // [0, period), so shift phi from [-pi, pi) to [0, 2pi). Adding 2pi
+          // leaves sin/cos unchanged, so the cartesian position recovered
+          // downstream (etaPhiZToXY) is unaffected.
+          float phi = position.phi();
+          if (phi < 0.f) {
+            phi += 2.f * static_cast<float>(M_PI);
+          }
+          entryInSoA.dim2() = phi;
         }  // else, isSilicon == true and eta phi values will not be used
         else {
           entryInSoA.dim1() = position.x();
@@ -116,7 +169,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         entryInSoA.detid() = detid.rawId();
         entryInSoA.time() = hgrh.time();
         entryInSoA.timeError() = hgrh.timeError();
-        index++;
       }
 #if 0
         std::cout << "Size: " << cells->metadata().size() << " count cells: " << index
@@ -133,6 +185,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         //std::cout << "CPU" << std::endl;
         iEvent.emplace(deviceToken_, std::move(cells));
       }
+
+      // Per-layer batch sizes for the downstream device clustering.
+      iEvent.emplace(layerSizesToken_, std::move(layerSizes));
     }
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -145,6 +200,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<std::vector<double>>("thicknessCorrection");
       desc.add<std::vector<double>>("noises");
       desc.add<std::vector<double>>("dEdXweights");
+      // Scintillator (BH) noise, in MIP units. Only used for the BH detector;
+      // the EE/FH instances carry harmless defaults. The HLT customiser copies
+      // the exact menu values from the CPU scintillator module.
+      desc.add<double>("noiseMip", 1. / 5.);
+      desc.add<double>("sciThicknessCorrection", 1.0);
       desc.add<double>("ecut", 3.);
       descriptions.addWithDefaultLabel(desc);
     }
@@ -156,13 +216,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned maxNumberOfThickIndices_;
     unsigned int maxlayer_;
     int deltasi_index_regemfac_;
-    double sciThicknessCorrection_;
     double fcPerEle_;
     double ecut_;
     std::vector<double> fcPerMip_;
     std::vector<double> nonAgedNoises_;
     std::vector<double> dEdXweights_;
     std::vector<double> thicknessCorrection_;
+    double noiseMip_;
+    double sciThicknessCorrection_;
     std::vector<std::vector<double>> thresholds_;
     std::vector<std::vector<double>> v_sigmaNoise_;
 
@@ -170,6 +231,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
     edm::EDGetTokenT<HGCRecHitCollection> hits_token_;
     device::EDPutToken<HGCalSoARecHitsDeviceCollection> const deviceToken_;
+    edm::EDPutTokenT<std::vector<uint32_t>> const layerSizesToken_;
 
     void computeThreshold() {
       // To support the TDR geometry and also the post-TDR one (v9 onwards), we
@@ -203,6 +265,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               << " noiseMip: " << fcPerEle_ * nonAgedNoises_[ithick] / fcPerMip_[ithick]
               << " sigmaNoise: " << sigmaNoise << "\n";
 #endif
+        }
+        // The last slot (index maxNumberOfThickIndices_) addresses the
+        // scintillator cells, whose noise is expressed directly in MIP units
+        // (same recipe as HGCalCLUEAlgoT::computeThreshold). Without this the
+        // scintillator sigmaNoise stays 0, which zeroes CLUEstering's effective
+        // seeding density (min_density * sigmaNoise) and breaks BH clustering.
+        if (!isNose_) {
+          float scintillators_sigmaNoise = 0.001f * noiseMip_ * dEdXweights_[ilayer] / sciThicknessCorrection_;
+          thresholds_[ilayer - 1][maxNumberOfThickIndices_] = ecut_ * scintillators_sigmaNoise;
+          v_sigmaNoise_[ilayer - 1][maxNumberOfThickIndices_] = scintillators_sigmaNoise;
         }
       }
     }
