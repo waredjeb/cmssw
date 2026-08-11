@@ -10,7 +10,7 @@ dummy_weight = 0.0
 def calcWeights(weightsPerLayer): res = [sum(wei)/2. for wei in zip(weightsPerLayer[:], weightsPerLayer[1:] + [weightsPerLayer[-1]])]; res[0] = dummy_weight; return res;   
 
 
-weightsPerLayer_V16 = cms.vdouble(dummy_weight,
+weightsPerLayer_V16 = cms.vfloat(dummy_weight,
                                   5.55, # MeV
                                   12.86,
                                   9.4,
@@ -59,7 +59,7 @@ weightsPerLayer_V16 = cms.vdouble(dummy_weight,
                                   83.61,
                                   83.61)
 
-weightsPerLayer_V19 = cms.vdouble(dummy_weight,
+weightsPerLayer_V19 = cms.vfloat(dummy_weight,
                                   4.25, # MeV
                                   12.86,
                                   6.98,
@@ -111,7 +111,7 @@ weightsPerLayer_V19 = cms.vdouble(dummy_weight,
 
 dEdX = cms.PSet(
 	# for v10 geometry
-    weights = cms.vdouble(0.0,      # there is no layer zero
+    weights = cms.vfloat(0.0,      # there is no layer zero
                           8.894541,  # MeV
                           10.937907,
                           10.937907,
@@ -163,7 +163,7 @@ dEdX = cms.PSet(
                           86.929520,
                           86.929520),
 
-    weightsNose = cms.vdouble(0.0,   # there is no layer zero
+    weightsNose = cms.vfloat(0.0,   # there is no layer zero
                               39.500245, # MeV
                               39.756638,
                               39.756638,
@@ -177,9 +177,9 @@ dEdX = cms.PSet(
 
 # for v16 geometry
 dEdX_v16 = cms.PSet(
-    weights = cms.vdouble(calcWeights(weightsPerLayer_V16)),
+    weights = cms.vfloat(calcWeights(weightsPerLayer_V16)),
 
-    weightsNose = cms.vdouble(0.0,   # there is no layer zero
+    weightsNose = cms.vfloat(0.0,   # there is no layer zero
                               39.500245, # MeV
                               39.756638,
                               39.756638,
@@ -192,9 +192,9 @@ dEdX_v16 = cms.PSet(
 
 # for v19 geometry
 dEdX_v19 = cms.PSet(
-    weights = cms.vdouble(calcWeights(weightsPerLayer_V19)),
+    weights = cms.vfloat(calcWeights(weightsPerLayer_V19)),
 
-    weightsNose = cms.vdouble(0.0,   # there is no layer zero
+    weightsNose = cms.vfloat(0.0,   # there is no layer zero
                               39.500245, # MeV
                               39.756638,
                               39.756638,

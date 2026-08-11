@@ -8,7 +8,7 @@ HGCalTriggerCellCalibration::HGCalTriggerCellCalibration(const edm::ParameterSet
       chargeCollectionEfficiency_(conf.getParameter<edm::ParameterSet>("chargeCollectionEfficiency")
                                       .getParameter<std::vector<double>>("values")),
       thicknessCorrection_(conf.getParameter<std::vector<double>>("thicknessCorrection")),
-      dEdX_weights_(conf.getParameter<std::vector<double>>("dEdXweights")) {
+      dEdX_weights_(conf.getParameter<std::vector<float>>("dEdXweights")) {
   for (const auto& fCperMIP : fCperMIP_) {
     if (fCperMIP <= 0) {
       edm::LogWarning("DivisionByZero") << "WARNING: zero or negative MIP->fC correction factor. It won't be "
