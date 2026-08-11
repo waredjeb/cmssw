@@ -1,3 +1,7 @@
+#include <cmath>
+#include <cstdint>
+#include <vector>
+
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "DataFormats/HGCalReco/interface/alpaka/HGCalSoARecHitsDeviceCollection.h"
@@ -23,19 +27,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           initialized_(false),
           isNose_(detector_ == "HFNose"),
           maxNumberOfThickIndices_(config.getParameter<unsigned>("maxNumberOfThickIndices")),
-          fcPerEle_(config.getParameter<double>("fcPerEle")),
-          ecut_(config.getParameter<double>("ecut")),
-          fcPerMip_(config.getParameter<std::vector<double>>("fcPerMip")),
-          nonAgedNoises_(config.getParameter<std::vector<double>>("noises")),
-          dEdXweights_(config.getParameter<std::vector<double>>("dEdXweights")),
-          thicknessCorrection_(config.getParameter<std::vector<double>>("thicknessCorrection")),
+          fcPerEle_(config.getParameter<float>("fcPerEle")),
+          ecut_(config.getParameter<float>("ecut")),
+          fcPerMip_(config.getParameter<std::vector<float>>("fcPerMip")),
+          nonAgedNoises_(config.getParameter<std::vector<float>>("noises")),
+          dEdXweights_(config.getParameter<std::vector<float>>("dEdXweights")),
+          thicknessCorrection_(config.getParameter<std::vector<float>>("thicknessCorrection")),
+          noiseMip_(config.getParameter<double>("noiseMip")),
+          sciThicknessCorrection_(config.getParameter<double>("sciThicknessCorrection")),
           ticlGeomToken_(consumesCollector().esConsumes<TICLGeomHost, CaloGeometryRecord>(edm::ESInputTag("", ""))),
           ticlGeomLookupToken_(
               consumesCollector().esConsumes<TICLGeomLookupHost, CaloGeometryRecord>(edm::ESInputTag("", ""))),
           ticlGeomLayersToken_(
               consumesCollector().esConsumes<TICLGeomLayersHost, CaloGeometryRecord>(edm::ESInputTag("", ""))),
           hits_token_(consumes<HGCRecHitCollection>(config.getParameter<edm::InputTag>("recHits"))),
-          deviceToken_{produces()} {}
+          deviceToken_{produces()},
+          layerSizesToken_{produces("layerSizes")} {
+      // Offset to jump from the CE-E silicon thickness indices to the CE-H ones
+      // in the thresholds array. It equals the number of CE-E silicon thickness
+      // categories, (half of the total number of silicon thickness indices)
+      // (3 for the pre-v19 geometries, 4 for v19).
+      deltasi_index_regemfac_ = maxNumberOfThickIndices_ / 2;
+    }
 
     ~HGCalSoARecHitsProducer() override = default;
 
@@ -50,7 +63,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const& hits = *(hits_h.product());
       computeThreshold();
 
-      // Count effective hits above threshold
+      // The rechit SoA is emitted layer-contiguous: hits are grouped by their
+      // global layer index (layerOnSide + zside * maxlayer_), so both endcaps
+      // together span 2 * maxlayer_ layer slots.
+      const unsigned int numberOfLayers = 2 * maxlayer_;
+
+      std::vector<uint32_t> hitsPerLayer(numberOfLayers, 0);
       uint32_t index = 0;
       for (unsigned int i = 0; i < hits.size(); ++i) {
         const HGCRecHit& hgrh = hits[i];
@@ -64,8 +82,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           thickness_index = maxNumberOfThickIndices_;
         }
         double storedThreshold = thresholds_[layerOnSide][thickness_index];
+        if (detid.det() == DetId::HGCalHSi || detid.subdetId() == HGCHEF) {
+          storedThreshold = thresholds_.at(layerOnSide).at(thickness_index + deltasi_index_regemfac_);
+        }
         if (hgrh.energy() < storedThreshold)
           continue;  // this sets the ZS threshold at ecut times the sigma noise
+        const int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
+        const int layer = layerOnSide + offset;
+        hitsPerLayer[layer]++;
         index++;
       }
 
@@ -73,10 +97,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       HGCalSoARecHitsHostCollection cells(iEvent.queue(), index);
       auto cellsView = cells.view();
 
+      std::vector<uint32_t> layerCursor(numberOfLayers, 0);
+      std::vector<uint32_t> layerSizes;
+      layerSizes.reserve(numberOfLayers);
+      uint32_t nextLayerStart = 0;
+      for (unsigned int l = 0; l < numberOfLayers; ++l) {
+        layerCursor[l] = nextLayerStart;
+        nextLayerStart += hitsPerLayer[l];
+        if (hitsPerLayer[l] > 0)
+          layerSizes.push_back(hitsPerLayer[l]);
+      }
+
       // loop over all hits and create the Hexel structure, skip energies below ecut
       // for each layer and wafer calculate the thresholds (sigmaNoise and energy)
-      // once
-      index = 0;
+      // once. Hits are written grouped by layer, in increasing layer order, and
+      // keep their relative order within a layer (via the per-layer cursors).
       for (unsigned int i = 0; i < hits.size(); ++i) {
         const HGCRecHit& hgrh = hits[i];
         DetId detid = hgrh.detid();
@@ -102,10 +137,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const GlobalPoint position(rhtools_.getPosition(detid));
         int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
         int layer = layerOnSide + offset;
-        auto entryInSoA = cellsView[index];
+        auto entryInSoA = cellsView[layerCursor[layer]++];
         if (detector_ == "BH") {
           entryInSoA.dim1() = position.eta();
-          entryInSoA.dim2() = position.phi();
+          float phi = position.phi();
+          if (phi < 0.f) {
+            phi += 2.f * static_cast<float>(M_PI);
+          }
+          entryInSoA.dim2() = phi;
         }  // else, isSilicon == true and eta phi values will not be used
         else {
           entryInSoA.dim1() = position.x();
@@ -120,7 +159,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         entryInSoA.detid() = detid.rawId();
         entryInSoA.time() = hgrh.time();
         entryInSoA.timeError() = hgrh.timeError();
-        index++;
       }
 #if 0
         std::cout << "Size: " << cells->metadata().size() << " count cells: " << index
@@ -137,6 +175,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         //std::cout << "CPU" << std::endl;
         iEvent.emplace(deviceToken_, std::move(cells));
       }
+
+      // Per-layer batch sizes for the downstream device clustering.
+      iEvent.emplace(layerSizesToken_, std::move(layerSizes));
     }
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -144,12 +185,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<std::string>("detector", "EE")->setComment("options EE, FH, BH,  HFNose; other value defaults to EE");
       desc.add<edm::InputTag>("recHits", edm::InputTag("HGCalRecHit", "HGCEERecHits"));
       desc.add<unsigned int>("maxNumberOfThickIndices", 6);
-      desc.add<double>("fcPerEle", 0.00016020506);
-      desc.add<std::vector<double>>("fcPerMip");
-      desc.add<std::vector<double>>("thicknessCorrection");
-      desc.add<std::vector<double>>("noises");
-      desc.add<std::vector<double>>("dEdXweights");
-      desc.add<double>("ecut", 3.);
+      desc.add<float>("fcPerEle", 0.00016020506);
+      desc.add<std::vector<float>>("fcPerMip");
+      desc.add<std::vector<float>>("thicknessCorrection");
+      desc.add<std::vector<float>>("noises");
+      desc.add<std::vector<float>>("dEdXweights");
+      desc.add<double>("noiseMip", 0.2);
+      desc.add<double>("sciThicknessCorrection", 1.0);
+      desc.add<float>("ecut", 3.);
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -160,13 +203,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned maxNumberOfThickIndices_;
     unsigned int maxlayer_;
     int deltasi_index_regemfac_;
+    float fcPerEle_;
+    float ecut_;
+    std::vector<float> fcPerMip_;
+    std::vector<float> nonAgedNoises_;
+    std::vector<float> dEdXweights_;
+    std::vector<float> thicknessCorrection_;
+    double noiseMip_;
     double sciThicknessCorrection_;
-    double fcPerEle_;
-    double ecut_;
-    std::vector<double> fcPerMip_;
-    std::vector<double> nonAgedNoises_;
-    std::vector<double> dEdXweights_;
-    std::vector<double> thicknessCorrection_;
     std::vector<std::vector<double>> thresholds_;
     std::vector<std::vector<double>> v_sigmaNoise_;
 
@@ -176,6 +220,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ESGetToken<TICLGeomLayersHost, CaloGeometryRecord> ticlGeomLayersToken_;
     edm::EDGetTokenT<HGCRecHitCollection> hits_token_;
     device::EDPutToken<HGCalSoARecHitsDeviceCollection> const deviceToken_;
+    edm::EDPutTokenT<std::vector<uint32_t>> const layerSizesToken_;
 
     void computeThreshold() {
       // To support the TDR geometry and also the post-TDR one (v9 onwards), we
@@ -209,6 +254,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               << " noiseMip: " << fcPerEle_ * nonAgedNoises_[ithick] / fcPerMip_[ithick]
               << " sigmaNoise: " << sigmaNoise << "\n";
 #endif
+        }
+        if (!isNose_) {
+          float scintillators_sigmaNoise = 0.001f * noiseMip_ * dEdXweights_[ilayer] / sciThicknessCorrection_;
+          thresholds_[ilayer - 1][maxNumberOfThickIndices_] = ecut_ * scintillators_sigmaNoise;
+          v_sigmaNoise_[ilayer - 1][maxNumberOfThickIndices_] = scintillators_sigmaNoise;
         }
       }
     }
