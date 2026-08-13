@@ -1,9 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-# HGCal layer clusters come from the device chain: the SoA->legacy converters
-# emit the same legacy products the CPU producers used to, so the merge reads
-# them directly. The clustering backend (CUDA, ROCm, serial) is chosen by the
-# alpaka services, so no ProcessModifier is involved here.
 hgcal_layerClusters = [
     "hltHgCalLayerClustersFromSoAProducer",
     "hltHgCalLayerClustersFromSoAProducerHSci",

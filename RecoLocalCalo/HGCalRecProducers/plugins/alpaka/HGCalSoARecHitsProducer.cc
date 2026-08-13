@@ -45,9 +45,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           layerSizesToken_{produces("layerSizes")} {
       // Offset to jump from the CE-E silicon thickness indices to the CE-H ones
       // in the thresholds array. It equals the number of CE-E silicon thickness
-      // categories, i.e. half of the total number of silicon thickness indices
-      // (3 for the pre-v19 geometries, 4 for v19). Previously this member was
-      // left uninitialized, which produced out-of-range accesses for FH hits.
+      // categories, (half of the total number of silicon thickness indices)
+      // (3 for the pre-v19 geometries, 4 for v19). 
       deltasi_index_regemfac_ = maxNumberOfThickIndices_ / 2;
     }
 
@@ -66,11 +65,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // The rechit SoA is emitted layer-contiguous: hits are grouped by their
       // global layer index (layerOnSide + zside * maxlayer_), so both endcaps
-      // together span 2 * maxlayer_ layer slots. Downstream device clustering
-      // (CLUEstering) consumes this ordering directly and needs no on-device sort.
+      // together span 2 * maxlayer_ layer slots. 
       const unsigned int numberOfLayers = 2 * maxlayer_;
 
-      // Count effective hits above threshold, per layer.
       std::vector<uint32_t> hitsPerLayer(numberOfLayers, 0);
       uint32_t index = 0;
       for (unsigned int i = 0; i < hits.size(); ++i) {
@@ -85,9 +82,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           thickness_index = maxNumberOfThickIndices_;
         }
         double storedThreshold = thresholds_[layerOnSide][thickness_index];
-        // Use the CE-H silicon thresholds for FH hits, exactly as in the fill
-        // loop below. Both loops must apply the same selection, otherwise the
-        // number of selected hits differs from the SoA size allocated here.
         if (detid.det() == DetId::HGCalHSi || detid.subdetId() == HGCHEF) {
           storedThreshold = thresholds_.at(layerOnSide).at(thickness_index + deltasi_index_regemfac_);
         }
@@ -103,10 +97,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       HGCalSoARecHitsHostCollection cells(iEvent.queue(), index);
       auto cellsView = cells.view();
 
-      // Per-layer write cursors (exclusive prefix sum of the per-layer counts)
-      // and the list of NON-EMPTY per-layer sizes: the latter is emitted as a
-      // side product and used directly as the CLUEstering batch item sizes, so
-      // the batch boundaries are never recomputed on device.
       std::vector<uint32_t> layerCursor(numberOfLayers, 0);
       std::vector<uint32_t> layerSizes;
       layerSizes.reserve(numberOfLayers);
@@ -150,10 +140,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto entryInSoA = cellsView[layerCursor[layer]++];
         if (detector_ == "BH") {
           entryInSoA.dim1() = position.eta();
-          // CLUEstering's periodic metric expects the periodic coordinate in
-          // [0, period), so shift phi from [-pi, pi) to [0, 2pi). Adding 2pi
-          // leaves sin/cos unchanged, so the cartesian position recovered
-          // downstream (etaPhiZToXY) is unaffected.
           float phi = position.phi();
           if (phi < 0.f) {
             phi += 2.f * static_cast<float>(M_PI);
@@ -204,10 +190,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<std::vector<double>>("thicknessCorrection");
       desc.add<std::vector<double>>("noises");
       desc.add<std::vector<double>>("dEdXweights");
-      // Scintillator (BH) noise, in MIP units. Only used for the BH detector;
-      // the EE/FH instances carry harmless defaults. The HLT customiser copies
-      // the exact menu values from the CPU scintillator module.
-      desc.add<double>("noiseMip", 1. / 5.);
+      desc.add<double>("noiseMip", 0.2);
       desc.add<double>("sciThicknessCorrection", 1.0);
       desc.add<double>("ecut", 3.);
       descriptions.addWithDefaultLabel(desc);

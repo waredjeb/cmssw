@@ -15,9 +15,6 @@ from Configuration.ProcessModifiers.alpakaValidationHLT_cff import alpakaValidat
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 
 
-# The device chain IS the HGCal layer clustering: the SoA->legacy converters
-# emit the legacy products the rest of the menu consumes, on whichever backend
-# the alpaka services select. No ProcessModifier chooses the algorithm.
 HLTTICLLocalRecoSequence = cms.Sequence(
         hltHGCalUncalibRecHit+
         hltHGCalRecHit+

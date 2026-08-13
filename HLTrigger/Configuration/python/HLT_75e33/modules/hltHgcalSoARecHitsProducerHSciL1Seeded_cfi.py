@@ -14,8 +14,6 @@ hltHgcalSoARecHitsProducerHSciL1Seeded = cms.EDProducer("HGCalSoARecHitsProducer
     noises = HGCAL_reco_constants.noises,
     recHits = cms.InputTag("hltRechitInRegionsHGCAL","HGCHEBRecHits"),
     thicknessCorrection = HGCAL_reco_constants.thicknessCorrection,
-    # Scintillator sigmaNoise = 0.001 * noiseMip * dEdXweight / sciThicknessCorrection
-    # sets the BH seeding threshold; the producer defaults are not the menu values.
     noiseMip = HGCAL_reco_constants.noiseMip.noise_MIP,
     sciThicknessCorrection = HGCAL_reco_constants.sciThicknessCorrection,
 )

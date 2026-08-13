@@ -15,13 +15,6 @@
 
 #include "HGCalCLUEsteringAlgoWrapper.h"
 
-// Heterogeneous (alpaka) producer that runs the external CLUEstering library on
-// device to build HGCal 2D per-layer layer-clusters. It is a drop-in
-// replacement for HGCalSoARecHitsLayerClustersProducer: it consumes the same
-// HGCalSoARecHitsDeviceCollection and produces the same
-// HGCalSoARecHitsExtraDeviceCollection, so the rest of the device chain
-// (HGCalSoARecHitsProducer upstream, HGCalSoALayerClustersProducer downstream)
-// is reused unchanged.
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class HGCalCLUEsteringLayerClustersProducer : public stream::EDProducer<> {

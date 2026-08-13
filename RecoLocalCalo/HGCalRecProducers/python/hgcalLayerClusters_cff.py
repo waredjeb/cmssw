@@ -14,15 +14,7 @@ from SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi import nonAgedNoises_v9
 
 
 #####################################################################
-# CLUEstering layer-clustering chain (portable, alpaka).
-#
-# This IS the HGCal layer clustering: the chain ends in a converter that
-# emits the legacy products (std::vector<reco::CaloCluster> at the default
-# label, the "timeLayerCluster" ValueMap and, for HFNose, the
-# "InitialLayerClustersMask") under the public hgcalLayerClusters<Det>
-# labels, so everything downstream (hgcalMergeLayerClusters, TICL, ...) is
-# untouched. The backend (CUDA, ROCm, serial) is picked by the alpaka
-# services; no ProcessModifier selects the algorithm.
+# CLUEstering layer-clustering chain 
 #
 # The chain per detector is:
 #   hgcalSoARecHits<Det>       (HGCRecHit  -> HGCalSoARecHits SoA)
@@ -85,14 +77,6 @@ _fromSoAFH = hgCalLayerClustersFromSoAProducer.clone(
     detector = 'FH')
 
 # ---- HSci / BH (scintillator, hadronic) ----
-# The scintillator noise is NOT covered by the silicon constants: the BH
-# sigmaNoise is 0.001 * noiseMip * dEdXweight / sciThicknessCorrection and it
-# sets the seeding threshold (min_density * sigmaNoise), so both constants come
-# from the same places the CPU scintillator plugin took them. Note the CPU
-# plugin takes noiseMip as the whole HGCAL_noise_heback PSet and picks the
-# scalar out internally; this producer wants the scalar directly, so pass
-# noise_MIP. Leaving it unset would silently use the producer default of 1/5,
-# which is 20x the scintillator value.
 hgcalSoARecHitsHSci = _makeSoARecHits(
     'BH', "HGCalRecHit:HGCHEBRecHits",
     noiseMip = HGCAL_noise_heback.noise_MIP.value(),
@@ -131,8 +115,6 @@ _fromSoAHFNose = hgCalLayerClustersFromSoAProducer.clone(
     detector = 'HFNose',
     nHitsTime = 3)
 
-# v19 geometry: the silicon constants gain a fourth thickness category, so the
-# SoA rechit producers must be updated exactly like the CPU plugins above.
 _v19SiSoAParams = dict(
     maxNumberOfThickIndices = 8,
     thicknessCorrection = [0.75, 0.76, 0.75, 0.76, 0.85, 0.85, 0.84, 0.85],
@@ -142,11 +124,6 @@ _v19SiSoAParams = dict(
 for _soa in (hgcalSoARecHitsEE, hgcalSoARecHitsHSi, hgcalSoARecHitsHSci):
     phase2_hgcalV19.toModify(_soa, **_v19SiSoAParams)
 
-# The device producers feeding the converters, grouped in Tasks. Consumed
-# collections are auto-copied device->host by the alpaka framework, so the
-# converter (_fromSoA*) reads the host SoAs directly. These Tasks are added to
-# hgcalLocalRecoTask in
-# RecoLocalCalo/Configuration/python/hgcalLocalReco_cff.py.
 hgcalLayerClustersAlpakaTask = cms.Task(
     hgcalSoARecHitsEE,   hgcalCLUEsteringEE,   hgcalSoALayerClustersEE,
     hgcalSoARecHitsHSi,  hgcalCLUEsteringHSi,  hgcalSoALayerClustersHSi,
@@ -156,11 +133,6 @@ hgcalLayerClustersHFNoseAlpakaTask = cms.Task(
     hgcalSoARecHitsHFNose, hgcalCLUEsteringHFNose, hgcalSoALayerClustersHFNose,
 )
 
-# The SoA->legacy converters ARE the layer clusters: they carry the public
-# hgcalLayerClusters<Det> labels and emit the same legacy products, so
-# everything downstream (hgcalMergeLayerClusters, TICL, ...) is untouched.
-# The backend (CUDA, ROCm, serial) is chosen by the alpaka services, so no
-# ProcessModifier is involved.
 hgcalLayerClustersEE     = _fromSoAEE
 hgcalLayerClustersHSi    = _fromSoAFH
 hgcalLayerClustersHSci   = _fromSoABH

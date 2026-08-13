@@ -8,9 +8,6 @@ import FWCore.ParameterSet.Config as cms
 #   hltHgcalSoALayerClustersProducer<Det>        (build the CaloCluster SoA)
 #   hltHgCalLayerClustersFromSoAProducer<Det>    (SoA -> legacy reco::CaloCluster)
 #
-# The converters emit the legacy products the rest of the menu consumes, so
-# nothing downstream changes. The backend (CUDA, ROCm, serial) is selected by
-# the alpaka services; the EE modules carry no detector suffix.
 from ..modules.hltHgcalSoARecHitsProducer_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducer_cfi import *
 from ..modules.hltHgcalSoALayerClustersProducer_cfi import *

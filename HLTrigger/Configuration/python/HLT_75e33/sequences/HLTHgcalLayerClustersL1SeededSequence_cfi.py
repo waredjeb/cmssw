@@ -1,13 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-# Regional (L1-seeded) HGCal layer clustering (CLUEstering) for EE, FH (HSi)
-# and BH (HSci), reading the rechits selected around the L1 EG candidates by
-# hltRechitInRegionsHGCAL.
-#
-# The regional collections are the same HGCRecHitCollection type as the full
-# ones, only sparser: the SoA rechit producer emits per-layer sizes for the
-# NON-EMPTY layers only, so layers with no regional hits simply do not appear
-# as clustering batches.
 from ..modules.hltHgcalSoARecHitsProducerL1Seeded_cfi import *
 from ..modules.hltHgcalSoARecHitsLayerClustersProducerL1Seeded_cfi import *
 from ..modules.hltHgcalSoALayerClustersProducerL1Seeded_cfi import *
