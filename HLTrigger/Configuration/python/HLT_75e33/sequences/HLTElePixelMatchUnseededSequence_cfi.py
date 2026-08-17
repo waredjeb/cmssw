@@ -20,3 +20,31 @@ from ..sequences.HLTDoLocalPixelSequence_cfi import *
 from ..sequences.HLTDoLocalStripSequence_cfi import *
 
 HLTElePixelMatchUnseededSequence = cms.Sequence(HLTDoLocalPixelSequence+HLTDoLocalStripSequence+(hltEgammaCandidatesUnseeded+hltEgammaHoverEUnseeded+hltMeasurementTrackerEvent+hltPixelLayerTriplets+hltEgammaSuperClustersToPixelMatchUnseeded+hltEleSeedsTrackingRegionsUnseeded+hltElePixelHitDoubletsForTripletsUnseeded+hltElePixelHitTripletsUnseeded+hltElePixelSeedsTripletsUnseeded+hltElePixelHitTripletsClusterRemoverUnseeded+hltPixelLayerPairsUnseeded+hltElePixelHitDoubletsUnseeded+hltElePixelSeedsDoubletsUnseeded+hltElePixelSeedsCombinedUnseeded+hltEgammaElectronPixelSeedsUnseeded+hltEgammaPixelMatchVarsUnseeded))
+
+# Seed the pixel matching from the pixel tracks instead of from the dedicated
+# regional doublet/triplet seeding. The supercluster matching itself is unchanged.
+from ..modules.hltEleSeedGeneratorFromTracksUnseeded_cfi import *
+from ..modules.hltEleTrackSelectedByRegionUnseeded_cfi import *
+from ..sequences.HLTItLocalRecoSequence_cfi import *
+from ..sequences.HLTOtLocalRecoSequence_cfi import *
+from ..sequences.HLTPhase2PixelTracksAndVerticesSequence_cfi import *
+
+_HLTElePixelMatchUnseededSequenceFromPixelTracks = cms.Sequence(
+    HLTItLocalRecoSequence
+    +HLTOtLocalRecoSequence
+    +HLTPhase2PixelTracksAndVerticesSequence
+    +hltEgammaCandidatesUnseeded
+    +hltEgammaHoverEUnseeded
+    +hltEgammaSuperClustersToPixelMatchUnseeded
+    +hltEleSeedsTrackingRegionsUnseeded
+    +hltEleTrackSelectedByRegionUnseeded
+    +hltEleSeedGeneratorFromTracksUnseeded
+    +hltEgammaElectronPixelSeedsUnseeded
+    +hltEgammaPixelMatchVarsUnseeded
+)
+
+from Configuration.ProcessModifiers.hltEgammaPixelTrackSeeding_cff import hltEgammaPixelTrackSeeding
+hltEgammaPixelTrackSeeding.toReplaceWith(HLTElePixelMatchUnseededSequence,
+                                         _HLTElePixelMatchUnseededSequenceFromPixelTracks)
+hltEgammaPixelTrackSeeding.toModify(hltEgammaElectronPixelSeedsUnseeded,
+                                    initialSeeds = "hltEleSeedGeneratorFromTracksUnseeded")

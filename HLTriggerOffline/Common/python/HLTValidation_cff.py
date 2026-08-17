@@ -24,6 +24,8 @@ from Validation.Configuration.globalValidation_cff import *
 #MTD
 from Validation.MtdValidation.hltMtdValidation_cff import *
 
+from DQMOffline.EGamma.electronMatchSeedDQM_cfi import electronMatchSeedDQM
+
 # HGCAL Rechit Calibration
 from Validation.HGCalValidation.hgcalHitCalibrationDefault_cfi import hgcalHitCalibrationDefault as _hgcalHitCalibrationDefault
 hgcalHitCalibrationHLT = _hgcalHitCalibrationDefault.clone(
@@ -123,6 +125,7 @@ _hltvalidationWithMC_Phase2 = hltvalidationWithMC.copyAndExclude([#HLTMuonVal,
 _hltvalidationWithMC_Phase2.insert(-1, hgcalHitCalibrationHLT)
 _hltvalidationWithMC_Phase2.insert(-1, hltHgcalValidator)
 _hltvalidationWithMC_Phase2.insert(0, hltGENValidation)
+_hltvalidationWithMC_Phase2.insert(-1, electronMatchSeedDQM)
 
 # Add at the end only when mtd_at_hlt is active
 from Configuration.ProcessModifiers.mtd_at_hlt_cff import mtd_at_hlt

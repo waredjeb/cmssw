@@ -17,6 +17,18 @@
 <use name="root"/>
 <use name="roofit"/>
 <use name="boost"/>
+<use name="SimDataFormats/TrackingHit"/>
+<use name="SimDataFormats/Track"/>
+
+<use name="DataFormats/HepMCCandidate"/>
+<use name="DataFormats/GsfTrackReco"/>
+<use name="DataFormats/TrajectorySeed"/>
+<use name="DataFormats/TrackingRecHit"/>
+<use name="DataFormats/DetId"/>
+<use name="DataFormats/SiPixelDetId"/>
+<use name="DataFormats/TrackerCommon"/>
+<use name="Geometry/Records"/>
+
 <library name="DQMOfflineEGammaPlugins" file="*.cc">
   <flags EDM_PLUGIN="1"/>
 </library>

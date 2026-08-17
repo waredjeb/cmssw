@@ -20,7 +20,9 @@ from Validation.HLTrigger.HLTGenValidationHarvesting_cff import *
 from Validation.HGCalValidation.BarrelPostProcessor_cff import *
 from Validation.MtdValidation.hltMtdPostProcessor_cff import *
 
-hltpostvalidation = cms.Sequence( 
+from DQMOffline.EGamma.electronMatchSeedPostProcessor_cfi import electronMatchSeedPostProcessor
+
+hltpostvalidation = cms.Sequence(
     postProcessorHLTtrackingSequence
     +postProcessorHLTvertexing
     +postProcessorHLTvertexingReconstructableSim
@@ -62,6 +64,8 @@ _phase2_hltpostvalidation += hltHcalValidatorPostProcessor
 
 # Add HLT gen validation
 _phase2_hltpostvalidation += hltGenValidationClient
+
+_phase2_hltpostvalidation += electronMatchSeedPostProcessor
 
 from Configuration.ProcessModifiers.mtd_at_hlt_cff import mtd_at_hlt
 # Add MTD validation only when mtd_at_hlt is active

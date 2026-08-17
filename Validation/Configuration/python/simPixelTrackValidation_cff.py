@@ -1,7 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
-from HLTrigger.Configuration.HLT_75e33.sequences.HLTBeamSpotSequence_cfi import HLTBeamSpotSequence
-from HLTrigger.Configuration.HLT_75e33.sequences.HLTItLocalRecoSequence_cfi import HLTItLocalRecoSequence
+# NOTE: these two have to be imported with 'import *', not by name. This cff is pulled
+# into Configuration/StandardSequences/Validation_cff with 'import *', and Process.extend()
+# labels every module it finds in that namespace before it places any sequence. Importing
+# only the sequence leaves its member modules (hltOnlineBeamSpot, the local-reco modules,
+# ...) unlabelled, and placing simPixelTrackPhase2PreValidation then fails with
+# "An entry in sequence ... has no label" for every step3 that loads Validation_cff --
+# including the ones that never request SimPixelTrackValidation.
+from HLTrigger.Configuration.HLT_75e33.sequences.HLTBeamSpotSequence_cfi import *
+from HLTrigger.Configuration.HLT_75e33.sequences.HLTItLocalRecoSequence_cfi import *
 from HLTrigger.Configuration.HLT_75e33.modules.hltSiPixelRecHits_cfi import hltSiPixelRecHits
 from HLTrigger.Configuration.HLT_75e33.modules.hltSiPhase2RecHits_cfi import hltSiPhase2RecHits
 from Validation.RecoTrack.associators_cff import hltTPClusterProducer
