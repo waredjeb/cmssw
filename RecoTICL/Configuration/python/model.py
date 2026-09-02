@@ -157,6 +157,9 @@ class TICLConfig:
     def pattern_clue3d(self, **params):
         it = self._cur(); it.pattern_type = "CLUE3D"; it.pattern_params = params; return self
 
+    def pattern_cluestering(self, **params):
+        it = self._cur(); it.pattern_type = "CLUEstering"; it.pattern_params = params; return self
+
     def pattern_ca(self, **params):
         it = self._cur(); it.pattern_type = "CA"; it.pattern_params = params; return self
 

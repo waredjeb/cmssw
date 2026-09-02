@@ -77,3 +77,25 @@ ticlCLUE3DHighStepTask = cms.Task(ticlSeedingGlobal
     ,filteredLayerClustersCLUE3DHigh
     ,ticlTrackstersCLUE3DHigh)
 
+
+# with ticl_dev 3D pattern recognition swapped to CLUEstering.
+from Configuration.ProcessModifiers.ticl_dev import ticl_dev
+from RecoHGCal.TICL.trackstersCLUEsteringProducer_cfi import trackstersCLUEsteringProducer as _trackstersCLUEsteringProducer
+
+ticlTrackstersCLUEsteringAssignment = _trackstersCLUEsteringProducer.clone()
+
+ticl_dev.toModify(ticlTrackstersCLUE3DHigh,
+    patternRecognitionBy = 'CLUEstering',
+    pluginPatternRecognitionByCLUEstering = dict(
+        tracksterAssignment = 'ticlTrackstersCLUEsteringAssignment',
+        algo_verbosity = 0,
+        doPidCut = True,
+        cutHadProb = 999,
+    )
+)
+
+ticl_dev.toReplaceWith(ticlCLUE3DHighStepTask, cms.Task(ticlSeedingGlobal
+    ,filteredLayerClustersCLUE3DHigh
+    ,ticlTrackstersCLUEsteringAssignment
+    ,ticlTrackstersCLUE3DHigh))
+

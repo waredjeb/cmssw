@@ -263,7 +263,7 @@ FILTER_TYPES = frozenset(
         "ClusterFilterByAlgoAndSizeAndLayerRange",
     ]
 )
-PATTERN_TYPES = frozenset(["CLUE3D", "CA", "FastJet", "Recovery"])
+PATTERN_TYPES = frozenset(["CLUE3D", "CLUEstering", "CA", "FastJet", "Recovery"])
 LINKING_TYPES = frozenset(
     ["Skeletons", "SuperClusteringDNN", "SuperClusteringMustache", "FastJet", "Recovery"]
 )
