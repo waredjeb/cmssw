@@ -173,6 +173,9 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
   std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
 
+  output_mask->reserve(original_layerclusters_mask.size());
+  std::copy(original_layerclusters_mask.begin(), original_layerclusters_mask.end(), std::back_inserter(*output_mask));
+
   if (!seeding_regions.empty() && seeding_regions[0].index != -1) {
     for (unsigned int i = 0; i < seeding_regions.size(); ++i) {
       seedToTrackstersAssociation.emplace(seeding_regions[i].index, 0);
@@ -215,11 +218,9 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
       }
 
       myAlgo_->filter(*result, *initialResult, input, seedToTrackstersAssociation);
+      myAlgo_->maskLayerClusters(input, *output_mask);
     }
   }
-
-  output_mask->reserve(original_layerclusters_mask.size());
-  std::copy(original_layerclusters_mask.begin(), original_layerclusters_mask.end(), std::back_inserter(*output_mask));
 
   for (auto& trackster : *result) {
     trackster.setIteration(iterIndex_);

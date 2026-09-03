@@ -34,8 +34,14 @@ namespace ticl {
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc);
     void setGeometry(ticlgeom::Tools const& rhtools) override;
 
+    // Masks the layer clusters CLUE classified as outliers (noise), so that the Recovery iteration
+    // does not turn them into one-cluster tracksters.
+    void maskLayerClusters(const typename PatternRecognitionAlgoBaseT<TILES>::Inputs& input,
+                           std::vector<float>& outputMask) const override;
+
   private:
     const edm::EDGetTokenT<std::vector<int32_t>> assignmentToken_;
+    const bool maskOutliers_;
     const bool doPidCut_;
     const float cutHadProb_;
     const bool computeLocalTime_;

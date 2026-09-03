@@ -14,6 +14,7 @@ PatternRecognitionbyCLUEstering<TILES>::PatternRecognitionbyCLUEstering(const ed
                                                                        edm::ConsumesCollector iC)
     : PatternRecognitionAlgoBaseT<TILES>(conf, iC),
       assignmentToken_(iC.consumes<std::vector<int32_t>>(conf.getParameter<edm::InputTag>("tracksterAssignment"))),
+      maskOutliers_(conf.getParameter<bool>("maskOutliers")),
       doPidCut_(conf.getParameter<bool>("doPidCut")),
       cutHadProb_(conf.getParameter<double>("cutHadProb")),
       computeLocalTime_(conf.getParameter<bool>("computeLocalTime")),
@@ -93,6 +94,21 @@ void PatternRecognitionbyCLUEstering<TILES>::makeTracksters(
 }
 
 template <typename TILES>
+void PatternRecognitionbyCLUEstering<TILES>::maskLayerClusters(
+    const typename PatternRecognitionAlgoBaseT<TILES>::Inputs &input, std::vector<float> &outputMask) const {
+  if (!maskOutliers_) {
+    return;
+  }
+  // prevents recovery from picking up layer clusters CLUEstering defines as outliers
+  const auto &assignment = input.ev.get(assignmentToken_);
+  for (size_t i = 0; i < assignment.size(); ++i) {
+    if (assignment[i] < 0 and input.mask[i] > 0.f) {
+      outputMask[i] = 0.f;
+    }
+  }
+}
+
+template <typename TILES>
 void PatternRecognitionbyCLUEstering<TILES>::filter(
     std::vector<Trackster> &output,
     const std::vector<Trackster> &inTracksters,
@@ -120,6 +136,8 @@ void PatternRecognitionbyCLUEstering<TILES>::fillPSetDescription(edm::ParameterS
   iDesc.add<int>("algo_verbosity", 0);
   iDesc.add<edm::InputTag>("tracksterAssignment", edm::InputTag("ticlTrackstersCLUEsteringAssignment"))
       ->setComment("Layer-cluster to trackster assignment produced on device by TrackstersCLUEsteringProducer.");
+  iDesc.add<bool>("maskOutliers", true)
+      ->setComment("Mask the layer clusters CLUE classified as outliers, so later iterations (Recovery) skip them.");
   iDesc.add<bool>("doPidCut", false);
   iDesc.add<double>("cutHadProb", 0.5);
   iDesc.add<bool>("computeLocalTime", true);
