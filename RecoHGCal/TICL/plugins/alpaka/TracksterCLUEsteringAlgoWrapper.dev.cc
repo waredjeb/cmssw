@@ -12,7 +12,6 @@
 #include "TracksterCLUEsteringAlgoWrapper.h"
 
 #include "CLUEstering/core/Clusterer.hpp"
-#include "CLUEstering/core/DistanceMetrics.hpp"
 #include "CLUEstering/data_structures/PointsDevice.hpp"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -20,6 +19,30 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using namespace cms::alpakatools;
 
   namespace {
+
+    // Cylinder distance: max(transverse Euclidean / mean angular width ratio, |delta layer id|),
+    // so the unit shape is a disc times an interval along the layer axis.
+    //
+    // The per-point transverse angular ratio is owned by the metric, not CLUEstering, keeping the
+    // tile search +- dc per axis, not scaled
+    //
+    // ratios <= 1, or CLUEstering box search incorrect
+    struct CylinderMetric {
+      using value_type = float;
+
+      const float* ratio;
+
+      template <typename TView>
+      ALPAKA_FN_HOST_ACC float operator()(const TView& points, std::size_t i, std::size_t j) const {
+        const auto pi = points[static_cast<int>(i)];
+        const auto pj = points[static_cast<int>(j)];
+        const float dx = pi[0] - pj[0];
+        const float dy = pi[1] - pj[1];
+        const float dz = pi[2] - pj[2];
+        const float transverse = clue::math::sqrt(dx * dx + dy * dy) * 2.f / (ratio[i] + ratio[j]);
+        return clue::math::max(transverse, clue::math::fabs(dz));
+      }
+    };
 
     // flags[i] = 1 for the layer clusters that survive the iteration mask, 0 otherwise.
     struct MaskToFlagsKernel {
@@ -45,6 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     float invSigmaRef,
                                     float sigmaRatio,
                                     float invLayerScale,
+                                    float endcapGap,
                                     float rhocEtaExponent,
                                     float rhocPivotRadius,
                                     float* x,
@@ -65,12 +89,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           const auto pz = input.position()[i].z();
           // Gnomonic direction coordinates in units of the reference (largest) sigmaT, and the
           // layer index in units of layerScale. The SoA layer already runs 0..N-1 for z<0 and
-          // N..2N-1 for z>0; a large extra gap for z>0 guarantees the two endcaps can never be
-          // within reach of each other in the third coordinate.
+          // N..2N-1 for z>0; the extra gap for z>0 puts the two endcaps out of reach of each
+          // other in the third coordinate while keeping the z range, and so the tile size
+          // CLUEstering derives from it, comparable to the search radius.
           const auto invAbsZ = 1.f / clue::math::fabs(pz);
           x[slot] = px * invAbsZ * invSigmaRef;
           y[slot] = py * invAbsZ * invSigmaRef;
-          z[slot] = static_cast<float>(input.position()[i].layer()) * invLayerScale + ((pz > 0.f) ? 1000.f : 0.f);
+          z[slot] = static_cast<float>(input.position()[i].layer()) * invLayerScale + ((pz > 0.f) ? endcapGap : 0.f);
           // Per-point transverse scale, as a ratio to the reference sigma (<= 1): the metric
           // divides pair distances by the mean ratio, giving each sub-detector its own sigmaT
           // without displacing same-direction points across sub-detector boundaries.
@@ -146,6 +171,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     for (auto s : parameters.sigmaT)
       sigmaRef = std::max(sigmaRef, s);
 
+    // make sure first layer of next end cap is furrtehr than the max reach of the last layer
+    // of previous, either d_c or outlierDistance
+    const float endcapGap = 2.f * std::max(parameters.dc, parameters.outlierDistance);
+
     for (size_t d = 0; d < inputs.size(); ++d) {
       const auto size = static_cast<uint32_t>(inputs[d].metadata().size()[0]);
       if (size == 0)
@@ -162,6 +191,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                           1.f / sigmaRef,
                           parameters.sigmaT[d] / sigmaRef,
                           1.f / parameters.layerScale,
+                          endcapGap,
                           parameters.rhocEtaExponent,
                           parameters.rhocPivotRadius,
                           x.data(),
@@ -177,16 +207,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     clue::PointsDevice<3, float> points(
         queue, static_cast<int32_t>(nSurviving), x.data(), y.data(), z.data(), energy.data(), clusterIndex.data());
     points.set_tags(std::span<const uint32_t>(tags.data(), nSurviving));
-    // The same per-point ratio serves both transverse dimensions
-    points.set_sigma(0, std::span<const float>(sigma.data(), nSurviving));
-    points.set_sigma(1, std::span<const float>(sigma.data(), nSurviving));
     // Per-point multiplier on rhoc, applied by CLUE in the seed condition and in the
     // seeding-vs-outlier distance switch
     points.set_density_uncertainty(std::span<const float>(rhocScale.data(), nSurviving));
 
     clue::Clusterer<3> algo(
         queue, parameters.dc, parameters.rhoc, parameters.outlierDistance, parameters.seedingDistance);
-    algo.make_clusters(queue, points, clue::metrics::Cylinder<3>{});
+    algo.make_clusters(queue, points, CylinderMetric{sigma.data()});
 
     {
       const auto workDiv = make_workdiv<Acc1D>(divide_up_by(nSurviving, items), items);
