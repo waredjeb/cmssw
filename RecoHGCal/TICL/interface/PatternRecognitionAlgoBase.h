@@ -60,7 +60,7 @@ namespace ticl {
 
     virtual void setGeometry(ticlgeom::Tools const& rhtools) = 0;
 
-    // Prevent outlier layer cluaters leaking into recovery
+    // Prevent outlier layer clusters leaking into recovery
     virtual void maskLayerClusters(const Inputs& input, std::vector<float>& outputMask) const {}
 
   protected:
