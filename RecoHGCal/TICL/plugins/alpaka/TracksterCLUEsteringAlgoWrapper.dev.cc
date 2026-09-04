@@ -87,27 +87,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           const auto px = input.position()[i].x();
           const auto py = input.position()[i].y();
           const auto pz = input.position()[i].z();
-          // Gnomonic direction coordinates in units of the reference (largest) sigmaT, and the
-          // layer index in units of layerScale. The SoA layer already runs 0..N-1 for z<0 and
-          // N..2N-1 for z>0; the extra gap for z>0 puts the two endcaps out of reach of each
-          // other in the third coordinate while keeping the z range, and so the tile size
-          // CLUEstering derives from it, comparable to the search radius.
+
+          // Gnomonic direction coordinates in units of sigmaT with z as the layer index
+          // invSigmaRef is 1/sigmaRatio
           const auto invAbsZ = 1.f / clue::math::fabs(pz);
           x[slot] = px * invAbsZ * invSigmaRef;
           y[slot] = py * invAbsZ * invSigmaRef;
           z[slot] = static_cast<float>(input.position()[i].layer()) * invLayerScale + ((pz > 0.f) ? endcapGap : 0.f);
-          // Per-point transverse scale, as a ratio to the reference sigma (<= 1): the metric
-          // divides pair distances by the mean ratio, giving each sub-detector its own sigmaT
-          // without displacing same-direction points across sub-detector boundaries.
+
+          // per-point sigma is the ratio, calculated on host
           sigma[slot] = sigmaRatio;
-          // Per-point multiplier on rhoc: (r0 / r)^alpha with r the gnomonic radius, so the
-          // seed threshold rises towards high eta where the pile-up density under a fixed
-          // angular disc is largest. alpha = 0 keeps the threshold flat.
+
+          // rhoc scales with (r0 / r) ^ alpha, with r the gnomonic radius
+          // r = 0 would give infinity, but this shouldn't be possible
           const auto r = clue::math::sqrt(px * px + py * py) * invAbsZ;
           rhocScale[slot] = clue::math::pow(rhocPivotRadius / r, rhocEtaExponent);
           energy[slot] = input.energy()[i].energy();
           sourceIndex[slot] = g;
-          // The seed DetId is used to break ties deterministically inside CLUE.
+          // The seed DetId is used to break ties deterministically inside CLUEstering.
           tags[slot] = input.indexes()[i].seedID().rawId();
         }
       }
@@ -158,7 +155,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto y = make_device_buffer<float[]>(queue, nSurviving);
     auto z = make_device_buffer<float[]>(queue, nSurviving);
     auto energy = make_device_buffer<float[]>(queue, nSurviving);
-    auto sigma = make_device_buffer<float[]>(queue, nSurviving);
+    auto sigmaRatio = make_device_buffer<float[]>(queue, nSurviving);
     auto rhocScale = make_device_buffer<float[]>(queue, nSurviving);
     auto sourceIndex = make_device_buffer<uint32_t[]>(queue, nSurviving);
     auto tags = make_device_buffer<uint32_t[]>(queue, nSurviving);
@@ -167,15 +164,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // Coordinates are stored in units of the largest sigmaT, so the per-point ratios stay <= 1
     // and the metric can only inflate distances with respect to the stored coordinates: CLUE's
     // coordinate search box (+-dc per axis) then stays exact.
-    float sigmaRef = 0.f;
-    for (auto s : parameters.sigmaT)
-      sigmaRef = std::max(sigmaRef, s);
+    const float sigmaRef = std::ranges::max(parameters.sigmaT);
 
     // make sure first layer of next end cap is furrtehr than the max reach of the last layer
     // of previous, either d_c or outlierDistance
     const float endcapGap = 2.f * std::max(parameters.dc, parameters.outlierDistance);
 
-    for (size_t d = 0; d < inputs.size(); ++d) {
+    for (size_t d = 0; d < inputs.size(); d++) {
       const auto size = static_cast<uint32_t>(inputs[d].metadata().size()[0]);
       if (size == 0)
         continue;
@@ -198,7 +193,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                           y.data(),
                           z.data(),
                           energy.data(),
-                          sigma.data(),
+                          sigmaRatio.data(),
                           rhocScale.data(),
                           sourceIndex.data(),
                           tags.data());
@@ -213,7 +208,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     clue::Clusterer<3> algo(
         queue, parameters.dc, parameters.rhoc, parameters.outlierDistance, parameters.seedingDistance);
-    algo.make_clusters(queue, points, CylinderMetric{sigma.data()});
+    algo.make_clusters(queue, points, CylinderMetric{sigmaRatio.data()});
 
     {
       const auto workDiv = make_workdiv<Acc1D>(divide_up_by(nSurviving, items), items);

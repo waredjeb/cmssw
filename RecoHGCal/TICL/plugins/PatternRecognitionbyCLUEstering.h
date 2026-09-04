@@ -11,11 +11,9 @@
 
 namespace ticl {
 
-  // Builds tracksters from the layer-cluster-to-trackster assignment computed on device by
-  // TrackstersCLUEsteringProducer. The clustering itself has already happened: this plugin
-  // groups the layer clusters by trackster index and hands the result to the same
-  // assignPCAtoTracksters() used by the other pattern-recognition plugins, so that the
-  // tracksters carry the PCA, timing and energy information the rest of TICL expects.
+  // Builds tracksters from the layer cluster to trackster assignment computed on device
+  // This plugin groups the layer clusters and fill the trackster information, but clustering
+  // has already happened.
   template <typename TILES>
   class PatternRecognitionbyCLUEstering final : public PatternRecognitionAlgoBaseT<TILES> {
   public:

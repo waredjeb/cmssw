@@ -46,7 +46,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
       // The order of these tags must match the one used by MergeClusterProducer to build the
       // merged host collection, because the indices produced here index into it.
-      for (auto const& tag : config.getParameter<std::vector<edm::InputTag>>("layerClusters")) {
+      for (const auto& tag : config.getParameter<std::vector<edm::InputTag>>("layerClusters")) {
         layerClustersTokens_.emplace_back(consumes(tag));
       }
       if (parameters_.sigmaT.size() != layerClustersTokens_.size()) {
@@ -91,38 +91,44 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       nTotal_ = nTotal;
-      // CLUE needs the number of points on the host, and the mask is already there: counting
-      // it here avoids a device-to-host round trip in the middle of the algorithm.
-      nSurviving_ = static_cast<uint32_t>(std::count_if(mask.begin(), mask.end(), [](float m) { return m > 0.f; }));
+      // Nothing to cluster: the buffers below stay unallocated and produce() publishes an empty
+      // assignment.
+      if (nTotal == 0) {
+        return;
+      }
+
+      // CLUEstering needs point count to size its tiles, calculating here avoids a device to
+      // host transfer. There may be a better solution
+      const auto nSurviving =
+          static_cast<uint32_t>(std::count_if(mask.begin(), mask.end(), [](float m) { return m > 0.f; }));
 
       auto& queue = iEvent.queue();
-      deviceMask_ = cms::alpakatools::make_device_buffer<float[]>(queue, std::max(nTotal, 1u));
-      deviceAssignment_ = cms::alpakatools::make_device_buffer<int32_t[]>(queue, std::max(nTotal, 1u));
-      hostAssignment_ = cms::alpakatools::make_host_buffer<int32_t[]>(queue, std::max(nTotal, 1u));
+      deviceMask_ = cms::alpakatools::make_device_buffer<float[]>(queue, nTotal);
+      deviceAssignment_ = cms::alpakatools::make_device_buffer<int32_t[]>(queue, nTotal);
+      hostAssignment_ = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nTotal);
 
-      if (nTotal > 0) {
-        auto hostMask = cms::alpakatools::make_host_view<const float>(mask.data(), nTotal);
-        alpaka::memcpy(queue, *deviceMask_, hostMask);
-      }
+      auto hostMask = cms::alpakatools::make_host_view<const float>(mask.data(), nTotal);
+      alpaka::memcpy(queue, *deviceMask_, hostMask);
 
       algo_.run(queue,
                 std::span<const ::reco::CaloClusterSoAConstView>(views),
                 std::span<const uint32_t>(offsets),
                 deviceMask_->data(),
                 nTotal,
-                nSurviving_,
+                nSurviving,
                 parameters_,
                 deviceAssignment_->data());
 
-      if (nTotal > 0) {
-        alpaka::memcpy(queue, *hostAssignment_, *deviceAssignment_);
-      }
+      alpaka::memcpy(queue, *hostAssignment_, *deviceAssignment_);
     }
 
     void produce(device::Event& iEvent, device::EventSetup const& iSetup) override {
-      auto assignment =
-          std::make_unique<std::vector<int32_t>>(hostAssignment_->data(), hostAssignment_->data() + nTotal_);
-      iEvent.emplace(assignmentToken_, std::move(*assignment));
+      // acquire() returns early on an empty event, so the buffers are only engaged when nTotal_ > 0.
+      std::vector<int32_t> assignment;
+      if (nTotal_ > 0) {
+        assignment.assign(hostAssignment_->data(), hostAssignment_->data() + nTotal_);
+      }
+      iEvent.emplace(assignmentToken_, std::move(assignment));
       deviceMask_.reset();
       deviceAssignment_.reset();
       hostAssignment_.reset();
@@ -172,7 +178,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::optional<cms::alpakatools::device_buffer<Device, int32_t[]>> deviceAssignment_;
     std::optional<cms::alpakatools::host_buffer<int32_t[]>> hostAssignment_;
     uint32_t nTotal_ = 0;
-    uint32_t nSurviving_ = 0;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
