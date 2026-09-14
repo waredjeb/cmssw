@@ -8,6 +8,7 @@
 <use name="DataFormats/ParticleFlowReco"/>
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>
+<use name="DataFormats/DetId"/>
 <use name="DataFormats/HGCalReco"/>
 <use name="DataFormats/ParticleFlowReco"/>
 <use name="SimDataFormats/Associations"/>
@@ -28,5 +29,9 @@
 </library>
 
 <library file="BranchTrackingValidator.cc" name="BranchTrackingValidatorPlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>
+
+<library file="TruthGraphPFClusterExplorer.cc" name="TruthGraphPFClusterExplorerPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>
