@@ -10,6 +10,7 @@ parser = ArgumentParser()
 parser.add_argument("inputFile", nargs='?', default="step3.root", metavar='FILE')
 parser.add_argument('-n', "--maxevts", type=int, default=5)
 parser.add_argument('-g', "--geometry", default="D110", help="Run4 geometry tag of the sample")
+parser.add_argument('-o', "--out", default="explorePFClusterTruth.root", help="TFileService output")
 args = parser.parse_args()
 if '/' not in args.inputFile and ':' not in args.inputFile:
     args.inputFile = 'file:' + args.inputFile
@@ -32,6 +33,8 @@ process.load("SimGeneral.TruthGraphAssociatorProducers.truthGraphAssociators_cff
 process.maxEvents = cms.untracked.PSet(input=cms.untracked.int32(args.maxevts))
 process.source = cms.Source("PoolSource", fileNames=cms.untracked.vstring(args.inputFile))
 process.options = cms.untracked.PSet(wantSummary=cms.untracked.bool(False))
+
+process.TFileService = cms.Service("TFileService", fileName=cms.string(args.out))
 
 from Validation.TruthInfo.truthGraphPFClusterExplorer_cfi import truthGraphPFClusterExplorer
 process.explorer = truthGraphPFClusterExplorer.clone()
