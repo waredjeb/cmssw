@@ -5,6 +5,8 @@
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>
 <use name="DataFormats/CaloRecHit"/>
+<use name="DataFormats/Common"/>
+<use name="DataFormats/DetId"/>
 <use name="DataFormats/HGCalReco"/>
 <use name="DataFormats/HGCRecHit"/>
 <use name="DataFormats/ParticleFlowReco"/>
@@ -17,5 +19,9 @@
 </library>
 
 <library file="TruthBranchTargetsProducer.cc" name="TruthBranchTargetsProducerPlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>
+
+<library file="TruthBranchAssociationDumper.cc" name="TruthBranchAssociationDumperPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>
