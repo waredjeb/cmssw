@@ -11,6 +11,11 @@ parser.add_argument("inputFile", nargs='?', default="step3.root", metavar='FILE'
 parser.add_argument('-n', "--maxevts", type=int, default=5)
 parser.add_argument('-g', "--geometry", default="D110", help="Run4 geometry tag of the sample")
 parser.add_argument('-o', "--out", default="explorePFClusterTruth.root", help="TFileService output")
+parser.add_argument('-p', "--preset", default=None,
+                    help="selection template applied when the logical graph is built (gun, resonance, vbf, "
+                         "ggf, vh, top, singletop, diboson, heavyflavor, full). It names the signal seed species, "
+                         "which is what stamps LevelFlag::Signal and so fills reconstructableFromSignal; "
+                         "without it that level is empty. ttbar: top")
 args = parser.parse_args()
 if '/' not in args.inputFile and ':' not in args.inputFile:
     args.inputFile = 'file:' + args.inputFile
@@ -29,6 +34,13 @@ process.trackerGeometry.applyAlignment = cms.bool(False)
 process.load("Validation.Configuration.truthPrevalidation_cff")
 # truthBranchTargets + the associators (tracks, vertices, tracksters, PFClusters)
 process.load("SimGeneral.TruthGraphAssociatorProducers.truthGraphAssociators_cff")
+
+if args.preset:
+    from PhysicsTools.TruthInfo.truthGraphSelections import postProcessingPSet, seedPdgIdsForPreset
+    process.truthLogicalGraphProducer.postProcessing = postProcessingPSet(template=args.preset)
+    # The same seed species for the associators, so their signalSeeds denominator is the
+    # preset's signal objects.
+    process.truthBranchTargets.signalSeedPdgIds = cms.vint32(*seedPdgIdsForPreset(template=args.preset))
 
 process.maxEvents = cms.untracked.PSet(input=cms.untracked.int32(args.maxevts))
 process.source = cms.Source("PoolSource", fileNames=cms.untracked.vstring(args.inputFile))
