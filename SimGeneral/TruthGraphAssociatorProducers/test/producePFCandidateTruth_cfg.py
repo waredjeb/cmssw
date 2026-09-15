@@ -3,7 +3,7 @@
 # PFClusters, tracksters) and PFCandidateTruthAssociator, and writes the maps and the
 # records to an EDM file.
 #
-#   cmsRun producePFCandidateTruth_cfg.py step3.root -n 10 -g D110 -p top -o pfcandTruth.root
+#   cmsRun producePFCandidateTruth_cfg.py step3.root -n 10 -g D110 -p top -o pfcandTruth.root   (gun: -p gun -l reconstructableFinalState)
 
 import FWCore.ParameterSet.Config as cms
 from argparse import ArgumentParser
@@ -14,6 +14,8 @@ parser.add_argument('-n', "--maxevts", type=int, default=10)
 parser.add_argument('-g', "--geometry", default="D110")
 parser.add_argument('-p', "--preset", default="top",
                     help="selection template naming the signal seeds; reconstructableFromSignal is empty without one")
+parser.add_argument('-l', "--level", default="reconstructableFromSignal",
+                    help="truth level of the ladder denominator; a gun has no resonance, use reconstructableFinalState")
 parser.add_argument('-o', "--out", default="pfcandTruth.root")
 args = parser.parse_args()
 if ':' not in args.inputFile:
@@ -33,6 +35,9 @@ if args.preset:
     from PhysicsTools.TruthInfo.truthGraphSelections import postProcessingPSet, seedPdgIdsForPreset
     process.truthLogicalGraphProducer.postProcessing = postProcessingPSet(template=args.preset)
     process.truthBranchTargets.signalSeedPdgIds = cms.vint32(*seedPdgIdsForPreset(template=args.preset))
+
+process.pfCandidateTruthAssociator.targets = cms.InputTag(
+    "truthBranchTargets", "truthToRecoTargets" + args.level[0].upper() + args.level[1:])
 
 process.maxEvents = cms.untracked.PSet(input=cms.untracked.int32(args.maxevts))
 process.source = cms.Source("PoolSource", fileNames=cms.untracked.vstring(args.inputFile))
