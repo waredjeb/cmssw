@@ -38,3 +38,7 @@
 <library file="TruthGraphPFClusterExplorer.cc" name="TruthGraphPFClusterExplorerPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>
+
+<library file="PFCandidateTruthValidator.cc" name="PFCandidateTruthValidatorPlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>
