@@ -682,14 +682,14 @@ void PFCandidateTruthAssociator::produce(edm::StreamID, edm::Event& event, edm::
     auto& rec = (*records)[i];
     if (rec.branchId == kNoBranch) {
       const bool noDomainConstituent = constituents[i].track < 0 && constituents[i].calo.empty();
-      rec.candidateClass = static_cast<uint8_t>(noDomainConstituent ? PFCandidateClass::Unevaluated
-                                                                     : PFCandidateClass::Unmatched);
+      rec.candidateClass =
+          static_cast<uint8_t>(noDomainConstituent ? PFCandidateClass::Unevaluated : PFCandidateClass::Unmatched);
       continue;
     }
     const uint32_t target = targetAbove(rec.branchId);
     if (target == kNoBranch) {
-      rec.candidateClass = static_cast<uint8_t>(hasTargetBelow(rec.branchId) ? PFCandidateClass::Merged
-                                                                              : PFCandidateClass::Other);
+      rec.candidateClass =
+          static_cast<uint8_t>(hasTargetBelow(rec.branchId) ? PFCandidateClass::Merged : PFCandidateClass::Other);
       continue;
     }
     rec.targetId = target;
@@ -702,8 +702,8 @@ void PFCandidateTruthAssociator::produce(edm::StreamID, edm::Event& event, edm::
     auto& rec = (*records)[i];
     if (targetOf[i] == kNoBranch)
       continue;
-    rec.candidateClass = static_cast<uint8_t>(claimant[targetOf[i]] == i ? PFCandidateClass::Matched
-                                                                          : PFCandidateClass::Split);
+    rec.candidateClass =
+        static_cast<uint8_t>(claimant[targetOf[i]] == i ? PFCandidateClass::Matched : PFCandidateClass::Split);
   }
 
   // ---- maps ----------------------------------------------------------------------------------
@@ -878,9 +878,17 @@ void PFCandidateTruthAssociator::produce(edm::StreamID, edm::Event& event, edm::
       r.candidateType = crec.pfType;
       r.foreignFraction = crec.foreignFraction;
       r.energyRatio = r.energy > 0.f ? crec.energy / r.energy : 0.f;
-      if (crec.branchId != kNoBranch && isDescendantOrSelf(p, crec.branchId)) {
-        r.set(PFRung::CandidateFound);
-        r.set(PFRung::Merged, crec.branchId != p);
+      // Found when the candidate's level is the particle, an ancestor (merged with
+      // others) or a descendant (only part of it, the expected outcome for a pi0 seen
+      // as one of its photons).
+      if (crec.branchId != kNoBranch) {
+        if (isDescendantOrSelf(p, crec.branchId)) {
+          r.set(PFRung::CandidateFound);
+          r.set(PFRung::Merged, crec.branchId != p);
+        } else if (isDescendantOrSelf(crec.branchId, p)) {
+          r.set(PFRung::CandidateFound);
+          r.set(PFRung::Partial);
+        }
       }
       r.set(PFRung::Clean, r.has(PFRung::CandidateFound) && crec.foreignFraction <= maxForeignFraction_);
       const int expectedType = expectedPFType(data.pdgId);
@@ -911,7 +919,8 @@ void PFCandidateTruthAssociator::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
   desc.add<std::string>("trackAssociator", "allTrackToTruthBranchAssociators");
   desc.add<edm::InputTag>("ticlCandidates", edm::InputTag("ticlCandidate"))
-      ->setComment("TICLCandidates of the pfTICL candidates, recovered index-parallel; empty label disables the endcap");
+      ->setComment(
+          "TICLCandidates of the pfTICL candidates, recovered index-parallel; empty label disables the endcap");
   edm::ParameterSetDescription calo;
   calo.add<std::string>("detector")->setComment("Ecal, Hcal or Hgcal");
   calo.add<edm::InputTag>("collection");
@@ -960,7 +969,8 @@ void PFCandidateTruthAssociator::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<double>("maxForeignFraction", 0.25);
   desc.add<double>("minExpectedDetectorFraction", 0.1);
   desc.add<double>("minMergedCoverage", 0.5)
-      ->setComment("a common ancestor becomes the level only if the candidate covers this share of it in some detector");
+      ->setComment(
+          "a common ancestor becomes the level only if the candidate covers this share of it in some detector");
   desc.add<double>("barrelEtaMax", 1.48);
   desc.add<double>("endcapEtaMin", 1.6);
   desc.add<double>("endcapEtaMax", 3.0);

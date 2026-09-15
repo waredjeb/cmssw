@@ -8,7 +8,7 @@ from DataFormats.FWLite import Events, Handle
 
 RUNGS = ["TrackExpected", "TrackFound", "TrackInCandidate", "EcalExpected", "EcalCollected", "EcalLinked",
          "HcalExpected", "HcalCollected", "HcalLinked", "HgcalExpected", "HgcalCollected", "HgcalLinked",
-         "CaloSameCandidate", "CandidateFound", "Merged", "Clean", "PdgEvaluated", "PdgCorrect"]
+         "CaloSameCandidate", "CandidateFound", "Merged", "Clean", "PdgEvaluated", "PdgCorrect", "Partial"]
 BIT = {n: 1 << i for i, n in enumerate(RUNGS)}
 REGION = ["barrel", "transition", "endcap", "forward"]
 CLASS = ["Unmatched", "Matched", "Merged", "Split", "Other", "Unevaluated"]
@@ -33,16 +33,16 @@ for ev in events:
     for c in candH.product():
         classes[PFTYPE[c.pfType]][CLASS[c.candidateClass]] += 1
 print("events:", n)
-print("\n%-8s %-10s %6s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s" % (
-    "species", "region", "n", "trkE", "trkF", "trkC", "ecE", "ecC", "ecL", "hcE", "hcC", "hcL", "hgE", "hgC", "hgL", "same", "cand", "merg", "clean", "pdgE", "pdgOK"))
+print("\n%-8s %-10s %6s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s | %5s %5s %5s %5s" % (
+    "species", "region", "n", "trkE", "trkF", "trkC", "ecE", "ecC", "ecL", "hcE", "hcC", "hcL", "hgE", "hgC", "hgL", "same", "cand", "merg", "clean", "pdgE", "pdgOK", "part"))
 for key in sorted(ladder, key=lambda k: (-ladder[k]["all"], k)):
     c = ladder[key]
     if c["all"] < 20: continue
-    print("%-8s %-10s %6d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d" % (
+    print("%-8s %-10s %6d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d | %5d %5d %5d %5d" % (
         key[0], key[1], c["all"], c["TrackExpected"], c["TrackFound"], c["TrackInCandidate"],
         c["EcalExpected"], c["EcalCollected"], c["EcalLinked"], c["HcalExpected"], c["HcalCollected"], c["HcalLinked"],
         c["HgcalExpected"], c["HgcalCollected"], c["HgcalLinked"], c["CaloSameCandidate"], c["CandidateFound"], c["Merged"],
-        c["Clean"], c["PdgEvaluated"], c["PdgCorrect"]))
+        c["Clean"], c["PdgEvaluated"], c["PdgCorrect"], c["Partial"]))
 print("\ncandidate classes per PF type:")
 for t in PFTYPE:
     if classes[t]: print("  %-6s %s" % (t, dict(classes[t])))

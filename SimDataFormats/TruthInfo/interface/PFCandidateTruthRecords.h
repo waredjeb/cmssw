@@ -32,12 +32,12 @@ namespace truth {
   // applies to this particle at all: a rung that is not expected is neither passed nor
   // failed. A consumer must gate every rung on its Expected bit.
   enum class PFRung : uint32_t {
-    TrackExpected = 1u << 0,      // charged particle
-    TrackFound = 1u << 1,         // a track resolves to this particle above the purity floor
-    TrackInCandidate = 1u << 2,   // that track is the track of some candidate
-    EcalExpected = 1u << 3,       // sim energy in ECAL above the expected-detector floor
-    EcalCollected = 1u << 4,      // ECAL clusters cover the particle's ECAL deposit
-    EcalLinked = 1u << 5,         // those clusters are in the particle's candidate
+    TrackExpected = 1u << 0,     // charged particle
+    TrackFound = 1u << 1,        // a track resolves to this particle above the purity floor
+    TrackInCandidate = 1u << 2,  // that track is the track of some candidate
+    EcalExpected = 1u << 3,      // sim energy in ECAL above the expected-detector floor
+    EcalCollected = 1u << 4,     // ECAL clusters cover the particle's ECAL deposit
+    EcalLinked = 1u << 5,        // those clusters are in the particle's candidate
     HcalExpected = 1u << 6,
     HcalCollected = 1u << 7,
     HcalLinked = 1u << 8,
@@ -45,11 +45,12 @@ namespace truth {
     HgcalCollected = 1u << 10,
     HgcalLinked = 1u << 11,
     CaloSameCandidate = 1u << 12,  // the ECAL and HCAL pieces sit in one candidate
-    CandidateFound = 1u << 13,     // a candidate resolves to this particle or an ancestor
+    CandidateFound = 1u << 13,     // a candidate resolves to this particle, an ancestor or a descendant
     Merged = 1u << 14,             // that candidate resolves to an ancestor
     Clean = 1u << 15,              // foreign energy in the candidate below the floor
     PdgEvaluated = 1u << 16,       // the species has an expected PF type
-    PdgCorrect = 1u << 17
+    PdgCorrect = 1u << 17,
+    Partial = 1u << 18  // that candidate resolves to a descendant (a pi0 seen as one photon)
   };
 
   [[nodiscard]] constexpr uint32_t rungBit(PFRung rung) { return static_cast<uint32_t>(rung); }
