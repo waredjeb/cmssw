@@ -150,6 +150,13 @@ truthBranchPFClusterHcalAssociators = truthBranchPFClusterEcalAssociators.clone(
     denominatorDetectors=["Hcal"],
 )
 
+# Composite, constituent-based on a PARTICLE target: a PFCandidate is resolved through
+# the maps of its constituents (the track first, then the calorimeter clusters or
+# tracksters) and its truth-driven side is the reconstruction ladder of every particle of
+# the reconstructableFromSignal level, persisted as records next to the maps. The level
+# is empty without a selection preset naming the signal seeds.
+from SimGeneral.TruthGraphAssociatorProducers.pfCandidateTruthAssociator_cfi import pfCandidateTruthAssociator
+
 # The HLT menu's own reconstruction of the same event. Same producers, same working
 # points, different input collections, so the two can be compared page by page.
 hltTrackToTruthBranchAssociators = allTrackToTruthBranchAssociators.clone(
@@ -183,6 +190,7 @@ truthGraphAssociatorsSequence = cms.Sequence(
     + truthBranchPFClusterHcalAssociators
     + allVertexToTruthBranchAssociators
     + allSecondaryVertexToTruthBranchAssociators
+    + pfCandidateTruthAssociator
 )
 
 # The HLT twins read HLT collections, which an offline reconstruction does not produce,

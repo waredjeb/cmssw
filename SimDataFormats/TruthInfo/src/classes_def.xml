@@ -48,6 +48,17 @@
   <class name="std::vector<truth::LogicalGraphHitIndex::SlotRange>"/>
   <class name="edm::Wrapper<truth::LogicalGraphHitIndex>"/>
 
+  <class name="truth::PFCandidateTruthRecord" ClassVersion="3">
+    <version ClassVersion="3" checksum="3904464631"/>
+  </class>
+  <class name="std::vector<truth::PFCandidateTruthRecord>"/>
+  <class name="edm::Wrapper<std::vector<truth::PFCandidateTruthRecord>>"/>
+  <class name="truth::PFCandidateRecord" ClassVersion="3">
+    <version ClassVersion="3" checksum="275640868"/>
+  </class>
+  <class name="std::vector<truth::PFCandidateRecord>"/>
+  <class name="edm::Wrapper<std::vector<truth::PFCandidateRecord>>"/>
+
   <!-- The ticl::AssociationMap<mapWithSharedEnergyAndScore> (raw-index variant) and
        its Wrapper dictionaries are provided by SimDataFormats/Associations; the
        producer just uses them. -->
