@@ -255,10 +255,12 @@ void PFCandidateTruthValidator::bookHistograms(DQMStore::IBooker& booker, edm::R
       };
       f.ladderTrackFound = bookLadder("ladder_trackFound", kLadderTrackFoundLabels);
       f.ladderTrackMissing = bookLadder("ladder_trackMissing", kLadderTrackMissingLabels);
-      f.responseTrackFound = booker.book1D("response_trackFound", "candidate / truth energy;E_{cand}/E_{truth};", 60, 0., 3.);
+      f.responseTrackFound =
+          booker.book1D("response_trackFound", "candidate / truth energy;E_{cand}/E_{truth};", 60, 0., 3.);
       f.responseTrackMissing =
           booker.book1D("response_trackMissing", "candidate / truth energy;E_{cand}/E_{truth};", 60, 0., 3.);
-      f.foreignFraction = booker.book1D("foreign_fraction", "foreign energy share of the candidate;fraction;", 50, 0., 1.);
+      f.foreignFraction =
+          booker.book1D("foreign_fraction", "foreign energy share of the candidate;fraction;", 50, 0., 1.);
     }
   }
   std::vector<std::string> types = kPFTypes;
@@ -279,7 +281,11 @@ void PFCandidateTruthValidator::fillTruth(TruthFolder& f, truth::PFCandidateTrut
   f.simul.fill(r.pt, r.eta, r.caloEta);
   for (std::size_t k = 0; k < kRungs.size(); ++k) {
     auto const& rung = kRungs[k];
-    const bool applies = rung.alwaysExpected ? true : rungApplies(r, rung.passed);
+    // Each rung's own denominator: the flag named in its definition, except the
+    // calo-to-calo rung, which needs both calorimeter pieces collected.
+    const bool applies = rung.alwaysExpected                        ? true
+                         : rung.passed == PFRung::CaloSameCandidate ? rungApplies(r, rung.passed)
+                                                                    : r.has(rung.expected);
     if (!applies)
       continue;
     f.expected[k].fill(r.pt, r.eta, r.caloEta);
@@ -327,7 +333,8 @@ void PFCandidateTruthValidator::analyze(edm::Event const& event, edm::EventSetup
     fillTruth(truth_["all"]["all"], r);
   }
   for (auto const& c : event.get(recoToken_)) {
-    const std::string t = c.pfType >= 0 && static_cast<std::size_t>(c.pfType) < kPFTypes.size() ? kPFTypes[c.pfType] : "X";
+    const std::string t =
+        c.pfType >= 0 && static_cast<std::size_t>(c.pfType) < kPFTypes.size() ? kPFTypes[c.pfType] : "X";
     const std::string region = c.region < kRegions.size() ? kRegions[c.region] : "forward";
     fillReco(reco_[t][region], c);
     fillReco(reco_[t]["all"], c);
@@ -339,7 +346,8 @@ void PFCandidateTruthValidator::analyze(edm::Event const& event, edm::EventSetup
 void PFCandidateTruthValidator::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("truthRecords", edm::InputTag("pfCandidateTruthAssociator", "particleFlowTruthRecords"));
-  desc.add<edm::InputTag>("candidateRecords", edm::InputTag("pfCandidateTruthAssociator", "particleFlowCandidateRecords"));
+  desc.add<edm::InputTag>("candidateRecords",
+                          edm::InputTag("pfCandidateTruthAssociator", "particleFlowCandidateRecords"));
   desc.add<std::string>("dirName", "TruthInfo/Offline/PFCandidates/particleFlow");
   desc.add<int>("nintPt", 30);
   desc.add<double>("minPt", 1.);
