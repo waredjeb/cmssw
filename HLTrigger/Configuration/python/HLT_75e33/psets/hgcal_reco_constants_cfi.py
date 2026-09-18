@@ -48,16 +48,16 @@ HGCAL_reco_constants = cms.PSet(
 from RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi import dEdX_v19 as _dEdX_v19
 phase2_hgcalV19.toModify(HGCAL_reco_constants, 
                          dEdXweights = _dEdX_v19.weights,
-                         thicknessCorrection = [0.75, 0.76, 0.75, 0.76, 0.85, 0.85, 0.84, 0.85] , #CEE_12_HD, CEE_200_LD, CEE_300_LD, CEE_200_HD,CEH_12_HD, CEH_200_LD, CEH_300_LD, CEH_200_HD,
+                         thicknessCorrection = cms.vfloat([0.75, 0.76, 0.75, 0.76, 0.85, 0.85, 0.84, 0.85]) , #CEE_12_HD, CEE_200_LD, CEE_300_LD, CEE_200_HD,CEH_12_HD, CEH_200_LD, CEH_300_LD, CEH_200_HD,
                          fcPerMip = 
-                                 [2.06, 3.43, 5.15, 3.43, 2.06, 3.43,
-                                 5.15, 3.43]
+                                 cms.vfloat([2.06, 3.43, 5.15, 3.43, 2.06, 3.43,
+                                 5.15, 3.43])
                              ,
                          noises = 
-                                 [2000.0, 2400.0, 2000.0, 2400.0, 2000.0, 2400.0,
-                                 2000.0, 2400.]
+                                 cms.vfloat([2000.0, 2400.0, 2000.0, 2400.0, 2000.0, 2400.0,
+                                 2000.0, 2400.])
                              ,
                          numberOfThicknesses = 4,
                          maxNumberOfThickIndices = 8,
-                         thresholdW0 = [2.9, 2.9, 2.9, 2.9],
+                         thresholdW0 = cms.vfloat([2.9, 2.9, 2.9, 2.9]),
                          )
