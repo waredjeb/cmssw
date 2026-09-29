@@ -82,7 +82,17 @@ ticlCLUE3DHighStepTask = cms.Task(ticlSeedingGlobal
 from Configuration.ProcessModifiers.ticl_dev import ticl_dev
 from RecoHGCal.TICL.trackstersCLUEsteringProducer_cfi import trackstersCLUEsteringProducer as _trackstersCLUEsteringProducer
 
-ticlTrackstersCLUEsteringAssignment = _trackstersCLUEsteringProducer.clone()
+ticlTrackstersCLUEsteringAssignment = _trackstersCLUEsteringProducer.clone(
+    filtered_mask = "filteredLayerClustersCLUE3DHigh:CLUE3DHigh",
+    dc = 1.,
+    rhoc = 0.8,
+    outlierDistance = 2.8,
+    seedingDistance = 2.8,
+    sigmaT = [0.003, 0.006, 0.012], # EE, HSi, HSci
+    layerScale = 6.,
+    rhocEtaExponent = 2.,
+    rhocPivotRadius = 0.42
+)
 
 ticl_dev.toModify(ticlTrackstersCLUE3DHigh,
     patternRecognitionBy = 'CLUEstering',
