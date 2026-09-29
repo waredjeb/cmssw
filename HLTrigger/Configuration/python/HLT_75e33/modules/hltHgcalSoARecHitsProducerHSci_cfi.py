@@ -6,17 +6,17 @@ hltHgcalSoARecHitsProducerHSci = cms.EDProducer("HGCalSoARecHitsProducer@alpaka"
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string('')
     ),
-    dEdXweights = HGCAL_reco_constants.dEdXweights,
+    dEdXweights = cms.vfloat(HGCAL_reco_constants.dEdXweights.value()),
     detector = cms.string('BH'),
     ecut = cms.float(3),
-    fcPerEle = HGCAL_reco_constants.fcPerEle,
-    fcPerMip = HGCAL_reco_constants.fcPerMip,
+    fcPerEle = cms.float(HGCAL_reco_constants.fcPerEle.value()),
+    fcPerMip = cms.vfloat(HGCAL_reco_constants.fcPerMip.value()),
     maxNumberOfThickIndices = HGCAL_reco_constants.maxNumberOfThickIndices,
-    noises = HGCAL_reco_constants.noises,
+    noises = cms.vfloat(HGCAL_reco_constants.noises.value()),
     recHits = cms.InputTag("hltHGCalRecHit","HGCHEBRecHits"),
-    thicknessCorrection = HGCAL_reco_constants.thicknessCorrection,
-    noiseMip = HGCAL_reco_constants.noiseMip.noise_MIP,
-    sciThicknessCorrection = HGCAL_reco_constants.sciThicknessCorrection,
+    thicknessCorrection = cms.vfloat(HGCAL_reco_constants.thicknessCorrection.value()),
+    noiseMip = cms.float(HGCAL_reco_constants.noiseMip.noise_MIP.value()),
+    sciThicknessCorrection = cms.float(HGCAL_reco_constants.sciThicknessCorrection.value()),
 )
 
 hltHgcalSoARecHitsProducerHSciSerialSync = makeSerialClone(hltHgcalSoARecHitsProducerHSci)

@@ -33,8 +33,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           nonAgedNoises_(config.getParameter<std::vector<float>>("noises")),
           dEdXweights_(config.getParameter<std::vector<float>>("dEdXweights")),
           thicknessCorrection_(config.getParameter<std::vector<float>>("thicknessCorrection")),
-          noiseMip_(config.getParameter<double>("noiseMip")),
-          sciThicknessCorrection_(config.getParameter<double>("sciThicknessCorrection")),
+          noiseMip_(config.getParameter<float>("noiseMip")),
+          sciThicknessCorrection_(config.getParameter<float>("sciThicknessCorrection")),
           ticlGeomToken_(consumesCollector().esConsumes<TICLGeomHost, CaloGeometryRecord>(edm::ESInputTag("", ""))),
           ticlGeomLookupToken_(
               consumesCollector().esConsumes<TICLGeomLookupHost, CaloGeometryRecord>(edm::ESInputTag("", ""))),
@@ -190,9 +190,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<std::vector<float>>("thicknessCorrection");
       desc.add<std::vector<float>>("noises");
       desc.add<std::vector<float>>("dEdXweights");
-      desc.add<double>("noiseMip", 0.2);
-      desc.add<double>("sciThicknessCorrection", 1.0);
-      desc.add<float>("ecut", 3.);
+      desc.add<float>("noiseMip", 0.2f);
+      desc.add<float>("sciThicknessCorrection", 1.0f);
+      desc.add<float>("ecut", 3.f);
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -209,8 +209,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::vector<float> nonAgedNoises_;
     std::vector<float> dEdXweights_;
     std::vector<float> thicknessCorrection_;
-    double noiseMip_;
-    double sciThicknessCorrection_;
+    float noiseMip_;
+    float sciThicknessCorrection_;
     std::vector<std::vector<double>> thresholds_;
     std::vector<std::vector<double>> v_sigmaNoise_;
 
