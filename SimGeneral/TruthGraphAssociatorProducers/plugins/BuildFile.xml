@@ -5,9 +5,13 @@
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>
 <use name="DataFormats/CaloRecHit"/>
+<use name="DataFormats/Common"/>
+<use name="DataFormats/DetId"/>
 <use name="DataFormats/HGCalReco"/>
 <use name="DataFormats/HGCRecHit"/>
 <use name="DataFormats/ParticleFlowReco"/>
+<use name="heppdt"/>
+<use name="DataFormats/ParticleFlowCandidate"/>
 <use name="SimDataFormats/Associations"/>
 <use name="SimDataFormats/TruthInfo"/>
 <use name="PhysicsTools/TruthInfo"/>
@@ -17,5 +21,13 @@
 </library>
 
 <library file="TruthBranchTargetsProducer.cc" name="TruthBranchTargetsProducerPlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>
+
+<library file="TruthBranchAssociationDumper.cc" name="TruthBranchAssociationDumperPlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>
+
+<library file="PFCandidateTruthAssociator.cc" name="PFCandidateTruthAssociatorPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>
