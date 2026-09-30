@@ -10,7 +10,7 @@ dummy_weight = 0.0
 def calcWeights(weightsPerLayer): res = [sum(wei)/2. for wei in zip(weightsPerLayer[:], weightsPerLayer[1:] + [weightsPerLayer[-1]])]; res[0] = dummy_weight; return res;   
 
 
-weightsPerLayer_V16 = cms.vfloat(dummy_weight,
+weightsPerLayer_V16 = cms.vdouble(dummy_weight,
                                   5.55, # MeV
                                   12.86,
                                   9.4,
@@ -59,7 +59,7 @@ weightsPerLayer_V16 = cms.vfloat(dummy_weight,
                                   83.61,
                                   83.61)
 
-weightsPerLayer_V19 = cms.vfloat(dummy_weight,
+weightsPerLayer_V19 = cms.vdouble(dummy_weight,
                                   4.25, # MeV
                                   12.86,
                                   6.98,
@@ -111,7 +111,7 @@ weightsPerLayer_V19 = cms.vfloat(dummy_weight,
 
 dEdX = cms.PSet(
 	# for v10 geometry
-    weights = cms.vfloat(0.0,      # there is no layer zero
+    weights = cms.vdouble(0.0,      # there is no layer zero
                           8.894541,  # MeV
                           10.937907,
                           10.937907,
@@ -163,7 +163,7 @@ dEdX = cms.PSet(
                           86.929520,
                           86.929520),
 
-    weightsNose = cms.vfloat(0.0,   # there is no layer zero
+    weightsNose = cms.vdouble(0.0,   # there is no layer zero
                               39.500245, # MeV
                               39.756638,
                               39.756638,
@@ -177,9 +177,9 @@ dEdX = cms.PSet(
 
 # for v16 geometry
 dEdX_v16 = cms.PSet(
-    weights = cms.vfloat(calcWeights(weightsPerLayer_V16)),
+    weights = cms.vdouble(calcWeights(weightsPerLayer_V16)),
 
-    weightsNose = cms.vfloat(0.0,   # there is no layer zero
+    weightsNose = cms.vdouble(0.0,   # there is no layer zero
                               39.500245, # MeV
                               39.756638,
                               39.756638,
@@ -192,9 +192,9 @@ dEdX_v16 = cms.PSet(
 
 # for v19 geometry
 dEdX_v19 = cms.PSet(
-    weights = cms.vfloat(calcWeights(weightsPerLayer_V19)),
+    weights = cms.vdouble(calcWeights(weightsPerLayer_V19)),
 
-    weightsNose = cms.vfloat(0.0,   # there is no layer zero
+    weightsNose = cms.vdouble(0.0,   # there is no layer zero
                               39.500245, # MeV
                               39.756638,
                               39.756638,
@@ -237,13 +237,14 @@ HGCalRecHit = cms.EDProducer(
 
 
     # EM Scale calibrations
-    layerWeights = dEdX.weights,
-    layerNoseWeights = dEdX.weightsNose,
+    # dEdX stays vdouble for its other users (L1T, EGamma ID), this producer reads vector<float>
+    layerWeights = cms.vfloat(dEdX.weights.value()),
+    layerNoseWeights = cms.vfloat(dEdX.weightsNose.value()),
 
     #With the new regional em factors there are 7 different factors used. 
     #Six of them are for silicon and one for scint. For silicon it is in the following order
     # CE_E_120um, CE_E_200um, CE_E_300um, CE_H_120um, CE_H_200um, CE_H_300um
-    thicknessCorrection = cms.vdouble(1.132,1.092,1.084,1.0,1.0,1.0),
+    thicknessCorrection = cms.vfloat(1.132,1.092,1.084,1.0,1.0,1.0),
     deltasi_index_regemfac = cms.int32(3),
     #One factor for scint 
     sciThicknessCorrection = cms.double(1.0),
@@ -276,11 +277,11 @@ phase2_hfnose.toModify( HGCalRecHit , thicknessNoseCorrection = [0.58,0.58,0.58]
 phase2_hgcalV16.toModify(HGCalRecHit, 
                          thicknessCorrection = [0.75, 0.76, 0.75, 0.85, 0.85, 0.84] , 
                          sciThicknessCorrection =  0.69,
-                         layerWeights = dEdX_v16.weights) 
+                         layerWeights = cms.vfloat(dEdX_v16.weights.value())) 
 
 phase2_hgcalV19.toModify(HGCalRecHit, 
                          thicknessCorrection = [0.75, 0.76, 0.75, 0.76, 0.85, 0.85, 0.84, 0.85] , 
                          #four silicon categories per section in v19: CE-H offset moves from 3 to 4
                          deltasi_index_regemfac = 4,
                          sciThicknessCorrection =  0.69,
-                         layerWeights = dEdX_v19.weights) 
+                         layerWeights = cms.vfloat(dEdX_v19.weights.value())) 
