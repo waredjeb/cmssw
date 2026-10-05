@@ -66,4 +66,19 @@ struct HGCalSiliconTestBeam2026Constants {
   static constexpr int maxTileDepth = 256;  // For accelerators.
 };
 
+// scintillator tiles in the 2026 test beam, clustered in x/y like silicon
+struct HGCalScintillatorTestBeam2026Constants {
+  static constexpr float tileSize = 5.f;
+  static constexpr float minDim1 = -152.f;
+  static constexpr float maxDim1 = -100.f;
+  static constexpr float minDim2 = -2.f;
+  static constexpr float maxDim2 = 28.f;
+  static constexpr int nColumns = reco::ceil((maxDim1 - minDim1) / tileSize);
+  static constexpr int nRows = reco::ceil((maxDim2 - minDim2) / tileSize);
+  static constexpr int nTiles = nColumns * nRows;
+  static constexpr float invDim1BinSize = nColumns / (maxDim1 - minDim1);
+  static constexpr float invDim2BinSize = nRows / (maxDim2 - minDim2);
+  static constexpr int maxTileDepth = 256;  // For accelerators.
+};
+
 #endif

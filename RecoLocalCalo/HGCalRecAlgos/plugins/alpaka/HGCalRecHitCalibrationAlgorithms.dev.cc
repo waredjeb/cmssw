@@ -203,14 +203,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       for (auto idx : uniform_elements(acc, recHits.metadata().size())) {
         auto denseIdx = index[idx];
         auto recHit = recHits[idx];
-        if (mapmod[denseIdx.modInfoIdx()].isSiPM()) {
-          recHit.dim1() = denseIdx.eta();
-          recHit.dim2() = denseIdx.phi();
-        }  // else, isSilicon == true and eta phi values will not be used
-        else {
-          recHit.dim1() = denseIdx.x();
-          recHit.dim2() = denseIdx.y();
-        }
+        // test beam: both silicon and SiPM-on-tile hits are clustered in x/y
+        // (see HGCalScintillatorTestBeam2026Constants), so dim1/dim2 are x/y for both
+        recHit.dim1() = denseIdx.x();
+        recHit.dim2() = denseIdx.y();
         recHit.dim3() = denseIdx.z();
         recHit.recHitIndex() = idx;
         recHit.detid() = denseIdx.detid();

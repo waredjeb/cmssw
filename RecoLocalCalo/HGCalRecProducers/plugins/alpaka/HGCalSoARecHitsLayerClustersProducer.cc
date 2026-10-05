@@ -34,7 +34,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           deviceToken_{produces()},
           deltac_((float)config.getParameter<double>("deltac")),
           kappa_((float)config.getParameter<double>("kappa")),
-          outlierDeltaFactor_((float)config.getParameter<double>("outlierDeltaFactor")) {}
+          outlierDeltaFactor_((float)config.getParameter<double>("outlierDeltaFactor")),
+          isScintillator_(config.getParameter<std::string>("detector") == "scintillator") {}
 
     ~HGCalSoARecHitsLayerClustersProducer() override = default;
 
@@ -46,8 +47,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       HGCalSoARecHitsExtraDeviceCollection output(iEvent.queue(), deviceInput->metadata().size());
       auto output_v = output.view();
 
+      // no hits (e.g. no scintillator hits in this event): CLUE does not run and
+      // would leave the number of clusters uninitialised
+      if (deviceInput->metadata().size() == 0) {
+        auto device_numclusters =
+            cms::alpakatools::make_device_view<unsigned int>(alpaka::getDev(iEvent.queue()), output_v.numberOfClustersScalar());
+        alpaka::memset(iEvent.queue(), device_numclusters, 0x0);
+        iEvent.emplace(deviceToken_, std::move(output));
+        return;
+      }
+
       algo_.run(
-          iEvent.queue(), deviceInput->metadata().size(), deltac_, kappa_, outlierDeltaFactor_, input_v, output_v);
+          iEvent.queue(), deviceInput->metadata().size(), deltac_, kappa_, outlierDeltaFactor_, isScintillator_, input_v, output_v);
       iEvent.emplace(deviceToken_, std::move(output));
     }
 
@@ -57,6 +68,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       desc.add<double>("deltac", 1.3);
       desc.add<double>("kappa", 9.);
       desc.add<double>("outlierDeltaFactor", 2.);
+      desc.add<std::string>("detector", "silicon")
+          ->setComment("selects the CLUE tile constants: 'silicon' or 'scintillator' (test beam)");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -68,6 +81,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const float deltac_;
     const float kappa_;
     const float outlierDeltaFactor_;
+    const bool isScintillator_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
