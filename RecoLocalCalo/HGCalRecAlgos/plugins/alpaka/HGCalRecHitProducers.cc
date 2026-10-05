@@ -9,6 +9,8 @@
 #include "FWCore/Utilities/interface/StreamID.h"
 #include <iomanip>  // for std::setw
 #include <future>
+#include <set>
+#include <vector>
 #include <chrono>
 
 // Alpaka imports
@@ -18,6 +20,8 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/CopyToDevice.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
+#include "FWCore/Utilities/interface/Exception.h"
 
 // includes for data formats
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHost.h"
@@ -61,6 +65,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const device::EDPutToken<HGCalSoARecHitsDeviceCollection> recHitsToken_;
     const device::EDPutToken<HGCalSoARecHitsDeviceCollection> recHitsSiliconToken_;
     const device::EDPutToken<HGCalSoARecHitsDeviceCollection> recHitsScintillatorToken_;
+    // per-layer batch sizes, needed by the CLUEstering layer-cluster producer
+    const edm::EDPutTokenT<std::vector<uint32_t>> layerSizesToken_;
+    const edm::EDPutTokenT<std::vector<uint32_t>> layerSizesSiliconToken_;
+    const edm::EDPutTokenT<std::vector<uint32_t>> layerSizesScintillatorToken_;
     const HGCalRecHitCalibrationAlgorithms calibrator_;
     const double k_noise_;
     const int n_hits_scale_;
@@ -84,6 +92,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         recHitsToken_{produces()},
         recHitsSiliconToken_{produces("Silicon")},
         recHitsScintillatorToken_{produces("Scintillator")},
+        layerSizesToken_{produces("layerSizes")},
+        layerSizesSiliconToken_{produces("layerSizesSilicon")},
+        layerSizesScintillatorToken_{produces("layerSizesScintillator")},
         calibrator_{iConfig.getParameter<int>("n_blocks"), iConfig.getParameter<int>("n_threads")},
         k_noise_{iConfig.getParameter<double>("k_noise")},
         n_hits_scale_{iConfig.getParameter<int>("n_hits_scale")},
@@ -219,6 +230,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
   }
 
+  // Sizes of the runs of consecutive hits on the same layer: CLUEstering clusters each run as an
+  // independent batch. In the test beam each module is a single layer and the selection keeps the
+  // dense-index (i.e. module) order, so every layer is one contiguous run.
+  static std::vector<uint32_t> layerSizes(Queue& queue, HGCalSoARecHitsDeviceCollection const& recHits) {
+    std::vector<uint32_t> sizes;
+    const int n = recHits->metadata().size();
+    if (n == 0)
+      return sizes;
+    auto h_layer = cms::alpakatools::make_host_buffer<int[]>(queue, n);
+    auto d_layer = cms::alpakatools::make_device_view<const int>(alpaka::getDev(queue), recHits.const_view().layer().data(), n);
+    alpaka::memcpy(queue, h_layer, d_layer);
+    alpaka::wait(queue);
+    std::set<int> seen;
+    for (int i = 0; i < n; ++i) {
+      if (i == 0 || h_layer[i] != h_layer[i - 1]) {
+        if (!seen.insert(h_layer[i]).second)
+          throw cms::Exception("HGCalRecHitsProducer")
+              << "rechits of layer " << h_layer[i] << " are not contiguous: cannot build the per-layer batches";
+        sizes.push_back(0);
+      }
+      ++sizes.back();
+    }
+    return sizes;
+  }
+
   void HGCalRecHitsProducer::produce(device::Event& iEvent, device::EventSetup const& iSetup) {
     // Select all hits
     auto recHits = calibrator_.select(iEvent.queue(), ndigis_, nsel_.data(), sidx_->data(), *recHits_);
@@ -236,6 +272,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     LogDebug("HGCalRecHitsProducer") << "\n\nINFO -- storing rec hits - all: " << *nsel_ << ", silicon: " << *nsel_silicon_
                                      << ", scintillator: " << *nsel_scintillator_ << " in the event";
+    iEvent.emplace(layerSizesToken_, layerSizes(iEvent.queue(), recHits));
+    iEvent.emplace(layerSizesSiliconToken_, layerSizes(iEvent.queue(), recHitsSilicon));
+    iEvent.emplace(layerSizesScintillatorToken_, layerSizes(iEvent.queue(), recHitsScintillator));
     iEvent.emplace(recHitsToken_, std::move(recHits));
     iEvent.emplace(recHitsSiliconToken_, std::move(recHitsSilicon));
     iEvent.emplace(recHitsScintillatorToken_, std::move(recHitsScintillator));

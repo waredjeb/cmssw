@@ -10,7 +10,6 @@
   <use name="DataFormats/HGCDigi"/>
   <use name="DataFormats/HGCRecHit"/>
   <use name="DataFormats/HcalDetId"/>
-  <use name="DataFormats/TICL"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/MessageLogger"/>
   <use name="FWCore/ParameterSet"/>
@@ -23,7 +22,6 @@
   <use name="RecoLocalCalo/HGCalRecAlgos"/>
   <use name="RecoLocalCalo/HGCalRecProducers"/>
   <flags EDM_PLUGIN="1"/>
-  <flags ALPAKA_BACKENDS="serial"/>
 </library>
 
 <!-- alpaka-based portable plugins -->

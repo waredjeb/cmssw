@@ -23,7 +23,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         : EDProducer(config),
           getTokenDevice_{consumes(config.getParameter<edm::InputTag>("hgcalRecHitsSoA"))},
           getTokenLayerSizes_{consumes<std::vector<uint32_t>>(
-              edm::InputTag(config.getParameter<edm::InputTag>("hgcalRecHitsSoA").label(), "layerSizes"))},
+              config.getParameter<edm::InputTag>("layerSizes").label().empty()
+                  ? edm::InputTag(config.getParameter<edm::InputTag>("hgcalRecHitsSoA").label(), "layerSizes")
+                  : config.getParameter<edm::InputTag>("layerSizes"))},
           deviceToken_{produces()},
           deltac_(config.getParameter<float>("deltac")),
           kappa_(config.getParameter<float>("kappa")),
@@ -57,6 +59,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("hgcalRecHitsSoA", edm::InputTag("TO BE DEFINED"));
+      desc.add<edm::InputTag>("layerSizes", edm::InputTag(""))
+          ->setComment("per-layer batch sizes of the rechits; empty means '<hgcalRecHitsSoA label>:layerSizes'");
       desc.add<std::string>("detector", "EE")
           ->setComment("HGCAL component; 'BH' selects the periodic (eta,phi) scintillator metric.");
       desc.add<float>("deltac", 1.3);
