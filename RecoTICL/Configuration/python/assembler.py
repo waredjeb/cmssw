@@ -147,8 +147,12 @@ def _build_supercluster_dnn(source_label, overrides, target):
     return base.clone(**ov)
 
 
-def _build_egamma(target):
-    return _cfi_default("EGammaSuperclusterProducer").clone()
+def _build_egamma(source_label, target):
+    """The supercluster producer of the superclustering stage, with the inputs of the target."""
+    ov = dict(ticlSuperClusters=cms.InputTag(target.supercluster_dnn_label), ticlTrackstersEM=cms.InputTag(source_label))
+    if target.lc_tag() is not None:  # HLT-style: remap shared inputs
+        ov["layerClusters"] = target.lc_tag()
+    return _cfi_default("EGammaSuperclusterProducer").clone(**ov)
 
 
 def _external_inputs(target, tracks="tracks", muons="muons"):
@@ -318,7 +322,7 @@ def assemble(cfg):
         sc = cfg.superclustering_spec
         src = target.trackster_label(sc.source)
         m[target.supercluster_dnn_label] = _build_supercluster_dnn(src, sc.overrides, target)
-        m[target.egamma_label] = _build_egamma(target)
+        m[target.egamma_label] = _build_egamma(src, target)
         mkgroup(target.gname("superclustering"),
                 target.supercluster_dnn_label, target.egamma_label)
 
