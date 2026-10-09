@@ -5,7 +5,7 @@
 # harvesters and the plotting script all import from here, so a collection is added
 # in one edit and cannot drift between the four.
 #
-# Same shape as RecoHGCal/TICL/python/iterativeTICL_cff.py: the labels live in a
+# Same shape as RecoTICL/Configuration/python/iterativeTICL_cff.py: the labels live in a
 # cms.PSet rather than a plain list so an era or a process modifier can retarget a
 # domain with toModify, and the instance-label lists are plain Python built by
 # looping over that PSet.
@@ -14,21 +14,21 @@ import sys
 
 import FWCore.ParameterSet.Config as cms
 
-from RecoHGCal.TICL.iterativeTICL_cff import ticlIterLabelsPSet
+from RecoTICL.Configuration.iterativeTICL_cff import ticlIterLabelsPSet
 from Validation.HGCalValidation.HLT_TICLIterLabels_cff import hltTiclIterLabelsPSet
 
-# EDProducer types whose produces<> declares a vector<ticl::Trackster>, so a trackster
-# collection is recognised BY TYPE and a new TICL iteration or HLT trackster module
-# joins the validation without an edit here. Verified in RecoHGCal/TICL/plugins:
-# TrackstersProducer.cc:146, TracksterLinksProducer.cc:108, MergedTrackstersProducer.cc:34,
-# TICLCandidateProducer.cc:208 (the post-linking trackster collection, emitted next to
-# its vector<TICLCandidate>; EDM resolves the two by type from the bare module label).
+# EDProducer types whose products include a vector<ticl::Trackster>. A trackster
+# collection is recognised BY TYPE, so a new TICL iteration or HLT trackster module
+# joins the validation without an edit here. TICLCandidateProducer puts its tracksters
+# next to its vector<TICLCandidate>; EDM resolves the two by type from the module label.
+# A type with no module in the process matches nothing.
 # SimTrackstersProducer is deliberately absent: its tracksters are truth, not reco.
 tracksterProducerTypes = (
     "TrackstersProducer",
     "TracksterLinksProducer",
     "MergedTrackstersProducer",
     "TICLCandidateProducer",
+    "TICLInterpretationProducer",
 )
 
 # Reco collections per domain. Each entry is a module label; a collection that also
