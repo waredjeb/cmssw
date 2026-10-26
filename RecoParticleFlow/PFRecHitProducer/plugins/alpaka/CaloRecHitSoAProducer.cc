@@ -37,17 +37,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       if (DEBUG)
         printf("Found %d recHits\n", num_recHits);
 
-      hcal::RecHitHostCollection hostProduct{event.queue(), num_recHits};
+      typename CAL::CaloRecHitSoATypeHost hostProduct{event.queue(), num_recHits};
       auto& view = hostProduct.view();
 
       for (int i = 0; i < num_recHits; i++) {
         convertRecHit(view[i], recHits[i]);
 
         if (DEBUG && i < 10)
-          printf("recHit %4d %u %f %f\n", i, view.detId(i), view.energy(i), view.timeM0(i));
+          printf("recHit %4d %u %f\n", i, view.detId(i), view.energy(i));
       }
 
-      hcal::RecHitDeviceCollection deviceProduct{event.queue(), num_recHits};
+      typename CAL::CaloRecHitSoATypeDevice deviceProduct{event.queue(), num_recHits};
       alpaka::memcpy(event.queue(), deviceProduct.buffer(), hostProduct.buffer());
       if (synchronise_)
         alpaka::wait(event.queue());
@@ -64,10 +64,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     const edm::EDGetTokenT<edm::SortedCollection<typename CAL::CaloRecHitType>> recHitsToken_;
-    const device::EDPutToken<hcal::RecHitDeviceCollection> deviceToken_;
+    const device::EDPutToken<typename CAL::CaloRecHitSoATypeDevice> deviceToken_;
     const bool synchronise_;
 
-    static void convertRecHit(hcal::RecHitHostCollection::View::element to, const typename CAL::CaloRecHitType& from);
+    static void convertRecHit(typename CAL::CaloRecHitSoATypeHost::View::element to,
+                              const typename CAL::CaloRecHitType& from);
   };
 
   template <>
@@ -81,13 +82,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   /*
-  The ECALRecHitSoAProducer currently has no use, but is available via this
-  module. In the case where ECAL PF Clustering is moved to Alpaka, we can then
-  decide to use this converted solely for ECAL, or if the SoA is available
-  we can switch to using just the ECAL RecHit SoA.
+  The ECALRecHitSoAProducer converts the legacy ECAL rechits, e.g. for the
+  alpaka barrel layer clustering, until an ECAL RecHit SoA is available.
   */
-
-  /*
   template <>
   void CaloRecHitSoAProducer<ECAL>::convertRecHit(reco::CaloRecHitHostCollection::View::element to,
                                                   const ECAL::CaloRecHitType& from) {
@@ -97,14 +94,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     to.time() = from.time();
     to.flags() = from.flagsBits();
   }
-  */
 
   using HCALRecHitSoAProducer = CaloRecHitSoAProducer<HCAL>;
-
-  // Purposely commented out; see above.
-  //using ECALRecHitSoAProducer = CaloRecHitSoAProducer<ECAL>;
+  using ECALRecHitSoAProducer = CaloRecHitSoAProducer<ECAL>;
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 DEFINE_FWK_ALPAKA_MODULE(HCALRecHitSoAProducer);
-//DEFINE_FWK_ALPAKA_MODULE(ECALRecHitSoAProducer);
+DEFINE_FWK_ALPAKA_MODULE(ECALRecHitSoAProducer);

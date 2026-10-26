@@ -192,12 +192,18 @@ _alpaka_pfClusteringHBHEHFOnlyTask.add(pfMultiDepthClusterSoAProducerHCALOnly)
 alpaka.toReplaceWith(pfClusteringHBHEHFTask, _alpaka_pfClusteringHBHEHFTask)
 alpaka.toReplaceWith(pfClusteringHBHEHFOnlyTask, _alpaka_pfClusteringHBHEHFOnlyTask)
 
-from RecoTICL.LayerClustering.barrelLayerClusters_cff import barrelLayerClustersEB, barrelLayerClustersHB
+from RecoTICL.LayerClustering.barrelLayerClusters_cff import (
+    barrelPFRecHitECALTopologyRecordSource, barrelPFRecHitECALParamsESProducer, barrelPFRecHitECALTopologyESProducer,
+    barrelRecHitsSoAEB, barrelPFRecHitsSoAEB, barrelCLUEsteringEB, barrelSoALayerClustersEB, barrelLayerClustersEB,
+    barrelRecHitsSoAHB, barrelPFRecHitsSoAHB, barrelCLUEsteringHB, barrelSoALayerClustersHB, barrelLayerClustersHB,
+    barrelLayerClustersEBTask, barrelLayerClustersHBTask,
+)
 _pfClusteringECALTask = pfClusteringECALTask.copy()
-_pfClusteringECALTask.add(barrelLayerClustersEB)
+_pfClusteringECALTask.add(barrelLayerClustersEBTask)
 
 _pfClusteringHBHEHFTask = pfClusteringHBHEHFTask.copy()
-_pfClusteringHBHEHFTask.add(barrelLayerClustersHB)
+_pfClusteringHBHEHFTask.add(alpaka_pfClusteringHBHEHF_esProducersTask)
+_pfClusteringHBHEHFTask.add(barrelLayerClustersHBTask)
 
 from Configuration.ProcessModifiers.ticl_barrel_cff import ticl_barrel
 ticl_barrel.toReplaceWith(pfClusteringECALTask, _pfClusteringECALTask)

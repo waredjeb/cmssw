@@ -11,6 +11,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
+  using namespace cms::alpakatools;
   using namespace hgcal::constants;
 
   namespace {

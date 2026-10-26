@@ -8,6 +8,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Utilities/interface/typedefs.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/SynchronizingEDProducer.h"
@@ -25,6 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BarrelCLUEsteringLayerClustersProducer(edm::ParameterSet const& config)
         : SynchronizingEDProducer(config),
           getTokenDevice_{consumes(config.getParameter<edm::InputTag>("recHits"))},
+          getTokenSize_{consumes(config.getParameter<edm::InputTag>("recHits"))},
           noiseToken_{esConsumes(config.getParameter<edm::ESInputTag>("noise"))},
           deviceToken_{produces()},
           deltac_(config.getParameter<double>("deltac")),
@@ -33,13 +35,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ~BarrelCLUEsteringLayerClustersProducer() override = default;
 
     void acquire(device::Event const& iEvent, device::EventSetup const& iSetup) override {
-      // The PFRecHit SoA is allocated with the capacity of the input CaloRecHits:
-      // the actual number of PFRecHits is only known on the device.
+      // The PFRecHit SoA is allocated with the capacity of the input CaloRecHits: the actual
+      // number of PFRecHits is read from the host product, since the device-side size is not
+      // set when there are no input CaloRecHits.
       auto const& deviceInput = iEvent.get(getTokenDevice_);
-      auto device_size =
-          cms::alpakatools::make_device_view<const uint32_t>(iEvent.queue(), deviceInput.const_view().size());
-      auto host_size = cms::alpakatools::make_host_view<uint32_t>(nRecHits_);
-      alpaka::memcpy(iEvent.queue(), host_size, device_size);
+      nRecHits_ = iEvent.get(getTokenSize_);
       // The per-layer sizes are the CLUEstering batch sizes, which are needed on the host
       algo_.countHitsPerLayer(iEvent.queue(), deviceInput.const_view(), layerSizes_);
     }
@@ -80,6 +80,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     device::EDGetToken<reco::PFRecHitDeviceCollection> const getTokenDevice_;
+    edm::EDGetTokenT<cms_uint32_t> const getTokenSize_;
     device::ESGetToken<typename CAL::NoiseType, typename CAL::NoiseRecordType> const noiseToken_;
     device::EDPutToken<HGCalSoARecHitsExtraDeviceCollection> const deviceToken_;
     BarrelCLUEsteringAlgoWrapper<CAL> algo_;

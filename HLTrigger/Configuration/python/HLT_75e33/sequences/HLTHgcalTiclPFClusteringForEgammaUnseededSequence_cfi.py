@@ -13,8 +13,7 @@ from ..modules.hltTiclSeedingGlobal_cfi import *
 from ..modules.hltTiclTrackstersCLUE3DHigh_cfi import *
 from ..modules.hltTiclTracksterLinks_cfi import *
 # Barrel layer clusters
-from ..modules.hltBarrelLayerClustersEB_cfi import *
-from ..modules.hltBarrelLayerClustersHB_cfi import *
+from ..sequences.HLTBarrelLayerClustersSequence_cfi import *
 
 from ..modules.hltTiclEGammaSuperClusterProducerUnseeded_cfi import hltTiclEGammaSuperClusterProducerUnseeded
 from ..modules.hltTiclTracksterLinksSuperclusteringMustacheUnseeded_cfi import hltTiclTracksterLinksSuperclusteringMustacheUnseeded
@@ -58,8 +57,7 @@ _HgcalLocalRecoUnseededSequence_barrel = _HgcalLocalRecoUnseededSequence.copy()
 _HgcalLocalRecoUnseededSequence_barrel = cms.Sequence(hltHgcalDigis+hltHGCalUncalibRecHit+
                                                       hltHGCalRecHit+hltParticleFlowRecHitHGC+
                                                       HLTHgcalLayerClustersSequence+
-                                                      hltBarrelLayerClustersEB+
-                                                      hltBarrelLayerClustersHB+
+                                                      HLTBarrelLayerClustersSequence+
                                                       hltMergeLayerClusters)
 
 _HgcalTICLPatternRecognitionUnseededSequence_barrel = cms.Sequence(hltFilteredLayerClustersCLUE3DHigh+

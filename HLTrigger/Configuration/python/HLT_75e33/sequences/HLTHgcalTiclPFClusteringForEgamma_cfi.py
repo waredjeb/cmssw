@@ -13,8 +13,7 @@ from ..modules.hltTiclLayerTileProducer_cfi import *
 from ..modules.hltTiclSeedingGlobal_cfi import *
 from ..modules.hltTiclTrackstersCLUE3DHigh_cfi import *
 # TICL-barrel
-from ..modules.hltBarrelLayerClustersEB_cfi import *
-from ..modules.hltBarrelLayerClustersHB_cfi import *
+from ..sequences.HLTBarrelLayerClustersSequence_cfi import *
 from ..modules.hltTiclLayerTileBarrelProducer_cfi import *
 from ..modules.hltTiclTrackstersCLUE3DBarrel_cfi import *
 
@@ -26,8 +25,7 @@ HLTHgcalTiclPFClusteringForEgamma_barrel = cms.Sequence((
   hltHGCalRecHit+
   hltParticleFlowRecHitHGC+
   HLTHgcalLayerClustersSequence+
-  hltBarrelLayerClustersEB+
-  hltBarrelLayerClustersHB+
+  HLTBarrelLayerClustersSequence+
   hltMergeLayerClusters+
   hltFilteredLayerClustersCLUE3DHigh+
   hltTiclSeedingGlobal+
