@@ -14,6 +14,7 @@ from RecoTICL.Configuration import presets
 # module -> subtrees that differ as a whole: a new plugin type replaces the whole parameter set.
 EXPECTED_WHOLESALE = {
     "ticlTracksterLinks": ("linkingPSet",),
+    "ticlTracksterLinksSuperclusteringDNN": ("linkingPSet",),
     "pfTICL": ("pfMuonAlgoParameters",),
 }
 
@@ -34,10 +35,12 @@ EXPECTED_DELTA = {
                                    ["ticlTrackstersCLUEstering", "ticlTrackstersRecovery"]),
         "linkingPSet.type": ("Skeletons", "Cornetto"),
     },
+    # The superclustering DNN runs on the device: the v6 linking plugin associates the pairs and the scores of
+    # ticlSuperclusteringDNNPairFeatures and ticlSuperclusteringDNNInference. The seed PID cut is in the pair features.
     "ticlTracksterLinksSuperclusteringDNN": {
         "tracksters_collections": (["ticlTrackstersCLUE3DHigh"], ["ticlTrackstersCLUEstering"]),
-        # absent in v5, so v5 carries the plugin defaults (0.8, 0, photon and electron)
-        "linkingPSet.PIDThreshold": (None, 0.1),
+        "linkingPSet.type": ("SuperClusteringDNN", "SuperClusteringDNNHeterogeneous"),
+        # absent in v5, so v5 carries the plugin defaults (0, photon and electron)
         "linkingPSet.emissionPIDThreshold": (None, 0.3),
         "linkingPSet.tracksterPIDCategoriesToFilter": (None, [0, 1, 3]),
     },
@@ -54,6 +57,8 @@ EXPECTED_ADDED = {
     "ticlCLUEstering": "HGCalCLUEsteringTrackstersProducer@alpaka",
     "ticlSoATracksters": "HGCalSoATrackstersProducer@alpaka",
     "ticlTrackstersCLUEstering": "HGCalTrackstersFromSoAProducer",
+    "ticlSuperclusteringDNNPairFeatures": "SuperclusteringDNNPairFeaturesProducer@alpaka",
+    "ticlSuperclusteringDNNInference": "SuperclusteringDNNInferenceProducer@alpaka",
 }
 EXPECTED_REMOVED = {"filteredLayerClustersCLUE3DHigh", "ticlTrackstersCLUE3DHigh"}
 # label -> (v5 producer, v6 producer)
@@ -69,6 +74,9 @@ EXPECTED_FROM_DEFAULT = {
     "ticlCLUEstering": (),
     "ticlSoATracksters": (),
     "ticlTrackstersCLUEstering": (),
+    # the v6 seed PID cut (PID >= 0.1 on photon, electron and pi0)
+    "ticlSuperclusteringDNNPairFeatures": ("PIDThreshold", "tracksterPIDCategoriesToFilter"),
+    "ticlSuperclusteringDNNInference": (),
 }
 CFI = {
     "TICLInterpretationProducer": ("RecoTICL.Interpretation.ticlInterpretationProducer_cfi",
@@ -81,6 +89,10 @@ CFI = {
                                           "hgCalSoATrackstersProducer"),
     "HGCalTrackstersFromSoAProducer": ("RecoTICL.PatternRecognition.hgCalTrackstersFromSoAProducer_cfi",
                                        "hgCalTrackstersFromSoAProducer"),
+    "SuperclusteringDNNPairFeaturesProducer@alpaka": ("RecoTICL.Superclustering.superclusteringDNNHeterogeneous_cff",
+                                                      "ticlSuperclusteringDNNPairFeatures"),
+    "SuperclusteringDNNInferenceProducer@alpaka": ("RecoTICL.Superclustering.superclusteringDNNHeterogeneous_cff",
+                                                   "ticlSuperclusteringDNNInference"),
 }
 
 
