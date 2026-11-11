@@ -81,6 +81,7 @@ T_MASK = "std::vector<float>"
 T_TRACKSTERS = "std::vector<ticl::Trackster>"
 T_SEEDS = "std::vector<ticl::TICLSeedingRegion>"
 T_LINKS = "std::vector<std::vector<unsigned int>>"
+T_INTS = "std::vector<int>"
 T_CANDIDATES = "std::vector<ticl::TICLCandidate>"
 T_TIME = "edm::ValueMap<std::pair<float,float>>"
 T_TILES = "ticl::TICLLayerTiles"
@@ -89,6 +90,17 @@ T_TILES_HFNOSE = "ticl::TICLLayerTilesHFNose"
 T_PFCANDS = "reco::PFCandidateCollection"
 T_SUPERCLUSTERS = "reco::SuperClusterCollection"
 T_MTDSOA = "MtdHostCollection"
+T_MUONREFS = "edm::ValueMap<reco::MuonRef>"
+# Portable (alpaka) products, named by their host collection
+T_CALOCLUSTERS_SOA = "reco::CaloClusterHostCollection"
+T_LC_CLUSTERING_SOA = "HGCalSoALayerClustersExtraHostCollection"
+T_TRACKSTERS_SOA = "ticl::TracksterHostCollection"
+T_MASK_SOA = "ticl::LayerClusterMaskHostCollection"
+T_TRACKSTER_REFS = "ticl::TracksterCollectionRefs"
+T_PID_SOA = "ticl::TracksterPidHostCollection"
+T_LINKS_SOA = "ticl::TracksterLinksHostCollection"
+T_SC_PAIRS_SOA = "ticl::SuperclusteringDNNPairsHost"
+T_SC_SCORES_SOA = "ticl::SuperclusteringDNNPairScoresHost"
 
 
 # --------------------------------------------------------------------------- #
@@ -167,9 +179,10 @@ _SPECS = [
         key="TICLCandidateProducer",
         cfi_module="RecoTICL.Interpretation.ticlCandidateProducer_cfi",
         cfi_symbol="ticlCandidateProducer",
+        # The single-stage candidate producer (v5): the final tracksters and the candidates.
         produces=(
-            Product(T_CANDIDATES),
             Product(T_TRACKSTERS),
+            Product(T_CANDIDATES),
         ),
         consumes=(
             Consumed("layer_clusters", T_CALOCLUSTERS),
@@ -181,6 +194,45 @@ _SPECS = [
             Consumed("original_masks", T_MASK, vector=True),
         ),
         external_inputs=("tracks", "muons", "timingSoA"),
+    ),
+    ModuleSpec(
+        key="TICLInterpretationProducer",
+        cfi_module="RecoTICL.Interpretation.ticlInterpretationProducer_cfi",
+        cfi_symbol="ticlInterpretationProducer",
+        # The final tracksters and the per-track assignment maps.
+        produces=(
+            Product(T_TRACKSTERS),
+            Product(T_INTS, "fixed:trackToTrackster"),
+            Product(T_INTS, "fixed:trackMode"),
+            Product(T_INTS, "fixed:neutralIdx"),
+            Product(T_INTS, "fixed:neutralPdg"),
+        ),
+        consumes=(
+            Consumed("layer_clusters", T_CALOCLUSTERS),
+            Consumed("layer_clustersTime", T_TIME),
+            Consumed("tracksters_collections", T_TRACKSTERS, vector=True),
+            Consumed("egamma_tracksters_collections", T_TRACKSTERS, vector=True),
+            Consumed("claimUnlinkedTracksters", T_TRACKSTERS, vector=True),
+        ),
+        external_inputs=("tracks", "muons", "timingSoA"),
+    ),
+    ModuleSpec(
+        key="TICLCandidateArbitrationProducer",
+        cfi_module="RecoTICL.Interpretation.ticlCandidateArbitrationProducer_cfi",
+        cfi_symbol="ticlCandidateArbitrationProducer",
+        # The candidates from the final tracksters and the assignment maps of TICLInterpretationProducer, and the muon
+        # decisions that pfTICL copies: the muon of each candidate and its track type.
+        produces=(
+            Product(T_CANDIDATES),
+            Product(T_MUONREFS, "fixed:muons"),
+            Product(T_INTS, "fixed:muonTrackType"),
+        ),
+        consumes=(
+            Consumed("interpretations", T_TRACKSTERS),
+            Consumed("layerClusters", T_CALOCLUSTERS),
+        ),
+        external_inputs=("tracks", "gsf_tracks", "timingSoA", "muonSrc", "eGammaScore", "eGammaTracksters",
+                         "pointCloud"),
     ),
     ModuleSpec(
         key="MTDSoAProducer",
@@ -208,6 +260,20 @@ _SPECS = [
         external_inputs=("layerClusters", "time_layerclusters"),
     ),
     ModuleSpec(
+        key="HGCalMergedLayerClustersFromSoAProducer",
+        cfi_module="RecoTICL.LayerClustering.hgCalMergedLayerClustersFromSoAProducer_cfi",
+        cfi_symbol="hgCalMergedLayerClustersFromSoAProducer",
+        # the same products as MergeClusterProducer, converted from the SoA layer clusters of the HGCAL components
+        produces=(
+            Product(T_CALOCLUSTERS),
+            Product(T_MASK, "fixed:InitialLayerClustersMask"),
+            Product(T_TIME, "fixed:timeLayerCluster"),
+        ),
+        consumes=(),
+        external_inputs=("layerClustersSoA", "hgcalRecHitsSoA", "hgcalRecHitsLayerClustersSoA", "extraLayerClusters",
+                         "extraTimeLayerClusters"),
+    ),
+    ModuleSpec(
         key="PFTICLProducer",
         cfi_module="RecoTICL.ParticleFlow.pfTICLProducer_cfi",
         cfi_symbol="pfTICLProducer",
@@ -216,6 +282,187 @@ _SPECS = [
             Consumed("ticlCandidateSrc", T_CANDIDATES),
         ),
         external_inputs=("muonSrc",),
+    ),
+    # The CLUEstering iteration: the layer clusters merged on the device (HGCAL local reco) are clustered into
+    # tracksters with CLUEstering, the tracksters are built on the device and converted to ticl::Trackster. The
+    # portable modules are keyed by their @alpaka type, as module.type_() gives it.
+    ModuleSpec(
+        key="HGCalSoAMergeLayerClustersProducer@alpaka",
+        cfi_module="RecoTICL.LayerClustering.hgCalSoAMergeLayerClustersProducer_cfi",
+        cfi_symbol="hgCalSoAMergeLayerClustersProducer",
+        produces=(Product(T_CALOCLUSTERS_SOA),),
+        consumes=(
+            Consumed("hgcalLayerClustersSoA", T_CALOCLUSTERS_SOA, vector=True),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="HGCalCLUEsteringTrackstersProducer@alpaka",
+        cfi_module="RecoTICL.PatternRecognition.hgCalCLUEsteringTrackstersProducer_cfi",
+        cfi_symbol="hgCalCLUEsteringTrackstersProducer",
+        produces=(Product(T_LC_CLUSTERING_SOA),),
+        consumes=(
+            Consumed("hgcalLayerClustersSoA", T_CALOCLUSTERS_SOA),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="HGCalSoATrackstersProducer@alpaka",
+        cfi_module="RecoTICL.PatternRecognition.hgCalSoATrackstersProducer_cfi",
+        cfi_symbol="hgCalSoATrackstersProducer",
+        produces=(Product(T_TRACKSTERS_SOA),),
+        consumes=(
+            Consumed("hgcalLayerClustersSoA", T_CALOCLUSTERS_SOA),
+            Consumed("hgcalLayerClustersTrackstersSoA", T_LC_CLUSTERING_SOA),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="HGCalTrackstersFromSoAProducer",
+        cfi_module="RecoTICL.PatternRecognition.hgCalTrackstersFromSoAProducer_cfi",
+        cfi_symbol="hgCalTrackstersFromSoAProducer",
+        produces=(
+            Product(T_TRACKSTERS),
+            Product(T_MASK),
+        ),
+        consumes=(
+            Consumed("src", T_TRACKSTERS_SOA),
+            Consumed("originalMask", T_MASK),
+            Consumed("layer_clusters", T_CALOCLUSTERS),
+        ),
+    ),
+    # The device Recovery iteration and the device linking: the layer cluster mask after an iteration as a SoA, the
+    # cluster filter and the Recovery on the device, the ordered list of trackster collections that gives the global
+    # index of a trackster, the PID of a host collection as a SoA for the device, the Cornetto linking on the device
+    # and the conversion of its result to the products of TracksterLinksProducer. LayerClusterMaskFromSoAProducer
+    # gives a mask on the device to a host consumer; no preset uses it.
+    ModuleSpec(
+        key="TracksterCollectionRefsProducer@alpaka",
+        cfi_module="RecoTICL.PatternRecognition.tracksterCollectionRefsProducer_cfi",
+        cfi_symbol="tracksterCollectionRefsProducer",
+        produces=(Product(T_TRACKSTER_REFS),),
+        consumes=(
+            Consumed("tracksters", T_TRACKSTERS_SOA, vector=True),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="LayerClusterMaskSoAProducer@alpaka",
+        cfi_module="RecoTICL.ClusterFilters.layerClusterMaskSoAProducer_cfi",
+        cfi_symbol="layerClusterMaskSoAProducer",
+        produces=(
+            Product(T_MASK_SOA),
+            Product(T_TRACKSTER_REFS),
+        ),
+        consumes=(
+            Consumed("layerClusters", T_CALOCLUSTERS_SOA),
+            Consumed("inputMask", T_MASK_SOA),
+            Consumed("tracksters", T_TRACKSTERS_SOA, vector=True),
+            Consumed("trackstersRefs", T_TRACKSTER_REFS),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="FilteredLayerClustersSoAProducer@alpaka",
+        cfi_module="RecoTICL.ClusterFilters.filteredLayerClustersSoAProducer_cfi",
+        cfi_symbol="filteredLayerClustersSoAProducer",
+        produces=(
+            Product(T_MASK_SOA),
+            Product(T_TRACKSTER_REFS),
+        ),
+        consumes=(
+            Consumed("LayerClusters", T_CALOCLUSTERS_SOA),
+            Consumed("LayerClustersInputMask", T_MASK_SOA),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="HGCalRecoveryTrackstersSoAProducer@alpaka",
+        cfi_module="RecoTICL.PatternRecognition.hgCalRecoveryTrackstersSoAProducer_cfi",
+        cfi_symbol="hgCalRecoveryTrackstersSoAProducer",
+        produces=(Product(T_TRACKSTERS_SOA),),
+        consumes=(
+            Consumed("layer_clusters", T_CALOCLUSTERS_SOA),
+            Consumed("filtered_mask", T_MASK_SOA),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="TracksterPidSoAProducer@alpaka",
+        cfi_module="RecoTICL.PatternRecognition.tracksterPidSoAProducer_cfi",
+        cfi_symbol="tracksterPidSoAProducer",
+        produces=(Product(T_PID_SOA),),
+        consumes=(
+            Consumed("src", T_TRACKSTERS),
+            Consumed("reference", T_TRACKSTERS_SOA),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    # The superclustering DNN on the device: the (seed, candidate) pairs of the device tracksters and the score of
+    # each pair. Its default is the module of superclusteringDNNHeterogeneous_cff.
+    ModuleSpec(
+        key="SuperclusteringDNNProducer@alpaka",
+        cfi_module="RecoTICL.Superclustering.superclusteringDNNHeterogeneous_cff",
+        cfi_symbol="ticlSuperclusteringDNN",
+        produces=(
+            Product(T_SC_PAIRS_SOA),
+            Product(T_SC_SCORES_SOA, "fixed:scores"),
+        ),
+        consumes=(Consumed("tracksters", T_TRACKSTERS_SOA),),
+        backends=("cpu", "gpu"),
+    ),
+    # The shower-shape PID of the device tracksters: a copy of the tracksters with the probabilities of the model.
+    ModuleSpec(
+        key="TracksterShowerShapeInferenceProducer@alpaka",
+        cfi_module="RecoTICL.Inference.tracksterShowerShapePID_cff",
+        cfi_symbol="ticlSoATrackstersPID",
+        produces=(Product(T_TRACKSTERS_SOA),),
+        consumes=(Consumed("tracksters", T_TRACKSTERS_SOA),),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="TracksterLinksSoAProducer@alpaka",
+        cfi_module="RecoTICL.Linking.tracksterLinksSoAProducer_cfi",
+        cfi_symbol="tracksterLinksSoAProducer",
+        produces=(
+            Product(T_TRACKSTERS_SOA),
+            Product(T_LINKS_SOA, "fixed:links"),
+        ),
+        consumes=(
+            Consumed("tracksters", T_TRACKSTERS_SOA, vector=True),
+            Consumed("trackstersRefs", T_TRACKSTER_REFS),
+            Consumed("pid", T_PID_SOA, vector=True),
+            Consumed("layer_clusters", T_CALOCLUSTERS_SOA),
+        ),
+        backends=("cpu", "gpu"),
+    ),
+    ModuleSpec(
+        key="TracksterLinksFromSoAProducer",
+        cfi_module="RecoTICL.Linking.tracksterLinksFromSoAProducer_cfi",
+        cfi_symbol="tracksterLinksFromSoAProducer",
+        # the products of TracksterLinksProducer
+        produces=(
+            Product(T_TRACKSTERS),
+            Product(T_LINKS),
+            Product(T_LINKS, "fixed:linkedTracksterIdToInputTracksterId"),
+            Product(T_MASK),
+        ),
+        consumes=(
+            Consumed("src", T_TRACKSTERS_SOA),
+            Consumed("links", T_LINKS_SOA),
+            Consumed("layer_clusters", T_CALOCLUSTERS),
+            Consumed("original_masks", T_MASK, vector=True),
+        ),
+    ),
+    ModuleSpec(
+        key="LayerClusterMaskFromSoAProducer",
+        cfi_module="RecoTICL.ClusterFilters.layerClusterMaskFromSoAProducer_cfi",
+        cfi_symbol="layerClusterMaskFromSoAProducer",
+        produces=(Product(T_MASK, "param:instance"),),
+        consumes=(
+            Consumed("src", T_MASK_SOA),
+            Consumed("referenceMask", T_MASK),
+        ),
     ),
 ]
 
@@ -228,8 +475,13 @@ CATALOG = {spec.key: spec for spec in _SPECS}
 # not needed for the TICL plumbing graph.
 GPU_CAPABLE = frozenset([
     "HGCalSoARecHitsProducer",
-    "HGCalSoARecHitsLayerClustersProducer",
+    "HGCalCLUEsteringLayerClustersProducer",
     "HGCalSoALayerClustersProducer",
+    "HGCalSoAMergeLayerClustersProducer",
+    "HGCalCLUEsteringTrackstersProducer",
+    "HGCalSoATrackstersProducer",
+    "SuperclusteringDNNProducer",
+    "TracksterShowerShapeInferenceProducer",
 ])
 
 
@@ -248,9 +500,10 @@ FILTER_TYPES = frozenset(
         "ClusterFilterByAlgoAndSizeAndLayerRange",
     ]
 )
-PATTERN_TYPES = frozenset(["CLUE3D", "CA", "FastJet", "Recovery"])
+PATTERN_TYPES = frozenset(["CLUE3D", "CA", "FastJet", "Recovery", "CLUEstering"])
 LINKING_TYPES = frozenset(
-    ["Skeletons", "SuperClusteringDNN", "SuperClusteringMustache", "FastJet", "Recovery"]
+    ["Skeletons", "Cornetto", "SuperClusteringDNN", "SuperClusteringDNNHeterogeneous", "SuperClusteringMustache",
+     "FastJet", "Recovery"]
 )
 INFERENCE_TYPES = frozenset(
     ["TracksterInferenceByCNN", "TracksterInferenceByDNN", "TracksterInferenceByPFN"]

@@ -1,6 +1,42 @@
+<use name="DataFormats/CaloRecHit"/>
+<use name="DataFormats/Common"/>
+<use name="DataFormats/HGCalReco"/>
+<use name="DataFormats/TrackReco"/>
+<use name="DataFormats/VertexReco"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/MessageLogger"/>
 <use name="FWCore/ParameterSet"/>
+<use name="Geometry/CommonTopologies"/>
+<use name="Geometry/HGCalCommonData"/>
+<use name="Geometry/Records"/>
+<use name="MagneticField/Engine"/>
+<use name="MagneticField/Records"/>
+<use name="PhysicsTools/ONNXRuntime"/>
 <use name="RecoLocalCalo/HGCalRecAlgos"/>
+<use name="RecoTICL/Common"/>
 <use name="RecoTICL/Inference"/>
+<use name="RecoTICL/Interpretation"/>
+<use name="TrackingTools/GeomPropagators"/>
+<use name="TrackingTools/Records"/>
+<use name="TrackingTools/TrajectoryState"/>
 <library file="*.cc" name="RecoTICLInferencePlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>
+
+<library file="alpaka/*.cc" name="RecoTICLInferencePluginsPortable">
+  <use name="alpaka"/>
+  <use name="pytorch-cuda" for="alpaka/cuda"/>
+  <use name="pytorch-rocm" for="alpaka/rocm"/>
+  <use name="xtd"/>
+  <use name="CondFormats/HGCalObjects"/>
+  <use name="DataFormats/CaloRecHit"/>
+  <use name="DataFormats/SoATemplate"/>
+  <use name="DataFormats/HGCalReco"/>
+  <use name="FWCore/Utilities"/>
+  <use name="Geometry/Records"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <use name="PhysicsTools/PyTorchAlpaka"/>
+  <flags ALPAKA_BACKENDS="1"/>
   <flags EDM_PLUGIN="1"/>
 </library>

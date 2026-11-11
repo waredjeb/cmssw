@@ -42,6 +42,7 @@ The offsets currently in use are:
 * 0.422: Alpaka, HCAL only, portable
 * 0.423: Alpaka, HCAL only, portable vs CPU validation
 * 0.424: Alpaka, HCAL only, portable profiling
+* 0.432: Alpaka, HGCAL only, TICLv6 with the Recovery iteration and the Cornetto linking on the device
 * 0.492: Alpaka, full reco with pixel quadruplets
 * 0.496: Alpaka, full reco with pixel triplets
 * 0.5: Legacy pixel tracking only (CPU)
@@ -125,6 +126,7 @@ The offsets currently in use are:
 * 0.103: Phase-2 aging, 3000fb-1
 * 0.204: HGCAL superclustering : using Mustache in TICL
 * 0.205: HGCAL superclustering : using old PFCluster-based Mustache algorithm with TICL
+* 0.207: TICLv6 in the offline reconstruction (ticl_v6 process modifier)
 * 0.209: TICL barrel : run TICL in HGCAL and barrel calorimeters
 * 0.212: Enables offline HGCAL/TICL NanoAOD: NANO:@HGCAL
 * 0.213: Enables offline HGCAL/TICL NanoAOD with Sim objects for validation purposes: NANO:@HGCALVal

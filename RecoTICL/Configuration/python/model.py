@@ -63,19 +63,30 @@ class IterationSpec:
     # recovery pass is intermediate (its tracksters are captured by the links),
     # so it is not kept in the Event Content (cf. ticlIterLabelsPSet.labels).
     persist: bool = True
+    # the iteration runs on the device: the cluster filter and the pattern recognition as portable modules, with the
+    # tracksters converted to ticl::Trackster under the usual label. Only a Recovery iteration with the
+    # ClusterFilterByAlgoAndSize filter has device modules.
+    on_device: bool = False
+    # CLUEstering only: the arguments of makeTracksterInference for the PID of the device tracksters before their
+    # conversion; None: no PID on the device.
+    device_pid: Optional[Dict] = None
 
 
 @dataclass
 class LinksSpec:
     collections: List[str]            # iteration names feeding ticlTracksterLinks
     overrides: Dict = field(default_factory=dict)
+    # the linking runs on the device (Cornetto only), with the result converted under the usual label
+    on_device: bool = False
 
 
 @dataclass
 class SuperclusterSpec:
-    kind: str                         # 'DNN' or 'Mustache'
+    kind: str                         # 'DNN', 'DNNHeterogeneous' or 'Mustache'
     source: str                       # iteration name (or module label) to supercluster
     overrides: Dict = field(default_factory=dict)
+    # DNNHeterogeneous: the overrides of the device module
+    producer: Dict = field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------- #
@@ -92,6 +103,7 @@ class TICLConfig:
         self.links_spec: Optional[LinksSpec] = None
         self.superclustering_spec: Optional[SuperclusterSpec] = None
         self.candidate_spec: Optional[Dict] = None
+        self.interpretations_spec: Optional[Dict] = None
         self.pf_spec: Optional[Dict] = None
         self.include_layer_tile = True
         self.include_mtd = True
@@ -166,10 +178,25 @@ class TICLConfig:
     def pattern_fastjet(self, **params):
         it = self._cur(); it.pattern_type = "FastJet"; it.pattern_params = params; return self
 
+    def pattern_cluestering(self, **params):
+        """CLUEstering on the layer clusters merged on the device: no seeding region and no cluster filter, the
+        parameters go to the CLUEstering module."""
+        it = self._cur(); it.pattern_type = "CLUEstering"; it.pattern_params = params; return self
+
     # -- extra trackster overrides (inference PSets, detector, ...) -------- #
 
     def trackster_params(self, **overrides):
         self._cur().trackster_extra.update(overrides)
+        return self
+
+    def device_pid(self, model="ShowerShape", **overrides):
+        """The PID of the tracksters of a CLUEstering iteration on the device, before their conversion. The overrides
+        are arguments of makeTracksterInference. The conversion, the masks, the linking and the superclustering on the
+        device read the identified tracksters, and the conversion runs no inference."""
+        it = self._cur()
+        it.device_pid = dict(model=model, **overrides)
+        for key in [k for k in it.trackster_extra if k == "inferenceAlgo" or k.startswith("pluginInferenceAlgo")]:
+            del it.trackster_extra[key]
         return self
 
     def masks_from(self, prev_name):
@@ -186,6 +213,12 @@ class TICLConfig:
         self._cur().backend = GPU
         return self
 
+    def on_device(self):
+        """The current iteration runs on the device: the cluster filter and the pattern recognition as portable
+        modules, read from the tracksters on the device of the iteration it masks from. Only Recovery has them."""
+        self._cur().on_device = True
+        return self
+
     # -- presets ----------------------------------------------------------- #
 
     def preset(self, name=None):
@@ -195,14 +228,32 @@ class TICLConfig:
 
     # -- top-level stages -------------------------------------------------- #
 
-    def links(self, collections, **overrides):
-        self.links_spec = LinksSpec(collections=list(collections), overrides=overrides)
+    def links(self, collections, on_device=False, **overrides):
+        """The linking of the tracksters of ``collections``. With ``on_device`` the Cornetto linking runs on the device
+        on the tracksters that the collections have on the device, and the result is converted under the usual
+        label."""
+        self.links_spec = LinksSpec(collections=list(collections), overrides=overrides, on_device=on_device)
+        self._current = None
+        return self
+
+    def superclustering_dnn_heterogeneous(self, source, producer=None, **overrides):
+        """The superclustering DNN on the device: the pairs and their DNN scores (``producer`` overrides) and their
+        association on the host (the linking module, ``overrides``). ``source`` must be a CLUEstering iteration: the
+        pairs index its device tracksters."""
+        self.superclustering_spec = SuperclusterSpec("DNNHeterogeneous", source, overrides, dict(producer or {}))
         self._current = None
         return self
 
     def superclustering_dnn(self, source, **overrides):
         self.superclustering_spec = SuperclusterSpec("DNN", source, overrides)
         self._current = None
+        return self
+
+    def interpretations(self, **overrides):
+        """The interpretation stage (``ticlTracksterInterpretations``, a ``TICLInterpretationProducer``) with these
+        overrides. With it, the candidate stage is ``TICLCandidateArbitrationProducer``; without it, the single-stage
+        ``TICLCandidateProducer``."""
+        self.interpretations_spec = overrides
         return self
 
     def candidate(self, **overrides):

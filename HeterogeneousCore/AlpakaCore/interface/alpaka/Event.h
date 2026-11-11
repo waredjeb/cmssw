@@ -105,7 +105,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::device {
         return deviceProductHandle;
       } else {
         if (not deviceProductHandle) {
-          return edm::Handle<T>(deviceProductHandle.whyFailedFactory());
+          return edm::Handle<T>(
+              std::shared_ptr<edm::HandleExceptionFactory const>(deviceProductHandle.whyFailedFactory()));
         }
         // this will try to re-use the queue from the deviceProduct if the queue from the Event metadata has not been set
         T const& product = deviceProductHandle->template getSynchronized<EDMetadata>(*metadata_);

@@ -97,6 +97,7 @@ def customiseTruthGraphAssociators(process):
                 "keep *_allVertexToTruthBranchAssociators_*_*",
                 "keep *_allSecondaryVertexToTruthBranchAssociators_*_*",
                 "keep *_truthBranchTracksterAssociators_*_*",
+                "keep *_truthBranchCandidateAssociators_*_*",
                 "keep *_truthBranchPFClusterEcalAssociators_*_*",
                 "keep *_truthBranchPFClusterHcalAssociators_*_*",
                 "keep *_hltTrackToTruthBranchAssociators_*_*",
@@ -163,6 +164,29 @@ def customiseTruthBranchValidationGun(process):
     for module in process.producers_().values():
         if module.hasParameter("bookGunSignal"):
             module.bookGunSignal = True
+    return process
+
+
+def customiseTruthBranchValidationHGCalOnly(process):
+    """Schedule the association maps and the plots of the tracksters only, for a job that
+    reconstructs only HGCAL. Tracks, vertices and candidates are not required.
+    """
+    if _isHarvesting(process):
+        process.load(_validationCff)
+        _appendPath(process, "truthBranchHarvestingPath",
+                    process.truthBranchTracksterPostProcessor
+                    + process.truthBranchTracksterLevelCandidatePostProcessor
+                    + process.truthBranchTracksterTruthPostProcessor)
+        return process
+
+    _loadAssociators(process)
+    process.load(_validationCff)
+    # The job makes no barrel PF rechits.
+    process.truthBranchTracksterAssociators.pfRecHits = cms.VInputTag()
+    _appendPath(process, "truthBranchValidationPath",
+                process.truthBranchTargets
+                + process.truthBranchTracksterAssociators
+                + process.truthBranchTracksterValidator)
     return process
 
 

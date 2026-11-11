@@ -23,6 +23,7 @@ class Target:
     layer_tile_label: str
     links_label: str
     supercluster_dnn_label: str
+    interpretations_label: str
     candidate_label: str
     mtd_label: str
     pf_label: str
@@ -31,10 +32,30 @@ class Target:
     group_names: Dict[str, str] = field(default_factory=dict)
     # merged layer-cluster module; None -> keep the cfi defaults (offline)
     merged_lc: Optional[str] = None
+    # the same layer clusters merged on the device, read by a CLUEstering iteration; None -> keep the cfi default
+    # (offline). A target that remaps merged_lc must also name this one.
+    merged_lc_soa: Optional[str] = None
+    # the cfi that defines that merge, when the CLUEstering step schedules it (HLT); None -> the merge is in the
+    # local reconstruction (offline)
+    merged_lc_soa_cfi: Optional[str] = None
+    # labels of the device modules of a CLUEstering iteration: CLUEstering, then the tracksters built on the device
+    cluestering_label: str = "ticlCLUEstering"
+    soa_tracksters_label: str = "ticlSoATracksters"
+    # label of those tracksters with their PID on the device
+    soa_pid_tracksters_label: str = "ticlSoATrackstersPID"
+    # label of the device module of the heterogeneous superclustering DNN: the pairs and their scores
+    supercluster_producer_label: str = "ticlSuperclusteringDNN"
+    # prefix of the layer cluster masks on the device, named after the iteration whose tracksters they mask
+    mask_soa_prefix: str = "ticlLayerClusterMask"
     # InputTag for layer_clusters_barrel_tiles; None -> keep the cfi default
     barrel_tile_tag: Optional[object] = None
     # label of the barrel TICLLayerTile producer (created for barrel iterations)
     barrel_tile_label: str = "ticlLayerTileBarrel"
+    # inputs from outside TICL: tracks, muons, GSF tracks (None: not used) and MTD timing (None: not used)
+    tracks_label: str = "generalTracks"
+    muons_label: str = "muons1stStep"
+    gsf_tracks_label: Optional[str] = "electronGsfTracks"
+    timing_label: Optional[str] = "mtdSoA"
 
     # -- group naming ------------------------------------------------------ #
 
@@ -52,6 +73,36 @@ class Target:
 
     def seeding_label(self, seeding_type):
         return self.seeding_labels.get(seeding_type)
+
+    # -- labels of the device modules ------------------------------------- #
+
+    def soa_trackster_label(self, name):
+        """The tracksters of iteration ``name`` built on the device, for an iteration other than CLUEstering."""
+        return self.trackster_prefix + name + "SoA"
+
+    def refs_label(self, name):
+        """The ordered list that holds the device tracksters of iteration ``name`` alone."""
+        return self.trackster_prefix + name + "Refs"
+
+    def mask_soa_label(self, name):
+        """The layer cluster mask on the device after iteration ``name``."""
+        return self.mask_soa_prefix + name + "SoA"
+
+    def filter_soa_label(self, name):
+        return self.filter_prefix + name + "SoA"
+
+    def pid_soa_label(self, name):
+        """The PID probabilities of the host tracksters of iteration ``name`` as a SoA for the device."""
+        return self.trackster_prefix + name + "PidSoA"
+
+    @property
+    def links_soa_label(self):
+        return self.links_label + "SoA"
+
+    @property
+    def links_refs_label(self):
+        """The ordered list of the device trackster collections that the device linking reads."""
+        return self.links_label + "InputRefs"
 
     # -- shared input tags derived from the merged layer clusters ---------- #
 
@@ -78,6 +129,7 @@ OFFLINE = Target(
     layer_tile_label="ticlLayerTileProducer",
     links_label="ticlTracksterLinks",
     supercluster_dnn_label="ticlTracksterLinksSuperclusteringDNN",
+    interpretations_label="ticlTracksterInterpretations",
     candidate_label="ticlCandidate",
     mtd_label="mtdSoA",
     pf_label="pfTICL",
@@ -108,6 +160,7 @@ HLT = Target(
     layer_tile_label="hltTiclLayerTileProducer",
     links_label="hltTiclTracksterLinks",
     supercluster_dnn_label="hltTiclTracksterLinksSuperclusteringDNNUnseeded",
+    interpretations_label="hltTiclTracksterInterpretations",
     candidate_label="hltTiclCandidate",
     mtd_label="hltMtdSoA",
     pf_label="hltPfTICL",
@@ -125,8 +178,19 @@ HLT = Target(
         "top": "HLTIterTICLSequence",
     },
     merged_lc="hltMergeLayerClusters",
+    merged_lc_soa="hltHgcalSoAMergeLayerClusters",
+    merged_lc_soa_cfi="HLTrigger.Configuration.HLT_75e33.modules.hltHgcalSoAMergeLayerClusters_cfi",
+    cluestering_label="hltTiclCLUEstering",
+    soa_tracksters_label="hltTiclSoATracksters",
+    soa_pid_tracksters_label="hltTiclSoATrackstersPID",
+    supercluster_producer_label="hltTiclSuperclusteringDNN",
+    mask_soa_prefix="hltTiclLayerClusterMask",
     barrel_tile_tag=cms.InputTag("hltTiclLayerTileBarrelProducer", "ticlLayerTilesBarrel"),
     barrel_tile_label="hltTiclLayerTileBarrelProducer",
+    tracks_label="hltGeneralTracks",
+    muons_label="hltPhase2L3Muons",
+    gsf_tracks_label=None,
+    timing_label=None,
 )
 
 

@@ -1048,6 +1048,36 @@ upgradeWFs['ticlv5_TrackLinkingGNN'].step2 = {'--procModifiers': 'ticlv5_TrackLi
 upgradeWFs['ticlv5_TrackLinkingGNN'].step3 = {'--procModifiers': 'ticlv5_TrackLinkingGNN'}
 upgradeWFs['ticlv5_TrackLinkingGNN'].step4 = {'--procModifiers': 'ticlv5_TrackLinkingGNN'}
 
+# TICLv6 in the offline reconstruction: Cornetto linking and the global arbitration of the interpretations.
+class UpgradeWorkflow_ticl_v6(UpgradeWorkflow):
+    def setup_(self, step, stepName, stepDict, k, properties):
+        if 'RecoGlobal' in step:
+            stepDict[stepName][k] = merge([self.step3, stepDict[step][k]])
+        if 'HARVESTGlobal' in step:
+            stepDict[stepName][k] = merge([self.step4, stepDict[step][k]])
+    def condition(self, fragment, stepList, key, hasHarvest):
+        selected_fragments = ["TTbar_14TeV", "CloseByP", "Eta1p7_2p7", "ZEE_14"]
+        return any(sf in fragment for sf in selected_fragments) and 'Run4' in key
+
+upgradeWFs['ticl_v6'] = UpgradeWorkflow_ticl_v6(
+    steps = [
+        'RecoGlobal',
+        'RecoGlobalFakeHLT',
+        'HARVESTGlobal',
+        'HARVESTGlobalFakeHLT',
+    ],
+    PU = [
+        'RecoGlobal',
+        'RecoGlobalFakeHLT',
+        'HARVESTGlobal',
+        'HARVESTGlobalFakeHLT',
+    ],
+    suffix = '_ticl_v6',
+    offset = 0.207,
+)
+upgradeWFs['ticl_v6'].step3 = {'--procModifiers': 'ticl_v6'}
+upgradeWFs['ticl_v6'].step4 = {'--procModifiers': 'ticl_v6'}
+
 
 
 class UpgradeWorkflow_enableTruth(UpgradeWorkflow):
@@ -1478,6 +1508,31 @@ upgradeWFs['HGCalOnly'] = UpgradeWorkflow_HGCalOnly(
     },
     suffix = 'HGCalOnly',
     offset = 0.531,
+)
+
+# HGCal-only reconstruction with TICLv6 and its device chain, with validation
+#  - Phase-2 only
+#  - RAW2DIGI + HGCal-only reconstruction up to the Cornetto linking and the superclustering DNN
+#  - truth-graph validation of the tracksters
+#  - harvesting
+upgradeWFs['HGCalOnlyTICLv6Alpaka'] = UpgradeWorkflow_HGCalOnly(
+    digi = {
+        # nothing special needed for the HGCal-only reconstruction
+    },
+    reco = {
+        '-s': 'RAW2DIGI:RawToDigi_hgcalOnly,RECO:reconstruction_hgcalOnly,VALIDATION:@HGCalOnlyValidation',
+        '--procModifiers': 'ticl_v6,ticl_v6_heterogeneous',
+        '--customise': 'Validation/Configuration/customiseHGCalOnly.customiseHGCalOnly,SimGeneral/TruthGraphAssociatorProducers/customiseTruthGraphAssociators.customiseTruthBranchValidationHGCalOnly',
+        '--datatier': 'GEN-SIM-RECO,DQMIO',
+        '--eventcontent': 'FEVTDEBUGHLT,DQM',
+    },
+    harvest = {
+        '-s': 'HARVESTING:@HGCalOnlyValidation',
+        '--procModifiers': 'ticl_v6,ticl_v6_heterogeneous',
+        '--customise': 'SimGeneral/TruthGraphAssociatorProducers/customiseTruthGraphAssociators.customiseTruthBranchValidationHGCalOnly',
+    },
+    suffix = 'HGCalOnlyTICLv6Alpaka',
+    offset = 0.432,
 )
 
 ###############################################################################################################
