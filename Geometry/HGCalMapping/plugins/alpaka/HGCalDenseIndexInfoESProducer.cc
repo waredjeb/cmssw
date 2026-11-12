@@ -139,6 +139,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
                 //assign position from geometry
                 GlobalPoint position = hgcal_geom->getPosition(row.detid());
+                if (!isSiPM) {
+                  //test beam only: the modules are mounted with the same orientation in all the layers, while the CMS
+                  //geometry turns odd and even layers by 180 degrees with respect to each other. Rotate the cells
+                  //around the wafer centre, +90 degrees in even layers and -90 degrees in odd layers
+                  //(as in the TB2025 setup)
+                  GlobalPoint wafer = hgcal_geom->getWaferPosition(row.detid());
+                  float dx = position.x() - wafer.x();
+                  float dy = position.y() - wafer.y();
+                  float sign = (row.layer() % 2 == 0) ? 1.f : -1.f;
+                  position = GlobalPoint(wafer.x() - sign * dy, wafer.y() + sign * dx, position.z());
+                }
                 row.x() = position.x();
                 row.y() = position.y();
                 row.z() = position.z();
