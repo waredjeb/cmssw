@@ -30,19 +30,36 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   // Clusters the rechits of one HGCAL component, layer by layer, with CLUEstering: produces the layer cluster and the
-  // seed flag of each rechit, and the number of layer clusters
+  // seed flag of each rechit, and the number of layer clusters. The input is either
+  //  - the clustering input of one component, grouped by layer, with its per-layer sizes in '<label>:layerSizes'
+  //    (e.g. from HGCalSoARecHitsProducer or HGCalSoARecHitsByLayerProducer), or
+  //  - with selectRecHits, a full rechit collection (e.g. from the HGCAL rechit producer working on the DAQ digis):
+  //    the producer clusters the rechits of the subdetectors in 'dets' that the clustering can use, and the others
+  //    get no layer cluster.
+  // In both cases the output has one row per input rechit.
   class HGCalCLUEsteringLayerClustersProducer : public stream::EDProducer<> {
   public:
     HGCalCLUEsteringLayerClustersProducer(const edm::ParameterSet& config)
         : EDProducer(config),
           recHitsToken_{consumes(config.getParameter<edm::InputTag>("hgcalRecHitsSoA"))},
-          layerSizesToken_{consumes<std::vector<uint32_t>>(
-              edm::InputTag(config.getParameter<edm::InputTag>("hgcalRecHitsSoA").label(), "layerSizes"))},
           recHitsClusteringToken_{produces()},
           detector_(config.getParameter<std::string>("detector")),
+          selectRecHits_(config.getParameter<bool>("selectRecHits")),
+          selection_{detMask(config.getParameter<std::vector<std::string>>("dets")),
+                     static_cast<float>(config.getParameter<double>("minEnergy")),
+                     static_cast<float>(config.getParameter<double>("ecut"))},
           algo_{makeAlgo(config)} {
       if (config.getParameter<bool>("extremesFromGeometry")) {
         geometryToken_ = esConsumes();
+      }
+      if (selectRecHits_) {
+        if (selection_.detMask == 0) {
+          throw edm::Exception(edm::errors::Configuration)
+              << "HGCalCLUEsteringLayerClustersProducer: 'selectRecHits' needs at least one subdetector in 'dets'.";
+        }
+      } else {
+        layerSizesToken_ = consumes<std::vector<uint32_t>>(
+            edm::InputTag(config.getParameter<edm::InputTag>("hgcalRecHitsSoA").label(), "layerSizes"));
       }
     }
 
@@ -52,9 +69,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       const auto& recHits = iEvent.get(recHitsToken_);
+      const uint32_t nRecHits = recHits->metadata().size();
+      if (selectRecHits_) {
+        HGCalSoARecHitsExtraDeviceCollection recHitsClustering(iEvent.queue(), nRecHits);
+        algo_.runOnSelection(iEvent.queue(), nRecHits, selection_, recHits.view(), recHitsClustering.view());
+        iEvent.emplace(recHitsClusteringToken_, std::move(recHitsClustering));
+        return;
+      }
+
       // The rechits are grouped by layer, and layerSizes holds the number of rechits of each layer that has some
       const auto& layerSizes = iEvent.get(layerSizesToken_);
-      const uint32_t nRecHits = recHits->metadata().size();
       if (std::accumulate(layerSizes.begin(), layerSizes.end(), uint64_t{0}) != nRecHits) {
         throw edm::Exception(edm::errors::LogicError)
             << "HGCalCLUEsteringLayerClustersProducer: the layer sizes do not add up to the " << nRecHits
@@ -84,6 +108,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           ->setComment(
               "Take the ranges of the coordinates from the TICLGeom cells of the component, not from the rechits of "
               "every event.");
+      desc.add<bool>("selectRecHits", false)
+          ->setComment(
+              "false: the input is the clustering input, grouped by layer, with '<hgcalRecHitsSoA label>:layerSizes'; "
+              "true: the input is a full rechit collection and the producer selects the rechits to cluster");
+      desc.add<std::vector<std::string>>("dets", {})
+          ->setComment("with selectRecHits: the subdetectors to cluster, among 'HGCalEE', 'HGCalHSi', 'HGCalHSc'");
+      desc.add<double>("minEnergy", 0.)
+          ->setComment("with selectRecHits: rechits with energy <= minEnergy are not clustered");
+      desc.add<double>("ecut", 0.)
+          ->setComment("with selectRecHits: rechits with energy <= ecut times their noise are not clustered");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -142,12 +176,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
     }
 
+    // The bit (1 << DetId::Detector) of each subdetector in dets
+    static uint32_t detMask(const std::vector<std::string>& dets) {
+      uint32_t mask = 0;
+      for (const auto& det : dets) {
+        if (det == "HGCalEE") {
+          mask |= 1u << DetId::HGCalEE;
+        } else if (det == "HGCalHSi") {
+          mask |= 1u << DetId::HGCalHSi;
+        } else if (det == "HGCalHSc") {
+          mask |= 1u << DetId::HGCalHSc;
+        } else {
+          throw edm::Exception(edm::errors::Configuration)
+              << "HGCalCLUEsteringLayerClustersProducer: unknown subdetector '" << det
+              << "' in 'dets' (allowed: 'HGCalEE', 'HGCalHSi', 'HGCalHSc').";
+        }
+      }
+      return mask;
+    }
+
     const device::EDGetToken<HGCalSoARecHitsDeviceCollection> recHitsToken_;
-    const edm::EDGetTokenT<std::vector<uint32_t>> layerSizesToken_;
+    // not with selectRecHits
+    edm::EDGetTokenT<std::vector<uint32_t>> layerSizesToken_;
     const device::EDPutToken<HGCalSoARecHitsExtraDeviceCollection> recHitsClusteringToken_;
     edm::ESGetToken<TICLGeomHost, CaloGeometryRecord> geometryToken_;
     const std::string detector_;
     edm::ESWatcher<CaloGeometryRecord> geometryWatcher_;
+    const bool selectRecHits_;
+    const HGCalCLUEsteringAlgoWrapper::Selection selection_;
     HGCalCLUEsteringAlgoWrapper algo_;
   };
 

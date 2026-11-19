@@ -1,11 +1,14 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <memory>
 #include <span>
 #include <utility>
+#include <vector>
 
 #include <alpaka/alpaka.hpp>
 
+#include "DataFormats/DetId/interface/DetId.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/prefixScan.h"
@@ -56,6 +59,71 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (isSeed[i]) {
             alpaka::atomicAdd(acc, &recHitsClustering.numberOfClustersScalar(), 1u);
           }
+        }
+      }
+    };
+
+    // Per rechit: its layer if the layer clustering uses it, -1 otherwise
+    struct KernelSelectRecHits {
+      ALPAKA_FN_ACC void operator()(const Acc1D& acc,
+                                    HGCalSoARecHitsDeviceCollection::ConstView recHits,
+                                    HGCalCLUEsteringAlgoWrapper::Selection selection,
+                                    int32_t* layerKey,
+                                    uint32_t nRecHits) const {
+        for (auto i : uniform_elements(acc, nRecHits)) {
+          const auto recHit = recHits[i];
+          // DetId::det(), which is not available in device code
+          const uint32_t det = (recHit.detid() >> DetId::kDetOffset) & DetId::kDetMask;
+          const float energy = recHit.energy();
+          const float sigmaNoise = recHit.sigmaNoise();
+          const bool selected = ((selection.detMask >> det) & 1u) and recHit.layer() >= 0 and
+                                std::isfinite(recHit.dim1()) and std::isfinite(recHit.dim2()) and
+                                std::isfinite(energy) and std::isfinite(sigmaNoise) and sigmaNoise >= 0.f and
+                                energy > selection.minEnergy and energy > selection.ecut * sigmaNoise;
+          layerKey[i] = selected ? recHit.layer() : -1;
+        }
+      }
+    };
+
+    // Per selected rechit, in layer order: copies the rechit from the full collection
+    struct KernelGatherRecHits {
+      ALPAKA_FN_ACC void operator()(const Acc1D& acc,
+                                    const int32_t* order,
+                                    HGCalSoARecHitsDeviceCollection::ConstView recHits,
+                                    HGCalSoARecHitsDeviceCollection::View selected,
+                                    uint32_t nSelected) const {
+        for (auto j : uniform_elements(acc, nSelected)) {
+          const auto in = recHits[order[j]];
+          auto out = selected[j];
+          out.dim1() = in.dim1();
+          out.dim2() = in.dim2();
+          out.dim3() = in.dim3();
+          out.layer() = in.layer();
+          out.energy() = in.energy();
+          out.mipEnergy() = in.mipEnergy();
+          out.sigmaNoise() = in.sigmaNoise();
+          out.recHitIndex() = in.recHitIndex();
+          out.flags() = in.flags();
+          out.detid() = in.detid();
+          out.time() = in.time();
+          out.timeError() = in.timeError();
+        }
+      }
+    };
+
+    // Per selected rechit: moves its layer cluster and seed flag back to its row of the full collection
+    struct KernelScatterClustering {
+      ALPAKA_FN_ACC void operator()(const Acc1D& acc,
+                                    const int32_t* order,
+                                    HGCalSoARecHitsExtraDeviceCollection::ConstView selectedClustering,
+                                    HGCalSoARecHitsExtraDeviceCollection::View recHitsClustering,
+                                    uint32_t nSelected) const {
+        if (once_per_grid(acc)) {
+          recHitsClustering.numberOfClustersScalar() = selectedClustering.numberOfClustersScalar();
+        }
+        for (auto j : uniform_elements(acc, nSelected)) {
+          recHitsClustering[order[j]].clusterIndex() = selectedClustering[j].clusterIndex();
+          recHitsClustering[order[j]].isSeed() = selectedClustering[j].isSeed();
         }
       }
     };
@@ -134,6 +202,88 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         nRecHits);
     alpaka::exec<Acc1D>(
         queue, workDivRecHits, KernelMarkSeeds{}, isSeed, rankedIndex.data(), recHitsClustering, nRecHits);
+  }
+
+  void HGCalCLUEsteringAlgoWrapper::runOnSelection(Queue& queue,
+                                                   uint32_t nRecHits,
+                                                   Selection const& selection,
+                                                   HGCalSoARecHitsDeviceCollection::ConstView recHits,
+                                                   HGCalSoARecHitsExtraDeviceCollection::View recHitsClustering) {
+    // the rechits that are not selected have no layer cluster
+    auto nClusters = make_device_view<unsigned int>(queue, recHitsClustering.numberOfClustersScalar());
+    alpaka::memset(queue, nClusters, 0x0);
+    if (nRecHits == 0) {
+      return;
+    }
+    auto clusterIndexView = make_device_view<int>(queue, recHitsClustering.clusterIndex().data(), nRecHits);
+    alpaka::memset(queue, clusterIndexView, 0xff);
+    auto isSeedView = make_device_view<uint8_t>(queue, recHitsClustering.isSeed().data(), nRecHits);
+    alpaka::memset(queue, isSeedView, 0x0);
+
+    constexpr uint32_t blockSize = 256;
+    auto layerKey = make_device_buffer<int32_t[]>(queue, nRecHits);
+    alpaka::exec<Acc1D>(queue,
+                        make_workdiv<Acc1D>(divide_up_by(nRecHits, blockSize), blockSize),
+                        KernelSelectRecHits{},
+                        recHits,
+                        selection,
+                        layerKey.data(),
+                        nRecHits);
+    auto h_layerKey = make_host_buffer<int32_t[]>(queue, nRecHits);
+    alpaka::memcpy(queue, h_layerKey, layerKey);
+    // CLUEstering takes the batch sizes on the host
+    alpaka::wait(queue);
+
+    // Counting sort by layer, stable in rechit order: the selection and the batches do not depend on the backend.
+    // offsets[layer + 1] first counts the selected rechits of each layer, then, after the running sum, offsets[layer]
+    // is the position of the first rechit of the layer in the selection.
+    int32_t maxLayer = -1;
+    for (uint32_t i = 0; i < nRecHits; ++i) {
+      maxLayer = std::max(maxLayer, h_layerKey[i]);
+    }
+    if (maxLayer < 0) {
+      return;
+    }
+    std::vector<uint32_t> offsets(maxLayer + 2, 0);
+    for (uint32_t i = 0; i < nRecHits; ++i) {
+      if (h_layerKey[i] >= 0) {
+        ++offsets[h_layerKey[i] + 1];
+      }
+    }
+    std::vector<uint32_t> batches;
+    for (int32_t layer = 0; layer <= maxLayer; ++layer) {
+      if (offsets[layer + 1] > 0) {
+        batches.push_back(offsets[layer + 1]);
+      }
+      offsets[layer + 1] += offsets[layer];
+    }
+    const uint32_t nSelected = offsets[maxLayer + 1];
+    // order[j]: the rechit of the full collection at position j of the selection
+    auto h_order = make_host_buffer<int32_t[]>(queue, nSelected);
+    for (uint32_t i = 0; i < nRecHits; ++i) {
+      if (h_layerKey[i] >= 0) {
+        h_order[offsets[h_layerKey[i]]++] = static_cast<int32_t>(i);
+      }
+    }
+    auto order = make_device_buffer<int32_t[]>(queue, nSelected);
+    alpaka::memcpy(queue, order, h_order);
+
+    // the selected rechits, contiguous by layer as CLUEstering needs them
+    HGCalSoARecHitsDeviceCollection selected(queue, nSelected);
+    const auto workDivSelected = make_workdiv<Acc1D>(divide_up_by(nSelected, blockSize), blockSize);
+    alpaka::exec<Acc1D>(
+        queue, workDivSelected, KernelGatherRecHits{}, order.data(), recHits, selected.view(), nSelected);
+
+    HGCalSoARecHitsExtraDeviceCollection selectedClustering(queue, nSelected);
+    run(queue, nSelected, std::span<const uint32_t>(batches), selected.const_view(), selectedClustering.view());
+
+    alpaka::exec<Acc1D>(queue,
+                        workDivSelected,
+                        KernelScatterClustering{},
+                        order.data(),
+                        selectedClustering.const_view(),
+                        recHitsClustering,
+                        nSelected);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

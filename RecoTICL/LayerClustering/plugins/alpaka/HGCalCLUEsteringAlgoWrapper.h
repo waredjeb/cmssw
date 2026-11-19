@@ -35,6 +35,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
              HGCalSoARecHitsDeviceCollection::ConstView recHits,
              HGCalSoARecHitsExtraDeviceCollection::View recHitsClustering);
 
+    // The rechits of a full collection that the layer clustering uses: the ones of the selected HGCAL subdetectors
+    // that have finite coordinates, a finite non-negative noise and a finite energy above both minEnergy and
+    // ecut times the noise
+    struct Selection {
+      uint32_t detMask;  // bit (1 << DetId::Detector) for each selected subdetector, e.g. DetId::HGCalEE
+      float minEnergy;
+      float ecut;
+    };
+
+    // Selects the rechits to cluster from a full collection, orders them by layer and clusters them with run(): the
+    // output has one row per input rechit, and the rechits that are not selected get no layer cluster. Waits for the
+    // queue once, to read the per-layer sizes of the selection.
+    void runOnSelection(Queue& queue,
+                        uint32_t nRecHits,
+                        Selection const& selection,
+                        HGCalSoARecHitsDeviceCollection::ConstView recHits,
+                        HGCalSoARecHitsExtraDeviceCollection::View recHitsClustering);
+
   private:
     struct Clusterer;
     std::unique_ptr<Clusterer> clusterer_;
