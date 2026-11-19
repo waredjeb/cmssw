@@ -31,6 +31,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // Records an in-process Perfetto trace (.pftrace) of a cmsRun job.
@@ -64,18 +65,19 @@ public:
     cms::perfetto::TrackEvent::Register();
 
     bool const traceGpuKernels = pset.getUntrackedParameter<bool>("traceGpuKernels");
+    bool const traceGpuCopies = pset.getUntrackedParameter<bool>("traceGpuCopies");
+    bool const traceGpuMemory = pset.getUntrackedParameter<bool>("traceGpuMemory");
     bool const tracePower = pset.getUntrackedParameter<bool>("tracePower");
     ::perfetto::protos::gen::TrackEventConfig te;
     te.add_disabled_categories("*");
-    for (const char* category :
-         {"cmssw.event",
-          "cmssw.source",
-          "cmssw.module",
-          "cmssw.acquire",
-          "cmssw.transform",
-          "cmssw.transform.acquire",
-          "cmssw.es",
-          "cmssw.cleanup"})
+    for (const char* category : {"cmssw.event",
+                                 "cmssw.source",
+                                 "cmssw.module",
+                                 "cmssw.acquire",
+                                 "cmssw.transform.launch",
+                                 "cmssw.transform.produce",
+                                 "cmssw.es",
+                                 "cmssw.cleanup"})
       te.add_enabled_categories(category);
     if (pset.getUntrackedParameter<bool>("traceFunctions"))
       te.add_enabled_categories("cmssw.func");
@@ -83,6 +85,10 @@ public:
       te.add_enabled_categories("cmssw.alloc");
     if (traceGpuKernels)
       te.add_enabled_categories("cmssw.gpu");
+    if (traceGpuCopies)
+      te.add_enabled_categories("cmssw.gpu.copy");
+    if (traceGpuMemory)
+      te.add_enabled_categories("cmssw.gpu.memory");
     if (tracePower)
       te.add_enabled_categories("cmssw.power");
 
@@ -105,6 +111,7 @@ public:
     cms::perfetto::TrackEvent::SetTrackDescriptor(process, desc);
 
     ar.watchPreallocate(this, &PerfettoTraceService::preallocate);
+    ar.watchPostModuleConstruction(this, &PerfettoTraceService::postModuleConstruction);
     ar.watchPreSourceEvent(this, &PerfettoTraceService::preSourceEvent);
     ar.watchPostSourceEvent(this, &PerfettoTraceService::postSourceEvent);
     ar.watchPreEvent(this, &PerfettoTraceService::preEvent);
@@ -124,10 +131,10 @@ public:
 
     if (traceAllocations_)
       cms::alpakatools::setCachingAllocatorMonitor(&allocatorMonitor_);
-    if (traceGpuKernels && !cuptiProfiler_.start())
+    if ((traceGpuKernels || traceGpuCopies || traceGpuMemory) &&
+        !cuptiProfiler_.start(traceGpuKernels, traceGpuCopies, traceGpuMemory))
       edm::LogWarning("PerfettoTraceService")
-          << "traceGpuKernels: no CUDA device or CUPTI unavailable, not tracing GPU "
-             "kernels";
+          << "traceGpuKernels/Copies/Memory: no CUDA device or CUPTI unavailable, not tracing the GPU activity";
     if (tracePower &&
         !powerSampler_.start(std::chrono::milliseconds(pset.getUntrackedParameter<unsigned>("powerPeriodMs"))))
       edm::LogWarning("PerfettoTraceService") << "tracePower: neither NVML nor a readable RAPL counter found, not "
@@ -148,6 +155,11 @@ public:
     desc.addUntracked<bool>("traceAllocations", false)
         ->setComment("Record the alpaka caching-allocator transactions and memory counters.");
     desc.addUntracked<bool>("traceGpuKernels", false)->setComment("Record the CUDA kernels via CUPTI.");
+    desc.addUntracked<bool>("traceGpuCopies", false)
+        ->setComment("Record the CUDA memory copies and memsets via CUPTI.");
+    desc.addUntracked<bool>("traceGpuMemory", false)
+        ->setComment(
+            "Record the CUDA allocations and frees (cudaMalloc, cudaHostAlloc, cudaMallocAsync, ...) via CUPTI.");
     desc.addUntracked<bool>("tracePower", false)->setComment("Sample CPU (RAPL) and GPU (NVML) power.");
     desc.addUntracked<unsigned>("powerPeriodMs", 1000)->setComment("Power sampling period in ms.");
     desc.addUntracked<std::vector<std::string>>("traceModules", {})
@@ -324,46 +336,57 @@ private:
   }
 
   // Transforms (registerTransform / registerTransformAsync) run as separate tasks after the module's produce(),
-  // e.g. the device-to-host copies of the alpaka modules: "acquiring" is the asynchronous part of
-  // registerTransformAsync, "transform" the part that puts the product. Same lane and module context as produce().
-  void preModuleTransformAcquiring(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
-    if (!inEvent(sc.streamID()))
-      return;
-    auto const& md = *mcc.moduleDescription();
+  // when a consumer asks for the transformed product: e.g. the device-to-host copies that the alpaka modules register
+  // for their device products. registerTransformAsync has two steps, traced on the same lane and with the same module
+  // context as produce():
+  //  - cmssw.transform.launch : starts the asynchronous work
+  //  - cmssw.transform.produce: builds the transformed product and puts it into the event
+  void postModuleConstruction(edm::ModuleDescription const& md) {
+    auto const& label = md.moduleLabel();
+    transformNames_[md.id()] = {label + " [transform launch]", label + " [transform]"};
+  }
+
+  // the names are filled at construction time, before any event: read-only afterwards
+  char const* transformName(edm::ModuleDescription const& md, unsigned step) const {
+    auto it = transformNames_.find(md.id());
+    return it == transformNames_.end() ? md.moduleLabel().c_str() : it->second[step].c_str();
+  }
+
+  void beginTransform(edm::StreamContext const& sc, edm::ModuleDescription const& md, unsigned step) {
     if (!enterModule(sc, md))
       return;
-    TRACE_EVENT_BEGIN("cmssw.transform.acquire",
-                      ::perfetto::StaticString(md.moduleLabel().c_str()),
-                      cms::perfetto::laneTrack(sc.streamID().value()),
-                      "event",
-                      sc.eventID().event(),
-                      "cpp_type",
-                      ::perfetto::DynamicString(md.moduleName()));
+    auto const name = ::perfetto::StaticString(transformName(md, step));
+    auto const track = cms::perfetto::laneTrack(sc.streamID().value());
+    auto const fields = [&](::perfetto::EventContext ctx) {
+      ctx.AddDebugAnnotation("event", sc.eventID().event());
+      ctx.AddDebugAnnotation("module_id", md.id());
+      ctx.AddDebugAnnotation("module", md.moduleLabel().c_str());
+      ctx.AddDebugAnnotation("cpp_type", ::perfetto::DynamicString(md.moduleName()));
+    };
+    if (step == 0)
+      TRACE_EVENT_BEGIN("cmssw.transform.launch", name, track, fields);
+    else
+      TRACE_EVENT_BEGIN("cmssw.transform.produce", name, track, fields);
+  }
+
+  void preModuleTransformAcquiring(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
+    if (inEvent(sc.streamID()))
+      beginTransform(sc, *mcc.moduleDescription(), 0);
   }
 
   void postModuleTransformAcquiring(edm::StreamContext const& sc, edm::ModuleCallingContext const&) {
     if (inEvent(sc.streamID()) && exitModule())
-      TRACE_EVENT_END("cmssw.transform.acquire", cms::perfetto::laneTrack(sc.streamID().value()));
+      TRACE_EVENT_END("cmssw.transform.launch", cms::perfetto::laneTrack(sc.streamID().value()));
   }
 
   void preModuleTransform(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
-    if (!inEvent(sc.streamID()))
-      return;
-    auto const& md = *mcc.moduleDescription();
-    if (!enterModule(sc, md))
-      return;
-    TRACE_EVENT_BEGIN("cmssw.transform",
-                      ::perfetto::StaticString(md.moduleLabel().c_str()),
-                      cms::perfetto::laneTrack(sc.streamID().value()),
-                      "event",
-                      sc.eventID().event(),
-                      "cpp_type",
-                      ::perfetto::DynamicString(md.moduleName()));
+    if (inEvent(sc.streamID()))
+      beginTransform(sc, *mcc.moduleDescription(), 1);
   }
 
   void postModuleTransform(edm::StreamContext const& sc, edm::ModuleCallingContext const&) {
     if (inEvent(sc.streamID()) && exitModule())
-      TRACE_EVENT_END("cmssw.transform", cms::perfetto::laneTrack(sc.streamID().value()));
+      TRACE_EVENT_END("cmssw.transform.produce", cms::perfetto::laneTrack(sc.streamID().value()));
   }
 
   void preESModule(edm::eventsetup::EventSetupRecordKey const&, edm::ESModuleCallingContext const& cc) {
@@ -410,6 +433,8 @@ private:
   unsigned const maxEvents_;
   bool const traceAllocations_;
   std::vector<std::string> traceModules_;  // sorted
+  // module id -> slice names of the two transform steps (node-based: the c_str() stay valid)
+  std::unordered_map<unsigned, std::array<std::string, 2>> transformNames_;
 
   std::unique_ptr<::perfetto::TracingSession> session_;
   std::vector<StreamState> states_;
